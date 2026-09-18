@@ -1,0 +1,777 @@
+You are working on the existing docmonstakrakin repository.
+
+This is a v0.1 RELEASE-CANDIDATE remediation task discovered through human
+manual QA using a real isolated fixture project named CryptoDemon.
+
+Before modifying code:
+
+1. Read AGENT_BOOTSTRAP.md completely.
+2. Reconstruct canonical repository state.
+3. Read:
+   - MASTER_WBS.yaml
+   - PROJECT_STATE.md
+   - TRACEABILITY_MATRIX.md
+   - LAST_HANDOFF.md
+   - QA_AUTOMATED_ACCEPTANCE.md
+4. Detect environment/source-control mode honestly.
+5. Do not execute Gate 7.
+6. Do not begin v0.2.
+7. Do not reuse existing DMK IDs.
+8. Preserve current automated protections and evidence history.
+
+Treat the following manual-QA findings as release-blocking v0.1 defects.
+
+======================================================================
+A. CRYPTODEMON MANUAL-QA FIXTURE
+======================================================================
+
+Preserve CryptoDemon as the regression fixture.
+
+Project intent:
+
+Name:
+CryptoDemon
+
+Purpose:
+A simple educational cryptocurrency demonstrating mining, peer-to-peer demo
+coin transfers, wallet balances, block hashes, and immutable ledger behavior.
+
+Profiles:
+WEB_APPLICATION
+BACKEND_API
+
+Specialized Profile:
+DEVELOPER_TOOL
+
+Deployment:
+Local / localhost only.
+
+Non-goals:
+- no real monetary value;
+- no public blockchain network;
+- no real crypto exchange;
+- no fiat;
+- no smart contracts;
+- no production OIDC;
+- no production wallet security;
+- no PII;
+- no AI or agentic AI.
+
+Core features entered during Product Baseline:
+
+- Demo Wallet Creation
+- Mine Block
+- Mining Reward
+- Send DEMON Coins
+- Wallet Balance
+- Transaction History
+- Blockchain Explorer
+- Validate Blockchain Integrity
+
+The implementation must NOT alter fixture input merely to make tests pass.
+
+======================================================================
+B. PROJECT MATURITY FIELD
+======================================================================
+
+The Project step currently lacks Project Maturity.
+
+Add at least:
+
+GREENFIELD
+EXISTING_PROJECT
+MIGRATION
+EXTENSION
+
+CryptoDemon must resolve to GREENFIELD.
+
+Project maturity must participate in discovery applicability/readiness.
+
+Do not treat this as decorative metadata.
+
+======================================================================
+C. ASSURANCE INPUTS VS COMPUTED RISK
+======================================================================
+
+The current Assurance step primarily displays a deterministic risk result.
+
+Preserve deterministic scoring.
+
+Do NOT make the computed risk score directly editable.
+
+Instead expose editable/reviewable assurance inputs such as:
+
+- public internet exposure;
+- PII;
+- regulated data;
+- production secrets;
+- destructive operations;
+- autonomous agent execution;
+- security sensitivity;
+- regulatory/compliance profile.
+
+Display three distinct concepts:
+
+1. ASSURANCE INPUTS
+2. COMPUTED RISK RESULT
+3. GOVERNANCE OVERRIDE
+
+Any override requires rationale, authorization, and audit history.
+
+For CryptoDemon expected facts include:
+
+Public Internet Exposure:
+No for v0.1
+
+PII:
+No
+
+Regulated Data:
+No
+
+Production Secrets:
+No
+
+Autonomous Agent Execution:
+No
+
+Destructive Operation:
+Yes, local demo blockchain reset/destruction
+
+======================================================================
+D. PRODUCT BASELINE MUST CREATE FEATURE ARTIFACTS
+======================================================================
+
+Manual QA discovered:
+
+Product Baseline contains feature text,
+but Product Features & Capabilities shows 0.
+
+This is a P0 defect.
+
+The Product wizard may retain its current "one feature per line" UX if desired,
+but every valid feature must create a first-class PROPOSED Feature artifact
+when the project is initialized.
+
+Expected CryptoDemon result:
+
+8 PROPOSED feature artifacts.
+
+Each feature must preserve:
+
+- stable feature ID;
+- title;
+- description if available;
+- source = PRODUCT_BASELINE;
+- status = PROPOSED;
+- capability/domain grouping;
+- priority if available;
+- provenance.
+
+Project re-open/save must be idempotent.
+Do not duplicate features.
+
+Do not collapse the entire feature list into one generic requirement.
+
+======================================================================
+E. DISCOVERY DOMAIN COVERAGE UI
+======================================================================
+
+Adaptive Discovery currently exposes only a flat question count such as:
+
+29 questions
+
+This is insufficient.
+
+Add a coverage/status view for all canonical discovery domains.
+
+For every domain display:
+
+- domain;
+- status;
+- readiness/coverage;
+- source;
+- unresolved/open item count.
+
+Possible states:
+
+RESOLVED_BY_PROJECT_WIZARD
+ACTIVE_DISCOVERY
+RESOLVED
+SKIPPED_BY_CONDITION
+NOT_APPLICABLE
+DEFERRED
+UNRESOLVED
+BLOCKED
+
+Example:
+
+PRODUCT
+RESOLVED
+Source: Product Baseline
+Open: 0
+
+AI
+NOT_APPLICABLE
+Source: Profile filtering
+Open: 0
+
+Do not show irrelevant questions merely to make every domain visible.
+
+======================================================================
+F. REQUIREMENT DERIVATION CONTAMINATION
+======================================================================
+
+CryptoDemon exposed severe contamination in generated requirements.
+
+The following incorrect values appeared:
+
+security_assurance
+security_audit_clean
+public registration
+relational_sql
+federated_oidc
+time-limited account recovery
+spa_express_backend
+fixed port 3000 / 0.0.0.0
+three-nines availability
+four-hour disaster recovery
+Docmonstakrakin-style portable sealed archive behavior
+
+These were not justified by CryptoDemon input.
+
+Audit every derivation path producing these values.
+
+Possible root causes to inspect:
+
+- hardcoded answer defaults;
+- seeded Atlas/demo fixture data;
+- stale global application state;
+- previous project state leakage;
+- generic fallback values;
+- question option default values;
+- recommendation candidates being treated as selected;
+- derivation templates using example answers;
+- project-switch state not isolated.
+
+For every contaminated value identify the exact source and eliminate the root
+cause.
+
+A new project must derive ONLY from that project's canonical state.
+
+======================================================================
+G. RECOMMENDATION != REQUIREMENT
+======================================================================
+
+Technical Baseline supports:
+
+USER_SPECIFIED
+RECOMMEND_FOR_ME
+UNKNOWN
+
+When:
+
+decision_mode = RECOMMEND_FOR_ME
+
+a candidate recommendation may exist.
+
+It must NOT create a binding requirement such as:
+
+"The system must employ PostgreSQL"
+"The system must use Express"
+
+until explicitly accepted.
+
+Required distinction:
+
+recommendation.status = PROPOSED
+finalSelection = null
+
+Only after explicit acceptance:
+
+finalSelection = candidate
+
+Even after acceptance:
+
+ADR status = NOT_RATIFIED / PROPOSED
+
+until architecture governance ratifies it.
+
+Add regression tests.
+
+======================================================================
+H. HOST ENVIRONMENT != TARGET PROJECT SOURCE CONTROL
+======================================================================
+
+Docmonstakrakin itself currently runs in:
+
+AI_STUDIO_WORKSPACE
+
+That is HOST ENVIRONMENT metadata.
+
+It must not automatically become CryptoDemon's source-control architecture.
+
+If CryptoDemon Source Control mode is:
+
+UNKNOWN
+
+then:
+
+project.technicalBaseline.sourceControl.finalSelection = null
+
+The host environment may independently still report:
+
+AI_STUDIO_WORKSPACE
+
+Keep the two namespaces/models separate.
+
+======================================================================
+I. TEMPLATE AND SERIALIZATION CORRUPTION
+======================================================================
+
+Manual QA found generated artifacts containing:
+
+[object Object]
+
+and unresolved tokens such as:
+
+{{ANSWER}}
+
+No generated requirement, acceptance criterion, context package, or imported
+proposal may contain unresolved template/coercion artifacts.
+
+Create a generation validation layer.
+
+Reject candidate artifact generation if textual output contains patterns such
+as:
+
+[object Object]
+[object Array]
+{{...}}
+undefined
+NaN
+
+or null where required textual substitution was expected.
+
+Return a structured derivation error instead of silently persisting malformed
+text.
+
+Add tests.
+
+======================================================================
+J. STANDARDS APPLICABILITY
+======================================================================
+
+CryptoDemon uses:
+
+WEB_APPLICATION
+BACKEND_API
+DEVELOPER_TOOL
+
+It does NOT use:
+
+AI_APPLICATION
+AGENTIC_AI_APPLICATION
+
+Verify AI-specific standards are not automatically activated.
+
+In particular audit OWASP AISVS activation.
+
+Standards displayed in:
+
+- Project Wizard
+- Standards Registry
+- Requirement mappings
+- Summary Context
+- Task Context
+- Full Baseline
+
+must agree.
+
+Standards must activate only through applicable profiles/rules.
+
+======================================================================
+K. MANUAL AI IMPORT & REVIEW WORKFLOW
+======================================================================
+
+Manual QA exposed unclear behavior after pasting external-model JSON into:
+
+Prompt Compiler
+→ Manual AI Import & Review
+
+Define and implement the canonical inbound proposal workflow.
+
+The lifecycle must be:
+
+EXTERNAL MODEL JSON
+→ PARSE
+→ SCHEMA VALIDATE
+→ SEMANTIC VALIDATE
+→ ASSUMPTION DETECTION
+→ HUMAN REVIEW
+→ ACCEPT / MODIFY / REJECT PER CHANGE
+→ IMPORT ACCEPTED CHANGE AS PROPOSED CANONICAL ARTIFACT
+→ TRACEABILITY
+→ AUDIT
+→ PROJECT STATE UPDATE
+
+Schema validation must NOT automatically import or approve proposals.
+
+For each proposed change render actions:
+
+ACCEPT AS PROPOSED
+MODIFY
+REJECT
+
+Support bulk review only if each change still has explicit disposition.
+
+Accepted proposal mapping:
+
+REQUIREMENT
+→ Requirements Workspace
+
+ADR
+→ Architecture Workspace
+
+RISK
+→ Security & Risk
+
+WORK_ITEM
+→ Work Management
+
+CODE_MODIFICATION
+→ proposal / implementation work item according to governance policy
+
+Imported artifacts MUST default to PROPOSED unless existing governance
+explicitly permits another state.
+
+======================================================================
+L. EXTERNAL-AI IMPORT PROVENANCE
+======================================================================
+
+Every imported proposal must preserve:
+
+- import session ID;
+- provider/model if supplied;
+- timestamp;
+- original proposal ID;
+- original JSON digest/hash;
+- human reviewer;
+- review disposition;
+- assumptions;
+- resulting canonical artifact IDs.
+
+Do not label external-model proposals as MANUAL_ENTRY unless a human actually
+created the artifact manually.
+
+Use an origin such as:
+
+EXTERNAL_AI_PROPOSAL
+
+or the repository's equivalent canonical type.
+
+======================================================================
+M. IMPORT SESSION / REVIEW HISTORY UI
+======================================================================
+
+After schema validation, the user currently has poor visibility into what
+happened next.
+
+Add an Import Review Session state/surface.
+
+It should show:
+
+Session ID
+Source model/provider
+Validation status
+Assumptions
+Proposed change count
+Accepted
+Modified
+Rejected
+Pending
+Imported artifact IDs
+
+The user must be able to reopen a previous import session.
+
+After import show clear navigation such as:
+
+View 4 Imported Requirements
+View 2 Proposed ADRs
+View 3 Work Items
+Open Import Audit Record
+
+Do not leave the user staring at a successful validation screen wondering
+whether anything happened.
+
+======================================================================
+N. APPROVAL INBOX SEMANTICS
+======================================================================
+
+The Approval Inbox should NOT automatically contain every imported proposal.
+
+This distinction must remain explicit:
+
+IMPORT REVIEW
+= deciding whether an external proposal becomes a canonical PROPOSED artifact.
+
+GOVERNANCE APPROVAL
+= approving/ratifying an existing canonical artifact or phase transition.
+
+Therefore an empty Approval Inbox immediately after import review is valid
+unless a sign-off request has been created.
+
+However, provide an explicit action from eligible canonical artifacts:
+
+REQUEST SIGN-OFF
+
+When triggered:
+
+Requirement Baseline
+ADR
+Release Gate
+Override
+or other governed item
+
+creates an ApprovalRequest record and then appears in Approval Inbox.
+
+Add explanatory empty-state text:
+
+"No governance sign-off requests are pending. Imported AI proposals must first
+be reviewed and accepted into canonical project state before sign-off can be
+requested."
+
+======================================================================
+O. SIGN-OFF REQUEST FLOW
+======================================================================
+
+Implement/verify:
+
+canonical artifact
+→ Request Sign-Off
+→ approval request
+→ policy/quorum evaluation
+→ Approval Inbox
+→ role signatures
+→ approved/rejected/remediation state
+
+Do NOT allow external AI import itself to create approval signatures.
+
+Do NOT allow automated agents to satisfy human quorum.
+
+======================================================================
+P. DOCUMENTATION/TRACKING SYNCHRONIZATION
+======================================================================
+
+Accepted imported proposals must immediately update canonical tracking.
+
+Examples:
+
+Accepted REQUIREMENT:
+- Requirements Workspace
+- traceability
+- project state counts
+- context compiler
+
+Accepted ADR:
+- Architecture Workspace
+- status PROPOSED
+- context compiler
+
+Accepted WORK_ITEM:
+- Work Management
+- WBS/task state where policy allows
+- context compiler
+
+Rejected proposals must remain in import audit history but not become canonical
+active artifacts.
+
+Modified proposals must preserve original proposal plus reviewer-modified
+canonical result.
+
+======================================================================
+Q. CONTEXT COMPILER CLARIFICATION
+======================================================================
+
+SUMMARY, TASK_CONTEXT, and FULL_BASELINE are OUTBOUND context packages.
+
+They do NOT themselves initialize documentation/tracking.
+
+Their purpose is:
+
+canonical state
+→ scoped external-agent context
+
+The external agent returns STRUCTURED PROPOSAL JSON.
+
+Documentation/tracking changes only after:
+
+proposal validation
++
+human review
++
+canonical import acceptance.
+
+Make this lifecycle visible in Prompt Compiler UI/help text.
+
+======================================================================
+R. TASK_CONTEXT USEFULNESS
+======================================================================
+
+Current CryptoDemon TASK_CONTEXT for DMK-001 has:
+
+0 governing requirements
+
+and omits all project requirements.
+
+This is structurally possible during discovery, but implementation work must not
+be handed to Codex until a project-specific work item is linked to relevant
+requirements/features.
+
+After fixing feature derivation and project-specific requirements, create an
+isolated regression fixture work item such as:
+
+Implement Core Blockchain Ledger
+
+and link only relevant requirements/features.
+
+Verify TASK_CONTEXT includes:
+
+- CryptoDemon purpose;
+- active work item;
+- feature(s);
+- full requirement bodies;
+- acceptance criteria;
+- selected/ratified architecture only as appropriate;
+- integrity/security constraints;
+- verification expectations;
+- open decisions.
+
+Verify unrelated requirements are omitted.
+
+======================================================================
+S. CRYPTODEMON REGRESSION FIXTURE
+======================================================================
+
+Create automated regression coverage reproducing manual QA.
+
+Expected:
+
+- maturity = GREENFIELD;
+- Web + Backend + Developer Tool profiles;
+- 8 feature artifacts generated from Product Baseline;
+- features = PROPOSED;
+- AI/Agent questions absent;
+- no OIDC/account recovery unless explicitly requested;
+- no production SLA;
+- no fixed DB/stack requirement before recommendation acceptance;
+- no host workspace leakage;
+- no malformed template output;
+- project-specific requirements only;
+- manual Prevent Overspending requirement remains MANUAL_ENTRY;
+- imported external proposals remain staged until accepted;
+- accepted external proposal becomes PROPOSED canonical artifact;
+- Approval Inbox remains empty until Request Sign-Off;
+- Request Sign-Off creates ApprovalRequest;
+- TASK_CONTEXT for implementation work is genuinely useful.
+
+======================================================================
+T. MANUAL QA STATUS
+======================================================================
+
+Set current release manual QA state to:
+
+NOT_READY_FOR_SIGNOFF
+
+until remediation is complete and the CryptoDemon fixture is manually retested.
+
+Do not reinterpret the current manual run as passing.
+
+Preserve the screenshots/findings as manual QA evidence.
+
+======================================================================
+U. COMPLETE REGRESSION
+======================================================================
+
+After implementation:
+
+1. run existing complete regression battery;
+2. run CryptoDemon fixture tests;
+3. run external AI import/review tests;
+4. run sign-off request/Approval Inbox tests;
+5. run context compiler tests;
+6. run WBS drift validation;
+7. update canonical QA acceptance mapping.
+
+Keep:
+
+v0.1.0-rc1 = RELEASE_CANDIDATE
+Gate 7 = HUMAN_APPROVAL_REQUIRED
+v0.2 = PLANNING / NOT READY
+
+======================================================================
+FINAL REPORT
+======================================================================
+
+Return:
+
+# CryptoDemon & External-AI Workflow Remediation Report
+
+## 1. Root Causes
+Every contamination/default leak and why it occurred.
+
+## 2. Project Initialization
+Maturity and assurance fixes.
+
+## 3. Product Baseline → Features
+Show all CryptoDemon feature artifacts.
+
+## 4. Discovery Coverage
+All 19 domains and statuses.
+
+## 5. Requirement Derivation
+Show corrected CryptoDemon-specific examples.
+
+## 6. Architecture Recommendation Integrity
+Show candidate vs selected vs ratified.
+
+## 7. Template Integrity
+Tests and malformed-token rejection.
+
+## 8. Standards Applicability
+Activated standards and reasons.
+
+## 9. Host vs Target Environment
+Show separation.
+
+## 10. External AI Import Workflow
+State machine and UI behavior.
+
+## 11. Import Provenance
+Example imported proposal audit record.
+
+## 12. Approval Inbox Workflow
+Explain exactly when an ApprovalRequest is created.
+
+## 13. Documentation / Tracking Synchronization
+Show where accepted proposal types appear.
+
+## 14. TASK_CONTEXT Regression
+Show corrected CryptoDemon implementation context.
+
+## 15. CryptoDemon Regression Results
+
+## 16. Complete Regression Results
+
+## 17. Manual QA Readiness
+READY_FOR_RETEST / NOT_READY
+
+## 18. Governance
+v0.1.0-rc1 remains RELEASE_CANDIDATE
+Gate 7 remains HUMAN_APPROVAL_REQUIRED
+v0.2 remains PLANNING / NOT READY
+
+STOP.
+
+Do not execute Gate 7.
+Do not begin v0.2.

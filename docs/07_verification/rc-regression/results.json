@@ -1,0 +1,198 @@
+{
+  "timestamp": "2026-09-18T05:54:44.790Z",
+  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.",
+  "suites": {
+    "total": 20,
+    "passed": 19,
+    "failed": 1,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 210,
+    "passed": 210,
+    "failed": 0,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "suite": "scripts/runAutomatedQa.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_runAutomatedQa.log"
+    },
+    {
+      "suite": "scripts/testCryptoDemon.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCryptoDemon.log"
+    },
+    {
+      "suite": "scripts/testCryptoDemonIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCryptoDemonIntegration.log"
+    },
+    {
+      "suite": "scripts/testDiscoveryRemediation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDiscoveryRemediation.log"
+    },
+    {
+      "suite": "scripts/testEnvironmentFixtures.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testEnvironmentFixtures.log"
+    },
+    {
+      "suite": "scripts/testTechnicalBaseline.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testTechnicalBaseline.log"
+    },
+    {
+      "suite": "server/package/testPackageServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_package_testPackageServerIntegration.log"
+    },
+    {
+      "suite": "server/package/testPortablePackage.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_package_testPortablePackage.log"
+    },
+    {
+      "suite": "server/release/testReleaseGate.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 31,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_release_testReleaseGate.log"
+    },
+    {
+      "suite": "server/release/testReleaseServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_release_testReleaseServerIntegration.log"
+    },
+    {
+      "suite": "server/secrets/testAuditRedactionIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testAuditRedactionIntegration.log"
+    },
+    {
+      "suite": "server/secrets/testCredentialMigration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testCredentialMigration.log"
+    },
+    {
+      "suite": "server/secrets/testMigrationServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testMigrationServerIntegration.log"
+    },
+    {
+      "suite": "server/secrets/testOsKeychainStore.ts",
+      "exitCode": 1,
+      "status": "FAILED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testOsKeychainStore.log"
+    },
+    {
+      "suite": "server/secrets/testRedactionFilter.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testRedactionFilter.log"
+    },
+    {
+      "suite": "server/secrets/testSecretStore.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testSecretStore.log"
+    },
+    {
+      "suite": "server/secrets/testSecretStoreFactory.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testSecretStoreFactory.log"
+    },
+    {
+      "suite": "server/secrets/testServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testServerIntegration.log"
+    },
+    {
+      "suite": "server/security/testSecurityRegression.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_security_testSecurityRegression.log"
+    },
+    {
+      "suite": "server/security/testServerSecurityIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_security_testServerSecurityIntegration.log"
+    }
+  ]
+}

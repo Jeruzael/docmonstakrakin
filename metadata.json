@@ -1,0 +1,8 @@
+{
+  "name": "docmonstakrakin remix8",
+  "description": "A-SSDLC Development Control Plane for secure software engineering, traceability, and assurance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
