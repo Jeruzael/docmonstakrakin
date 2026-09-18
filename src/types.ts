@@ -473,7 +473,7 @@ export interface Evidence {
   type: EvidenceType;
   title: string;
   workItemId: string;
-  result: 'PASSED' | 'FAILED' | 'VERIFIED';
+  result: 'PASSED' | 'FAILED' | 'VERIFIED' | 'UNTRUSTED';
   command?: string;
   commitHash?: string;
   producer: string;

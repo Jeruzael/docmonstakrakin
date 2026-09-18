@@ -1,0 +1,51 @@
+================================================================
+   DISCOVERY & CONTEXT REMEDIATION VERIFICATION SUITE
+================================================================
+
+✓ [PASS] Discovery Domain Count
+✓ [PASS] Domain Metadata Complete
+✓ [PASS] Catalog Domain Representation
+✓ [PASS] Question Filtering for Project Profiles
+✓ [PASS] Auth Discovery Question Found
+✓ [PASS] Derivation Disposition (Artifacts Generated)
+✓ [PASS] Requirement Derived
+✓ [PASS] Derived Requirement Initial Status is PROPOSED (Human Approval Required)
+✓ [PASS] Derived Requirement Honest Provenance Tracking
+✓ [PASS] No Fabricated Traceability Links on Derived Requirements
+✓ [PASS] Derivation Record Created for Every Processed Answer
+✓ [PASS] Context Package Mode TASK_CONTEXT
+✓ [PASS] Full Requirement Statement Rendered in Scoped Package (No Title-Only Reduction)
+✓ [PASS] Least-Context Scoping: Irrelevant Requirements Excluded in TASK_CONTEXT
+✓ [PASS] Least-Context Omission Report Generated
+✓ [PASS] Full Baseline Package Includes All Approved Requirements
+✓ [PASS] Summary Package Emits Executive Metrics
+
+--- Evaluating DMK Identifier Integrity & Canonical Preservation ---
+✓ [PASS] DMK-166 Canonical Integrity: Preserved as Multi-Peer Identity Model
+✓ [PASS] DMK-166 Status Integrity: Remains Gated in PROPOSED Status
+✓ [PASS] DMK-166 Epic Assignment: Governed by EPIC-14
+✓ [PASS] DMK-186 Allocation: Assigned to Adaptive Question Navigation & Dynamic Branching
+✓ [PASS] DMK-186 Hierarchy: Governed by EPIC-03 / PHASE-2
+✓ [PASS] DMK-186 Implementation Status: Verified in v0.1.0-rc1
+✓ [PASS] Global DMK Identifier Uniqueness: Zero Collisions Across All Work Items
+
+--- Evaluating Multi-Profile Full Derivation Accounting ---
+✓ [PASS] Full Derivation Accounting [Profile 1: WEB_APPLICATION]: 100% of Questions Evaluated Deterministically
+✓ [PASS] Artifact Invariant Integrity [Profile 1: WEB_APPLICATION]: All 24 Derived Reqs are PROPOSED with Honest Provenance & Zero Fabricated Links
+✓ [PASS] Full Derivation Accounting [Profile 2: AI_APPLICATION]: 100% of Questions Evaluated Deterministically
+✓ [PASS] Artifact Invariant Integrity [Profile 2: AI_APPLICATION]: All 26 Derived Reqs are PROPOSED with Honest Provenance & Zero Fabricated Links
+✓ [PASS] Full Derivation Accounting [Profile 3: AGENTIC_AI]: 100% of Questions Evaluated Deterministically
+✓ [PASS] Artifact Invariant Integrity [Profile 3: AGENTIC_AI]: All 29 Derived Reqs are PROPOSED with Honest Provenance & Zero Fabricated Links
+
+--- Evaluating Deterministic Task Relevance with Work Item DMK-186 ---
+✓ [PASS] DMK-186 Context Binding: Work Item Title & Metadata Rendered in Active Header
+✓ [PASS] Demonstrable Relationship: Directly Linked Requirement REQ-REQ-001 Rendered in Full Text
+✓ [PASS] Architecture Scoping: Global Architectural Constraints Included with Explicit Labeling
+✓ [PASS] Least-Context Boundary: Unrelated Requirement REQ-AI-007 Strictly Excluded
+✓ [PASS] Isolation Verification: DMK-166 Neither Appears as Active Work Item nor Leaks into Context
+✓ [PASS] Omission Audit: Explicit Omission Report Present in Task Context
+
+================================================================
+TOTAL CRITERIA EVALUATED: 36
+PASSED: 36 | FAILED: 0
+================================================================

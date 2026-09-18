@@ -284,6 +284,14 @@ export function verifyPortablePackage(pkg: any): PackageVerificationResult {
     errors.push('Package knowledge missing valid project entity');
   }
 
+  // IDs are used as project-map keys; a seal cannot authorize prototype mutation.
+  const projectId = pkg.knowledge?.project?.id;
+  if (typeof projectId !== 'string' || !/^PRJ-[A-Za-z0-9_-]+$/.test(projectId)) errors.push('Invalid project identifier');
+  for (const key of ['questions','requirements','risks','threats','standards','workItems','evidence','adrs','components','overrides','approvals','agentRoles','agentRuns','features','derivations','importSessions']) {
+    const collection=pkg.knowledge?.[key];
+    if (collection !== undefined && (!Array.isArray(collection) || collection.some((item:any)=>!item || typeof item!=='object' || Array.isArray(item) || typeof item.id!=='string'))) errors.push(`Invalid knowledge collection: ${key}`);
+  }
+
   // 3. Verify Seal Presence
   if (!pkg.seal || typeof pkg.seal !== 'object') {
     errors.push('Package is unsealed (missing cryptographic seal block)');

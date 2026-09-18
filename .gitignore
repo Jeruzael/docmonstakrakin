@@ -7,5 +7,6 @@ coverage/
 runtime/
 .DS_Store
 *.log
+!docs/07_verification/rc-regression/*.log
 .env*
 !.env.example

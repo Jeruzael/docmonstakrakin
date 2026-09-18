@@ -228,7 +228,9 @@ export function evaluateReleaseGates(
   // SEC-CTRL-020 strictly requires genuine human authorization.
   // Technical evidence (EV-165) proves technical verification, but human sign-off requires
   // an explicit RELEASE_GATE_APPROVED or RELEASE_SIGNOFF audit record from an authorized human.
-  const signoffEvent = auditLogs.find(
+    const importBoundary = auditLogs.findIndex(ev=>ev.action==='PACKAGE_IMPORTED');
+    const localAudit = importBoundary < 0 ? auditLogs : auditLogs.slice(0,importBoundary);
+    const signoffEvent = localAudit.find(
     (ev) => ev.action === 'RELEASE_GATE_APPROVED' || ev.action === 'RELEASE_SIGNOFF_RECORDED'
   );
   const releaseApproval = approvals.find(

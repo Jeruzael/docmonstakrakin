@@ -1,0 +1,33 @@
+=== Target Environment Detection & Continuity Fixtures ===
+
+--- Fixture A: Git repository simulation ---
+✓ [PASS] Fixture A detects SOURCE_CONTROL_MODE = GIT
+✓ [PASS] Fixture A git.available is true
+✓ [PASS] Fixture A reports real branch (main)
+✓ [PASS] Fixture A reports real commit SHA-1
+✓ [PASS] Fixture A reports CLEAN working tree
+✓ [PASS] Nested project refuses inherited parent Git metadata
+
+--- Fixture B: No .git, AI Studio-like workspace ---
+✓ [PASS] Fixture B detects SOURCE_CONTROL_MODE = AI_STUDIO_WORKSPACE
+✓ [PASS] Fixture B git.available is false
+✓ [PASS] Fixture B git.branch is null (NOT_APPLICABLE)
+✓ [PASS] Fixture B git.commit is null (NOT_APPLICABLE)
+✓ [PASS] Fixture B git.workingTree is null (NOT_APPLICABLE)
+
+--- Fixture C: Git unavailable but legacy text claims "main" ---
+✓ [PASS] Fixture C detects AI_STUDIO_WORKSPACE regardless of legacy text
+✓ [PASS] Fixture C ignores legacy text and sets git.branch to null
+✓ [PASS] Fixture C relies on canonical state hash
+
+--- Fixture D: Matching state hashes ---
+✓ [PASS] Fixture D resolves STATE_CONTINUITY = VERIFIED
+
+--- Fixture E: Mismatched state hashes ---
+✓ [PASS] Fixture E resolves STATE_CONTINUITY = DIVERGED
+
+--- Fixture F: Missing previous checkpoint hash ---
+✓ [PASS] Fixture F resolves STATE_CONTINUITY = UNVERIFIED
+
+=== ALL 6 TARGETED ENVIRONMENT FIXTURES PASSED ===
+

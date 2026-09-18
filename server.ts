@@ -1,10 +1,11 @@
+import {sanitizeAndHashAudit} from './server/security/sanitizedAudit.js';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
 import { detectSourceControlMode } from './scripts/detectEnvironment.ts';
-import { baselineFeatures, normalizeTechnicalBaseline, emptyAssurance, computeAssurance } from './src/data/projectInitialization.ts';
+import { baselineFeatures, normalizeTechnicalBaseline, emptyAssurance, computeAssurance, validateProjectDraft } from './src/data/projectInitialization.ts';
 import { applicableStandards, applicableStandardLinks } from './src/data/standardsApplicability.ts';
 import { DerivationError, validateGenerated, validateText } from './src/data/generationValidation.ts';
 import fs from 'node:fs';
@@ -169,17 +170,6 @@ class ProjectStore {
     const timestamp = new Date().toISOString();
     const id = `AUD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // Compute cryptographic SHA-256 state hash (SEC-CTRL-013)
-    const stateHash = computeAuditEventHash({
-      actor,
-      timestamp,
-      action,
-      target,
-      reason,
-      details,
-      previousHash,
-    });
-
     const rawEvent: AuditEvent = {
       id,
       actor,
@@ -187,12 +177,11 @@ class ProjectStore {
       action,
       target,
       reason,
-      stateHash,
+      stateHash: '',
       previousHash,
       details,
     };
-    const event = defaultRedactor.sanitizeAuditEvent(rawEvent);
-    event.stateHash = computeAuditEventHash(event);
+    const event = sanitizeAndHashAudit(rawEvent);
     this.auditLogs[projectId].unshift(event);
     return event;
   }
@@ -218,8 +207,8 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
   installProjectPersistence(app, store);
-  registerProposalRoutes(app, store);
-  registerSignoffRoutes(app, store);
+  const reviewerAuth = registerSignoffRoutes(app, store);
+  registerProposalRoutes(app, store, reviewerAuth);
   // Never let Git discover and mutate a parent repository outside this workspace.
   app.use('/api/repo', (req,res,next) => {
     if (detectSourceControlMode(process.cwd()) === 'GIT') return next();
@@ -443,6 +432,7 @@ async function startServer() {
 
   app.post('/api/projects', (req, res) => {
     const body = req.body;
+    validateProjectDraft(body);
     const newId = `PRJ-${randomUUID()}`;
     validateText(body.name, 'name');
     validateGenerated(body.productBaseline);
@@ -629,7 +619,7 @@ async function startServer() {
       description: body.description || '',
       capability: body.capability || 'Core Capability',
       priority: body.priority || 'P1',
-      status: body.status || 'PROPOSED',
+      status: 'PROPOSED',
       source: body.source || 'MANUAL_ENTRY',
       personas: body.personas || [],
       requirements: body.requirements || [],
@@ -764,6 +754,9 @@ async function startServer() {
 
   app.post('/api/projects/:id/work-items', (req, res) => {
     const { itemId, status, checklistIndex, checklistDone } = req.body;
+    let verifiedBy;
+    if (['VERIFIED','APPROVED','RELEASED'].includes(status)) {verifiedBy=reviewerAuth.requireHuman(req,res);if(!verifiedBy)return;}
+    if (status && !['PROPOSED','BACKLOG','READY','IN_PROGRESS','VERIFICATION','VERIFIED','APPROVED','RELEASED','DEFERRED'].includes(status))return res.status(422).json({error:'Invalid work item status'});
     const items = store.workItems[req.params.id] || [];
     const target = items.find((i) => i.id === itemId);
     if (!target) {
@@ -778,7 +771,7 @@ async function startServer() {
     }
     target.updatedAt = new Date().toISOString();
 
-    store.addAuditEvent(req.params.id, 'Developer', 'WORK_ITEM_UPDATED', itemId, `Status updated to ${target.status}`);
+    store.addAuditEvent(req.params.id, verifiedBy?.name || 'Developer', 'WORK_ITEM_UPDATED', itemId, `Status updated to ${target.status}`,verifiedBy ? {authenticatedIdentity:verifiedBy.id,roleSource:verifiedBy.roleSource} : undefined);
     res.json(target);
   });
 
@@ -847,8 +840,16 @@ async function startServer() {
     const adrList = store.adrs[req.params.id] || [];
     const target = adrList.find((a) => a.id === adrId);
     if (!target) return res.status(404).json({ error: 'ADR not found' });
-    if (target.status === 'ACCEPTED') return res.status(409).json({error:'Accepted ADRs are immutable; submit a proposed amendment for fresh sign-off'});
     validateGenerated(req.body);
+    if (status && !['PROPOSED','DEPRECATED','SUPERSEDED'].includes(status)) return res.status(422).json({error:'Invalid ADR status'});
+    if (target.status === 'ACCEPTED') {
+      if (!decision && !context && !consequences) return res.status(409).json({error:'Accepted ADRs are immutable; propose a material revision'});
+      const revision = {...structuredClone(target),id:`ADR-${randomUUID()}`,status:'PROPOSED' as const,decision:decision || target.decision,context:context || target.context,consequences:consequences || target.consequences,updatedAt:new Date().toISOString(),supersedes:target.id};
+      adrList.push(revision);
+      store.projects.find(p=>p.id===req.params.id)!.stateVersion++;
+      store.addAuditEvent(req.params.id,'User','ADR_REVISION_PROPOSED',revision.id,'Fresh sign-off required; prior accepted revision retained',{priorId:target.id,priorRepresentation:target});
+      return res.status(201).json(revision);
+    }
 
     if (status) target.status = status;
     if (decision) target.decision = decision;
@@ -1092,7 +1093,8 @@ async function startServer() {
       }
 
       const pkg = payload as DocmonstakrakinPackage;
-      const incomingProject = pkg.knowledge.project;
+      const incomingProject = structuredClone(pkg.knowledge.project);
+      incomingProject.technicalBaseline = normalizeTechnicalBaseline(incomingProject.technicalBaseline);
       const targetProjectId = incomingProject.id;
 
       const existingIndex = store.projects.findIndex((p) => p.id === targetProjectId);
@@ -1118,8 +1120,8 @@ async function startServer() {
       store.risks[targetProjectId] = pkg.knowledge.risks || [];
       store.threats[targetProjectId] = pkg.knowledge.threats || [];
       store.standards[targetProjectId] = pkg.knowledge.standards || [];
-      store.workItems[targetProjectId] = pkg.knowledge.workItems || [];
-      store.evidence[targetProjectId] = pkg.knowledge.evidence || [];
+      store.workItems[targetProjectId] = (pkg.knowledge.workItems || []).map(w=>({...w,importedGovernanceStatus:w.status,status:'PROPOSED'}));
+      store.evidence[targetProjectId] = (pkg.knowledge.evidence || []).map(e=>({...e,importedResult:e.result,result:'UNTRUSTED'}));
       store.adrs[targetProjectId] = pkg.knowledge.adrs || [];
       store.components[targetProjectId] = pkg.knowledge.components || [];
       store.overrides[targetProjectId] = pkg.knowledge.overrides || [];
@@ -1129,7 +1131,8 @@ async function startServer() {
         store[collection][targetProjectId] = store[collection][targetProjectId].map((item:any) => ({...item, importedGovernanceStatus:item.status || null, status:'PROPOSED', ...(collection === 'overrides' ? {authorizedBy:undefined} : {})}));
       }
       store.importSessions[targetProjectId] = (pkg.knowledge.importSessions || []).map(s => ({...s, projectId:targetProjectId}));
-      store.features[targetProjectId] = pkg.knowledge.features || [];
+      store.features[targetProjectId] = (pkg.knowledge.features || []).map(f=>({...f,importedGovernanceStatus:f.status,status:'PROPOSED'}));
+      store.standards[targetProjectId] = (store.standards[targetProjectId] || []).map(s=>({...s,verifiedCount:0,unverifiedCount:s.verifiedCount+s.unverifiedCount}));
       store.derivations[targetProjectId] = pkg.knowledge.derivations || [];
       store.agentRoles[targetProjectId] = pkg.knowledge.agentRoles || [];
       store.agentRuns[targetProjectId] = pkg.knowledge.agentRuns || [];
@@ -1153,6 +1156,7 @@ async function startServer() {
           verifiedEventsCount: pkg.seal.auditEventsCount,
           importedGovernanceHistory: {approvals:pkg.knowledge.approvals || [], artifactStatuses:['requirements','adrs','risks','overrides'].flatMap(collection => (pkg.knowledge[collection] || []).map((item:any)=>({collection,id:item.id,status:item.status || null})))},
           governancePolicy: 'Imported signatures are historical; fresh local sign-off required',
+          importedTechnicalBaseline: pkg.knowledge.project.technicalBaseline || null,
         }
       );
 
@@ -1187,10 +1191,11 @@ async function startServer() {
 
   app.post('/api/projects/:id/release/signoff', (req, res) => {
     try {
-      const { actor, notes } = req.body || {};
-      if (!actor) {
-        return res.status(400).json({ error: 'Actor required for release sign-off audit trail' });
-      }
+      const identity=reviewerAuth.requireHuman(req,res); if (!identity) return;
+      if (!identity.roles.includes('Security Officer')) return res.status(403).json({error:'Security Officer authorization required'});
+      const { notes } = req.body || {};
+      const actor=identity.name;
+      if (req.body.humanConfirmed!==true) return res.status(403).json({error:'Explicit human release confirmation required'});
 
       const result = executeReleaseSignoff(store, req.params.id, actor, notes);
       if (!result.success) {

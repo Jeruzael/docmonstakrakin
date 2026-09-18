@@ -4,7 +4,7 @@ import type {ImportSession} from '../proposalTypes';
 export function ImportReviewView({projectId,onImported,onNavigate}:{projectId:string;onImported:()=>void;onNavigate:(view:string)=>void}) {
   const [raw,setRaw] = useState('');
   const [provider,setProvider] = useState(''); const [model,setModel] = useState('');
-  const [reviewer,setReviewer] = useState(''); const [confirmed,setConfirmed] = useState(false);
+  const [confirmed,setConfirmed] = useState(false);
   const [sessions,setSessions] = useState<ImportSession[]>([]); const [selected,setSelected] = useState('');
   const [error,setError] = useState(''); const [busy,setBusy] = useState(false);
   const [editing,setEditing] = useState<number|null>(null); const [edited,setEdited] = useState('');
@@ -19,7 +19,7 @@ export function ImportReviewView({projectId,onImported,onNavigate}:{projectId:st
   async function review(index:number,disposition:string) {
     let modified;
     try {if(disposition === 'MODIFIED') modified = JSON.parse(edited);} catch {setError('Modified content must be valid JSON');return;}
-    const result = await send(`import-sessions/${active!.id}/changes/${index}/review`,{disposition,reviewer,actorType:'HUMAN',humanConfirmed:confirmed,modified});
+    const result = await send(`import-sessions/${active!.id}/changes/${index}/review`,{disposition,humanConfirmed:confirmed,modified});
     if(result) {setEditing(null);onImported();}
   }
   const button = 'border rounded px-3 py-2 text-xs font-semibold disabled:opacity-40';
@@ -46,18 +46,18 @@ export function ImportReviewView({projectId,onImported,onNavigate}:{projectId:st
       <p className="font-mono text-xs break-all">Original JSON SHA-256: {active.digest}</p>
       <p>Proposed: {active.changes.length} · {['ACCEPTED','MODIFIED','REJECTED','PENDING'].map(d=>`${d}: ${active.changes.filter(c=>c.disposition===d).length}`).join(' · ')}</p>
       <div><strong>Assumptions requiring review</strong>{active.assumptions.length ? active.assumptions.map((a,i)=><p key={i}>{a}</p>) : <p>No explicit or heuristic assumptions detected. Review all content for unsupported claims.</p>}</div>
-      <label className="block">Human reviewer <input aria-label="Human reviewer" value={reviewer} onChange={e=>setReviewer(e.target.value)} className="border rounded p-2 ml-3" /></label>
+      <p>Review uses the human identity signed in at the top of the app.</p>
       <label className="block"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> I am the human reviewer and have reviewed the assumptions and proposed changes.</label>
       {active.changes.map((c,i)=><article key={c.original.id} className="border rounded p-4 space-y-2">
         <h3 className="font-semibold">{c.original.type}: {c.original.title}</h3><p>{c.original.details}</p>
         <p>{c.disposition} {c.reviewer && `by ${c.reviewer}`} · Imported IDs: {c.artifactIds.join(', ') || 'None'}</p>
         {c.modified && <details><summary>Original and reviewer-modified content</summary><pre className="whitespace-pre-wrap text-xs">{JSON.stringify({original:c.original,modified:c.modified},null,2)}</pre></details>}
         {c.disposition === 'PENDING' && <div className="flex gap-2 flex-wrap">
-          <button className={button} disabled={busy||!confirmed||!reviewer.trim()} onClick={()=>review(i,'ACCEPTED')}>ACCEPT AS PROPOSED</button>
+          <button className={button} disabled={busy||!confirmed} onClick={()=>review(i,'ACCEPTED')}>ACCEPT AS PROPOSED</button>
           <button className={button} disabled={busy} onClick={()=>{setEditing(i);setEdited(JSON.stringify({title:c.original.title,details:c.original.details,acceptanceCriteria:c.original.acceptanceCriteria||[]},null,2));}}>MODIFY</button>
-          <button className={button} disabled={busy||!confirmed||!reviewer.trim()} onClick={()=>review(i,'REJECTED')}>REJECT</button>
+          <button className={button} disabled={busy||!confirmed} onClick={()=>review(i,'REJECTED')}>REJECT</button>
         </div>}
-        {editing===i && <div><textarea aria-label="Modified proposal content" className="border rounded p-3 w-full font-mono text-xs" rows={8} value={edited} onChange={e=>setEdited(e.target.value)}/><button className={button} disabled={busy||!confirmed||!reviewer.trim()} onClick={()=>review(i,'MODIFIED')}>Import Modified Content as Proposed</button></div>}
+        {editing===i && <div><textarea aria-label="Modified proposal content" className="border rounded p-3 w-full font-mono text-xs" rows={8} value={edited} onChange={e=>setEdited(e.target.value)}/><button className={button} disabled={busy||!confirmed} onClick={()=>review(i,'MODIFIED')}>Import Modified Content as Proposed</button></div>}
       </article>)}
       <div className="flex flex-wrap gap-3">{[['REQUIREMENT','requirements','Imported Requirements'],['ADR','architecture','Proposed ADRs'],['WORK_ITEM','work','Work Items'],['CODE_MODIFICATION','work','Implementation Proposals'],['RISK','risk','Proposed Risks']].map(([type,view,label])=>{const count=active.changes.filter(c=>c.original.type===type).reduce((n,c)=>n+c.artifactIds.length,0); return count ? <button key={type} className={button} onClick={()=>onNavigate(view)}>View {count} {label}</button>:null;})}<button className={button} onClick={()=>onNavigate('evidence')}>Open Import Audit Record</button></div>
     </section>}

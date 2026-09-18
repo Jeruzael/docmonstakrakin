@@ -1,11 +1,29 @@
 import type { Project, Feature, TechChoice, TechnicalBaseline, AssuranceInputs } from '../types.js';
-import { validateText } from './generationValidation.js';
+import { DerivationError, validateText } from './generationValidation.js';
 
 export const TECH_DOMAINS = ['frontend', 'backend', 'database', 'authentication', 'storage', 'apiApproach', 'deployment', 'sourceControl', 'testing', 'aiProvider'] as const;
 export const emptyAssurance: AssuranceInputs = { publicInternetExposure: null, pii: null, regulatedData: null, productionSecrets: null, destructiveOperations: null, autonomousAgentExecution: null, securitySensitivity: 'UNKNOWN', complianceProfile: [] };
 
+export function validateProjectDraft(body:any):void {
+  const strings=(v:unknown,key:string)=>{if(!Array.isArray(v) || v.some(x=>typeof x!=='string'))throw new DerivationError(key,'Expected string array');};
+  for(const key of ['profiles','specializedProfiles']) if(body[key]!==undefined)strings(body[key],key);
+  if(body.productBaseline!==undefined){
+    if(!body.productBaseline || typeof body.productBaseline!=='object' || Array.isArray(body.productBaseline))throw new DerivationError('productBaseline','Expected object');
+    for(const key of ['coreFeatures','coreCapabilities','targetUsers','primaryWorkflows','nonGoals','successCriteria'])if(body.productBaseline[key]!==undefined)strings(body.productBaseline[key],key);
+  }
+  if(body.assuranceInputs!==undefined){
+    if(!body.assuranceInputs || typeof body.assuranceInputs!=='object')throw new DerivationError('assuranceInputs','Expected object');
+    for(const key of ['publicInternetExposure','pii','regulatedData','productionSecrets','destructiveOperations','autonomousAgentExecution']) {
+      const v=body.assuranceInputs[key];if(v!==undefined && v!==null && typeof v!=='boolean')throw new DerivationError(key,'Expected boolean or unknown');
+    }
+    if(body.assuranceInputs.securitySensitivity!==undefined && !['UNKNOWN','LOW','MEDIUM','HIGH'].includes(body.assuranceInputs.securitySensitivity))throw new DerivationError('securitySensitivity','Invalid sensitivity');
+    if(body.assuranceInputs.complianceProfile!==undefined)strings(body.assuranceInputs.complianceProfile,'complianceProfile');
+  }
+}
+
 export function normalizeTechChoice(choice?: TechChoice): TechChoice {
   const mode = choice?.decision_mode || choice?.type || 'UNKNOWN';
+  if(!['UNKNOWN','USER_SPECIFIED','RECOMMEND_FOR_ME'].includes(mode))throw new DerivationError('technicalBaseline','Invalid decision mode');
   const selected = mode === 'USER_SPECIFIED' ? (choice?.userValue ?? choice?.finalSelection ?? choice?.value ?? null)
     : mode === 'RECOMMEND_FOR_ME' && choice?.recommendation?.status === 'ACCEPTED' ? choice.finalSelection ?? null : null;
   if (selected) validateText(selected, 'technicalSelection');

@@ -41,9 +41,6 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   // Decision Modal
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [decisionType, setDecisionType] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
-  const [decisionRole, setDecisionRole] = useState('Security Officer');
-  const [decisionApprover, setDecisionApprover] = useState('');
-  const [decisionCredential, setDecisionCredential] = useState('');
   const [decisionComment, setDecisionComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,7 +77,6 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   }, [project.id]);
 
   const handleOpenDecision = (item: ApprovalItem, decision: 'APPROVED' | 'REJECTED') => {
-    setDecisionCredential('');
     setHumanConfirmed(false);
     setSelectedItem(item);
     setDecisionType(decision);
@@ -102,18 +98,14 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          actorType: 'HUMAN', humanConfirmed,
+          humanConfirmed,
           decision: decisionType,
-          role: decisionRole,
-          approver: decisionApprover,
-          credential: decisionCredential,
           comment: decisionComment,
         }),
       });
 
       if (!res.ok) {const data = await res.json();setError(data.error);return;}
       if (res.ok) {
-        setDecisionCredential('');
         setShowDecisionModal(false);
         await fetchApprovals();
         if (onRefreshData) onRefreshData();
@@ -606,9 +598,6 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
             <form onSubmit={submitDecision} className="p-5 space-y-4 text-xs">
               {error && <p role="alert" className="text-red-700">{error}</p>}
-              <label className="block">Private reviewer credential
-                <input type="password" required autoComplete="off" value={decisionCredential} onChange={e=>setDecisionCredential(e.target.value)} className="block w-full p-2 border rounded" />
-              </label>
               <label className="block"><input type="checkbox" required checked={humanConfirmed} onChange={e=>setHumanConfirmed(e.target.checked)} /> I confirm this decision as the named human reviewer.</label>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
                 <span className="font-bold text-slate-900 block">{selectedItem.title}</span>
@@ -617,36 +606,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Signatory Role
-                  </label>
-                  <select
-                    value={decisionRole}
-                    onChange={(e) => setDecisionRole(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-200 bg-white font-medium"
-                  >
-                    <option value="Security Officer">Security Officer</option>
-                    <option value="Lead Architect">Lead Architect</option>
-                    <option value="Engineering Director">Engineering Director</option>
-                    <option value="Compliance Lead">Compliance Lead</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Approver Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={decisionApprover}
-                    onChange={(e) => setDecisionApprover(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-200 font-medium"
-                  />
-                </div>
-              </div>
+              <p>Your signed-in identity and assigned role will be recorded by the server.</p>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">

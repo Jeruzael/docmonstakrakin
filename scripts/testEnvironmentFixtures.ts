@@ -31,6 +31,9 @@ try {
   assert(envGit.git.branch === 'main', `Fixture A reports real branch (${envGit.git.branch})`);
   assert(typeof envGit.git.commit === 'string' && envGit.git.commit.length === 40, 'Fixture A reports real commit SHA-1');
   assert(envGit.git.workingTree === 'CLEAN', 'Fixture A reports CLEAN working tree');
+  const nested=path.join(tmpGitDir,'nested-project');fs.mkdirSync(nested);
+  const nestedEnv=inspectEnvironment({workspaceRoot:nested});
+  assert(nestedEnv.sourceControlMode==='AI_STUDIO_WORKSPACE' && !nestedEnv.git.available && nestedEnv.git.branch===null,'Nested project refuses inherited parent Git metadata');
 } finally {
   fs.rmSync(tmpGitDir, { recursive: true, force: true });
 }

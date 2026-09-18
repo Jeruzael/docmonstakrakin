@@ -4,6 +4,8 @@ import { initializeSecretStore, resetSecretStore } from './secretStoreFactory.ts
 import { AuditEvent } from '../../src/types.ts';
 import path from 'node:path';
 import fs from 'node:fs';
+import {sanitizeAndHashAudit} from '../security/sanitizedAudit.js';
+import {verifyAuditLedgerChain} from '../security/auditImmutability.js';
 
 async function testAuditRedactionIntegration(): Promise<void> {
   console.log('=== Running DMK-157.5 Audit & Server Redaction Integration Suite ===');
@@ -46,10 +48,11 @@ async function testAuditRedactionIntegration(): Promise<void> {
         action,
         target,
         reason,
-        stateHash: 'statehash123',
+        stateHash: '',
+        previousHash: auditLogs[projectId]?.[0]?.stateHash,
         details,
       };
-      const event = defaultRedactor.sanitizeAuditEvent(rawEvent);
+      const event = sanitizeAndHashAudit(rawEvent);
       if (!auditLogs[projectId]) {
         auditLogs[projectId] = [];
       }
@@ -110,6 +113,13 @@ async function testAuditRedactionIntegration(): Promise<void> {
       throw new Error(`Expected [REDACTED_SECRET] in dynamic secret audit log`);
     }
     console.log('✓ Dynamically registered secret safely redacted from audit event and details');
+
+    const persisted=JSON.parse(JSON.stringify(auditLogs['PRJ-TEST-01']));
+    if(!verifyAuditLedgerChain(persisted,'REVERSE_CHRONOLOGICAL').valid) throw new Error('Persisted sanitized audit failed verification');
+    console.log('PASS Persisted dynamic and static secret redaction verifies as a hash chain');
+    persisted[0].reason='tampered after persistence';
+    if(verifyAuditLedgerChain(persisted,'REVERSE_CHRONOLOGICAL').valid) throw new Error('Tampered audit accepted');
+    console.log('PASS Post-persistence audit tampering detected');
 
     console.log('[Test 3] Testing Express POST /api/secrets endpoint integration...');
     const app = express();

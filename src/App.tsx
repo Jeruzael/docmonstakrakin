@@ -1,3 +1,4 @@
+import { ReviewerSession } from './components/ReviewerSession';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -402,6 +403,7 @@ export default function App() {
           onOpenPackageModal={() => setIsPackageModalOpen(true)}
         />
 
+        <ReviewerSession />
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {loadError && <p role="alert" className="text-red-700">{loadError}</p>}

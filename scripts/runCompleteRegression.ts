@@ -14,7 +14,7 @@ for(const file of files){
   const output=(r.stdout||'')+(r.stderr||'');
   const log=name.replaceAll('/','_').replace('.ts','.log');fs.writeFileSync(path.join(evidence,log),output);
   // Count actual named check results, not stale hardcoded banner totals.
-  const passed=output.split(/\r?\n/).filter(l=>/^\s*(?:✓|✅|PASS\b|\[PASS\])/.test(l) && !/\bSKIP/i.test(l)).length;
+  const passed=output.split(/\r?\n/).filter(l=>/^\s*(?:✓|✅|PASS\b|\[PASS\])/.test(l) && !/\bSKIP/i.test(l) && !/^✓ All Release Gate verification invariants/.test(l)).length;
   const failed=Math.max(r.status === 0 ? 0 : 1, output.split(/\r?\n/).filter(l=>/^\s*(?:✗|❌|FAIL\b|\[FAIL\])/.test(l)).length);
   const skipped=output.split(/\r?\n/).filter(l=>/^\s*(?:SKIP\b|.*\[SKIP\])/.test(l)).length;
   const result={suite:name,exitCode:r.status,status:r.status===0?'PASSED':'FAILED',passed,failed,skipped,log,error:r.error?.message};

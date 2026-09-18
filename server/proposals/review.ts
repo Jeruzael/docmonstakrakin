@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Express } from 'express';
 import { DerivationError, validateGenerated, validateText } from '../../src/data/generationValidation.js';
 import type { ImportSession, ProposalChange } from '../../src/proposalTypes.js';
+import type { installReviewerIdentity } from './identity.js';
 
 export const digest = (value: unknown) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 const fail = (path: string, message: string): never => { throw new DerivationError(path, message); };
@@ -37,7 +38,7 @@ function canonical(change: ProposalChange, provenance: any, reviewer: string): a
   }
 }
 
-export function registerProposalRoutes(app: Express, store: any) {
+export function registerProposalRoutes(app: Express, store: any, identityContext:ReturnType<typeof installReviewerIdentity>) {
   store.importSessions ||= {};
   const project = (projectId: string) => store.projects.find((p:any)=>p.id === projectId) || fail('project','Project not found');
   const session = (projectId: string, sessionId: string): ImportSession => (store.importSessions[projectId] || []).find((s:ImportSession)=>s.id === sessionId) || fail('session','Session not found in this project');
@@ -53,7 +54,7 @@ export function registerProposalRoutes(app: Express, store: any) {
     validateText(parsed.agent_role,'agent_role'); validateText(parsed.summary,'summary');
     for (const key of ['provider','model']) {
       if (parsed[key] !== undefined) validateText(parsed[key],key);
-      if (req.body[key] !== undefined) validateText(req.body[key],key);
+      if (req.body[key] !== undefined && req.body[key] !== '') validateText(req.body[key],key);
     }
     if (parsed.assumptions !== undefined && (!Array.isArray(parsed.assumptions) || parsed.assumptions.some((s:any)=>typeof s !== 'string'))) fail('assumptions','Expected string array');
     if (parsed.signatures || parsed.approvals) fail('schema','External proposals cannot submit approvals');
@@ -73,11 +74,13 @@ export function registerProposalRoutes(app: Express, store: any) {
     touch(projectId); res.status(201).json(created);
   });
   app.post('/api/projects/:id/import-sessions/:sessionId/changes/:index/review',(req,res)=>{
+    const identity=identityContext.requireHuman(req,res);if(!identity)return;
     const s = session(req.params.id,req.params.sessionId);
     const change = s.changes[Number(req.params.index)];
     if (!change) return res.status(404).json({error:'Change not found'});
-    const {disposition,reviewer,actorType,humanConfirmed,modified} = req.body;
-    if (actorType !== 'HUMAN' || humanConfirmed !== true || typeof reviewer !== 'string' || !reviewer.trim() || /\b(agent|bot|codex|gemini|gpt)\b/i.test(reviewer)) return res.status(403).json({error:'Explicit human review and reviewer name required'});
+    const {disposition,humanConfirmed,modified} = req.body;
+    if (req.body.reviewer || req.body.reviewerName || req.body.actorType==='AGENT' || humanConfirmed!==true)return res.status(403).json({error:'Use your authenticated human identity and confirm this review; body identity claims are rejected'});
+    const reviewer=identity.name;
     if (!['ACCEPTED','MODIFIED','REJECTED'].includes(disposition)) fail('disposition','Expected ACCEPTED, MODIFIED or REJECTED');
     if (change.disposition !== 'PENDING') {
       if (change.disposition === disposition && change.reviewer === reviewer && (disposition !== 'MODIFIED' || digest(change.modified) === digest({...change.original,...modified}))) return res.json(s);
@@ -92,6 +95,7 @@ export function registerProposalRoutes(app: Express, store: any) {
       checkChange(effective,store,s.projectId);
       const provenance = {origin:'EXTERNAL_AI_PROPOSAL',importSessionId:s.id,provider:s.provider,model:s.model,timestamp:new Date().toISOString(),originalProposalId:change.original.id,originalJsonDigest:s.digest,humanReviewer:reviewer,reviewDisposition:disposition,assumptions:[...new Set([...s.assumptions,...(effective.assumptions || [])])],resultingCanonicalArtifactIds:[] as string[]};
       const artifact = canonical(effective,provenance,reviewer);
+      Object.assign(provenance,{authenticatedIdentity:identity.id,roleSource:identity.roleSource});
       provenance.resultingCanonicalArtifactIds.push(artifact.id);
       validateGenerated(artifact);
       (store[collections[effective.type]][s.projectId] ||= []).push(artifact);
@@ -101,7 +105,7 @@ export function registerProposalRoutes(app: Express, store: any) {
     }
     Object.assign(change,{disposition,reviewer,reviewedAt:new Date().toISOString(),...(disposition === 'MODIFIED' ? {modified:effective} : {})});
     s.validationStatus = s.changes.some(c=>c.disposition === 'PENDING') ? 'AWAITING_HUMAN_REVIEW' : 'REVIEW_COMPLETE';
-    const event = store.addAuditEvent(s.projectId,reviewer,'IMPORT_CHANGE_REVIEWED',s.id,disposition,{originalProposalId:change.original.id,digest:s.digest,disposition,artifactIds:change.artifactIds,modified:change.modified || null});
+    const event = store.addAuditEvent(s.projectId,reviewer,'IMPORT_CHANGE_REVIEWED',s.id,disposition,{authenticatedIdentity:identity.id,roleSource:identity.roleSource,originalProposalId:change.original.id,digest:s.digest,disposition,artifactIds:change.artifactIds,modified:change.modified || null});
     change.auditId = event.id; touch(s.projectId); res.json(s);
   });
 }

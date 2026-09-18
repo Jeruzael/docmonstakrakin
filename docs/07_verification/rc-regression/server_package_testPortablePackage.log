@@ -1,0 +1,30 @@
+=== DMK-156: Running Portable .docmonstakrakin Package Unit Tests ===
+
+Test 1: Create cryptographically sealed .docmonstakrakin package
+✓ Package created with valid manifest, knowledge, and cryptographic seal.
+
+Test 2: Verify fresh package returns valid: true with zero errors
+✓ Verification succeeded with matching state hash, envelope hash, and intact audit chain.
+
+Test 3: Export -> Serialize -> Parse -> Verify roundtrip produces IDENTICAL state hash (AC-1)
+✓ Roundtrip verified: state hash (554b5283e89f5066e108872627f55d8cebc46f2a51e4178d36bb46ebcb38483b) strictly preserved.
+
+Test 4: Tamper detection when project knowledge fields are mutated
+✓ Tampered project state detected and rejected via state hash verification.
+
+Test 5: Tamper detection when requirements are added or altered
+✓ Tampered requirement detected and rejected.
+
+Test 6: Tamper detection when audit ledger history is retroactively edited
+✓ Retroactive audit log alteration detected and rejected.
+
+Test 7: Tamper detection when seal is modified or mismatched
+✓ Mismatched envelope seal detected and rejected.
+
+Test 8: Reject unknown magic header or unsupported schema version
+✓ Invalid magic and incompatible schema versions rejected.
+
+Test 9: Minimal project packaging and integrity sealing
+✓ Minimal project packaged, sealed, and verified successfully.
+
+=== ALL 9/9 PORTABLE PACKAGE UNIT TESTS PASSED ===

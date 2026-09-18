@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-09-18T05:54:44.790Z",
-  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.",
+  "timestamp": "2026-09-18T17:15:00.150Z",
+  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used. Summary banners excluded.",
   "suites": {
     "total": 20,
-    "passed": 19,
-    "failed": 1,
+    "passed": 20,
+    "failed": 0,
     "skipped": 0
   },
   "assertions": {
-    "total": 210,
-    "passed": 210,
+    "total": 269,
+    "passed": 269,
     "failed": 0,
     "skipped": 0
   },
@@ -36,7 +36,7 @@
       "suite": "scripts/testCryptoDemonIntegration.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 16,
+      "passed": 37,
       "failed": 0,
       "skipped": 0,
       "log": "scripts_testCryptoDemonIntegration.log"
@@ -54,7 +54,7 @@
       "suite": "scripts/testEnvironmentFixtures.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 16,
+      "passed": 17,
       "failed": 0,
       "skipped": 0,
       "log": "scripts_testEnvironmentFixtures.log"
@@ -90,7 +90,7 @@
       "suite": "server/release/testReleaseGate.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 31,
+      "passed": 30,
       "failed": 0,
       "skipped": 0,
       "log": "server_release_testReleaseGate.log"
@@ -108,7 +108,7 @@
       "suite": "server/secrets/testAuditRedactionIntegration.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 3,
+      "passed": 5,
       "failed": 0,
       "skipped": 0,
       "log": "server_secrets_testAuditRedactionIntegration.log"
@@ -133,9 +133,9 @@
     },
     {
       "suite": "server/secrets/testOsKeychainStore.ts",
-      "exitCode": 1,
-      "status": "FAILED",
-      "passed": 6,
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 8,
       "failed": 0,
       "skipped": 0,
       "log": "server_secrets_testOsKeychainStore.log"
@@ -180,7 +180,7 @@
       "suite": "server/security/testSecurityRegression.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 0,
+      "passed": 34,
       "failed": 0,
       "skipped": 0,
       "log": "server_security_testSecurityRegression.log"

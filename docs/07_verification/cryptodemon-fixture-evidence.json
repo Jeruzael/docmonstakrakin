@@ -1,0 +1,1185 @@
+{
+  "project": {
+    "id": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "maturity": "GREENFIELD",
+    "assuranceInputs": {
+      "publicInternetExposure": false,
+      "pii": false,
+      "regulatedData": false,
+      "productionSecrets": false,
+      "destructiveOperations": true,
+      "autonomousAgentExecution": false,
+      "securitySensitivity": "LOW",
+      "complianceProfile": []
+    },
+    "computedRisk": {
+      "score": 12,
+      "level": "MEDIUM",
+      "drivers": [
+        "destructiveOperations"
+      ]
+    },
+    "name": "CryptoDemon",
+    "description": "A simple educational cryptocurrency demonstrating mining, peer-to-peer demo coin transfers, wallet balances, block hashes, and immutable ledger behavior.",
+    "profiles": [
+      "WEB_APPLICATION",
+      "BACKEND_API"
+    ],
+    "specializedProfiles": [
+      "DEVELOPER_TOOL"
+    ],
+    "deliveryMethod": "ITERATIVE",
+    "deploymentIntent": "Local / localhost only",
+    "dataSensitivity": "PUBLIC",
+    "lifecyclePhase": "DISCOVERY",
+    "stateVersion": 1,
+    "owner": "Local Developer",
+    "targetRelease": "Q4 2026",
+    "createdAt": "2026-09-18T17:14:31.645Z",
+    "updatedAt": "2026-09-18T17:14:31.645Z",
+    "repoPath": "/workspace/project",
+    "repoStatus": "CLEAN",
+    "healthScore": 70,
+    "progress": {
+      "requirementsReadiness": 15,
+      "architectureReadiness": 0,
+      "implementation": 0,
+      "verification": 0,
+      "securityAssurance": 40,
+      "releaseReadiness": 0
+    },
+    "productBaseline": {
+      "problemStatement": "A simple educational cryptocurrency demonstrating mining, peer-to-peer demo coin transfers, wallet balances, block hashes, and immutable ledger behavior.",
+      "targetUsers": [],
+      "coreCapabilities": [],
+      "primaryWorkflows": [],
+      "successCriteria": [],
+      "coreFeatures": [
+        "Demo Wallet Creation",
+        "Mine Block",
+        "Mining Reward",
+        "Send DEMON Coins",
+        "Wallet Balance",
+        "Transaction History",
+        "Blockchain Explorer",
+        "Validate Blockchain Integrity"
+      ],
+      "nonGoals": [
+        "no real monetary value",
+        "no public blockchain network",
+        "no real crypto exchange",
+        "no fiat",
+        "no smart contracts",
+        "no production OIDC",
+        "no production wallet security",
+        "no PII",
+        "no AI or agentic AI"
+      ]
+    },
+    "technicalBaseline": {
+      "frontend": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "backend": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "database": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "authentication": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "storage": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "apiApproach": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "deployment": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "sourceControl": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "testing": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      },
+      "aiProvider": {
+        "type": "UNKNOWN",
+        "decision_mode": "UNKNOWN",
+        "userValue": null,
+        "recommendation": null,
+        "finalSelection": null,
+        "final_selection": null,
+        "value": null,
+        "status": "NOT_RATIFIED"
+      }
+    },
+    "discoveryCoverage": {
+      "totalQuestions": 23,
+      "totalActiveQuestions": 23,
+      "mandatoryTotal": 20,
+      "mandatoryResolved": 3,
+      "mandatoryNA": 0,
+      "mandatoryDeferred": 0,
+      "blockingPending": 17,
+      "coveragePercentage": 15,
+      "isComplete": false,
+      "domainSummaries": [
+        {
+          "domain": "PRODUCT",
+          "total": 4,
+          "mandatory": 3,
+          "resolved": 3,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Product Baseline + discovery",
+          "openItems": 1,
+          "coveragePercentage": 75
+        },
+        {
+          "domain": "SCOPE",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 1,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 0,
+          "blockingPending": 0,
+          "isComplete": true,
+          "status": "RESOLVED_BY_PROJECT_WIZARD",
+          "source": "Product Baseline + discovery",
+          "openItems": 0,
+          "coveragePercentage": 100
+        },
+        {
+          "domain": "USERS",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "WORKFLOWS",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "DATA",
+          "total": 3,
+          "mandatory": 3,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 3,
+          "blockingPending": 3,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 3,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "AUTHENTICATION_AND_AUTHORIZATION",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "INTEGRATIONS",
+          "total": 1,
+          "mandatory": 0,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 0,
+          "isComplete": false,
+          "status": "UNRESOLVED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "TECHNICAL_CONSTRAINTS",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "ARCHITECTURE_INPUT",
+          "total": 3,
+          "mandatory": 2,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 3,
+          "blockingPending": 2,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 3,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "DEPLOYMENT",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "SOURCE_CONTROL_AND_DEVELOPMENT_ENVIRONMENT",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "UNRESOLVED",
+          "source": "Project maturity: GREENFIELD; target source control open",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "SECURITY",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "PRIVACY",
+          "total": 0,
+          "mandatory": 0,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 0,
+          "blockingPending": 0,
+          "isComplete": true,
+          "status": "NOT_APPLICABLE",
+          "source": "Assurance inputs: no PII",
+          "openItems": 0,
+          "coveragePercentage": 100
+        },
+        {
+          "domain": "NON_FUNCTIONAL",
+          "total": 1,
+          "mandatory": 0,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 0,
+          "isComplete": false,
+          "status": "UNRESOLVED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "TESTING_AND_QUALITY",
+          "total": 2,
+          "mandatory": 2,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 2,
+          "blockingPending": 2,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 2,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "OPERATIONS",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        },
+        {
+          "domain": "AI",
+          "total": 0,
+          "mandatory": 0,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 0,
+          "blockingPending": 0,
+          "isComplete": true,
+          "status": "NOT_APPLICABLE",
+          "source": "Profile filtering",
+          "openItems": 0,
+          "coveragePercentage": 100
+        },
+        {
+          "domain": "AGENTIC_AI",
+          "total": 0,
+          "mandatory": 0,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 0,
+          "blockingPending": 0,
+          "isComplete": true,
+          "status": "NOT_APPLICABLE",
+          "source": "Profile filtering",
+          "openItems": 0,
+          "coveragePercentage": 100
+        },
+        {
+          "domain": "COMPLIANCE",
+          "total": 1,
+          "mandatory": 1,
+          "resolved": 0,
+          "deferred": 0,
+          "notApplicable": 0,
+          "unresolved": 1,
+          "blockingPending": 1,
+          "isComplete": false,
+          "status": "BLOCKED",
+          "source": "Discovery answers",
+          "openItems": 1,
+          "coveragePercentage": 0
+        }
+      ]
+    }
+  },
+  "features": [
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-001",
+      "title": "Demo Wallet Creation",
+      "description": "Demo Wallet Creation",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Demo Wallet Creation",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-002",
+      "title": "Mine Block",
+      "description": "Mine Block",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Mine Block",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-003",
+      "title": "Mining Reward",
+      "description": "Mining Reward",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Mining Reward",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-004",
+      "title": "Send DEMON Coins",
+      "description": "Send DEMON Coins",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Send DEMON Coins",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-005",
+      "title": "Wallet Balance",
+      "description": "Wallet Balance",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Wallet Balance",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-006",
+      "title": "Transaction History",
+      "description": "Transaction History",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Transaction History",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-007",
+      "title": "Blockchain Explorer",
+      "description": "Blockchain Explorer",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Blockchain Explorer",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    },
+    {
+      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008",
+      "title": "Validate Blockchain Integrity",
+      "description": "Validate Blockchain Integrity",
+      "capability": "Product",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [],
+      "requirements": [],
+      "dependencies": [],
+      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "provenance": {
+        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "origin": "PRODUCT_BASELINE",
+        "input": "Validate Blockchain Integrity",
+        "timestamp": "2026-09-18T17:14:31.645Z"
+      }
+    }
+  ],
+  "coverage": {
+    "totalQuestions": 23,
+    "totalActiveQuestions": 23,
+    "mandatoryTotal": 20,
+    "mandatoryResolved": 3,
+    "mandatoryNA": 0,
+    "mandatoryDeferred": 0,
+    "blockingPending": 17,
+    "coveragePercentage": 15,
+    "isComplete": false,
+    "domainSummaries": [
+      {
+        "domain": "PRODUCT",
+        "total": 4,
+        "mandatory": 3,
+        "resolved": 3,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Product Baseline + discovery",
+        "openItems": 1,
+        "coveragePercentage": 75
+      },
+      {
+        "domain": "SCOPE",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 1,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 0,
+        "blockingPending": 0,
+        "isComplete": true,
+        "status": "RESOLVED_BY_PROJECT_WIZARD",
+        "source": "Product Baseline + discovery",
+        "openItems": 0,
+        "coveragePercentage": 100
+      },
+      {
+        "domain": "USERS",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "WORKFLOWS",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "DATA",
+        "total": 3,
+        "mandatory": 3,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 3,
+        "blockingPending": 3,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 3,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "AUTHENTICATION_AND_AUTHORIZATION",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "INTEGRATIONS",
+        "total": 1,
+        "mandatory": 0,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 0,
+        "isComplete": false,
+        "status": "UNRESOLVED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "TECHNICAL_CONSTRAINTS",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "ARCHITECTURE_INPUT",
+        "total": 3,
+        "mandatory": 2,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 3,
+        "blockingPending": 2,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 3,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "DEPLOYMENT",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "SOURCE_CONTROL_AND_DEVELOPMENT_ENVIRONMENT",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "UNRESOLVED",
+        "source": "Project maturity: GREENFIELD; target source control open",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "SECURITY",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "PRIVACY",
+        "total": 0,
+        "mandatory": 0,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 0,
+        "blockingPending": 0,
+        "isComplete": true,
+        "status": "NOT_APPLICABLE",
+        "source": "Assurance inputs: no PII",
+        "openItems": 0,
+        "coveragePercentage": 100
+      },
+      {
+        "domain": "NON_FUNCTIONAL",
+        "total": 1,
+        "mandatory": 0,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 0,
+        "isComplete": false,
+        "status": "UNRESOLVED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "TESTING_AND_QUALITY",
+        "total": 2,
+        "mandatory": 2,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 2,
+        "blockingPending": 2,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 2,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "OPERATIONS",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      },
+      {
+        "domain": "AI",
+        "total": 0,
+        "mandatory": 0,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 0,
+        "blockingPending": 0,
+        "isComplete": true,
+        "status": "NOT_APPLICABLE",
+        "source": "Profile filtering",
+        "openItems": 0,
+        "coveragePercentage": 100
+      },
+      {
+        "domain": "AGENTIC_AI",
+        "total": 0,
+        "mandatory": 0,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 0,
+        "blockingPending": 0,
+        "isComplete": true,
+        "status": "NOT_APPLICABLE",
+        "source": "Profile filtering",
+        "openItems": 0,
+        "coveragePercentage": 100
+      },
+      {
+        "domain": "COMPLIANCE",
+        "total": 1,
+        "mandatory": 1,
+        "resolved": 0,
+        "deferred": 0,
+        "notApplicable": 0,
+        "unresolved": 1,
+        "blockingPending": 1,
+        "isComplete": false,
+        "status": "BLOCKED",
+        "source": "Discovery answers",
+        "openItems": 1,
+        "coveragePercentage": 0
+      }
+    ]
+  },
+  "importSession": {
+    "id": "IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70",
+    "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "provider": "External fixture",
+    "model": "Test model",
+    "timestamp": "2026-09-18T17:14:31.677Z",
+    "originalJson": "{\"schema_version\":\"1.0\",\"agent_role\":\"Architect\",\"provider\":\"External fixture\",\"model\":\"Test model\",\"summary\":\"Ledger proposals\",\"assumptions\":[\"Mining difficulty remains an open decision\"],\"proposed_changes\":[{\"type\":\"REQUIREMENT\",\"action\":\"CREATE\",\"id\":\"external-ledger\",\"title\":\"Validate block hashes\",\"details\":\"CryptoDemon must detect an altered block hash and reject an invalid ledger.\",\"acceptanceCriteria\":[\"Changing a saved block invalidates chain validation.\"],\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"]},{\"type\":\"ADR\",\"action\":\"CREATE\",\"id\":\"external-adr\",\"title\":\"Ledger representation candidate\",\"details\":\"Consider an append-only local ledger; representation remains proposed.\"},{\"type\":\"WORK_ITEM\",\"action\":\"CREATE\",\"id\":\"external-work\",\"title\":\"Implement Core Blockchain Ledger\",\"details\":\"Implement local block hashes and ledger integrity.\",\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"],\"acceptanceCriteria\":[\"Tampering is detected.\"]},{\"type\":\"RISK\",\"action\":\"CREATE\",\"id\":\"external-risk\",\"title\":\"Demo balance inconsistency\",\"details\":\"Balance calculations could disagree with the demo ledger.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code\",\"title\":\"Unwanted remote network\",\"details\":\"Connect to remote peers.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code-local\",\"title\":\"Implement local hash validation\",\"details\":\"Add hash validation within the local demo ledger.\",\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"]}]}",
+    "digest": "66c6638fbd5339070417e6e9f110977ee3df3854d43a80541e643242ad26487d",
+    "validationStatus": "REVIEW_COMPLETE",
+    "assumptions": [
+      "Mining difficulty remains an open decision",
+      "Review inferred assumption in external-adr: Consider an append-only local ledger; representation remains proposed."
+    ],
+    "changes": [
+      {
+        "original": {
+          "type": "REQUIREMENT",
+          "action": "CREATE",
+          "id": "external-ledger",
+          "title": "Validate block hashes",
+          "details": "CryptoDemon must detect an altered block hash and reject an invalid ledger.",
+          "acceptanceCriteria": [
+            "Changing a saved block invalidates chain validation."
+          ],
+          "features": [
+            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+          ]
+        },
+        "disposition": "ACCEPTED",
+        "artifactIds": [
+          "REQ-a8812b39-282a-4589-beae-fcfbd657785b"
+        ],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.776Z",
+        "auditId": "AUD-MU77XO80-SYQ7"
+      },
+      {
+        "original": {
+          "type": "ADR",
+          "action": "CREATE",
+          "id": "external-adr",
+          "title": "Ledger representation candidate",
+          "details": "Consider an append-only local ledger; representation remains proposed."
+        },
+        "disposition": "ACCEPTED",
+        "artifactIds": [
+          "ADR-a50033da-1c7a-492b-aaa6-1acd49c8d963"
+        ],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.783Z",
+        "auditId": "AUD-MU77XO87-XQYE"
+      },
+      {
+        "original": {
+          "type": "WORK_ITEM",
+          "action": "CREATE",
+          "id": "external-work",
+          "title": "Implement Core Blockchain Ledger",
+          "details": "Implement local block hashes and ledger integrity.",
+          "features": [
+            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+          ],
+          "acceptanceCriteria": [
+            "Tampering is detected."
+          ]
+        },
+        "disposition": "MODIFIED",
+        "artifactIds": [
+          "WORK-4417be64-ed8d-489f-ab1c-d168412eef01"
+        ],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.790Z",
+        "modified": {
+          "type": "WORK_ITEM",
+          "action": "CREATE",
+          "id": "external-work",
+          "title": "Implement Core Blockchain Ledger",
+          "details": "Implement immutable local ledger and block hash validation.",
+          "features": [
+            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+          ],
+          "acceptanceCriteria": [
+            "Tampering is detected."
+          ]
+        },
+        "auditId": "AUD-MU77XO8E-64GI"
+      },
+      {
+        "original": {
+          "type": "RISK",
+          "action": "CREATE",
+          "id": "external-risk",
+          "title": "Demo balance inconsistency",
+          "details": "Balance calculations could disagree with the demo ledger."
+        },
+        "disposition": "ACCEPTED",
+        "artifactIds": [
+          "RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c"
+        ],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.797Z",
+        "auditId": "AUD-MU77XO8L-09OL"
+      },
+      {
+        "original": {
+          "type": "CODE_MODIFICATION",
+          "action": "CREATE",
+          "id": "external-code",
+          "title": "Unwanted remote network",
+          "details": "Connect to remote peers."
+        },
+        "disposition": "REJECTED",
+        "artifactIds": [],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.804Z",
+        "auditId": "AUD-MU77XO8S-TSHA"
+      },
+      {
+        "original": {
+          "type": "CODE_MODIFICATION",
+          "action": "CREATE",
+          "id": "external-code-local",
+          "title": "Implement local hash validation",
+          "details": "Add hash validation within the local demo ledger.",
+          "features": [
+            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+          ]
+        },
+        "disposition": "ACCEPTED",
+        "artifactIds": [
+          "WORK-d839fa42-b401-4ba3-870c-5820ebb3611e"
+        ],
+        "reviewer": "Fixture Human",
+        "reviewedAt": "2026-09-18T17:14:31.810Z",
+        "auditId": "AUD-MU77XO8Y-DP8L"
+      }
+    ]
+  },
+  "taskContext": {
+    "handoffReady": true,
+    "blockers": [],
+    "mode": "TASK_CONTEXT",
+    "role": "Developer",
+    "compiledPrompt": "=== A-SSDLC CONTROL PLANE EXECUTION PACKAGE ===\nAgent Role: Developer\nProject: CryptoDemon (PRJ-56805f76-eb85-446a-be48-683c1f91645f)\nLifecycle Phase: DISCOVERY | Target Release: Q4 2026\nProfiles: WEB_APPLICATION, BACKEND_API [Specialized: DEVELOPER_TOOL]\nDelivery Method: ITERATIVE | Data Sensitivity: PUBLIC\nPackage Scoping Mode: TASK_CONTEXT\nPurpose: A simple educational cryptocurrency demonstrating mining, peer-to-peer demo coin transfers, wallet balances, block hashes, and immutable ledger behavior.\nDeployment intent: Local / localhost only\nNon-goals: no real monetary value; no public blockchain network; no real crypto exchange; no fiat; no smart contracts; no production OIDC; no production wallet security; no PII; no AI or agentic AI\nPinned Standards: NIST SP 800-218 (SSDF) v1.1, OWASP ASVS v4.0.3, OWASP SAMM v2.0.1\n\n=== SELECTED ARCHITECTURE AND OPEN DECISIONS ===\nfrontend: OPEN DECISION\nbackend: OPEN DECISION\ndatabase: OPEN DECISION\nauthentication: OPEN DECISION\nstorage: OPEN DECISION\napiApproach: OPEN DECISION\ndeployment: OPEN DECISION\nsourceControl: OPEN DECISION\ntesting: OPEN DECISION\naiProvider: OPEN DECISION\n\n=== ACTIVE TASK CONTEXT ===\nWork Item ID: WORK-4417be64-ed8d-489f-ab1c-d168412eef01 [P1]\nTitle: Implement Core Blockchain Ledger\nObjective: Implement immutable local ledger and block hash validation.\nStatus: READY | Sprint: 0\nAcceptance Criteria:\n  1. Tampering is detected.\n\n=== GOVERNING REQUIREMENTS (1 in task scope) ===\n--- Requirement REQ-a8812b39-282a-4589-beae-fcfbd657785b: Validate block hashes ---\n  Category: FUNCTIONAL | Priority: MEDIUM | Status: APPROVED\n  Statement: CryptoDemon must detect an altered block hash and reject an invalid ledger.\n  Origin: EXTERNAL_AI_PROPOSAL (IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70)\n  Acceptance Criteria:\n    - Changing a saved block invalidates chain validation.\n\n=== GOVERNING FEATURES & CAPABILITIES (1 in scope) ===\n* [FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008] Validate Blockchain Integrity (PROPOSED) - Capability: Product\n  Description: Validate Blockchain Integrity\n\n=== ARCHITECTURE & TECHNICAL CONSTRAINTS ===\n\n=== TASK-SPECIFIC GOVERNING RISKS & CONTROLS (0 in scope) ===\n(No task-specific risks linked. General risk floor enforced via global constraints.)\n\n=== [GLOBAL ARCHITECTURAL CONSTRAINTS] ===\n* Respect the project's recorded scope, non-goals and explicit governing requirements.\n\n=== [VERIFICATION DISCIPLINE & QA GATING] ===\n* All proposed changes must be accompanied by explicit acceptance tests.\n* Zero-defect policy: Candidate proposals must pass all automated verification suites prior to promotion.\n* Evidence integrity: Evidence must be cryptographically recorded with honest execution metadata.\n\n=== MANDATORY AGENT OUTPUT CONTRACT ===\nYou MUST respond ONLY with structured JSON conforming to the canonical proposal schema:\n{\n  \"schema_version\": \"1.0\",\n  \"agent_role\": \"Developer\",\n  \"summary\": \"Precise summary of proposed changes\",\n  \"assumptions\": [\"List any explicit assumptions; do not invent unverified facts\"],\n  \"proposed_changes\": [\n    {\n      \"type\": \"REQUIREMENT | RISK | WORK_ITEM | ADR | CODE_MODIFICATION\",\n      \"action\": \"CREATE | MODIFY\",\n      \"id\": \"Stable identifier\",\n      \"title\": \"Title of change\",\n      \"details\": \"Clear explanation with acceptance criteria\"\n    }\n  ]\n}\n\n=== LEAST-CONTEXT OMISSION REPORT ===\n- 1 requirements out of task scope omitted per least-context policy\n- 7 features out of task scope omitted per least-context policy\n- 1 architecture decision records (ADRs) out of task scope omitted\n- 2 risks out of task scope omitted per least-context policy (RISK-001, RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c)",
+    "activeWorkItem": {
+      "id": "WORK-4417be64-ed8d-489f-ab1c-d168412eef01",
+      "title": "Implement Core Blockchain Ledger",
+      "status": "READY",
+      "provenance": {
+        "origin": "EXTERNAL_AI_PROPOSAL",
+        "importSessionId": "IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70",
+        "provider": "External fixture",
+        "model": "Test model",
+        "timestamp": "2026-09-18T17:14:31.790Z",
+        "originalProposalId": "external-work",
+        "originalJsonDigest": "66c6638fbd5339070417e6e9f110977ee3df3854d43a80541e643242ad26487d",
+        "humanReviewer": "Fixture Human",
+        "reviewDisposition": "MODIFIED",
+        "assumptions": [
+          "Mining difficulty remains an open decision",
+          "Review inferred assumption in external-adr: Consider an append-only local ledger; representation remains proposed."
+        ],
+        "resultingCanonicalArtifactIds": [
+          "WORK-4417be64-ed8d-489f-ab1c-d168412eef01"
+        ],
+        "authenticatedIdentity": "fixture-human",
+        "roleSource": "LOCAL_SERVER_ROSTER"
+      },
+      "updatedAt": "2026-09-18T17:14:32.293Z",
+      "type": "TASK",
+      "description": "Implement immutable local ledger and block hash validation.",
+      "priority": "P1",
+      "risk": "MEDIUM",
+      "sprint": 0,
+      "requirements": [],
+      "features": [
+        "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+      ],
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "Tampering is detected."
+      ],
+      "checklist": [],
+      "tests": [],
+      "evidence": [],
+      "owner": "Fixture Human",
+      "proposalType": "WORK_ITEM"
+    },
+    "includedRequirementIds": [
+      "REQ-a8812b39-282a-4589-beae-fcfbd657785b"
+    ],
+    "includedRiskIds": [],
+    "omissionsReport": [
+      "1 requirements out of task scope omitted per least-context policy",
+      "7 features out of task scope omitted per least-context policy",
+      "1 architecture decision records (ADRs) out of task scope omitted",
+      "2 risks out of task scope omitted per least-context policy (RISK-001, RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c)"
+    ],
+    "tokenEstimate": 920,
+    "timestamp": "2026-09-18T17:14:32.306Z"
+  },
+  "approval": {
+    "id": "APV-9a1dc00e-287c-4a25-a2b7-d3f24d42b73d",
+    "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "title": "Validate block hashes",
+    "type": "REQUIREMENT_BASELINE",
+    "targetEntityId": "REQ-a8812b39-282a-4589-beae-fcfbd657785b",
+    "targetEntityType": "REQUIREMENT",
+    "requestedBy": "Fixture Human",
+    "requestedAt": "2026-09-18T17:14:31.926Z",
+    "status": "APPROVED",
+    "urgency": "HIGH",
+    "riskLevel": "MEDIUM",
+    "description": "CryptoDemon must detect an altered block hash and reject an invalid ledger.",
+    "impactAnalysis": "Human sign-off of canonical proposed artifact",
+    "requiredRoles": [
+      "Security Officer",
+      "Lead Architect"
+    ],
+    "approvalsCollected": [
+      {
+        "role": "Security Officer",
+        "approver": "Fixture Human",
+        "identityId": "fixture-human",
+        "roleSource": "LOCAL_SERVER_ROSTER",
+        "decision": "APPROVED",
+        "timestamp": "2026-09-18T17:14:32.188Z"
+      },
+      {
+        "role": "Lead Architect",
+        "approver": "Fixture Architect",
+        "identityId": "fixture-architect",
+        "roleSource": "LOCAL_SERVER_ROSTER",
+        "decision": "APPROVED",
+        "timestamp": "2026-09-18T17:14:32.283Z"
+      }
+    ],
+    "targetDigest": "722ac04b83be3beb0e5023dec103e233214f67f416693e4e49d1b8bc013d944e",
+    "policyGates": [
+      {
+        "gateName": "Canonical target exists",
+        "passed": true,
+        "details": "Target resolved within this project; distinct authorized humans required"
+      }
+    ],
+    "policyVersion": "LOCAL_SESSION_V1",
+    "resolvedAt": "2026-09-18T17:14:32.284Z",
+    "resolvedBy": "Fixture Architect"
+  },
+  "auditVerification": {
+    "valid": true,
+    "verifiedCount": 22
+  }
+}

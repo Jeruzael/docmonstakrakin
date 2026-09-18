@@ -1,0 +1,24 @@
+=== DMK-156: Running Portable Package Server Integration Tests ===
+
+Test 1: GET /api/projects/:id/package/export delivers attachment with cryptographic headers
+✓ Export endpoint responded with valid sealed package attachment.
+
+Test 2: POST /api/projects/package/verify validates genuine package
+✓ Verify endpoint approved genuine package.
+
+Test 3: POST /api/projects/package/verify rejects tampered package
+✓ Verify endpoint rejected tampered package with 400 Bad Request.
+
+Test 4: POST /api/projects/package/import imports new project package into store
+✓ Import endpoint restored new project into store with 201 Created.
+
+Test 5: POST /api/projects/package/import returns 409 CONFLICT on existing project
+✓ Conflict safely prevented accidental overwrite without explicit flag.
+
+Test 6: POST /api/projects/package/import succeeds when overwrite: true is provided
+✓ Overwrite import succeeded with 201 Created.
+
+Test 7: Export freshly imported project and assert identical state hash (AC-1)
+✓ Roundtrip state hash idempotency verified.
+
+=== ALL 7/7 PACKAGE SERVER INTEGRATION TESTS PASSED ===

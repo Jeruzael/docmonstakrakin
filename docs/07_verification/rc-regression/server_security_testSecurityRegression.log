@@ -1,0 +1,43 @@
+=== Running DMK-159 Comprehensive Security Regression Test Suite ===
+
+--- Section 1: Path Traversal Attack Defense Suite ---
+[PASS] Test 1: Detects and blocks standard parent directory traversal (../../etc/passwd)
+[PASS] Test 2: Detects and blocks deep traversal attack (../../../../../../etc/shadow)
+[PASS] Test 3: Detects and blocks Windows-style backslash traversal (..\..\windows\system.ini)
+[PASS] Test 4: Detects and blocks single URL-encoded traversal (%2e%2e%2fetc%2fpasswd)
+[PASS] Test 5: Detects and blocks double URL-encoded traversal (%252e%252e%252fetc%252fpasswd)
+[PASS] Test 6: Detects and blocks raw poison null-byte injection (src/App.tsx\0/etc/passwd)
+[PASS] Test 7: Detects and blocks URL-encoded null-byte injection (%00)
+[PASS] Test 8: Detects and blocks absolute root filesystem paths outside workspace (/etc/passwd)
+[PASS] Test 9: Blocks access to restricted secrets directory (secrets/vault.enc)
+[PASS] Test 10: Blocks access to test secret storage (.test_secret_store/key.enc)
+[PASS] Test 11: Blocks access to plaintext environment file (.env)
+[PASS] Test 12: Blocks access to custom environment files (.env.local, .env.production)
+[PASS] Test 13: Blocks access to internal Git config & credentials (.git/config)
+[PASS] Test 14: Allows safe paths inside workspace (src/App.tsx, docs/MASTER_PLAN.md)
+[PASS] Test 15: Allows approved documentation exception (.env.example)
+
+--- Section 2: Command Sandboxing & Injection Defense Suite ---
+[PASS] Test 16: Rejects branch name with semicolon command chaining (main; rm -rf /)
+[PASS] Test 17: Rejects branch name with boolean AND command chaining (main && curl evil.com)
+[PASS] Test 18: Rejects branch name with pipe chaining (main | cat /etc/passwd)
+[PASS] Test 19: Rejects branch name with subshell execution substitution (main$(id))
+[PASS] Test 20: Rejects branch name with backtick command substitution (main`whoami`)
+[PASS] Test 21: Rejects branch name with output redirection (main > /tmp/hacked)
+[PASS] Test 22: Rejects branch name with newline command injection (feature/test\nid)
+[PASS] Test 23: Rejects branch name starting with dash (flag injection attempt: --upload-pack)
+[PASS] Test 24: Rejects branch name with Git ref directory traversal (feature/../main)
+[PASS] Test 25: Sanitizes author names and rejects newline / shell injections
+[PASS] Test 26: Accepts valid Git branch names
+[PASS] Test 27: executeSandboxedGit rejects unapproved Git subcommands (config, clone, push)
+[PASS] Test 28: executeSandboxedGit rejects dangerous flag patterns (--upload-pack)
+
+--- Section 3: Audit Ledger Immutability & Tamper Detection Suite ---
+[PASS] Test 29: Generates sequential cryptographic hash chain linking consecutive events
+[PASS] Test 30: Tamper Detection 1: Fails verification if an event actor is altered
+[PASS] Test 31: Tamper Detection 2: Fails verification if an event timestamp is altered
+[PASS] Test 32: Tamper Detection 3: Fails verification if event details payload is altered
+[PASS] Test 33: Tamper Detection 4: Fails verification if intermediate event is deleted (broken link)
+[PASS] Test 34: Tamper Detection 5: Fails verification if an attacker injects a forged event with spoofed previousHash
+
+=== ALL DMK-159 SECURITY REGRESSION TESTS PASSED (34/34) ===

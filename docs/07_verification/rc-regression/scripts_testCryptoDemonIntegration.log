@@ -1,0 +1,38 @@
+PASS project without own Git exposes no parent metadata
+PASS repository mutation rejected without owned Git
+PASS invalid project draft creates no partial canonical project
+PASS maturity and target SCM isolation
+PASS eight proposed PRODUCT_BASELINE features
+PASS dynamic applicability
+PASS agent and next-action project isolation
+PASS risk factors and unmitigated residual agree
+PASS validation stages without canonical import or approval
+PASS import review rejects body identity impersonation
+PASS all five accepted types update canonical workspaces; rejected stays historical
+PASS idempotent review retry
+PASS provenance and modification history
+PASS manual origin preserved
+PASS explicit request creates policy-backed ApprovalRequest
+PASS name impersonation rejected and verifier never exposed
+PASS forged reviewer name denied
+PASS forged role denied
+PASS unauthorized authenticated user denied
+PASS server-identified agent cannot authorize human governance
+PASS same authenticated identity cannot occupy a second quorum slot
+PASS distinct authorized human quorum; agents and duplicate signatures rejected
+PASS work management update contract
+PASS useful scoped TASK_CONTEXT with full requirement and feature
+PASS unlinked implementation handoff blocked
+PASS proposed ADR editable before sign-off
+PASS ratified ADR edit preserves history and requires fresh revision sign-off
+PASS accepted ADR immutable and canonical links included in context
+PASS malformed import rejected before persistence
+PASS metadata validation and redacted review event
+PASS audit chain intact
+PASS portable import preserves review history without trusting supplied governance
+PASS forged package approval remains historical and cannot pass release gate
+PASS imported work verification and technical ratification are untrusted
+PASS validly resealed prototype-key package rejected
+PASS A to B to A reads preserve all project collection boundaries
+PASS restart ignores interrupted snapshot and preserves review data while revoking sessions
+CryptoDemon integration: 37 checks passed
