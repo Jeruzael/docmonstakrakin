@@ -1,0 +1,264 @@
+{
+"schema_version": "1.0",
+"agent_role": "Developer",
+"summary": "Normalize the CryptoDemon discovery baseline around its stated educational, localhost-only purpose; remove inherited production-oriented authentication, public-network, encryption, and unrelated product requirements; ratify a deliberately simple TypeScript SPA plus Express architecture; define local file-backed blockchain persistence, REST boundaries, deterministic validation, testing gates, source-control expectations, and explicit v0.1 functional acceptance criteria.",
+"assumptions": [
+"CryptoDemon v0.1 remains strictly an educational local web application with no real monetary value and no production cryptocurrency functionality.",
+"The application is intended to run on a single local machine and is not intended to accept traffic from the public Internet.",
+"Demo wallets are educational identities only and do not require passwords, seed phrases, recovery flows, OIDC, production key management, or real user accounts.",
+"The blockchain implementation is intentionally centralized within one local application instance and does not implement distributed consensus or a public peer-to-peer network.",
+"DEMON balances are derived from validated blockchain transactions and mining rewards rather than treated as independently authoritative mutable account balances.",
+"A local-first file-backed persistence model is preferred for v0.1 because inspectability, portability, and educational simplicity are primary project goals.",
+"PostgreSQL may be reconsidered in a future release if project scope expands, but it is not required for the stated v0.1 mission.",
+"AES-256-GCM encrypted storage is not necessary for PUBLIC educational data unless a future approved requirement introduces sensitive information.",
+"React 19, Vite, Tailwind CSS, Node.js, Express, and TypeScript remain proposed technologies until the corresponding architecture decisions are ratified.",
+"No AI provider is required because AI and agentic AI functionality are explicit non-goals."
+],
+"proposed_changes": [
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-USER-Q-001-RULE-USER-001-B",
+"title": "Local Demo Session Boundary",
+"details": "Replace the public-audience and credential-stuffing requirement with a localhost-only demo-access requirement. CryptoDemon v0.1 SHALL operate without registration or production authentication and SHALL expose application functionality only through the local application boundary. Acceptance criteria: no registration workflow exists; no password or production credential store exists; demo wallets can be created or selected without authentication; localhost operation succeeds without external identity services; automated verification confirms no production authentication dependency is required for core workflows."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-AUTH-Q-001-RULE-AUTH-001-A",
+"title": "Demo Wallet Identity Requirement",
+"details": "Replace federated OIDC authentication with local demo wallet identity semantics. A demo wallet SHALL have a locally generated stable identifier and human-readable label sufficient to demonstrate ownership attribution inside the educational application. Acceptance criteria: wallets can be created locally; each wallet receives a unique identifier; wallet selection requires no password, token, OIDC provider, or remote service; wallet identifiers can be referenced by transactions; restarting the application preserves wallet identity when persistence is enabled."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-AUTH-Q-014-RULE-AUTH-014-A",
+"title": "Remove Production Account Recovery Requirement",
+"details": "Mark production account recovery as not applicable to v0.1 because CryptoDemon has no production user accounts, passwords, OIDC identities, or recovery credentials. Acceptance criteria: no password reset, recovery token, recovery email, or equivalent production account-recovery implementation is included in v0.1; project documentation explicitly identifies account recovery as outside scope."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-DATA-Q-001-RULE-DATA-001-A",
+"title": "Local Versioned Blockchain State Persistence",
+"details": "Clarify local_first_file_store as the canonical v0.1 persistence engine. Persist blockchain state, demo-wallet metadata, and required application metadata in a versioned local data format with schema validation and safe write behavior. Acceptance criteria: persisted state has an explicit schema version; invalid state is rejected with a controlled error; application state survives restart; writes do not leave partially written canonical state after an interrupted save where reasonably testable; no PostgreSQL service is required to execute the v0.1 application."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-DATA-Q-008-RULE-DATA-008-A",
+"title": "Blockchain Hash-Chain Integrity Requirement",
+"details": "Align the existing cryptographic append-only requirement directly with the educational blockchain. Every non-genesis block SHALL contain its own SHA-256-derived hash and the prior block hash, and blockchain validation SHALL recalculate hashes and linkage from genesis through the current tip. Acceptance criteria: modifying a historical block causes integrity validation to fail; modifying a historical transaction causes integrity validation to fail; deleting or reordering a block causes validation to fail; an untampered chain validates successfully."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-DATA-Q-009-RULE-DATA-009-A",
+"title": "Educational Ledger Retention Requirement",
+"details": "Remove the arbitrary 30-day purge requirement from the blockchain ledger. Blockchain records SHALL remain available for the lifetime of the local demonstration dataset unless the user explicitly resets or replaces that dataset. Acceptance criteria: application restart does not purge historical blocks based on age; no automated time-based blockchain deletion occurs; an explicit reset operation, if implemented, is clearly separated from normal application operation."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-SEC-Q-002-RULE-SEC-002-A",
+"title": "Appropriate Cryptographic Controls for Local Educational Scope",
+"details": "Replace the aes256_gcm_tls13 production-transport requirement with scope-appropriate cryptographic controls. SHA-256 or another explicitly ratified cryptographic hash SHALL be used for blockchain integrity. Production TLS and encrypted-at-rest storage are not mandatory for localhost-only PUBLIC demonstration data. Acceptance criteria: blockchain hashing uses the ratified algorithm consistently; deprecated or non-cryptographic hashes are not used for ledger integrity; no claim is made that demo wallet data provides production wallet confidentiality; documentation clearly states that CryptoDemon is not production wallet software."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-DEPLOY-Q-002-RULE-DEPLOY-002-A",
+"title": "Localhost Single-Port Application Boundary",
+"details": "Retain the single-port objective while removing mandatory 0.0.0.0 exposure. The v0.1 application SHALL be runnable through one documented local application port and SHOULD bind to loopback by default. Acceptance criteria: the integrated application is reachable on the documented localhost URL; production/demo launch does not require separate externally exposed frontend and backend ports; default configuration does not intentionally expose the application to the LAN or Internet."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-PROD-Q-001-RULE-PROD-001-A",
+"title": "Blockchain Education Functional Objective",
+"details": "Replace the unrelated customer_experience objective with CryptoDemon's actual educational objective. The system SHALL allow a learner to observe and interact with demo wallets, mining, rewards, transfers, balances, transactions, block structure, previous-hash linkage, and integrity verification. Acceptance criteria: each core concept is represented by at least one executable user workflow and corresponding automated or documented acceptance test."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-PROD-Q-002-RULE-PROD-002-A",
+"title": "Quantitative v0.1 Success Criteria",
+"details": "Replace the rejected generic security_audit_clean KPI with measurable educational release criteria. Acceptance criteria: all defined core workflows pass their acceptance tests; blockchain integrity validation detects representative mutation cases; overspending is rejected deterministically; strict TypeScript compilation reports zero errors; automated QA completes with zero failing required tests; a fresh local installation can complete wallet creation, mining, transfer, balance inspection, transaction-history inspection, blockchain browsing, and integrity verification."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "REQ-ARCH-Q-003-RULE-ARCH-003-A",
+"title": "Typed Local Runtime Configuration",
+"details": "Retain strongly typed runtime configuration but avoid hard-coding unnecessary deployment assumptions. Configuration SHALL be validated at process startup and provide safe local defaults. Acceptance criteria: malformed required configuration causes deterministic startup failure with a useful error; default host is loopback-compatible; default port is documented; configuration parsing is type-safe and covered by automated tests."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-WALLET-001",
+"title": "Demo Wallet Creation and Selection",
+"details": "The application SHALL allow users to create and select local demo wallets. Acceptance criteria: wallet identifiers are unique; a wallet may have a display label; created wallets appear in wallet selection; selected wallet state is visible to the frontend; wallet creation does not require real personal information, passwords, seed phrases, or external identity services."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-MINING-001",
+"title": "Educational Block Mining",
+"details": "The application SHALL provide a deterministic educational mining workflow that creates a valid new block according to the project's ratified proof-of-work or simplified mining rule. Acceptance criteria: mining appends exactly one valid block; the block references the previous tip hash; the resulting block hash satisfies the configured demonstration rule; the operation cannot silently overwrite historical blocks; mining behavior is testable using bounded difficulty suitable for a local demonstration."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-REWARD-001",
+"title": "Mining Reward",
+"details": "Successful mining SHALL issue a predefined DEMON mining reward to the selected miner wallet through a distinguishable ledger transaction or equivalent auditable blockchain representation. Acceptance criteria: reward amount comes from one authoritative configuration or protocol constant; successful mining increases the miner's derived balance by the expected reward; failed mining does not issue a reward; reward history is inspectable in the ledger."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-TRANSFER-001",
+"title": "DEMON Transfer Validation",
+"details": "Users SHALL be able to transfer a positive DEMON amount between existing demo wallets. Acceptance criteria: sender and recipient must exist; transfer amount must be greater than zero; malformed, infinite, negative, and unsupported-precision amounts are rejected; transfers cannot create DEMON from nothing; accepted transfers become part of the inspectable transaction ledger according to the ratified transaction inclusion model."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-BALANCE-001",
+"title": "Deterministic Wallet Balance Derivation",
+"details": "Wallet balances SHALL be calculated deterministically from validated blockchain history and SHALL NOT rely on an independently mutable authoritative balance field. Acceptance criteria: replaying an untampered chain produces the same balances; mining rewards are included; outgoing transfers decrease available balance; incoming transfers increase balance; tampered or invalid blockchain state is not silently used as trustworthy balance state."
+},
+{
+"type": "REQUIREMENT",
+"action": "MODIFY",
+"id": "FEAT-012",
+"title": "Prevent DEMON Overspending",
+"details": "Retain overspending prevention and formalize validation timing. A transfer SHALL be rejected if the sender's available validated balance is less than the requested transfer amount at transaction acceptance time. Acceptance criteria: exact-balance transfers succeed; amounts greater than available balance fail; rejection does not mutate the ledger or balances; concurrent or repeated submissions cannot independently spend the same available amount if request concurrency is supported."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-EXPLORER-001",
+"title": "Blockchain Explorer",
+"details": "The application SHALL expose an educational blockchain explorer showing enough data to understand block linkage and ledger contents. Acceptance criteria: users can inspect block index or height, timestamp, previous hash, current hash, mining/proof metadata where applicable, and included transactions; genesis is distinguishable; blocks are displayed in deterministic chain order."
+},
+{
+"type": "REQUIREMENT",
+"action": "CREATE",
+"id": "REQ-CORE-INTEGRITY-001",
+"title": "User-Invoked Blockchain Integrity Verification",
+"details": "The application SHALL provide a user-invokable integrity check that validates the complete blockchain. Acceptance criteria: valid chain reports success; altered block contents report failure; broken previous-hash linkage reports failure; recalculated hash mismatch reports failure; validation result communicates the first detected failure or sufficient diagnostic information for educational inspection without modifying the chain."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-001",
+"title": "React Vite TypeScript Frontend",
+"details": "Propose React 19 with Vite and TypeScript for the v0.1 SPA, with Tailwind CSS limited to presentation concerns. Rationale: the stack supports a small inspectable local application, strict typing, rapid iteration, and clear separation from blockchain domain logic. Ratification criteria: frontend requirements can be implemented without framework-specific server dependencies; strict TypeScript configuration is shared or compatible across the project; build and development workflows are documented."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-002",
+"title": "Node.js Express TypeScript Backend",
+"details": "Propose Node.js plus Express with TypeScript for the local API and blockchain application service. Select one module strategy for the repository rather than supporting ambiguous dual Strict ESM/CJS behavior. Ratification criteria: module format is explicitly documented; build and test tooling support it consistently; the blockchain domain layer does not depend directly on HTTP request objects; API routes delegate to typed domain/application services."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-003",
+"title": "Versioned Local File Persistence for v0.1",
+"details": "Select a versioned local JSON or equivalent inspectable file store rather than PostgreSQL for the initial release. Rationale: CryptoDemon is localhost-only, educational, PUBLIC-data, and intentionally simple. Ratification criteria: persistence survives restart; state is schema validated; data can be exported and inspected; tests can create isolated temporary stores; PostgreSQL is not required to run the demonstration."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-004",
+"title": "REST JSON API with Runtime Schema Validation",
+"details": "Select a RESTful JSON API between the React frontend and Express backend, with strict runtime request validation and TypeScript response contracts. Ratification criteria: wallet, mining, transfer, balance, history, blockchain, integrity, and health workflows have documented endpoint boundaries; malformed payloads return deterministic 4xx responses; domain errors do not expose stack traces to the normal UI; API schemas are testable."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-005",
+"title": "No Production Authentication in v0.1",
+"details": "Ratify local demo-wallet identities with no login, password, OIDC, recovery, seed phrase, or production wallet authentication. Rationale: production identity is explicitly outside project scope and would obscure the educational blockchain concepts. Ratification criteria: all core workflows function without an identity provider; UI terminology does not misleadingly describe demo wallets as secure production accounts."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-006",
+"title": "Localhost-Only Deployment",
+"details": "Ratify a local-machine deployment boundary for v0.1. The application should bind to loopback by default and use a single documented entrypoint for the integrated demonstration. Ratification criteria: application starts locally using documented commands; frontend and API are accessible through the supported local entrypoint; no cloud infrastructure, public DNS, externally trusted TLS certificate, or remote identity provider is required."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-007",
+"title": "Automated Quality Gate",
+"details": "Define npm run qa as the canonical local verification entrypoint. The gate SHOULD include formatting or lint checks, strict TypeScript compilation, unit tests, API/integration tests, blockchain mutation/integrity tests, dependency/security checks appropriate to the project, and verification that tracked requirements have corresponding evidence where practical. Ratification criteria: one documented command executes required release checks; any required check failure produces a non-zero exit code; the gate is deterministic enough for local and CI execution."
+},
+{
+"type": "ADR",
+"action": "CREATE",
+"id": "ADR-008",
+"title": "Git-Based Source Control Baseline",
+"details": "Select Git as the source-control system with a protected primary branch convention and short-lived feature or work-item branches. Ratification criteria: repository contains an appropriate .gitignore; generated dependencies, secrets, transient blockchain test data, and local environment files are excluded where appropriate; commits can be associated with work-item or requirement identifiers; release tags can identify verified baselines."
+},
+{
+"type": "RISK",
+"action": "MODIFY",
+"id": "RISK-001",
+"title": "Discovery Baseline Contains Scope-Inconsistent Generated Requirements",
+"details": "Expand the discovery uncertainty risk to explicitly capture inherited requirements that contradict CryptoDemon's stated non-goals, including federated OIDC, account recovery, public credential defenses, mandatory TLS/encrypted storage, unrelated customer-experience objectives, Login and Notifications features, and ambiguous database/deployment choices. Mitigation acceptance criteria: each baseline requirement is classified as retain, modify, reject, or defer before implementation planning; no v0.1 work item depends on a requirement that contradicts ratified scope."
+},
+{
+"type": "RISK",
+"action": "CREATE",
+"id": "RISK-002",
+"title": "Educational Cryptocurrency May Be Mistaken for Production Financial Software",
+"details": "Users or reviewers may incorrectly interpret DEMON, wallet, mining, and transfer terminology as production-ready financial functionality. Controls: prominently state that DEMON has no monetary value; avoid exchange-rate, investment-return, fiat, purchase, sale, token-sale, or market-price features; label wallet security as demonstration-only; document that the system is unsuitable for custody of real assets. Closure criteria: UI and README contain clear educational-use language and no implemented workflow implies real-world asset value."
+},
+{
+"type": "RISK",
+"action": "CREATE",
+"id": "RISK-003",
+"title": "Blockchain Complexity Creep",
+"details": "There is a risk that distributed consensus, networking, cryptographic wallet custody, advanced mining, mempools, smart contracts, or production security concepts expand v0.1 beyond its educational mission. Controls: require an approved requirement and architecture decision for any such capability; maintain explicit non-goals; keep domain logic small and inspectable. Acceptance criteria: v0.1 implementation plan contains no distributed consensus, public P2P network, smart contract, production key-custody, or exchange work item."
+},
+{
+"type": "WORK_ITEM",
+"action": "CREATE",
+"id": "WORK-CRYPTODEMON-DISC-001",
+"title": "Reconcile Discovery Requirement Baseline",
+"details": "Review all 19 baseline requirements and 12 registered capabilities against the stated CryptoDemon mission and non-goals. Classify each item as retain, modify, reject, or defer and record rationale. Acceptance criteria: OIDC, recovery, Login, Notifications, public-network assumptions, encryption requirements, data persistence, deployment boundaries, and actual blockchain capabilities are explicitly resolved; zero contradictory requirements remain in the implementation-ready baseline."
+},
+{
+"type": "WORK_ITEM",
+"action": "CREATE",
+"id": "WORK-CRYPTODEMON-DISC-002",
+"title": "Ratify v0.1 Architecture Decisions",
+"details": "Review and approve or reject ADR-001 through ADR-008 before implementation decomposition. Acceptance criteria: frontend, backend, module system, persistence, authentication model, API approach, deployment boundary, test gate, and source-control strategy have explicit decisions; unresolved decisions are not silently treated as approved."
+},
+{
+"type": "WORK_ITEM",
+"action": "CREATE",
+"id": "WORK-CRYPTODEMON-DISC-003",
+"title": "Define Blockchain Domain Protocol",
+"details": "Document the minimal educational protocol before code implementation, including block structure, genesis rules, transaction structure, amount representation, reward amount, mining rule or difficulty, transaction inclusion timing, hash serialization/canonicalization, validation order, and chain validity rules. Acceptance criteria: equivalent valid state serializes deterministically for hashing; amount arithmetic avoids floating-point ambiguity; genesis behavior is defined; reward rules are defined; invalid-chain conditions are enumerated and testable."
+},
+{
+"type": "WORK_ITEM",
+"action": "CREATE",
+"id": "WORK-CRYPTODEMON-DISC-004",
+"title": "Create v0.1 Verification Matrix",
+"details": "Map each approved v0.1 requirement to verification evidence before implementation begins. Acceptance criteria: wallet creation, mining, reward issuance, transfers, overspending prevention, derived balances, history, explorer, persistence, tamper detection, health endpoint, strict TypeScript compilation, and QA gate each have at least one identified test or inspection method; every approved HIGH or CRITICAL requirement has explicit verification evidence planned."
+},
+{
+"type": "WORK_ITEM",
+"action": "CREATE",
+"id": "WORK-CRYPTODEMON-DISC-005",
+"title": "Remove Non-Scope Feature Registrations",
+"details": "Review FEAT-PROD-LOGIN-1 and FEAT-PROD-NOTIFICA-3 and remove or formally reject them from the v0.1 feature set unless a new approved requirement establishes a valid educational need. Review Dashboard separately and retain only if it acts as navigation or visualization for approved blockchain capabilities. Acceptance criteria: feature registry contains no production login or unrelated notification capability and every retained feature maps to an approved CryptoDemon requirement."
+}
+]
+}

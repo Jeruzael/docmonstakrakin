@@ -10,6 +10,8 @@
 **Baseline:** v0.1.0-rc1 (Technically Verified Release Candidate; Gate 7 Human Sign-off Pending)  
 **Release Status:** `TECHNICALLY_VERIFIED_RELEASE_CANDIDATE`  
 **Gate 7 Status:** `HUMAN_APPROVAL_REQUIRED`  
+**Manual QA Status:** `NOT_READY_FOR_SIGNOFF`  
+**Remediation Status:** `READY_FOR_RETEST`  
 **Status Standard:** `PROPOSED` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED` | `DEFERRED` | `CANCELLED`  
 
 ---
@@ -19,7 +21,7 @@
 The Master WBS follows a strict 6-tier decomposition:
 $$\text{Project} \longrightarrow \text{Phase} \longrightarrow \text{Epic/Capability} \longrightarrow \text{Feature} \longrightarrow \text{Work Package} \longrightarrow \text{Atomic Task}$$
 
-Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably across re-organizations. The **WBS Path** (e.g. `13.03.01.01`) represents the current hierarchical location within the lifecycle.
+Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WBS Path** (e.g. `13.03.01.01`) represents the current hierarchical location within the lifecycle.
 
 ---
 
@@ -39,7 +41,7 @@ Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably acr
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Automated remediation); human retest `READY`; Gate 7 pending |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -51,10 +53,30 @@ Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably acr
 
 ### Epic 13: Forms, Export, Secrets & Release
 
+#### `DMK-190` — Explicit external proposal schema 1.1 and MODIFY target validation
+- **WBS Path:** `13.06.04`
+- **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `VERIFIED` (Evidence: `EV-RC-190, docs/07_verification/rc-regression/results.json`)
+- **Dependencies:** `DMK-188`
+- **Requirements:** `REQ-RC-190` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-017`, `SEC-CTRL-020`
+- **Acceptance Criteria:**
+  - "Prose validation, distinct proposal/target IDs, scoped manifests, typed targets, structured errors, v1.0 compatibility and immutable proposed amendments"
+- **Verification Method:** scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts; npm run lint; npm run build; npm run test
+
+#### `DMK-191` — Gio CryptoDemon human browser retest
+- **WBS Path:** `13.06.05`
+- **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `READY`
+- **Dependencies:** `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`
+- **Requirements:** `REQ-RC-189`, `REQ-RC-190` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
+- **Acceptance Criteria:**
+  - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks; records new evidence without executing Gate 7"
+- **Verification Method:** docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md human retest checklist
+
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `IN_PROGRESS`
+- **Status:** `VERIFIED` (Evidence: `EV-RC-187, docs/07_verification/rc-regression/results.json`)
 - **Dependencies:** `DMK-186`
 - **Requirements:** `REQ-RC-187` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-004`, `SEC-CTRL-020`
 - **Acceptance Criteria:**
@@ -64,7 +86,7 @@ Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably acr
 #### `DMK-188` — External AI review sessions and explicit human sign-off remediation
 - **WBS Path:** `13.06.02`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `READY`
+- **Status:** `VERIFIED` (Evidence: `EV-RC-188, docs/07_verification/rc-regression/results.json`)
 - **Dependencies:** `DMK-120`
 - **Requirements:** `REQ-RC-188` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Acceptance Criteria:**
@@ -74,7 +96,7 @@ Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably acr
 #### `DMK-189` — CryptoDemon task context and release regression verification
 - **WBS Path:** `13.06.03`
 - **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `PROPOSED`
+- **Status:** `VERIFIED` (Evidence: `EV-RC-189, docs/07_verification/rc-regression/results.json`)
 - **Dependencies:** `DMK-187`, `DMK-188`
 - **Requirements:** `REQ-RC-189` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Acceptance Criteria:**

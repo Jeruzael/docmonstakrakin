@@ -1,7 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Express } from 'express';
 import { DerivationError, validateGenerated, validateText } from '../../src/data/generationValidation.js';
-import type { ImportSession, ProposalChange } from '../../src/proposalTypes.js';
+import type { ImportSession, NormalizedProposalChange } from '../../src/proposalTypes.js';
+import {normalizeProposalChange,rejectGovernanceFields,ProposalValidationError} from '../../src/data/proposalContract.js';
+import {validateProposalTargets} from './targetResolution.js';
+import {compileContextPackage} from '../../src/data/contextPackageCompiler.js';
 import type { installReviewerIdentity } from './identity.js';
 
 export const digest = (value: unknown) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
@@ -9,32 +12,14 @@ const fail = (path: string, message: string): never => { throw new DerivationErr
 const collections = { REQUIREMENT: 'requirements', ADR: 'adrs', RISK: 'risks', WORK_ITEM: 'workItems', CODE_MODIFICATION: 'workItems' };
 const id = (prefix: string) => `${prefix}-${randomUUID()}`;
 
-function checkChange(change: any, store: any, projectId: string): ProposalChange {
-  if (!change || typeof change !== 'object' || Array.isArray(change)) fail('change', 'Expected object');
-  if (!Object.hasOwn(collections, change.type)) fail('change.type', 'Unsupported proposal type');
-  if (!['CREATE', 'MODIFY'].includes(change.action)) fail('change.action', 'Expected CREATE or MODIFY');
-  for (const key of ['id','title','details']) validateText(change[key], `change.${key}`);
-  for (const key of ['acceptanceCriteria','requirements','features','assumptions']) {
-    if (change[key] !== undefined && (!Array.isArray(change[key]) || change[key].some((v:any) => typeof v !== 'string'))) fail(`change.${key}`, 'Expected array of strings');
-  }
-  if (change.status && change.status !== 'PROPOSED') fail('change.status','Import cannot grant governance status');
-  if (change.approvalsCollected || change.signatures || change.requiredRoles) fail('change', 'Proposals cannot supply signatures or governance policy');
-  if (change.action === 'MODIFY' && !(store[collections[change.type]][projectId] || []).some((a:any)=>a.id === change.id)) fail('change.id', 'Modification target not found in this project');
-  for (const [field, collection] of [['requirements','requirements'],['features','features']]) for (const ref of change[field] || []) {
-    if (!(store[collection][projectId] || []).some((a:any)=>a.id === ref)) fail(`change.${field}`, 'Reference is not in this project');
-  }
-  validateGenerated(change);
-  return change;
-}
-
-function canonical(change: ProposalChange, provenance: any, reviewer: string): any {
-  const base = {id: id(change.type === 'REQUIREMENT' ? 'REQ' : change.type === 'ADR' ? 'ADR' : change.type === 'RISK' ? 'RISK' : 'WORK'), title: change.title, status: 'PROPOSED', provenance, updatedAt: new Date().toISOString()};
-  if (change.action === 'MODIFY') Object.assign(base, {proposesModificationOf: change.id});
-  switch (change.type) {
+function canonical(change: NormalizedProposalChange, provenance: any, reviewer: string): any {
+  const base = {id: id(change.artifactType === 'REQUIREMENT' ? 'REQ' : change.artifactType === 'ADR' ? 'ADR' : change.artifactType === 'RISK' ? 'RISK' : 'WORK'), title: change.title, status: 'PROPOSED', provenance, updatedAt: new Date().toISOString()};
+  if (change.action === 'MODIFY') Object.assign(base, {proposesModificationOf: change.target!.artifactId});
+  switch (change.artifactType) {
     case 'REQUIREMENT': return {...base, statement:change.details, category:'FUNCTIONAL', priority:'MEDIUM', source:{type:'EXTERNAL_AI_PROPOSAL',id:provenance.importSessionId}, riskLinks:[],threatLinks:[],standardLinks:[],workItems:[],tests:[],evidence:[],acceptanceCriteria:change.acceptanceCriteria || [], linkedFeatureId:change.features?.[0]};
     case 'ADR': return {...base,date:base.updatedAt,author:reviewer,context:change.details,decision:change.details,consequences:{positive:[],negative:[],risks:[]},linkedRequirements:change.requirements || [],linkedRisks:[],linkedStandards:[]};
     case 'RISK': return {...base,description:change.details,drivers:provenance.assumptions,inherentLikelihood:3,inherentImpact:3,inherentScore:9,inherentLevel:'MEDIUM',residualLikelihood:3,residualImpact:3,residualScore:9,residualLevel:'MEDIUM',treatment:'MITIGATE',controls:[]};
-    default: return {...base,type:'TASK',description:change.details,priority:'P1',risk:'MEDIUM',sprint:0,requirements:change.requirements || [],features:change.features || [],dependencies:[],acceptanceCriteria:change.acceptanceCriteria || [],checklist:[],tests:[],evidence:[],owner:reviewer,proposalType:change.type};
+    default: return {...base,type:'TASK',description:change.details,priority:'P1',risk:'MEDIUM',sprint:0,requirements:change.requirements || [],features:change.features || [],dependencies:[],acceptanceCriteria:change.acceptanceCriteria || [],checklist:[],tests:[],evidence:[],owner:reviewer,proposalType:change.artifactType};
   }
 }
 
@@ -50,25 +35,37 @@ export function registerProposalRoutes(app: Express, store: any, identityContext
     const raw = req.body.rawJson;
     if (typeof raw !== 'string' || !raw.trim()) fail('rawJson','Expected nonempty JSON text');
     let parsed: any; try {parsed = JSON.parse(raw);} catch {return res.status(422).json({error:{code:'PARSE_ERROR',message:'Invalid JSON'}});}
-    if (!parsed || parsed.schema_version !== '1.0' || !Array.isArray(parsed.proposed_changes) || !parsed.proposed_changes.length) fail('schema','Expected schema_version 1.0 and nonempty proposed_changes');
+    if (!parsed || !['1.0','1.1'].includes(parsed.schema_version) || !Array.isArray(parsed.proposed_changes) || !parsed.proposed_changes.length) (() => {throw new ProposalValidationError('SCHEMA_ERROR','schema_version','Expected schema_version 1.0 or 1.1 and nonempty proposed_changes');})();
     validateText(parsed.agent_role,'agent_role'); validateText(parsed.summary,'summary');
     for (const key of ['provider','model']) {
       if (parsed[key] !== undefined) validateText(parsed[key],key);
       if (req.body[key] !== undefined && req.body[key] !== '') validateText(req.body[key],key);
     }
     if (parsed.assumptions !== undefined && (!Array.isArray(parsed.assumptions) || parsed.assumptions.some((s:any)=>typeof s !== 'string'))) fail('assumptions','Expected string array');
-    if (parsed.signatures || parsed.approvals) fail('schema','External proposals cannot submit approvals');
-    const changes = parsed.proposed_changes.map((c:any)=>checkChange(c,store,projectId));
-    if (new Set(changes.map((c:any)=>c.id)).size !== changes.length) fail('proposed_changes','Duplicate original proposal IDs');
+    rejectGovernanceFields(Object.fromEntries(Object.entries(parsed).filter(([key])=>key!=='proposed_changes')),'response');
+    const scope=req.body.context;
+    let editableArtifacts;
+    if(scope){
+      if(!['SUMMARY','TASK_CONTEXT','FULL_BASELINE'].includes(scope.mode))throw new ProposalValidationError('SCHEMA_ERROR','context.mode','Invalid compiler scope.');
+      const activeWorkItem=(store.workItems[projectId] || []).find((w:any)=>w.id===scope.activeWorkItemId);
+      if(scope.activeWorkItemId && !activeWorkItem)throw new ProposalValidationError('INVALID_REFERENCE','context.activeWorkItemId','Work item does not exist in this project.');
+      editableArtifacts=compileContextPackage({project:project(projectId),role:parsed.agent_role,mode:scope.mode,activeWorkItem,workItems:store.workItems[projectId],requirements:store.requirements[projectId],risks:store.risks[projectId],features:store.features[projectId],adrs:store.adrs[projectId]}).editableArtifacts;
+    }
+    const changes = parsed.proposed_changes.map((c:any,i:number)=>normalizeProposalChange(c,parsed.schema_version,i));
+    const seen=new Set<string>();
+    changes.forEach((c:NormalizedProposalChange,i:number)=>{
+      if(seen.has(c.proposalId))throw new ProposalValidationError('DUPLICATE_PROPOSAL_ID',`proposed_changes[${i}].proposal_id`,'Proposal IDs must be unique within the response.',{proposal_id:c.proposalId});
+      seen.add(c.proposalId);validateProposalTargets(c,store,projectId,i,editableArtifacts);
+    });
     const hash = digest(raw);
     const prior = (store.importSessions[projectId] || []).find((s:ImportSession)=>s.digest === hash);
     if (prior) return res.status(201).json(prior);
     const assumptions = [...(parsed.assumptions || []), ...changes.flatMap((c:any)=>c.assumptions || [])];
     for (const change of changes) {
-      if (/\b(?:assum|presum|probably|recommend|consider)\w*/i.test(change.details)) assumptions.push(`Review inferred assumption in ${change.id}: ${change.details}`);
-      if (change.action === 'MODIFY') assumptions.push(`${change.id}: acceptance creates a proposed amendment; original remains unchanged pending governance.`);
+      if (/\b(?:assum|presum|probably|recommend|consider)\w*/i.test(change.details)) assumptions.push(`Review inferred assumption in ${change.proposalId}: ${change.details}`);
+      if (change.action === 'MODIFY') assumptions.push(`${change.proposalId}: acceptance creates a proposed amendment; original remains unchanged pending governance.`);
     }
-    const created: ImportSession = {id:id('IMPORT'),projectId,provider:parsed.provider || req.body.provider || 'Not supplied',model:parsed.model || req.body.model || 'Not supplied',timestamp:new Date().toISOString(),originalJson:raw,digest:hash,validationStatus:'AWAITING_HUMAN_REVIEW',assumptions,changes:changes.map((c:any)=>({original:structuredClone(c),disposition:'PENDING',artifactIds:[]}))};
+    const created: ImportSession = {schemaVersion:parsed.schema_version,...(editableArtifacts?{editableArtifacts}:{}),id:id('IMPORT'),projectId,provider:parsed.provider || req.body.provider || 'Not supplied',model:parsed.model || req.body.model || 'Not supplied',timestamp:new Date().toISOString(),originalJson:raw,digest:hash,validationStatus:'AWAITING_HUMAN_REVIEW',assumptions,changes:changes.map((c:any,i:number)=>({original:structuredClone(parsed.proposed_changes[i]),normalized:c,disposition:'PENDING',artifactIds:[]}))};
     (store.importSessions[projectId] ||= []).unshift(created);
     store.addAuditEvent(projectId,'External model','IMPORT_VALIDATED',created.id,'Schema and semantic validation complete; no canonical artifacts created',{digest:hash,assumptions});
     touch(projectId); res.status(201).json(created);
@@ -82,30 +79,34 @@ export function registerProposalRoutes(app: Express, store: any, identityContext
     if (req.body.reviewer || req.body.reviewerName || req.body.actorType==='AGENT' || humanConfirmed!==true)return res.status(403).json({error:'Use your authenticated human identity and confirm this review; body identity claims are rejected'});
     const reviewer=identity.name;
     if (!['ACCEPTED','MODIFIED','REJECTED'].includes(disposition)) fail('disposition','Expected ACCEPTED, MODIFIED or REJECTED');
+    const index=Number(req.params.index);
+    const original=normalizeProposalChange(change.original,s.schemaVersion || ('proposal_id' in change.original?'1.1':'1.0'),index);
     if (change.disposition !== 'PENDING') {
-      if (change.disposition === disposition && change.reviewer === reviewer && (disposition !== 'MODIFIED' || digest(change.modified) === digest({...change.original,...modified}))) return res.json(s);
+      if (change.disposition === disposition && change.reviewer === reviewer && (disposition !== 'MODIFIED' || digest(change.modified && ('schemaVersion' in change.modified?change.modified:normalizeProposalChange(change.modified,'1.0',index))) === digest({...original,...modified}))) return res.json(s);
       return res.status(409).json({error:'Change already reviewed; history cannot be overwritten'});
     }
-    let effective = change.original;
+    let effective = original;
     if (disposition === 'MODIFIED') {
       if (!modified || Object.keys(modified).some(k=>!['title','details','acceptanceCriteria','requirements','features','assumptions'].includes(k))) fail('modified','Only content and traceability fields may be modified');
-      effective = {...change.original,...modified};
+      effective = {...original,...modified};
     }
     if (disposition !== 'REJECTED') {
-      checkChange(effective,store,s.projectId);
-      const provenance = {origin:'EXTERNAL_AI_PROPOSAL',importSessionId:s.id,provider:s.provider,model:s.model,timestamp:new Date().toISOString(),originalProposalId:change.original.id,originalJsonDigest:s.digest,humanReviewer:reviewer,reviewDisposition:disposition,assumptions:[...new Set([...s.assumptions,...(effective.assumptions || [])])],resultingCanonicalArtifactIds:[] as string[]};
+      effective=normalizeProposalChange({proposal_id:effective.proposalId,artifact_type:effective.artifactType,action:effective.action,target:effective.target?{artifact_id:effective.target.artifactId,artifact_type:effective.target.artifactType}:null,proposed:Object.fromEntries(['title','details','acceptanceCriteria','requirements','features','assumptions'].filter(k=>(effective as any)[k]!==undefined).map(k=>[k,(effective as any)[k]]))},'1.1',index);
+      effective.schemaVersion=original.schemaVersion;
+      validateProposalTargets(effective,store,s.projectId,index,s.editableArtifacts);
+      const provenance = {origin:'EXTERNAL_AI_PROPOSAL',importSessionId:s.id,provider:s.provider,model:s.model,timestamp:new Date().toISOString(),originalProposalId:original.proposalId,proposalSchemaVersion:original.schemaVersion,target:original.target || null,originalJsonDigest:s.digest,humanReviewer:reviewer,reviewDisposition:disposition,assumptions:[...new Set([...s.assumptions,...(effective.assumptions || [])])],resultingCanonicalArtifactIds:[] as string[]};
       const artifact = canonical(effective,provenance,reviewer);
       Object.assign(provenance,{authenticatedIdentity:identity.id,roleSource:identity.roleSource});
       provenance.resultingCanonicalArtifactIds.push(artifact.id);
       validateGenerated(artifact);
-      (store[collections[effective.type]][s.projectId] ||= []).push(artifact);
+      (store[collections[effective.artifactType]][s.projectId] ||= []).push(artifact);
       change.artifactIds = [artifact.id];
-      if (effective.type === 'REQUIREMENT') for (const f of store.features[s.projectId] || []) if (effective.features?.includes(f.id)) f.requirements = [...new Set([...f.requirements,artifact.id])];
-      if (['WORK_ITEM','CODE_MODIFICATION'].includes(effective.type)) for (const r of store.requirements[s.projectId] || []) if (artifact.requirements.includes(r.id)) r.workItems = [...new Set([...r.workItems,artifact.id])];
+      if (effective.artifactType === 'REQUIREMENT') for (const f of store.features[s.projectId] || []) if (effective.features?.includes(f.id)) f.requirements = [...new Set([...f.requirements,artifact.id])];
+      if (['WORK_ITEM','CODE_MODIFICATION'].includes(effective.artifactType)) for (const r of store.requirements[s.projectId] || []) if (artifact.requirements.includes(r.id)) r.workItems = [...new Set([...r.workItems,artifact.id])];
     }
     Object.assign(change,{disposition,reviewer,reviewedAt:new Date().toISOString(),...(disposition === 'MODIFIED' ? {modified:effective} : {})});
     s.validationStatus = s.changes.some(c=>c.disposition === 'PENDING') ? 'AWAITING_HUMAN_REVIEW' : 'REVIEW_COMPLETE';
-    const event = store.addAuditEvent(s.projectId,reviewer,'IMPORT_CHANGE_REVIEWED',s.id,disposition,{authenticatedIdentity:identity.id,roleSource:identity.roleSource,originalProposalId:change.original.id,digest:s.digest,disposition,artifactIds:change.artifactIds,modified:change.modified || null});
+    const event = store.addAuditEvent(s.projectId,reviewer,'IMPORT_CHANGE_REVIEWED',s.id,disposition,{authenticatedIdentity:identity.id,roleSource:identity.roleSource,originalProposalId:original.proposalId,digest:s.digest,disposition,artifactIds:change.artifactIds,modified:change.modified || null});
     change.auditId = event.id; touch(s.projectId); res.json(s);
   });
 }

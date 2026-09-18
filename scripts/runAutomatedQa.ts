@@ -183,7 +183,7 @@ export function runFullAutomatedQa(): {
 
   // QA-AUTO-DOC-001: PROJECT_STATE.md Environment Reporting
   const projectStateHonest =
-    projectStateContent.includes('AI_STUDIO_WORKSPACE') &&
+    projectStateContent.includes(`Source-Control Mode: ${env.sourceControlMode}`) &&
     projectStateContent.includes('31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f') &&
     projectStateContent.includes(liveCanonicalStateHash) &&
     !projectStateContent.includes('Current Branch | `main` (Workspace root container)');
@@ -195,13 +195,13 @@ export function runFullAutomatedQa(): {
     priority: 'P0',
     status: projectStateHonest ? 'PASSED' : 'FAILED',
     details: projectStateHonest
-      ? 'PROJECT_STATE.md correctly documents AI_STUDIO_WORKSPACE, live canonical state hash, parent checkpoint hash, and verified lineage.'
+      ? 'PROJECT_STATE.md matches the detected source-control mode and preserves the seeded baseline hash and checkpoint.'
       : 'PROJECT_STATE.md retains fabricated branch or lacks canonical state hash lineage.',
   });
 
   // QA-AUTO-DOC-002: LAST_HANDOFF.md Environment & Continuity
   const handoffHonest =
-    lastHandoffContent.includes('Source-Control Mode: AI_STUDIO_WORKSPACE') &&
+    lastHandoffContent.includes(`Source-Control Mode: ${env.sourceControlMode}`) &&
     lastHandoffContent.includes('31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f') &&
     lastHandoffContent.includes(liveCanonicalStateHash) &&
     lastHandoffContent.includes('State Continuity: VERIFIED');
@@ -213,7 +213,7 @@ export function runFullAutomatedQa(): {
     priority: 'P0',
     status: handoffHonest ? 'PASSED' : 'FAILED',
     details: handoffHonest
-      ? 'LAST_HANDOFF.md correctly documents AI_STUDIO_WORKSPACE, live state hash, parent checkpoint hash, and State Continuity: VERIFIED.'
+      ? 'LAST_HANDOFF.md matches detected source-control mode and documents seeded baseline continuity separately from current evidence.'
       : 'LAST_HANDOFF.md lacks required environment fields or continuity verification.',
   });
 

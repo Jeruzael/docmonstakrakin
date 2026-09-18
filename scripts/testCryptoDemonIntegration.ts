@@ -8,6 +8,7 @@ import { scryptSync } from 'node:crypto';
 import { cryptoDemonDraft } from './fixtures/cryptoDemon.js';
 import { computeCanonicalStateHash, computeEnvelopeHash } from '../server/package/portablePackage.js';
 import {createChainedAuditEvent} from '../server/security/auditImmutability.js';
+import {verifyProposalRoundtrip} from './fixtures/proposalContractScenarios.js';
 
 const root = process.cwd();
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-crypto-'));
@@ -114,6 +115,7 @@ try {
   const audit = await api(url+'/audit/verify'); assert(audit.valid ?? audit.verified ?? audit.isValid,JSON.stringify(audit)); passed('audit chain intact');
   assert(!JSON.stringify(await api(url+'/audit')).includes(fixtureCredential));
   fs.writeFileSync(path.join(root,'docs/07_verification/cryptodemon-fixture-evidence.json'),JSON.stringify({project:p,features:feats,coverage:await api(url+'/discovery/coverage'),importSession:history,taskContext:ctx,approval:approved,auditVerification:audit},null,2));
+  await verifyProposalRoundtrip(api,url,feats[0].id,passed);
   const pkg = await api(url+'/package/export');
   const envelope = pkg.package || pkg;
   assert.equal(envelope.knowledge.importSessions.find((s:any)=>s.id===session.id).originalJson,original);

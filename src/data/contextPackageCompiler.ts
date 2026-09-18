@@ -12,6 +12,7 @@ import {
 import { applicableStandards } from './standardsApplicability.js';
 import { normalizeTechChoice } from './projectInitialization.js';
 import { validateText } from './generationValidation.js';
+import type {EditableArtifact} from '../proposalTypes.js';
 
 export interface ContextCompilerInput {
   project: Project;
@@ -57,11 +58,14 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
   const omissions: string[] = [];
   const includedReqIds: string[] = [];
   const includedRiskIds: string[] = [];
+  const includedAdrIds = new Set<string>();
+  const includedWorkIds = new Set<string>();
 
   let sections: string[] = [];
 
   // 1. Role & Project Identity (Common to all modes)
   sections.push(`=== A-SSDLC CONTROL PLANE EXECUTION PACKAGE ===`);
+  sections.push('=== REFERENCE CONTEXT ===');
   sections.push(`Agent Role: ${role}`);
   sections.push(`Project: ${project.name} (${project.id})`);
   sections.push(`Lifecycle Phase: ${project.lifecyclePhase} | Target Release: ${project.targetRelease}`);
@@ -109,6 +113,7 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
     // Mode 2: Task Context Mode (Least-context scoped to active work item)
     sections.push(`\n=== ACTIVE TASK CONTEXT ===`);
     if (activeWorkItem) {
+      includedWorkIds.add(activeWorkItem.id);
       sections.push(`Work Item ID: ${activeWorkItem.id} [${activeWorkItem.priority}]`);
       sections.push(`Title: ${activeWorkItem.title}`);
       sections.push(`Objective: ${activeWorkItem.description}`);
@@ -228,6 +233,7 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
     if (relevantAdrs.length > 0) {
       sections.push(`Governing Architecture Decisions:`);
       relevantAdrs.forEach((adr) => {
+        includedAdrIds.add(adr.id);
         sections.push(`  * [${adr.id}] ${adr.title} (${adr.status}): ${adr.decision}`);
       });
     }
@@ -291,6 +297,9 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
     sections.push(`* Evidence integrity: Evidence must be cryptographically recorded with honest execution metadata.`);
   } else {
     // Mode 3: Full Baseline Mode
+    workItems.forEach(w=>includedWorkIds.add(w.id));
+    if(activeWorkItem)includedWorkIds.add(activeWorkItem.id);
+    adrs.forEach(a=>includedAdrIds.add(a.id));
     sections.push(`\n=== PROJECT WORK ITEMS ===`);
     for (const work of workItems) sections.push(`[${work.id}] ${work.title} (${work.status}): ${work.description}; Requirements: ${work.requirements.join(', ')}; Criteria: ${work.acceptanceCriteria.join('; ')}`);
     sections.push(`\n=== COMPLETE PROJECT REQUIREMENTS BASELINE (${requirements.length} items) ===`);
@@ -320,24 +329,21 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
     if (activeWorkItem) sections.push(`[${activeWorkItem.id}] ${activeWorkItem.title}: ${activeWorkItem.description}`);
   }
 
-  // Mandatory Output Contract
-  sections.push(`\n=== MANDATORY AGENT OUTPUT CONTRACT ===`);
-  sections.push(`You MUST respond ONLY with structured JSON conforming to the canonical proposal schema:`);
-  sections.push(`{
-  "schema_version": "1.0",
-  "agent_role": "${role}",
-  "summary": "Precise summary of proposed changes",
-  "assumptions": ["List any explicit assumptions; do not invent unverified facts"],
-  "proposed_changes": [
-    {
-      "type": "REQUIREMENT | RISK | WORK_ITEM | ADR | CODE_MODIFICATION",
-      "action": "CREATE | MODIFY",
-      "id": "Stable identifier",
-      "title": "Title of change",
-      "details": "Clear explanation with acceptance criteria"
-    }
-  ]
-}`);
+  const editableArtifacts:EditableArtifact[] = [
+    ...requirements.filter(r=>includedReqIds.includes(r.id)).map(r=>({artifact_id:r.id,artifact_type:'REQUIREMENT' as const,status:r.status,allowed_actions:['MODIFY'] as ['MODIFY']})),
+    ...risks.filter(r=>includedRiskIds.includes(r.id)).map(r=>({artifact_id:r.id,artifact_type:'RISK' as const,status:(r as any).status || 'OPEN',allowed_actions:['MODIFY'] as ['MODIFY']})),
+    ...adrs.filter(a=>includedAdrIds.has(a.id)).map(a=>({artifact_id:a.id,artifact_type:'ADR' as const,status:a.status,allowed_actions:['MODIFY'] as ['MODIFY']})),
+    ...[...workItems,...(activeWorkItem?[activeWorkItem]:[])].filter((w,i,all)=>includedWorkIds.has(w.id)&&all.findIndex(other=>other.id===w.id)===i).map(w=>({artifact_id:w.id,artifact_type:'WORK_ITEM' as const,status:w.status,allowed_actions:['MODIFY'] as ['MODIFY']})),
+  ];
+  sections.push('\n=== EDITABLE CANONICAL ARTIFACTS ===');
+  sections.push(JSON.stringify({editable_artifacts:editableArtifacts},null,2));
+  sections.push('\n=== MANDATORY AGENT OUTPUT CONTRACT ===');
+  sections.push('Respond ONLY with valid JSON using schema_version 1.1. External output never grants approval or governance status.');
+  sections.push('CREATE: provide a unique proposal_id; target must be null (or absent). Proposal IDs identify external changes only. Canonical artifact IDs are assigned by docmonstakrakin after authenticated human acceptance.');
+  sections.push('MODIFY: target.artifact_id MUST be copied verbatim from editable_artifacts. Never construct or infer a modification target ID; never transform or guess one. artifact_type MUST match the target artifact_type. If no valid editable target exists, do not emit MODIFY. Use CREATE for a genuinely new proposal, or record the unresolved issue in assumptions.');
+  sections.push('MODIFY creates a new PROPOSED amendment; the original canonical artifact remains unchanged and fresh governance is required.');
+  sections.push('REFERENCE CONTEXT is not modification authority. Features, questionnaire IDs, derivation IDs, source IDs and provenance IDs are reference-only. FEATURE mutation is unsupported: propose a WORK_ITEM or record the issue in assumptions. CODE_MODIFICATION supports CREATE of proposed work only; use WORK_ITEM for an existing work target.');
+  sections.push(JSON.stringify({schema_version:'1.1',agent_role:role,summary:'Precise summary of proposed changes',assumptions:[],proposed_changes:[{proposal_id:'CHG-001',artifact_type:'REQUIREMENT',action:'CREATE',target:null,proposed:{title:'New requirement proposal',details:'Full proposed requirement statement',acceptanceCriteria:[],requirements:[],features:[],assumptions:[]}}]},null,2));
 
   if (includeOmissionReport && omissions.length > 0) {
     sections.push(`\n=== LEAST-CONTEXT OMISSION REPORT ===`);
@@ -349,6 +355,7 @@ export function compileContextPackage(input: ContextCompilerInput): CompiledCont
   const tokenEstimate = Math.ceil(compiledPrompt.length / 4);
 
   return {
+    editableArtifacts,
     handoffReady: blockers.length === 0,
     blockers,
     mode,

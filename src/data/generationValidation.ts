@@ -6,7 +6,9 @@ export class DerivationError extends Error {
 }
 export function validateText(value: unknown, path = 'text'): asserts value is string {
   if (typeof value !== 'string' || !value.trim()) throw new DerivationError(path, 'Required text is missing');
-  if (/\[object (Object|Array)\]|\{\{[^}]*\}\}|\b(?:undefined|NaN|null)\b/.test(value)) throw new DerivationError(path, 'Unresolved template or serialization artifact');
+  if (/\[object (Object|Array)\]|\{\{[^}]*\}\}|\$\{[^}]+\}|<%=[\s\S]*?%>|__PLACEHOLDER__/.test(value)) {
+    const error=new DerivationError(path, 'Unresolved template or serialization artifact');error.code='INVALID_TEMPLATE_ARTIFACT';throw error;
+  }
 }
 export function validateGenerated(value: unknown, path = 'artifact'): void {
   if (typeof value === 'string') { if (value.trim()) validateText(value, path); }

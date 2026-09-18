@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-09-18T17:15:00.150Z",
-  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used. Summary banners excluded.",
+  "timestamp": "2026-09-18T22:15:13.015Z",
+  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.",
   "suites": {
-    "total": 20,
-    "passed": 20,
+    "total": 21,
+    "passed": 21,
     "failed": 0,
     "skipped": 0
   },
   "assertions": {
-    "total": 269,
-    "passed": 269,
+    "total": 290,
+    "passed": 290,
     "failed": 0,
     "skipped": 0
   },
@@ -36,7 +36,7 @@
       "suite": "scripts/testCryptoDemonIntegration.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 37,
+      "passed": 47,
       "failed": 0,
       "skipped": 0,
       "log": "scripts_testCryptoDemonIntegration.log"
@@ -58,6 +58,15 @@
       "failed": 0,
       "skipped": 0,
       "log": "scripts_testEnvironmentFixtures.log"
+    },
+    {
+      "suite": "scripts/testProposalContract.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProposalContract.log"
     },
     {
       "suite": "scripts/testTechnicalBaseline.ts",

@@ -1,0 +1,11 @@
+PASS malformed diagnostic identifiers never expose objects to the UI
+PASS legitimate prose words are valid, including standalone JavaScript value names
+PASS actual non-finite numbers and unresolved serialization artifacts fail
+PASS schema 1.1 CREATE separates external proposal identity from canonical ID
+PASS schema 1.1 resolves the exact canonical target within the current project
+PASS missing and cross-project targets produce indexed TARGET_NOT_FOUND
+PASS feature mistaken for requirement produces precise TARGET_TYPE_MISMATCH
+PASS manifest scope and canonical type disagreement are enforced
+PASS legacy CREATE and MODIFY normalize without destructively rewriting wire data
+PASS nested external governance and identity fields remain forbidden
+PASS compiler emits v1.1 scoped manifest with reference-only features and provenance

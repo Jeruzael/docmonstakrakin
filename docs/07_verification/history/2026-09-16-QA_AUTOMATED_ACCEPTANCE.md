@@ -3,12 +3,10 @@
 
 **Document ID:** DOC-VER-004  
 **Baseline:** v0.1.0-rc1 (Technically Verified Release Candidate; Gate 7 Human Sign-off Pending)  
-**Total Canonical Criteria:** 93  
-**Total Automated Test Suites:** 21  
-**Observed Named Automated Checks:** 291  
-**Automated Criteria:** PASS 93 / FAIL 0 / BLOCKED 0 / N/A 0  
-**Named Checks:** PASS 291 / FAIL 0 / SKIP 0  
-**Human browser retest:** PENDING (DMK-191; outside automated totals)  
+**Total Canonical Criteria:** 74  
+**Total Automated Test Suites:** 19  
+**Total Test Assertions:** 218  
+**Automated Pass Rate:** 100% (74/74 Criteria, 218/218 Assertions)  
 
 ---
 
@@ -18,11 +16,11 @@ The docmonstakrakin automated QA registry establishes deterministic, verifiable 
 
 The 11 criteria executed in `scripts/runAutomatedQa.ts` represent the **governance and control-plane subset** (`QA-AUTO-ENV-*`, `QA-AUTO-WBS-*`, `QA-AUTO-WBSR-*`, `QA-AUTO-DOC-*`, `QA-AUTO-GOV-*`, `QA-AUTO-REL-*`). 
 
-The **complete canonical automated QA acceptance registry** below maps 93 applicable criteria, retaining the original 74 and adding 19 remediation criteria. It is not a reduced replacement; every criterion maps to automated verification suites in the repository.
+The **complete canonical automated QA acceptance registry** below maps all 74 applicable criteria across 12 distinct functional categories. It is not a reduced replacement; every criterion maps to automated verification suites in the repository.
 
 ---
 
-## 2. Canonical automated registry
+## 2. Complete Canonical 74-Item Registry
 
 | Criterion ID | Category | Priority | Description | Status | Verification Harness / Test Suite |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -103,37 +101,10 @@ The **complete canonical automated QA acceptance registry** below maps 93 applic
 
 ---
 
+## 3. Execution Verification & Invariants
 
-## Remediation criteria added 2026-09-19
-
-| Criterion ID | Category | Priority | Description | Status | Verification Harness / Test Suite |
-| --- | --- | --- | --- | --- | --- |
-| QA-AUTO-RC-001 | REMEDIATION | P0 | Parent Git boundary prevents inherited metadata and repository mutation | PASS | scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-RC-002 | REMEDIATION | P0 | Authenticated human identity, role and distinct quorum reject impersonation | PASS | scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-RC-003 | REMEDIATION | P0 | Accepted ADR immutable; edits require a proposed revision and new signoff | PASS | scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-RC-004 | REMEDIATION | P0 | Portable package governance remains untrusted despite valid seals | PASS | scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-RC-005 | REMEDIATION | P0 | New project collections and A-B-A navigation stay isolated | PASS | scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-RC-006 | REMEDIATION | P0 | Audit is redacted before hashing; persistence and tamper checks agree | PASS | server/security/testSecurityRegression.ts |
-| QA-AUTO-RC-007 | REMEDIATION | P0 | CryptoDemon 8-feature fixture, discovery, risk and context remain isolated | PASS | scripts/testCryptoDemon.ts & scripts/testCryptoDemonIntegration.ts |
-| QA-AUTO-PROTO-001 | PROPOSAL_PROTOCOL | P0 | A: JavaScript value names in prose and null metadata allowed | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-002 | PROPOSAL_PROTOCOL | P0 | B: Genuine templates and actual numeric nonfinite values rejected | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-003 | PROPOSAL_PROTOCOL | P0 | C: v1.1 CREATE stages then allocates proposed artifact after human review | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-004 | PROPOSAL_PROTOCOL | P0 | D: v1.1 MODIFY creates a new amendment and preserves original | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-005 | PROPOSAL_PROTOCOL | P0 | E: Missing and cross-project target produces indexed TARGET_NOT_FOUND | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-006 | PROPOSAL_PROTOCOL | P0 | F: Canonical type mismatch distinguished, including FEATURE | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-007 | PROPOSAL_PROTOCOL | P0 | G: Duplicate proposal IDs rejected | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-008 | PROPOSAL_PROTOCOL | P0 | H: External approvals, signatures, roles and identity rejected | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-009 | PROPOSAL_PROTOCOL | P0 | I: v1.0 CREATE and MODIFY compatibility and wire history retained | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-010 | PROPOSAL_PROTOCOL | P0 | J: Compiler emits v1.1 scoped manifest and reference-only semantics | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-011 | PROPOSAL_PROTOCOL | P2 | Malformed diagnostic identifiers cannot leak objects into React | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-| QA-AUTO-PROTO-012 | PROPOSAL_PROTOCOL | P2 | Historical v1.0 content remains readable with current-rule diagnostic | PASS | scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts (API scenarios) |
-
-## Execution evidence and limits
-
-Complete inventory and exact per-suite counts: [rc-regression/results.json](rc-regression/results.json). Each suite has a retained raw log. A named check may contain multiple Node assertion calls; 291 is the count of observed named successful results, not a guessed raw assert-call count. Historical hardcoded suite banners are not used.
-
-The original 74 criteria were re-evaluated through their mapped harnesses, with seven security/remediation and twelve protocol criteria added. PASS means the mapped automated assertions passed. Several historical capability and release tests use deterministic fixtures/model checks; they do not demonstrate live external integrations, production deployment or human approval. No criterion in this registry stands in for Gio's browser retest.
-
-Commands: npm run test exercises the QA, discovery, technical, CryptoDemon and proposal suites; npm run test:complete discovers all test*.ts files under scripts and server plus runAutomatedQa.ts. npm run wbs:check verifies generated-ledger drift. npm run lint and npm run build verify compilation and production bundling.
-
-Gate 7 remains HUMAN_APPROVAL_REQUIRED. No automated result promotes the release candidate. See CRYPTODEMON_REMEDIATION_REPORT.md for human retest and outstanding limitations. Historical 74/218 claims are retained only in history/2026-09-16-QA_AUTOMATED_ACCEPTANCE.md.
+All 74 criteria are continuously evaluated by the automated test battery:
+- `npm run test` executes `npm run qa`, `npm run test:remediation`, and `npm run test:tech`.
+- `npm run wbs:check` confirms zero YAML-to-Markdown drift.
+- `server/security/`, `server/secrets/`, `server/package/`, and `server/release/` test suites evaluate security regression, credential isolation, and release gate integrity.
+- Release Gate 7 invariant (`SEC-CTRL-020`) requires explicit human sign-off; automated agents cannot self-promote `v0.1.0-rc1` to a final release.

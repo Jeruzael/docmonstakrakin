@@ -11,26 +11,35 @@ v0.1.0-rc1 remains RELEASE_CANDIDATE. Gate 7 remains HUMAN_APPROVAL_REQUIRED. v0
 
 ## DMK-187 — Initialization and derivation (A–J)
 
-- [ ] Add CryptoDemon fixture and reproduce recovery-question, template, standards and context contamination against production functions.
-- [ ] Add maturity, editable assurance, deterministic risk, neutral wizard defaults and explicit technical selection normalization in src/data/projectInitialization.ts and src/types.ts.
-- [ ] Centralize standards applicability; seed stable PRODUCT_BASELINE features; retain full project question catalog and filter against only current answers.
-- [ ] Validate all textual substitutions before persistence; reject malformed candidates atomically.
-- [ ] Add 19-domain coverage UI; remove browser fallback project creation and isolate project fetches.
-- [ ] Run scripts/testCryptoDemon.ts and existing discovery/technical suites.
+- [x] Add CryptoDemon fixture and reproduce recovery-question, template, standards and context contamination against production functions.
+- [x] Add maturity, editable assurance, deterministic risk, neutral wizard defaults and explicit technical selection normalization in src/data/projectInitialization.ts and src/types.ts.
+- [x] Centralize standards applicability; seed stable PRODUCT_BASELINE features; retain full project question catalog and filter against only current answers.
+- [x] Validate all textual substitutions before persistence; reject malformed candidates atomically.
+- [x] Add 19-domain coverage UI; remove browser fallback project creation and isolate project fetches.
+- [x] Run scripts/testCryptoDemon.ts and existing discovery/technical suites.
 
 ## DMK-188 — Import review and governance (K–Q)
 
-- [ ] Reproduce missing import session API and unsafe duplicate-role quorum with HTTP tests.
-- [ ] Add server/proposals/review.ts for parse/schema/semantic/assumption validation, individual disposition and proposed canonical artifact mapping.
-- [ ] Preserve original JSON digest, original changes, reviewer modifications and canonical IDs; persist sessions with project state and portable packages.
-- [ ] Add session history, review controls and navigation in Prompt Compiler; refresh all canonical consumers after acceptance.
-- [ ] Validate sign-off targets, roles and distinct human reviewers; block direct import approval; show explicit Request Sign-Off controls and empty state.
-- [ ] Run HTTP import, audit, restart, duplicate and quorum tests.
+- [x] Reproduce missing import session API and unsafe duplicate-role quorum with HTTP tests.
+- [x] Add server/proposals/review.ts for parse/schema/semantic/assumption validation, individual disposition and proposed canonical artifact mapping.
+- [x] Preserve original JSON digest, original changes, reviewer modifications and canonical IDs; persist sessions with project state and portable packages.
+- [x] Add session history, review controls and navigation in Prompt Compiler; refresh all canonical consumers after acceptance.
+- [x] Validate sign-off targets, roles and distinct human reviewers; block direct import approval; show explicit Request Sign-Off controls and empty state.
+- [x] Run HTTP import, audit, restart, duplicate and quorum tests.
 
 ## DMK-189 — Context, release regression and evidence (R–U)
 
-- [ ] Scope context using linked project features and full requirements; block unlinked implementation handoff; show selected and ratified architecture distinctly.
-- [ ] Add isolated ledger work item with relevant fixture links and prove unrelated requirements omitted.
-- [ ] Run npm test, every existing server test harness, fixture/inbound/governance/context tests, lint, build and WBS drift.
-- [ ] Record exact results, root causes and 18-section report; synchronize WBS, QA registry, traceability, project state and handoff.
-- [ ] Leave manual QA NOT_READY_FOR_SIGNOFF; report READY_FOR_RETEST only after checks pass. Human retest remains pending.
+- [x] Scope context using linked project features and full requirements; block unlinked implementation handoff; show selected and ratified architecture distinctly.
+- [x] Add isolated ledger work item with relevant fixture links and prove unrelated requirements omitted.
+- [x] Run npm test, every existing server test harness, fixture/inbound/governance/context tests, lint, build and WBS drift.
+- [x] Record exact results, root causes and 18-section report; synchronize WBS, QA registry, traceability, project state and handoff.
+- [x] Leave manual QA NOT_READY_FOR_SIGNOFF; report READY_FOR_RETEST only after checks pass. Human retest remains pending.
+
+## DMK-190 — Proposal schema 1.1 continuation
+
+- [x] Distinguish proposal identity, canonical identity and explicit MODIFY target; retain v1.0 history.
+- [x] Compile least-context editable manifests and mandatory target rules.
+- [x] Validate prose, templates, project/type/scope and governance fields; preserve structured UI errors.
+- [x] Verify CREATE/MODIFY round trips and independent review fixes.
+
+DMK-191 human browser retest remains pending. Checked implementation steps describe automated completion, not human signoff.

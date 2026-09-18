@@ -364,6 +364,7 @@ export interface ContextPackageOptions {
 }
 
 export interface CompiledContextPackage {
+  editableArtifacts?: import('./proposalTypes').EditableArtifact[];
   handoffReady?: boolean;
   blockers?: string[];
   mode: ContextPackageMode;

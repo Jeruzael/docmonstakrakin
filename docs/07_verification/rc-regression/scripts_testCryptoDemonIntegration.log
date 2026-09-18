@@ -29,10 +29,20 @@ PASS accepted ADR immutable and canonical links included in context
 PASS malformed import rejected before persistence
 PASS metadata validation and redacted review event
 PASS audit chain intact
+PASS v1.1 CREATE validation stages legitimate prose without canonical changes
+PASS v1.1 authenticated acceptance allocates canonical ID and preserves provenance
+PASS v1.1 MODIFY preserves canonical original and creates proposed amendment only after review
+PASS API target-not-found preserves indexed diagnostic context
+PASS API feature-as-requirement mismatch distinguished from absent target
+PASS API rejects duplicate proposal IDs
+PASS API recomputes compiler manifest and denies out-of-scope MODIFY
+PASS v1.1 external governance and identity injection rejected
+PASS v1.0 MODIFY remains compatible with separate normalized target and proposal IDs
+PASS API rejects actual template artifacts while allowing JavaScript words
 PASS portable import preserves review history without trusting supplied governance
 PASS forged package approval remains historical and cannot pass release gate
 PASS imported work verification and technical ratification are untrusted
 PASS validly resealed prototype-key package rejected
 PASS A to B to A reads preserve all project collection boundaries
 PASS restart ignores interrupted snapshot and preserves review data while revoking sessions
-CryptoDemon integration: 37 checks passed
+CryptoDemon integration: 47 checks passed

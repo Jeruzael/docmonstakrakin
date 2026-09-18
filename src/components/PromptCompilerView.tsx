@@ -233,13 +233,13 @@ export const PromptCompilerView: React.FC<PromptCompilerViewProps> = ({
 
             <div className="text-[11px] text-slate-400 pt-2 flex items-center justify-between">
               <span>Full requirement statements included • Zero redaction violations</span>
-              <span>Output schema: <strong>canonical-v1.0</strong></span>
+              <span>Output schema: <strong>proposal-v1.1</strong></span>
             </div>
           </div>
         </div>
       )}
 
-      {tab === 'IMPORT' && <ImportReviewView projectId={project.id} onImported={onImported} onNavigate={onNavigate}/>}
+      {tab === 'IMPORT' && <ImportReviewView context={{mode,activeWorkItemId:activeWorkItem?.id}} projectId={project.id} onImported={onImported} onNavigate={onNavigate}/>}
     </div>
   );
 };

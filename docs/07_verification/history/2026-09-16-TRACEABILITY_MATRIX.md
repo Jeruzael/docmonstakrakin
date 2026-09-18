@@ -1,8 +1,6 @@
 # docmonstakrakin Requirements Traceability Matrix (RTM)
 ## End-to-End Governance & Verification Traceability Chain
 
-Current remediation addendum: DMK-187 through DMK-190 are technically verified; DMK-191 human retest is pending. Older entries below describe historical baseline evidence, not a new release approval.
-
 **Document ID:** DOC-CTRL-005  
 **Baseline:** v0.1.0-rc1 (Technically Verified Release Candidate; Gate 7 Human Sign-off Pending)  
 **Canonical Trace Link:**
@@ -57,15 +55,3 @@ $$\text{Requirement (REQ)} \longrightarrow \text{Architecture (CMP/ARC)} \longri
 | **`REQ-REC-001`** | Offline Conflict Non-Destructive Fork Recovery | `CMP-01`, `CMP-06` | `SEC-CTRL-026` | `DMK-178` | `TEST-211` | Conflict recovery test | **PROPOSED** |
 
 
-
-## 2026-09-19 remediation evidence
-
-| Requirement | WBS | Tests | Evidence | Status |
-| --- | --- | --- | --- | --- |
-| REQ-RC-187 | DMK-187 | testCryptoDemon; HTTP fixture; discovery/technical regression | EV-RC-187; cryptodemon-fixture-evidence.json | VERIFIED (automation) |
-| REQ-RC-188 | DMK-188 | HTTP identity/quorum/ADR/package/restart; security/audit regression | EV-RC-188; rc-regression/results.json | VERIFIED (automation and independent review) |
-| REQ-RC-189 | DMK-189 | Complete regression inventory; lint/build; WBS drift | EV-RC-189; rc-checkpoint.json | VERIFIED (technical closeout) |
-| REQ-RC-190 | DMK-190 | testProposalContract; proposalContractScenarios through real HTTP | EV-RC-190; PROPOSAL_SCHEMA_1_1_REPORT.md | VERIFIED (automation and independent review) |
-| REQ-RC-189, REQ-RC-190 | DMK-191 | Gio human browser retest | Not yet recorded | READY / NOT_READY_FOR_SIGNOFF |
-
-Evidence paths resolve under docs/07_verification. All four EV-RC records are defined in CRYPTODEMON_REMEDIATION_REPORT.md. No Gate 7 authority was exercised.

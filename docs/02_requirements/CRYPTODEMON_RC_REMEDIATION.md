@@ -9,3 +9,7 @@ User-authorized on 2026-09-18. Full acceptance specification preserved in ../07_
 | REQ-RC-189 | R–U: useful task context, fixture and complete regression evidence, manual retest readiness | DMK-189 | CMP-01, CMP-04 | SEC-CTRL-020 |
 
 This repairs v0.1 behavior. It grants no release promotion, architecture ratification or v0.2 implementation authority.
+
+| REQ-RC-190 | Explicit schema v1.1, legacy normalization, prose/template distinction, scoped typed MODIFY targets, structured diagnostics and preserved human authority | DMK-190 | CMP-01, CMP-02, CMP-04 | SEC-CTRL-013, SEC-CTRL-017, SEC-CTRL-020 |
+
+Human retest of REQ-RC-189 and REQ-RC-190 is tracked separately as DMK-191; no human approval is implied by automated verification.

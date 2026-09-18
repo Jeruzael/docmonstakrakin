@@ -4,10 +4,10 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-09-16T15:20:00Z"
+last_updated: "2026-09-19"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
-remediation_status: "IN_PROGRESS"
+remediation_status: "READY_FOR_RETEST"
 
 status_definitions:
   - PROPOSED: "Work is identified but not yet approved or fully specified."
@@ -62,6 +62,47 @@ phases:
     wbs_prefix: "13"
 
 items:
+  - id: "DMK-190"
+    wbs_path: "13.06.04"
+    parent_id: "EPIC-13"
+    title: "Explicit external proposal schema 1.1 and MODIFY target validation"
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-188"]
+    requirements: ["REQ-RC-190"]
+    architecture_links: ["CMP-01", "CMP-02", "CMP-04"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-017", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Prose validation, distinct proposal/target IDs, scoped manifests, typed targets, structured errors, v1.0 compatibility and immutable proposed amendments"
+    verification_method: "scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts; npm run lint; npm run build; npm run test"
+    evidence: ["EV-RC-190", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User proposal protocol specification"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest"
+  - id: "DMK-191"
+    wbs_path: "13.06.05"
+    parent_id: "EPIC-13"
+    title: "Gio CryptoDemon human browser retest"
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "READY"
+    dependencies: ["DMK-187", "DMK-188", "DMK-189", "DMK-190"]
+    requirements: ["REQ-RC-189", "REQ-RC-190"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks; records new evidence without executing Gate 7"
+    verification_method: "docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md human retest checklist"
+    evidence: []
+    owner: "Gio"
   - id: "DMK-187"
     wbs_path: "13.06.01"
     parent_id: "EPIC-13"
@@ -71,7 +112,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "IN_PROGRESS"
+    status: "VERIFIED"
     dependencies: ["DMK-186"]
     requirements: ["REQ-RC-187"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -79,6 +120,11 @@ items:
     acceptance_criteria:
       - "User QA specification A-J: isolated inputs, 8 proposed features, honest discovery and validated derivation"
     verification_method: "scripts/testCryptoDemon.ts and HTTP regression"
+    evidence: ["EV-RC-187", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
   - id: "DMK-188"
     wbs_path: "13.06.02"
     parent_id: "EPIC-13"
@@ -88,7 +134,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "READY"
+    status: "VERIFIED"
     dependencies: ["DMK-120"]
     requirements: ["REQ-RC-188"]
     architecture_links: ["CMP-01", "CMP-02", "CMP-04"]
@@ -96,6 +142,11 @@ items:
     acceptance_criteria:
       - "User QA specification K-Q: durable staging, per-change review, provenance, proposed artifacts, distinct human quorum"
     verification_method: "scripts/testCryptoDemonIntegration.ts"
+    evidence: ["EV-RC-188", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
   - id: "DMK-189"
     wbs_path: "13.06.03"
     parent_id: "EPIC-13"
@@ -105,7 +156,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "PROPOSED"
+    status: "VERIFIED"
     dependencies: ["DMK-187", "DMK-188"]
     requirements: ["REQ-RC-189"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -113,6 +164,11 @@ items:
     acceptance_criteria:
       - "User QA specification R-U: linked implementation context, complete automated battery and honest pending human retest"
     verification_method: "npm test, complete server battery, lint, build, wbs:check"
+    evidence: ["EV-RC-189", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
   # ==========================================
   # EPIC-01: Foundation & Engineering Baseline
   # ==========================================

@@ -1,6 +1,6 @@
 {
   "project": {
-    "id": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "id": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
     "maturity": "GREENFIELD",
     "assuranceInputs": {
       "publicInternetExposure": false,
@@ -35,8 +35,8 @@
     "stateVersion": 1,
     "owner": "Local Developer",
     "targetRelease": "Q4 2026",
-    "createdAt": "2026-09-18T17:14:31.645Z",
-    "updatedAt": "2026-09-18T17:14:31.645Z",
+    "createdAt": "2026-09-18T22:14:49.012Z",
+    "updatedAt": "2026-09-18T22:14:49.012Z",
     "repoPath": "/workspace/project",
     "repoStatus": "CLEAN",
     "healthScore": 70,
@@ -479,7 +479,7 @@
   },
   "features": [
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-001",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-001",
       "title": "Demo Wallet Creation",
       "description": "Demo Wallet Creation",
       "capability": "Product",
@@ -489,16 +489,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Demo Wallet Creation",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-002",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-002",
       "title": "Mine Block",
       "description": "Mine Block",
       "capability": "Product",
@@ -508,16 +508,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Mine Block",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-003",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-003",
       "title": "Mining Reward",
       "description": "Mining Reward",
       "capability": "Product",
@@ -527,16 +527,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Mining Reward",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-004",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-004",
       "title": "Send DEMON Coins",
       "description": "Send DEMON Coins",
       "capability": "Product",
@@ -546,16 +546,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Send DEMON Coins",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-005",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-005",
       "title": "Wallet Balance",
       "description": "Wallet Balance",
       "capability": "Product",
@@ -565,16 +565,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Wallet Balance",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-006",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-006",
       "title": "Transaction History",
       "description": "Transaction History",
       "capability": "Product",
@@ -584,16 +584,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Transaction History",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-007",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-007",
       "title": "Blockchain Explorer",
       "description": "Blockchain Explorer",
       "capability": "Product",
@@ -603,16 +603,16 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Blockchain Explorer",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     },
     {
-      "id": "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008",
+      "id": "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008",
       "title": "Validate Blockchain Integrity",
       "description": "Validate Blockchain Integrity",
       "capability": "Product",
@@ -622,12 +622,12 @@
       "personas": [],
       "requirements": [],
       "dependencies": [],
-      "updatedAt": "2026-09-18T17:14:31.645Z",
+      "updatedAt": "2026-09-18T22:14:49.012Z",
       "provenance": {
-        "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+        "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
         "origin": "PRODUCT_BASELINE",
         "input": "Validate Blockchain Integrity",
-        "timestamp": "2026-09-18T17:14:31.645Z"
+        "timestamp": "2026-09-18T22:14:49.012Z"
       }
     }
   ],
@@ -930,13 +930,14 @@
     ]
   },
   "importSession": {
-    "id": "IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70",
-    "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "schemaVersion": "1.0",
+    "id": "IMPORT-a868bc2e-386f-4863-bc1b-39d98877d380",
+    "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
     "provider": "External fixture",
     "model": "Test model",
-    "timestamp": "2026-09-18T17:14:31.677Z",
-    "originalJson": "{\"schema_version\":\"1.0\",\"agent_role\":\"Architect\",\"provider\":\"External fixture\",\"model\":\"Test model\",\"summary\":\"Ledger proposals\",\"assumptions\":[\"Mining difficulty remains an open decision\"],\"proposed_changes\":[{\"type\":\"REQUIREMENT\",\"action\":\"CREATE\",\"id\":\"external-ledger\",\"title\":\"Validate block hashes\",\"details\":\"CryptoDemon must detect an altered block hash and reject an invalid ledger.\",\"acceptanceCriteria\":[\"Changing a saved block invalidates chain validation.\"],\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"]},{\"type\":\"ADR\",\"action\":\"CREATE\",\"id\":\"external-adr\",\"title\":\"Ledger representation candidate\",\"details\":\"Consider an append-only local ledger; representation remains proposed.\"},{\"type\":\"WORK_ITEM\",\"action\":\"CREATE\",\"id\":\"external-work\",\"title\":\"Implement Core Blockchain Ledger\",\"details\":\"Implement local block hashes and ledger integrity.\",\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"],\"acceptanceCriteria\":[\"Tampering is detected.\"]},{\"type\":\"RISK\",\"action\":\"CREATE\",\"id\":\"external-risk\",\"title\":\"Demo balance inconsistency\",\"details\":\"Balance calculations could disagree with the demo ledger.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code\",\"title\":\"Unwanted remote network\",\"details\":\"Connect to remote peers.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code-local\",\"title\":\"Implement local hash validation\",\"details\":\"Add hash validation within the local demo ledger.\",\"features\":[\"FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008\"]}]}",
-    "digest": "66c6638fbd5339070417e6e9f110977ee3df3854d43a80541e643242ad26487d",
+    "timestamp": "2026-09-18T22:14:49.048Z",
+    "originalJson": "{\"schema_version\":\"1.0\",\"agent_role\":\"Architect\",\"provider\":\"External fixture\",\"model\":\"Test model\",\"summary\":\"Ledger proposals\",\"assumptions\":[\"Mining difficulty remains an open decision\"],\"proposed_changes\":[{\"type\":\"REQUIREMENT\",\"action\":\"CREATE\",\"id\":\"external-ledger\",\"title\":\"Validate block hashes\",\"details\":\"CryptoDemon must detect an altered block hash and reject an invalid ledger.\",\"acceptanceCriteria\":[\"Changing a saved block invalidates chain validation.\"],\"features\":[\"FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008\"]},{\"type\":\"ADR\",\"action\":\"CREATE\",\"id\":\"external-adr\",\"title\":\"Ledger representation candidate\",\"details\":\"Consider an append-only local ledger; representation remains proposed.\"},{\"type\":\"WORK_ITEM\",\"action\":\"CREATE\",\"id\":\"external-work\",\"title\":\"Implement Core Blockchain Ledger\",\"details\":\"Implement local block hashes and ledger integrity.\",\"features\":[\"FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008\"],\"acceptanceCriteria\":[\"Tampering is detected.\"]},{\"type\":\"RISK\",\"action\":\"CREATE\",\"id\":\"external-risk\",\"title\":\"Demo balance inconsistency\",\"details\":\"Balance calculations could disagree with the demo ledger.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code\",\"title\":\"Unwanted remote network\",\"details\":\"Connect to remote peers.\"},{\"type\":\"CODE_MODIFICATION\",\"action\":\"CREATE\",\"id\":\"external-code-local\",\"title\":\"Implement local hash validation\",\"details\":\"Add hash validation within the local demo ledger.\",\"features\":[\"FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008\"]}]}",
+    "digest": "0c1cbedee86ba0df180859971f4e62bcf1f769f9cf735f3b19e588b44f732a0a",
     "validationStatus": "REVIEW_COMPLETE",
     "assumptions": [
       "Mining difficulty remains an open decision",
@@ -954,16 +955,30 @@
             "Changing a saved block invalidates chain validation."
           ],
           "features": [
-            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
+          ]
+        },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-ledger",
+          "artifactType": "REQUIREMENT",
+          "action": "CREATE",
+          "title": "Validate block hashes",
+          "details": "CryptoDemon must detect an altered block hash and reject an invalid ledger.",
+          "acceptanceCriteria": [
+            "Changing a saved block invalidates chain validation."
+          ],
+          "features": [
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
           ]
         },
         "disposition": "ACCEPTED",
         "artifactIds": [
-          "REQ-a8812b39-282a-4589-beae-fcfbd657785b"
+          "REQ-072c6f8e-02ea-406f-842a-59b0198a5f35"
         ],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.776Z",
-        "auditId": "AUD-MU77XO80-SYQ7"
+        "reviewedAt": "2026-09-18T22:14:49.146Z",
+        "auditId": "AUD-MU7INUII-MFLQ"
       },
       {
         "original": {
@@ -973,13 +988,21 @@
           "title": "Ledger representation candidate",
           "details": "Consider an append-only local ledger; representation remains proposed."
         },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-adr",
+          "artifactType": "ADR",
+          "action": "CREATE",
+          "title": "Ledger representation candidate",
+          "details": "Consider an append-only local ledger; representation remains proposed."
+        },
         "disposition": "ACCEPTED",
         "artifactIds": [
-          "ADR-a50033da-1c7a-492b-aaa6-1acd49c8d963"
+          "ADR-3fbb9b26-7455-46fb-9879-32ce869ba861"
         ],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.783Z",
-        "auditId": "AUD-MU77XO87-XQYE"
+        "reviewedAt": "2026-09-18T22:14:49.155Z",
+        "auditId": "AUD-MU7INUIR-C4VH"
       },
       {
         "original": {
@@ -989,32 +1012,47 @@
           "title": "Implement Core Blockchain Ledger",
           "details": "Implement local block hashes and ledger integrity.",
           "features": [
-            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
           ],
           "acceptanceCriteria": [
             "Tampering is detected."
+          ]
+        },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-work",
+          "artifactType": "WORK_ITEM",
+          "action": "CREATE",
+          "title": "Implement Core Blockchain Ledger",
+          "details": "Implement local block hashes and ledger integrity.",
+          "acceptanceCriteria": [
+            "Tampering is detected."
+          ],
+          "features": [
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
           ]
         },
         "disposition": "MODIFIED",
         "artifactIds": [
-          "WORK-4417be64-ed8d-489f-ab1c-d168412eef01"
+          "WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc"
         ],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.790Z",
+        "reviewedAt": "2026-09-18T22:14:49.162Z",
         "modified": {
-          "type": "WORK_ITEM",
+          "schemaVersion": "1.0",
+          "proposalId": "external-work",
+          "artifactType": "WORK_ITEM",
           "action": "CREATE",
-          "id": "external-work",
           "title": "Implement Core Blockchain Ledger",
           "details": "Implement immutable local ledger and block hash validation.",
-          "features": [
-            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
-          ],
           "acceptanceCriteria": [
             "Tampering is detected."
+          ],
+          "features": [
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
           ]
         },
-        "auditId": "AUD-MU77XO8E-64GI"
+        "auditId": "AUD-MU7INUIY-0RFM"
       },
       {
         "original": {
@@ -1024,13 +1062,21 @@
           "title": "Demo balance inconsistency",
           "details": "Balance calculations could disagree with the demo ledger."
         },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-risk",
+          "artifactType": "RISK",
+          "action": "CREATE",
+          "title": "Demo balance inconsistency",
+          "details": "Balance calculations could disagree with the demo ledger."
+        },
         "disposition": "ACCEPTED",
         "artifactIds": [
-          "RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c"
+          "RISK-bb80cee2-65eb-4762-a8c1-341f7db9bcb1"
         ],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.797Z",
-        "auditId": "AUD-MU77XO8L-09OL"
+        "reviewedAt": "2026-09-18T22:14:49.169Z",
+        "auditId": "AUD-MU7INUJ5-ICGP"
       },
       {
         "original": {
@@ -1040,11 +1086,19 @@
           "title": "Unwanted remote network",
           "details": "Connect to remote peers."
         },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-code",
+          "artifactType": "CODE_MODIFICATION",
+          "action": "CREATE",
+          "title": "Unwanted remote network",
+          "details": "Connect to remote peers."
+        },
         "disposition": "REJECTED",
         "artifactIds": [],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.804Z",
-        "auditId": "AUD-MU77XO8S-TSHA"
+        "reviewedAt": "2026-09-18T22:14:49.177Z",
+        "auditId": "AUD-MU7INUJD-0GBZ"
       },
       {
         "original": {
@@ -1054,37 +1108,68 @@
           "title": "Implement local hash validation",
           "details": "Add hash validation within the local demo ledger.",
           "features": [
-            "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
+          ]
+        },
+        "normalized": {
+          "schemaVersion": "1.0",
+          "proposalId": "external-code-local",
+          "artifactType": "CODE_MODIFICATION",
+          "action": "CREATE",
+          "title": "Implement local hash validation",
+          "details": "Add hash validation within the local demo ledger.",
+          "features": [
+            "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
           ]
         },
         "disposition": "ACCEPTED",
         "artifactIds": [
-          "WORK-d839fa42-b401-4ba3-870c-5820ebb3611e"
+          "WORK-8a420f87-2dfe-461c-bc02-80127a6aaf11"
         ],
         "reviewer": "Fixture Human",
-        "reviewedAt": "2026-09-18T17:14:31.810Z",
-        "auditId": "AUD-MU77XO8Y-DP8L"
+        "reviewedAt": "2026-09-18T22:14:49.185Z",
+        "auditId": "AUD-MU7INUJL-HJIM"
       }
     ]
   },
   "taskContext": {
+    "editableArtifacts": [
+      {
+        "artifact_id": "REQ-072c6f8e-02ea-406f-842a-59b0198a5f35",
+        "artifact_type": "REQUIREMENT",
+        "status": "APPROVED",
+        "allowed_actions": [
+          "MODIFY"
+        ]
+      },
+      {
+        "artifact_id": "WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc",
+        "artifact_type": "WORK_ITEM",
+        "status": "READY",
+        "allowed_actions": [
+          "MODIFY"
+        ]
+      }
+    ],
     "handoffReady": true,
     "blockers": [],
     "mode": "TASK_CONTEXT",
     "role": "Developer",
-    "compiledPrompt": "=== A-SSDLC CONTROL PLANE EXECUTION PACKAGE ===\nAgent Role: Developer\nProject: CryptoDemon (PRJ-56805f76-eb85-446a-be48-683c1f91645f)\nLifecycle Phase: DISCOVERY | Target Release: Q4 2026\nProfiles: WEB_APPLICATION, BACKEND_API [Specialized: DEVELOPER_TOOL]\nDelivery Method: ITERATIVE | Data Sensitivity: PUBLIC\nPackage Scoping Mode: TASK_CONTEXT\nPurpose: A simple educational cryptocurrency demonstrating mining, peer-to-peer demo coin transfers, wallet balances, block hashes, and immutable ledger behavior.\nDeployment intent: Local / localhost only\nNon-goals: no real monetary value; no public blockchain network; no real crypto exchange; no fiat; no smart contracts; no production OIDC; no production wallet security; no PII; no AI or agentic AI\nPinned Standards: NIST SP 800-218 (SSDF) v1.1, OWASP ASVS v4.0.3, OWASP SAMM v2.0.1\n\n=== SELECTED ARCHITECTURE AND OPEN DECISIONS ===\nfrontend: OPEN DECISION\nbackend: OPEN DECISION\ndatabase: OPEN DECISION\nauthentication: OPEN DECISION\nstorage: OPEN DECISION\napiApproach: OPEN DECISION\ndeployment: OPEN DECISION\nsourceControl: OPEN DECISION\ntesting: OPEN DECISION\naiProvider: OPEN DECISION\n\n=== ACTIVE TASK CONTEXT ===\nWork Item ID: WORK-4417be64-ed8d-489f-ab1c-d168412eef01 [P1]\nTitle: Implement Core Blockchain Ledger\nObjective: Implement immutable local ledger and block hash validation.\nStatus: READY | Sprint: 0\nAcceptance Criteria:\n  1. Tampering is detected.\n\n=== GOVERNING REQUIREMENTS (1 in task scope) ===\n--- Requirement REQ-a8812b39-282a-4589-beae-fcfbd657785b: Validate block hashes ---\n  Category: FUNCTIONAL | Priority: MEDIUM | Status: APPROVED\n  Statement: CryptoDemon must detect an altered block hash and reject an invalid ledger.\n  Origin: EXTERNAL_AI_PROPOSAL (IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70)\n  Acceptance Criteria:\n    - Changing a saved block invalidates chain validation.\n\n=== GOVERNING FEATURES & CAPABILITIES (1 in scope) ===\n* [FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008] Validate Blockchain Integrity (PROPOSED) - Capability: Product\n  Description: Validate Blockchain Integrity\n\n=== ARCHITECTURE & TECHNICAL CONSTRAINTS ===\n\n=== TASK-SPECIFIC GOVERNING RISKS & CONTROLS (0 in scope) ===\n(No task-specific risks linked. General risk floor enforced via global constraints.)\n\n=== [GLOBAL ARCHITECTURAL CONSTRAINTS] ===\n* Respect the project's recorded scope, non-goals and explicit governing requirements.\n\n=== [VERIFICATION DISCIPLINE & QA GATING] ===\n* All proposed changes must be accompanied by explicit acceptance tests.\n* Zero-defect policy: Candidate proposals must pass all automated verification suites prior to promotion.\n* Evidence integrity: Evidence must be cryptographically recorded with honest execution metadata.\n\n=== MANDATORY AGENT OUTPUT CONTRACT ===\nYou MUST respond ONLY with structured JSON conforming to the canonical proposal schema:\n{\n  \"schema_version\": \"1.0\",\n  \"agent_role\": \"Developer\",\n  \"summary\": \"Precise summary of proposed changes\",\n  \"assumptions\": [\"List any explicit assumptions; do not invent unverified facts\"],\n  \"proposed_changes\": [\n    {\n      \"type\": \"REQUIREMENT | RISK | WORK_ITEM | ADR | CODE_MODIFICATION\",\n      \"action\": \"CREATE | MODIFY\",\n      \"id\": \"Stable identifier\",\n      \"title\": \"Title of change\",\n      \"details\": \"Clear explanation with acceptance criteria\"\n    }\n  ]\n}\n\n=== LEAST-CONTEXT OMISSION REPORT ===\n- 1 requirements out of task scope omitted per least-context policy\n- 7 features out of task scope omitted per least-context policy\n- 1 architecture decision records (ADRs) out of task scope omitted\n- 2 risks out of task scope omitted per least-context policy (RISK-001, RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c)",
+    "compiledPrompt": "=== A-SSDLC CONTROL PLANE EXECUTION PACKAGE ===\n=== REFERENCE CONTEXT ===\nAgent Role: Developer\nProject: CryptoDemon (PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce)\nLifecycle Phase: DISCOVERY | Target Release: Q4 2026\nProfiles: WEB_APPLICATION, BACKEND_API [Specialized: DEVELOPER_TOOL]\nDelivery Method: ITERATIVE | Data Sensitivity: PUBLIC\nPackage Scoping Mode: TASK_CONTEXT\nPurpose: A simple educational cryptocurrency demonstrating mining, peer-to-peer demo coin transfers, wallet balances, block hashes, and immutable ledger behavior.\nDeployment intent: Local / localhost only\nNon-goals: no real monetary value; no public blockchain network; no real crypto exchange; no fiat; no smart contracts; no production OIDC; no production wallet security; no PII; no AI or agentic AI\nPinned Standards: NIST SP 800-218 (SSDF) v1.1, OWASP ASVS v4.0.3, OWASP SAMM v2.0.1\n\n=== SELECTED ARCHITECTURE AND OPEN DECISIONS ===\nfrontend: OPEN DECISION\nbackend: OPEN DECISION\ndatabase: OPEN DECISION\nauthentication: OPEN DECISION\nstorage: OPEN DECISION\napiApproach: OPEN DECISION\ndeployment: OPEN DECISION\nsourceControl: OPEN DECISION\ntesting: OPEN DECISION\naiProvider: OPEN DECISION\n\n=== ACTIVE TASK CONTEXT ===\nWork Item ID: WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc [P1]\nTitle: Implement Core Blockchain Ledger\nObjective: Implement immutable local ledger and block hash validation.\nStatus: READY | Sprint: 0\nAcceptance Criteria:\n  1. Tampering is detected.\n\n=== GOVERNING REQUIREMENTS (1 in task scope) ===\n--- Requirement REQ-072c6f8e-02ea-406f-842a-59b0198a5f35: Validate block hashes ---\n  Category: FUNCTIONAL | Priority: MEDIUM | Status: APPROVED\n  Statement: CryptoDemon must detect an altered block hash and reject an invalid ledger.\n  Origin: EXTERNAL_AI_PROPOSAL (IMPORT-a868bc2e-386f-4863-bc1b-39d98877d380)\n  Acceptance Criteria:\n    - Changing a saved block invalidates chain validation.\n\n=== GOVERNING FEATURES & CAPABILITIES (1 in scope) ===\n* [FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008] Validate Blockchain Integrity (PROPOSED) - Capability: Product\n  Description: Validate Blockchain Integrity\n\n=== ARCHITECTURE & TECHNICAL CONSTRAINTS ===\n\n=== TASK-SPECIFIC GOVERNING RISKS & CONTROLS (0 in scope) ===\n(No task-specific risks linked. General risk floor enforced via global constraints.)\n\n=== [GLOBAL ARCHITECTURAL CONSTRAINTS] ===\n* Respect the project's recorded scope, non-goals and explicit governing requirements.\n\n=== [VERIFICATION DISCIPLINE & QA GATING] ===\n* All proposed changes must be accompanied by explicit acceptance tests.\n* Zero-defect policy: Candidate proposals must pass all automated verification suites prior to promotion.\n* Evidence integrity: Evidence must be cryptographically recorded with honest execution metadata.\n\n=== EDITABLE CANONICAL ARTIFACTS ===\n{\n  \"editable_artifacts\": [\n    {\n      \"artifact_id\": \"REQ-072c6f8e-02ea-406f-842a-59b0198a5f35\",\n      \"artifact_type\": \"REQUIREMENT\",\n      \"status\": \"APPROVED\",\n      \"allowed_actions\": [\n        \"MODIFY\"\n      ]\n    },\n    {\n      \"artifact_id\": \"WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc\",\n      \"artifact_type\": \"WORK_ITEM\",\n      \"status\": \"READY\",\n      \"allowed_actions\": [\n        \"MODIFY\"\n      ]\n    }\n  ]\n}\n\n=== MANDATORY AGENT OUTPUT CONTRACT ===\nRespond ONLY with valid JSON using schema_version 1.1. External output never grants approval or governance status.\nCREATE: provide a unique proposal_id; target must be null (or absent). Proposal IDs identify external changes only. Canonical artifact IDs are assigned by docmonstakrakin after authenticated human acceptance.\nMODIFY: target.artifact_id MUST be copied verbatim from editable_artifacts. Never construct or infer a modification target ID; never transform or guess one. artifact_type MUST match the target artifact_type. If no valid editable target exists, do not emit MODIFY. Use CREATE for a genuinely new proposal, or record the unresolved issue in assumptions.\nMODIFY creates a new PROPOSED amendment; the original canonical artifact remains unchanged and fresh governance is required.\nREFERENCE CONTEXT is not modification authority. Features, questionnaire IDs, derivation IDs, source IDs and provenance IDs are reference-only. FEATURE mutation is unsupported: propose a WORK_ITEM or record the issue in assumptions. CODE_MODIFICATION supports CREATE of proposed work only; use WORK_ITEM for an existing work target.\n{\n  \"schema_version\": \"1.1\",\n  \"agent_role\": \"Developer\",\n  \"summary\": \"Precise summary of proposed changes\",\n  \"assumptions\": [],\n  \"proposed_changes\": [\n    {\n      \"proposal_id\": \"CHG-001\",\n      \"artifact_type\": \"REQUIREMENT\",\n      \"action\": \"CREATE\",\n      \"target\": null,\n      \"proposed\": {\n        \"title\": \"New requirement proposal\",\n        \"details\": \"Full proposed requirement statement\",\n        \"acceptanceCriteria\": [],\n        \"requirements\": [],\n        \"features\": [],\n        \"assumptions\": []\n      }\n    }\n  ]\n}\n\n=== LEAST-CONTEXT OMISSION REPORT ===\n- 1 requirements out of task scope omitted per least-context policy\n- 7 features out of task scope omitted per least-context policy\n- 1 architecture decision records (ADRs) out of task scope omitted\n- 2 risks out of task scope omitted per least-context policy (RISK-001, RISK-bb80cee2-65eb-4762-a8c1-341f7db9bcb1)",
     "activeWorkItem": {
-      "id": "WORK-4417be64-ed8d-489f-ab1c-d168412eef01",
+      "id": "WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc",
       "title": "Implement Core Blockchain Ledger",
       "status": "READY",
       "provenance": {
         "origin": "EXTERNAL_AI_PROPOSAL",
-        "importSessionId": "IMPORT-a3f38c29-df80-4166-b5ec-414f6107eb70",
+        "importSessionId": "IMPORT-a868bc2e-386f-4863-bc1b-39d98877d380",
         "provider": "External fixture",
         "model": "Test model",
-        "timestamp": "2026-09-18T17:14:31.790Z",
+        "timestamp": "2026-09-18T22:14:49.162Z",
         "originalProposalId": "external-work",
-        "originalJsonDigest": "66c6638fbd5339070417e6e9f110977ee3df3854d43a80541e643242ad26487d",
+        "proposalSchemaVersion": "1.0",
+        "target": null,
+        "originalJsonDigest": "0c1cbedee86ba0df180859971f4e62bcf1f769f9cf735f3b19e588b44f732a0a",
         "humanReviewer": "Fixture Human",
         "reviewDisposition": "MODIFIED",
         "assumptions": [
@@ -1092,12 +1177,12 @@
           "Review inferred assumption in external-adr: Consider an append-only local ledger; representation remains proposed."
         ],
         "resultingCanonicalArtifactIds": [
-          "WORK-4417be64-ed8d-489f-ab1c-d168412eef01"
+          "WORK-bd18c78a-2589-47a8-85f6-048e9326d1cc"
         ],
         "authenticatedIdentity": "fixture-human",
         "roleSource": "LOCAL_SERVER_ROSTER"
       },
-      "updatedAt": "2026-09-18T17:14:32.293Z",
+      "updatedAt": "2026-09-18T22:14:49.644Z",
       "type": "TASK",
       "description": "Implement immutable local ledger and block hash validation.",
       "priority": "P1",
@@ -1105,7 +1190,7 @@
       "sprint": 0,
       "requirements": [],
       "features": [
-        "FEAT-PRJ-56805f76-eb85-446a-be48-683c1f91645f-008"
+        "FEAT-PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce-008"
       ],
       "dependencies": [],
       "acceptanceCriteria": [
@@ -1118,27 +1203,27 @@
       "proposalType": "WORK_ITEM"
     },
     "includedRequirementIds": [
-      "REQ-a8812b39-282a-4589-beae-fcfbd657785b"
+      "REQ-072c6f8e-02ea-406f-842a-59b0198a5f35"
     ],
     "includedRiskIds": [],
     "omissionsReport": [
       "1 requirements out of task scope omitted per least-context policy",
       "7 features out of task scope omitted per least-context policy",
       "1 architecture decision records (ADRs) out of task scope omitted",
-      "2 risks out of task scope omitted per least-context policy (RISK-001, RISK-2c759845-3b69-4f1c-9dd3-5c1acbf3964c)"
+      "2 risks out of task scope omitted per least-context policy (RISK-001, RISK-bb80cee2-65eb-4762-a8c1-341f7db9bcb1)"
     ],
-    "tokenEstimate": 920,
-    "timestamp": "2026-09-18T17:14:32.306Z"
+    "tokenEstimate": 1318,
+    "timestamp": "2026-09-18T22:14:49.654Z"
   },
   "approval": {
-    "id": "APV-9a1dc00e-287c-4a25-a2b7-d3f24d42b73d",
-    "projectId": "PRJ-56805f76-eb85-446a-be48-683c1f91645f",
+    "id": "APV-d101d031-b119-4621-8ebd-7d96428c5dd4",
+    "projectId": "PRJ-54bc8549-51b5-4cd1-b10f-a7f70be7b2ce",
     "title": "Validate block hashes",
     "type": "REQUIREMENT_BASELINE",
-    "targetEntityId": "REQ-a8812b39-282a-4589-beae-fcfbd657785b",
+    "targetEntityId": "REQ-072c6f8e-02ea-406f-842a-59b0198a5f35",
     "targetEntityType": "REQUIREMENT",
     "requestedBy": "Fixture Human",
-    "requestedAt": "2026-09-18T17:14:31.926Z",
+    "requestedAt": "2026-09-18T22:14:49.296Z",
     "status": "APPROVED",
     "urgency": "HIGH",
     "riskLevel": "MEDIUM",
@@ -1155,7 +1240,7 @@
         "identityId": "fixture-human",
         "roleSource": "LOCAL_SERVER_ROSTER",
         "decision": "APPROVED",
-        "timestamp": "2026-09-18T17:14:32.188Z"
+        "timestamp": "2026-09-18T22:14:49.548Z"
       },
       {
         "role": "Lead Architect",
@@ -1163,10 +1248,10 @@
         "identityId": "fixture-architect",
         "roleSource": "LOCAL_SERVER_ROSTER",
         "decision": "APPROVED",
-        "timestamp": "2026-09-18T17:14:32.283Z"
+        "timestamp": "2026-09-18T22:14:49.635Z"
       }
     ],
-    "targetDigest": "722ac04b83be3beb0e5023dec103e233214f67f416693e4e49d1b8bc013d944e",
+    "targetDigest": "2f73f2afcc189b9202d5a3ee895e469408bb52af1169aa1f38787456572a7047",
     "policyGates": [
       {
         "gateName": "Canonical target exists",
@@ -1175,7 +1260,7 @@
       }
     ],
     "policyVersion": "LOCAL_SESSION_V1",
-    "resolvedAt": "2026-09-18T17:14:32.284Z",
+    "resolvedAt": "2026-09-18T22:14:49.635Z",
     "resolvedBy": "Fixture Architect"
   },
   "auditVerification": {

@@ -37,6 +37,8 @@ interface WbsDocument {
   baseline_description?: string;
   release_status?: string;
   gate_7_status?: string;
+  manual_qa_status?: string;
+  remediation_status?: string;
   last_updated: string;
   authoritative: boolean;
   status_definitions: Record<string, string>[];
@@ -63,7 +65,7 @@ function computePhaseStatus(phaseId: string, items: WbsItem[]): string {
     return '`PROPOSED` (Planning Milestone)';
   }
   if (phaseId === 'PHASE-12') {
-    return '`VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate)';
+    return statuses.includes('READY') ? '`VERIFIED` (Automated remediation); human retest `READY`; Gate 7 pending' : '`VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate)';
   }
   if (statuses.includes('READY')) {
     return '`IMPLEMENTED` (Test harness in `READY`)';
@@ -93,6 +95,8 @@ export function generateWbsMarkdown(doc: WbsDocument): string {
   if (doc.gate_7_status) {
     lines.push(`**Gate 7 Status:** \`${doc.gate_7_status}\`  `);
   }
+  if(doc.manual_qa_status)lines.push(`**Manual QA Status:** \`${doc.manual_qa_status}\`  `);
+  if(doc.remediation_status)lines.push(`**Remediation Status:** \`${doc.remediation_status}\`  `);
   lines.push('**Status Standard:** `PROPOSED` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED` | `DEFERRED` | `CANCELLED`  ');
   lines.push('');
   lines.push('---');
@@ -102,7 +106,7 @@ export function generateWbsMarkdown(doc: WbsDocument): string {
   lines.push('The Master WBS follows a strict 6-tier decomposition:');
   lines.push('$$\\text{Project} \\longrightarrow \\text{Phase} \\longrightarrow \\text{Epic/Capability} \\longrightarrow \\text{Feature} \\longrightarrow \\text{Work Package} \\longrightarrow \\text{Atomic Task}$$');
   lines.push('');
-  lines.push('Permanent **DMK IDs** (`DMK-001` through `DMK-185`) identify tasks immutably across re-organizations. The **WBS Path** (e.g. `13.03.01.01`) represents the current hierarchical location within the lifecycle.');
+  lines.push('Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WBS Path** (e.g. `13.03.01.01`) represents the current hierarchical location within the lifecycle.');
   lines.push('');
   lines.push('---');
   lines.push('');
