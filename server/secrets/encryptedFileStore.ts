@@ -12,6 +12,8 @@ export interface EncryptedStoreConfig {
   saltPath?: string;
   /** File path where the host-bound machine token is persisted */
   machineTokenPath?: string;
+  /** Explicit one-time historical recovery location. */
+  legacyMachineTokenPath?: string;
   /** Optional user-provided master passphrase. If omitted, derived from DOCMONSTAKRAKIN_MASTER_KEY or machine token. */
   masterPassphrase?: string;
 }
@@ -71,6 +73,7 @@ export class EncryptedFileSecretStore implements SecretStore {
   private readonly storagePath: string;
   private readonly saltPath: string;
   private readonly machineTokenPath: string;
+  private readonly legacyMachineTokenPath?: string;
   private readonly configuredPassphrase: string | null;
   private passphrase: string;
   private cachedPayload: DecryptedPayload | null = null;
@@ -84,6 +87,7 @@ export class EncryptedFileSecretStore implements SecretStore {
     this.storagePath = config.storagePath ?? path.join(this.dataDir, 'secrets.enc');
     this.saltPath = config.saltPath ?? path.join(this.dataDir, 'secrets.salt');
     this.machineTokenPath = config.machineTokenPath ?? path.join(this.dataDir, '.machine_token');
+    this.legacyMachineTokenPath = config.legacyMachineTokenPath;
 
     const envKey = process.env.DOCMONSTAKRAKIN_MASTER_KEY?.trim() || undefined;
     this.configuredPassphrase = config.masterPassphrase || envKey || null;
@@ -94,7 +98,7 @@ export class EncryptedFileSecretStore implements SecretStore {
       // Existing envelope recovery: only read an existing token, never create one as a recovery attempt.
       // New store: generating a local machine token is appropriate when no master passphrase is configured.
       if (fs.existsSync(this.storagePath)) {
-        this.passphrase = this.readExistingMachineToken() || '';
+        this.passphrase = this.readExistingMachineToken() || this.readExistingLegacyToken() || '';
       } else {
         this.passphrase = this.getOrCreateMachineToken();
       }
@@ -110,6 +114,25 @@ export class EncryptedFileSecretStore implements SecretStore {
    */
   public getMigrationStatus(): SecretStoreMigrationStatus | null {
     return this.migrationStatus;
+  }
+
+  /**
+   * Reads an existing historical legacy machine installation token without generating or creating one.
+   * Used for explicit one-time backward-compatible migration candidate discovery.
+   */
+  public readExistingLegacyToken(): string | null {
+    if (!this.legacyMachineTokenPath) {
+      return null;
+    }
+    try {
+      if (fs.existsSync(this.legacyMachineTokenPath)) {
+        const token = fs.readFileSync(this.legacyMachineTokenPath, 'utf8').trim();
+        return token.length > 0 ? token : null;
+      }
+    } catch {
+      // Fall through to return null
+    }
+    return null;
   }
 
   /**
@@ -215,53 +238,79 @@ export class EncryptedFileSecretStore implements SecretStore {
       const authTag = Buffer.from(envelope.encryption.authTagHex, 'hex');
       const ciphertext = Buffer.from(envelope.ciphertextHex, 'hex');
 
-      const primaryKey = this.passphrase;
-      let decryptedBytes: Buffer | null = null;
-      let usedSource: 'primary' | 'legacy_machine_token' = 'primary';
-      let primaryError: Error | null = null;
+      interface CandidateKey {
+        source: 'CONFIGURED_MASTER_KEY' | 'CURRENT_MACHINE_TOKEN' | 'LEGACY_MACHINE_TOKEN';
+        passphrase: string;
+      }
 
-      // 1. Attempt active primary key
-      if (primaryKey && primaryKey.length > 0) {
+      const candidates: CandidateKey[] = [];
+      const seenPassphrases = new Set<string>();
+
+      // 1. Configured primary master passphrase (or current passphrase if no explicit master passphrase)
+      if (this.configuredPassphrase && this.configuredPassphrase.trim().length > 0) {
+        candidates.push({
+          source: 'CONFIGURED_MASTER_KEY',
+          passphrase: this.configuredPassphrase.trim(),
+        });
+        seenPassphrases.add(this.configuredPassphrase.trim());
+      } else if (this.passphrase && this.passphrase.trim().length > 0) {
+        candidates.push({
+          source: 'CURRENT_MACHINE_TOKEN',
+          passphrase: this.passphrase.trim(),
+        });
+        seenPassphrases.add(this.passphrase.trim());
+      }
+
+      // 2. Existing current machine token (if exists on disk and not yet tried)
+      const currentToken = this.readExistingMachineToken();
+      if (currentToken && !seenPassphrases.has(currentToken)) {
+        candidates.push({
+          source: 'CURRENT_MACHINE_TOKEN',
+          passphrase: currentToken,
+        });
+        seenPassphrases.add(currentToken);
+      }
+
+      // 3. Existing historical legacy machine token (if configured and exists on disk and not yet tried)
+      const legacyToken = this.readExistingLegacyToken();
+      if (legacyToken && !seenPassphrases.has(legacyToken)) {
+        candidates.push({
+          source: 'LEGACY_MACHINE_TOKEN',
+          passphrase: legacyToken,
+        });
+        seenPassphrases.add(legacyToken);
+      }
+
+      // 4. Never create any token during recovery.
+      // 5. Authenticate against candidates in priority order; fail closed if none match.
+      let decryptedBytes: Buffer | null = null;
+      let successfulCandidate: CandidateKey | null = null;
+      const attemptedSources: string[] = [];
+
+      for (const candidate of candidates) {
+        attemptedSources.push(candidate.source);
         try {
-          const key = this.deriveKey(salt, primaryKey);
+          const key = this.deriveKey(salt, candidate.passphrase);
           const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
           decipher.setAuthTag(authTag);
           decryptedBytes = Buffer.concat([
             decipher.update(ciphertext),
             decipher.final(),
           ]);
-          usedSource = 'primary';
-        } catch (err: any) {
-          primaryError = err;
-        }
-      } else {
-        primaryError = new Error('No primary master passphrase configured');
-      }
-
-      // 2. If primary fails and an existing legacy token is available, try legacy token
-      if (!decryptedBytes) {
-        const legacyToken = this.readExistingMachineToken();
-        if (legacyToken && legacyToken !== primaryKey) {
-          try {
-            const key = this.deriveKey(salt, legacyToken);
-            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-            decipher.setAuthTag(authTag);
-            decryptedBytes = Buffer.concat([
-              decipher.update(ciphertext),
-              decipher.final(),
-            ]);
-            usedSource = 'legacy_machine_token';
-          } catch (err: any) {
-            throw new Error(
-              `Authentication failed for both primary key and legacy machine token: ${err.message}`
-            );
-          }
-        } else {
-          throw primaryError || new Error('Authentication failed for primary key');
+          successfulCandidate = candidate;
+          break;
+        } catch {
+          // Candidate failed authentication; continue to next candidate
         }
       }
 
-      // 3. If legacy authentication succeeds, deserialize secrets and metadata
+      if (!decryptedBytes || !successfulCandidate) {
+        throw new Error(
+          `Authentication failed for all attempted key sources: [${attemptedSources.join(', ')}]`
+        );
+      }
+
+      // 3. If authentication succeeds, deserialize secrets and metadata
       const decryptedJson: { secrets: Record<string, string> } = JSON.parse(
         decryptedBytes.toString('utf8')
       );
@@ -279,9 +328,15 @@ export class EncryptedFileSecretStore implements SecretStore {
       };
 
       // 4. If legacy token fallback was used and a primary master key is configured, execute re-key ceremony
-      if (usedSource === 'legacy_machine_token' && this.configuredPassphrase) {
+      const needsRekey = Boolean(
+        this.configuredPassphrase &&
+        (successfulCandidate.source === 'LEGACY_MACHINE_TOKEN' ||
+          (successfulCandidate.source === 'CURRENT_MACHINE_TOKEN' && successfulCandidate.passphrase !== this.configuredPassphrase))
+      );
+
+      if (needsRekey && this.configuredPassphrase) {
         console.warn(
-          '[SecretStore] Decrypted envelope using legacy machine token fallback. Re-encrypting envelope with primary master passphrase...'
+          `[SecretStore] Decrypted envelope using ${successfulCandidate.source} fallback. Re-encrypting envelope with primary master passphrase...`
         );
 
         const targetPassphrase = this.configuredPassphrase;

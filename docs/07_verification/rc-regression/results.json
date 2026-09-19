@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-19T04:48:52.677Z",
+  "timestamp": "2026-09-19T06:15:04.821Z",
   "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.",
   "suites": {
     "total": 22,
@@ -8,8 +8,8 @@
     "skipped": 0
   },
   "assertions": {
-    "total": 308,
-    "passed": 308,
+    "total": 310,
+    "passed": 310,
     "failed": 0,
     "skipped": 0
   },
@@ -171,7 +171,7 @@
       "suite": "server/secrets/testSecretStore.ts",
       "exitCode": 0,
       "status": "PASSED",
-      "passed": 14,
+      "passed": 16,
       "failed": 0,
       "skipped": 0,
       "log": "server_secrets_testSecretStore.log"

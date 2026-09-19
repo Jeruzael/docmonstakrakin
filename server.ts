@@ -195,26 +195,17 @@ async function startServer() {
   defaultRedactor.installConsoleInterceptor();
 
   // Initialize SecretStore abstraction (DMK-157)
-  let secretStore: SecretStore;
-  try {
-    secretStore = await initializeSecretStore();
-  } catch (err) {
-    console.warn('[SecretStore] Notice during secret store initialization:', err);
-    secretStore = getSecretStore();
-  }
+  // Startup-fatal fail-closed policy: store integrity or authentication failure halts startup.
+  const secretStore = await initializeSecretStore();
 
   // Dynamically register ambient or provisioned credentials
-  try {
-    const ambientKey = await resolveSecret('GEMINI_API_KEY');
-    if (ambientKey) {
-      defaultRedactor.registerSecret(ambientKey);
-    }
-  } catch (err) {
-    console.warn('[SecretStore] Notice resolving ambient key:', err);
+  const ambientKey = await resolveSecret('GEMINI_API_KEY');
+  if (ambientKey) {
+    defaultRedactor.registerSecret(ambientKey);
   }
 
   const app = express();
-  const PORT = process.env.PORT && process.env.PORT !== '8080' ? Number(process.env.PORT) : 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json({ limit: '10mb' }));
   installProjectPersistence(app, store);

@@ -14,9 +14,15 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 ## Current work and evidence
 
-DMK-187 initialization/discovery, DMK-188 governance/review, DMK-189 automated regression closeout, and DMK-190 proposal schema v1.1 are technically VERIFIED against recorded passing automation and independent source review. This status grants no human approval. DMK-191 is READY for Gio's browser retest, with no human evidence recorded yet.
+Batch 1 and Batch 1.5 Final Correction are technically complete:
+- Canonical Requirement state synchronization and `activeDrawerReqId` architecture: PRESERVED and active in UI components.
+- SecretStore deterministic layout: Configured to `.secrets/` (`store.enc`, `store.salt`, `.machine_token`). Git-tracked machine token removed from `.docmonstakrakin/` with gitignore protection maintained.
+- Historical split-layout migration: Verified via `legacyMachineTokenPath` (`.docmonstakrakin/.machine_token`). Successfully decrypts legacy envelopes, preserves all secrets and metadata, re-keys under new primary master passphrase, and removes legacy credentials. Verified in `server/secrets/testSecretStore.ts` (16/16 passing tests).
+- Fail-closed secret resolution: Startup initialization and `resolveSecret()` strictly fail-closed on authentication/decryption/integrity failures. PORT resolution bound to `Number(process.env.PORT || 3000)`.
+- Gate 7 status: NOT EXECUTED. Gate 7 release signoff remains strictly pending human review and verification.
+- Batch 2 status: NOT STARTED. All v0.2 implementation remains strictly blocked until Gate 7 completion.
 
-The authoritative automated result is ../07_verification/rc-regression/results.json, with raw per-suite logs. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations and retest steps are in ../07_verification/CRYPTODEMON_REMEDIATION_REPORT.md and ../07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md.
+The authoritative automated result is in `docs/07_verification/rc-regression/results.json`, with 22/22 suites passing and raw per-suite logs in `docs/07_verification/rc-regression/`. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations, and retest steps are in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md` and `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md`.
 
 Current next action: Gio repeats the human CryptoDemon browser workflow and records evidence under DMK-191. Do not execute Gate 7. DMK-166 through DMK-185 remain PROPOSED; no v0.2 implementation began.
 
