@@ -98,14 +98,31 @@ export class SecretRedactor {
       return this.redactString(input) as unknown as T;
     }
 
+    if (typeof input === 'object') {
+      if (seen.has(input as object)) {
+        return '[Circular]' as unknown as T;
+      }
+      seen.add(input as object);
+    }
+
     if (input instanceof Error) {
       const errCopy = Object.create(Object.getPrototypeOf(input));
-      for (const key of Object.getOwnPropertyNames(input)) {
-        const val = (input as any)[key];
-        if (typeof val === 'string') {
-          errCopy[key] = this.redactString(val);
-        } else {
-          errCopy[key] = this.redactObject(val, seen);
+      const propertyNames = new Set([
+        ...Object.getOwnPropertyNames(input),
+        'name',
+        'message',
+        'stack',
+        'cause',
+      ]);
+
+      for (const key of propertyNames) {
+        if (key in input) {
+          const val = (input as any)[key];
+          if (typeof val === 'string') {
+            errCopy[key] = this.redactString(val);
+          } else {
+            errCopy[key] = this.redactObject(val, seen);
+          }
         }
       }
       return errCopy as T;
@@ -114,12 +131,6 @@ export class SecretRedactor {
     if (typeof input !== 'object') {
       return input;
     }
-
-    // Prevent cyclic recursion
-    if (seen.has(input as object)) {
-      return '[Circular]' as unknown as T;
-    }
-    seen.add(input as object);
 
     if (Array.isArray(input)) {
       return input.map((item) => this.redactObject(item, seen)) as unknown as T;

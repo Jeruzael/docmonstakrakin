@@ -380,18 +380,6 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
 
           {/* Drawer Content */}
           <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
-            {statusError && (
-              <div
-                id="requirement-status-error-banner"
-                className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5 shadow-2xs"
-              >
-                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="font-bold text-red-900">Requirement status update failed</p>
-                  <p className="text-red-700 font-medium">{statusError}</p>
-                </div>
-              </div>
-            )}
             {drawerTab === 'TRACEABILITY' && (
               <div className="space-y-6">
                 <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg text-emerald-900 text-xs">

@@ -2,12 +2,11 @@
 
 Updated 2026-09-19.
 
-- Source-Control Mode: AI_STUDIO_WORKSPACE
-- Project root: /workspace
-- Branch: NOT_APPLICABLE
-- Observed HEAD: NOT_APPLICABLE
-- Working tree: NOT_APPLICABLE
-- Earlier no-own-Git checkpoint: parent was deliberately excluded. Git metadata is not present in AI Studio workspace container. No parent checkout mutation was performed.
+- Execution Environment: Google AI Studio workspace container
+- Source Repository: GitHub (Jeruzael/docmonstakrakin)
+- Development Branch: gaistudio
+- Workspace Git Metadata: unavailable inside AI Studio environment (Git metadata not present in container)
+- Remote branch checkpoint at start of Batch 1.5: a5b2c89b8cc7aff902f9d7938b21653694bc490b
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.

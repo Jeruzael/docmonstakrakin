@@ -81,6 +81,23 @@ export class EncryptedFileSecretStore implements SecretStore {
   }
 
   /**
+   * Reads an existing host-bound machine installation token without generating or creating one.
+   * Used for legacy fallback key candidate discovery.
+   */
+  private readExistingMachineToken(dataDir: string): string | null {
+    const tokenFile = path.join(dataDir, '.machine_token');
+    try {
+      if (fs.existsSync(tokenFile)) {
+        const token = fs.readFileSync(tokenFile, 'utf8').trim();
+        return token.length > 0 ? token : null;
+      }
+    } catch {
+      // Fall through to return null
+    }
+    return null;
+  }
+
+  /**
    * Generates or retrieves a host-bound installation token used for local KDF derivation.
    */
   private getOrCreateMachineToken(dataDir: string): string {
@@ -162,27 +179,29 @@ export class EncryptedFileSecretStore implements SecretStore {
       const ciphertext = Buffer.from(envelope.ciphertextHex, 'hex');
 
       // Candidate passphrases: primary configured passphrase, followed by machine token fallback
-      const candidatePassphrases = [this.passphrase];
+      const candidatePassphrases: Array<{ source: 'primary' | 'machine_token_fallback'; passphrase: string }> = [
+        { source: 'primary', passphrase: this.passphrase },
+      ];
       const defaultDataDir = path.join(process.cwd(), '.docmonstakrakin');
-      const machineToken = this.getOrCreateMachineToken(defaultDataDir);
-      if (machineToken && !candidatePassphrases.includes(machineToken)) {
-        candidatePassphrases.push(machineToken);
+      const existingMachineToken = this.readExistingMachineToken(defaultDataDir);
+      if (existingMachineToken && existingMachineToken !== this.passphrase) {
+        candidatePassphrases.push({ source: 'machine_token_fallback', passphrase: existingMachineToken });
       }
 
       let decryptedBytes: Buffer | null = null;
-      let usedPassphrase = this.passphrase;
+      let usedCandidate = candidatePassphrases[0];
       let lastDecryptErr: Error | null = null;
 
-      for (const pass of candidatePassphrases) {
+      for (const candidate of candidatePassphrases) {
         try {
-          const key = this.deriveKey(salt, pass);
+          const key = this.deriveKey(salt, candidate.passphrase);
           const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
           decipher.setAuthTag(authTag);
           decryptedBytes = Buffer.concat([
             decipher.update(ciphertext),
             decipher.final(),
           ]);
-          usedPassphrase = pass;
+          usedCandidate = candidate;
           break;
         } catch (err: any) {
           lastDecryptErr = err;
@@ -210,8 +229,14 @@ export class EncryptedFileSecretStore implements SecretStore {
 
       // If envelope was decrypted using a fallback passphrase rather than the current primary passphrase,
       // re-encrypt with current primary passphrase so future accesses use the primary passphrase.
-      if (usedPassphrase !== this.passphrase) {
+      if (usedCandidate.source === 'machine_token_fallback') {
+        console.warn(
+          '[SecretStore] Decrypted envelope using legacy machine token fallback. Re-encrypting envelope with primary master passphrase...'
+        );
         await this.persistToDisk();
+        console.warn(
+          '[SecretStore] Successfully re-encrypted envelope with primary master passphrase.'
+        );
       }
     } catch (err: any) {
       throw new Error(

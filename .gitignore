@@ -10,3 +10,8 @@ runtime/
 !docs/07_verification/rc-regression/*.log
 .env*
 !.env.example
+
+# Local runtime secrets and machine token
+.docmonstakrakin/.machine_token
+.docmonstakrakin/secrets.enc
+.docmonstakrakin/secrets.salt
