@@ -1,6 +1,54 @@
-Verification Evidence
-Automated Manifest & Contract Test: npm run test:bootstrap:contract — 17/17 tests passing (including new test asserting exact validity and SHA-256 digest of selfBootstrapManifest.json).
-Regression Suite: npm test — 100% green across all test suites (QA, discovery remediation, technical baseline, CryptoDemon integration [47 checks], proposal contract schema 1.1, requirement sync).
-WBS Drift Audit: npm run wbs:check — Zero drift.
-TypeScript Check: npm run lint (tsc --noEmit) — 0 errors.
-Production Build: npm run build — Client SPA and server CJS bundle compiled cleanly.
+Step 3A Summary — Correction & Completion of Real Self-Bootstrap Manifest
+The self-bootstrap manifest for PRJ-DOCMONSTAKRAKIN has been corrected, verified, and documented for formal human review. All schema constraints, evidence integrity rules, and governance restrictions under SELF_BOOTSTRAP_V1 and TRUSTED_LOCAL_BOOTSTRAP are satisfied.
+Key Accomplishments & Deliverables
+Manifest Relocation & Decoupling:
+Relocated from src/data/selfBootstrapManifest.json to bootstrap/docmonstakrakin.self-bootstrap.json.
+The manifest is strictly treated as an initialization and control plane artifact, preventing exposure or bundling inside the client-side SPA bundle.
+Factual & Governance Corrections:
+Work Item Classifications: Historical remediation items DMK-187..DMK-190 are set to status = 'VERIFICATION', sprint = 0, with real evidence linkages (EV-RC-187..EV-RC-190) and synthetic sequential dependency chains removed.
+Gate 7 Removal: Removed candidate task DMK-196 Gate 7 Execution. Release Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Future Work Sequencing: Rebuilt ordered work chain DMK-192 through DMK-199 for the self-bootstrap executor, project workspace, documentation workspace, and governance remediation Batches 2–5.
+Threat Mitigations: All threat mitigations (THR-001..THR-007, THR-BOOT-001) are set to IN_PROGRESS pending implementation and operational sign-off.
+ADR Historical Alignment: Restored original creation dates (2026-08-15, 2026-08-20, 2026-09-15, 2026-09-19) and preserved PROPOSED status for all 7 ADRs.
+Architecture Component: Added CMP-BOOT-01 ("Trusted Self-Bootstrap Ingestion Subsystem") as PROPOSED, explicitly documenting that the validator exists while the persistence executor is not yet implemented.
+Byte-Level Evidence & Document Integrity:
+Every Evidence.sha256Hash was calculated directly from raw file bytes of real repository artifacts:
+EV-RC-187: 6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b (docs/07_verification/cryptodemon-fixture-evidence.json)
+EV-RC-188: 3b1b0b11c60d0c82c84197228f27611b9744aae70b2135ad10dc970962be0c7f (docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md)
+EV-RC-189: 7683a53778267b9494980a74352df6cf82b767f04c5574d357e66b614f419b80 (docs/07_verification/rc-regression/results.json)
+EV-RC-190: a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0 (docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md)
+All 14 VERIFIED requirements cite real evidence records.
+28 controlled documents are cataloged, with pre-computed file-byte SHA-256 digests for all 27 stable documents (self-hash omitted for PROJECT_STATE.md).
+Dedicated Read-Only Manifest Validator:
+Created scripts/validateSelfBootstrapManifestFile.ts (bound to npm run test:bootstrap:manifest).
+Generates machine-readable verification reports at docs/07_verification/self-bootstrap-manifest-validation.json.
+Human Review Documentation & Project State:
+Created formal human review artifact: docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md.
+Updated docs/00_control/PROJECT_STATE.md to READY_FOR_HUMAN_REVIEW with exact entity counts and manifest digest.
+Manifest Metrics & Accounting
+Canonical Manifest Digest: abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96
+Entity Counts:
+Features: 15 (PROPOSED)
+Requirements: 24 (14 VERIFIED, 4 UNDER_REVIEW, 6 PROPOSED)
+Risks: 6
+Threats: 8 (All mitigations IN_PROGRESS)
+ADRs: 7 (PROPOSED)
+Architecture Components: 6 (PROPOSED)
+Work Items: 13 (4 VERIFICATION, 2 READY, 7 BACKLOG)
+Evidence Records: 4 (Raw byte hashes verified)
+Controlled Documents: 28 (27 raw byte digests verified)
+Verification Results
+Check / Command	Status	Notes
+npm run test:bootstrap:contract	PASS	17/17 test suites passing
+npm run test:bootstrap:manifest	PASS	5/5 phases valid; 0 errors, 0 warnings; mutation count: 0
+npm run lint	PASS	tsc --noEmit clean (0 errors)
+npm run wbs:check	PASS	Zero drift between MASTER_WBS.yaml and MASTER_WBS.md
+npx tsx scripts/runAutomatedQa.ts	PASS	11/11 criteria passing
+npm run build	PASS	Production Vite SPA and Node CommonJS bundle compiled cleanly
+Governance Invariants Preserved
+Bootstrap Execution: NOT EXECUTED.
+Persistence State: .local/project-state.json DOES NOT EXIST (zero mutations).
+Batch 2 Governance UX: NOT STARTED.
+Release Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+v0.1.0-rc1 Status: NOT RELEASED.
+Next Safe Action: Operator human review of docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md and bootstrap/docmonstakrakin.self-bootstrap.json.

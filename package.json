@@ -20,7 +20,8 @@
     "test": "npm run qa && npm run test:remediation && npm run test:tech && npm run test:cryptodemon && npm run test:proposal && npm run test:req-sync",
     "test:proposal": "tsx scripts/testProposalContract.ts",
     "test:req-sync": "tsx scripts/testRequirementStatusSync.ts",
-    "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts"
+    "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts",
+    "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

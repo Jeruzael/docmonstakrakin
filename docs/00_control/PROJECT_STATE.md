@@ -5,33 +5,35 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 - Execution Environment: Google AI Studio workspace container
 - Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Review Branch: gaistudio
-- Authoritative Starting Checkpoint: ab3cdda66f59b1e0acef3299d6107cfa09d5efa7
+- Review Branch: gaistudio-3
+- Authoritative Starting Checkpoint: 2a05edc8f6a96183d39cad092b91e7fc4e9cb432
 - Target Branch: master
 - Development Branch: master
 - Workspace Git Metadata: unavailable inside local AI Studio container (Git metadata is not present in container snapshot; repository tracking managed via remote checkpoints)
-- Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (COMPLETE — Review Ready)
+- Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## Current work and evidence
 
-Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is complete and review-ready:
-- Real Canonical Manifest: `src/data/selfBootstrapManifest.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `4f5c64f02e6b26e5ce9f71e030cc0b126757aeb6c3a78cd6bd08c72e3639dd63`.
+Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
+- Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
+- Canonical Manifest SHA-256 Digest: `abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96`.
 - Manifest Entity Accounting:
   - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all `PROPOSED`, source `PRODUCT_BASELINE`)
   - 24 Requirements (14 historical v0.1 requirements, 4 verified remediation requirements `REQ-RC-187`..`190`, 6 dogfooding roadmap requirements `REQ-BOOT-001`, `REQ-UX-PROJECTS-001`, `REQ-DOC-001`, `REQ-GOV-SIGNOFF-001`, `REQ-GOV-QUORUM-001`, `REQ-GOV-REVIEWER-001`)
   - 6 Risks (`RISK-001`, `RISK-004`, `RISK-019`, `RISK-022`, `RISK-025`, `RISK-BOOT-001`)
-  - 8 Threats (`THR-001` through `THR-007`, `THR-BOOT-001`)
+  - 8 Threats (`THR-001` through `THR-007`, `THR-BOOT-001`, all mitigations `IN_PROGRESS`)
   - 7 ADRs (`ADR-0001` through `ADR-0007`, all `PROPOSED`)
   - 6 Architecture Components (`CMP-01` through `CMP-05`, `CMP-BOOT-01`)
-  - 12 WorkItems (Remediation verification items `DMK-187`..`190` as `READY` with evidence; `DMK-191` & `DMK-192` as `READY`; `DMK-193`..`198` as `BACKLOG`)
-  - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190`)
-  - 14 Controlled Documents (`DOC-CTRL-001`..`004`, `DOC-PROD-001`..`002`, `DOC-REQ-003`, `DOC-ARC-001`, `DOC-SEC-002`..`003`, `DOC-DEC-001`..`004` with pre-computed live SHA-256 digests)
-- Automated Manifest Validation: 0 errors, 0 warnings, verified via `scripts/testSelfBootstrapContract.ts` (17/17 tests passing).
-- Dry-Run Report: Generated at `docs/07_verification/BOOTSTRAP_DRY_RUN_REPORT.json` (`valid: true`, `mutationCount: 0`, all governance restrictions confirmed).
+  - 13 WorkItems (Remediation verification items `DMK-187`..`190` as `VERIFICATION` with real evidence; `DMK-191` & `DMK-192` as `READY`; `DMK-193`..`199` as `BACKLOG`)
+  - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190` with raw file byte hashes)
+  - 28 Controlled Documents (`DOC-CTRL-001`..`007`, `DOC-PROD-001`..`003`, `DOC-REQ-001`, `DOC-ARC-001`..`003`, `DOC-SEC-001`..`004`, `DOC-DEC-001`..`006`, `DOC-VER-001`..`004` with 27 pre-computed live SHA-256 digests)
+- Future Work Items Planned: `DMK-192` through `DMK-199` (Bootstrap Executor, Bootstrap Verification, Projects Workspace, Controlled Docs, Batch 2 Sign-Off UX, Batch 3 Quorum Sync, Batch 4 Reviewer Usability, Batch 5 Full Regression).
+- Read-Only Validator Script: `scripts/validateSelfBootstrapManifestFile.ts` (invoked via `npm run test:bootstrap:manifest`).
+- Verification Report: Generated at `docs/07_verification/self-bootstrap-manifest-validation.json` (`valid: true`, `mutationCount: 0`, 27 document digests verified, 4 evidence artifact hashes verified).
+- Review Report: Generated at `docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md`.
 - Invariant: Zero bootstrap execution performed during Step 3; `.local/project-state.json` untouched; Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`; Batch 2 governance UX remains `NOT STARTED`.
 
 Step 2A (Harden Trusted Self-Bootstrap Contract) is technically complete:
@@ -66,8 +68,8 @@ Batch 1 and Batch 1.5 Final Correction remain technically complete:
 The authoritative automated result is in `docs/07_verification/rc-regression/results.json`, with 22/22 suites passing and raw per-suite logs in `docs/07_verification/rc-regression/`. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations, and retest steps are in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md` and `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md`.
 
 Current next action:
-1. Review the real PRJ-DOCMONSTAKRAKIN bootstrap manifest and dry-run report (Step 3 review).
-2. Upon operator approval, proceed to reviewed bootstrap execution step.
+1. Human review of Step 3 review document (docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md) and canonical manifest (bootstrap/docmonstakrakin.self-bootstrap.json).
+2. Upon operator approval, proceed to reviewed bootstrap executor implementation (DMK-192) and execution step (DMK-193).
 3. Batch 2 governance UX remains NOT STARTED.
 4. Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 5. v0.2 product work remains blocked.

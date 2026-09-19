@@ -665,9 +665,9 @@ test('dry-run report accurately summarizes manifest and guarantees zero mutation
   assert.equal(dryRun.unresolvedReferenceErrors.length, 0);
 });
 
-test('production PRJ-DOCMONSTAKRAKIN real manifest (selfBootstrapManifest.json) passes validation with zero errors', () => {
-  const manifestPath = path.resolve(process.cwd(), 'src/data/selfBootstrapManifest.json');
-  assert(fs.existsSync(manifestPath), 'selfBootstrapManifest.json must exist');
+test('production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.self-bootstrap.json) passes validation with zero errors', () => {
+  const manifestPath = path.resolve(process.cwd(), 'bootstrap/docmonstakrakin.self-bootstrap.json');
+  assert(fs.existsSync(manifestPath), 'bootstrap/docmonstakrakin.self-bootstrap.json must exist');
 
   const raw = fs.readFileSync(manifestPath, 'utf-8');
   const realManifest = JSON.parse(raw) as SelfBootstrapManifest;
@@ -683,13 +683,13 @@ test('production PRJ-DOCMONSTAKRAKIN real manifest (selfBootstrapManifest.json) 
   assert.equal(result.counts.threats, 8);
   assert.equal(result.counts.adrs, 7);
   assert.equal(result.counts.components, 6);
-  assert.equal(result.counts.workItems, 12);
+  assert.equal(result.counts.workItems, 13);
   assert.equal(result.counts.evidence, 4);
-  assert.equal(result.counts.documents, 14);
+  assert.equal(result.counts.documents, 28);
 
   // Validate digest
   const digest = computeBootstrapManifestDigest(realManifest);
-  assert.equal(digest, '4f5c64f02e6b26e5ce9f71e030cc0b126757aeb6c3a78cd6bd08c72e3639dd63');
+  assert.equal(digest, 'abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96');
 
   // Validate dry run
   const dryRun = computeBootstrapDryRunReport(realManifest);

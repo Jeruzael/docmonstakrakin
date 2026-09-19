@@ -1,0 +1,21 @@
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [],
+  "counts": {
+    "features": 15,
+    "requirements": 24,
+    "risks": 6,
+    "threats": 8,
+    "adrs": 7,
+    "components": 6,
+    "workItems": 13,
+    "evidence": 4,
+    "documents": 28
+  },
+  "manifestDigest": "abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96",
+  "documentHashesVerified": 27,
+  "evidenceHashesVerified": 4,
+  "unresolvedReferenceErrors": [],
+  "mutationCount": 0
+}
