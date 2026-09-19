@@ -1,38 +1,94 @@
-The Batch 1.5 documentation-only reconciliation has been completed. No production code, SecretStore behavior, or runtime evidence was altered. Gate 7 was not executed, and Batch 2 implementation was not started.
-Exactly Which Documentation Files Changed
-docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md
-Regression totals: Updated final inventory in Section 11 to cite the authoritative 22/22 suites and 310 observed named checks (from rc-regression/results.json), explicitly labeling the 21 suites / 291 checks as an earlier historical run. In Section 12, explicitly separated the 93 automated acceptance criteria from the 310 named checks (noting the earlier historical 291 count).
-Git context: Explicitly labeled C:/Users/HomePC/dev/docmonstakrakin and commit 7363da... as historical execution context. Added the current review state:
+Trusted Self-Bootstrap Contract & Schema Specification (Step 2 Closeout)
 Repository: Jeruzael/docmonstakrakin
-Review branch: gaistudio
-Review checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
-Target branch: master
-docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md
-Regression totals: Updated Section 10 to reference the authoritative final inventory of 22 suites / 310 observed named checks passing, citing rc-regression/results.json and identifying the 21 suites / 291 checks as an earlier historical run.
-Git context: Updated Section 12 to identify host path C:/Users/HomePC/dev/docmonstakrakin and starting HEAD 7363da... as historical execution context, and recorded the current review state (Jeruzael/docmonstakrakin, review branch gaistudio, checkpoint 93ea030aa34e493cb7480df4b2e5d2ed6a326dda, target branch master).
-docs/07_verification/QA_AUTOMATED_ACCEPTANCE.md
-Updated lines 7–10 and line 133 to record 22 suites and 310 named checks as current, explicitly labeling 21 suites and 291 checks as an earlier historical run.
-docs/00_control/PROJECT_STATE.md
-Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
-Corrected Batch 2 vs. Gate 7 semantics: clarified that Batch 2 is part of the governance remediation sequence, not v0.2 product implementation.
-Defined the intended sequence:
-Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-Affirmed that all v0.2 product implementation remains strictly blocked until Gate 7 completion.
-docs/00_control/LAST_HANDOFF.md
-Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
-Replaced erroneous "Do NOT begin Batch 2 until Gate 7 passes" with the correct governance remediation roadmap.
-Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED (no human approval recorded).
-Preserved Verified Facts & State
-Tracked Machine Token: Confirmed absent from the tree (.docmonstakrakin/.machine_token: No such file or directory).
-SecretStore Deterministic Layout: Standalone .secrets/ structure (store.enc, store.salt, .machine_token) preserved.
-Historical Split-Layout Compatibility: Supported with prioritized candidate deduplication.
-Migration Provenance: Both CURRENT_MACHINE_TOKEN and LEGACY_MACHINE_TOKEN migration provenance reporting preserved.
-Fail-Closed Resolution: Intact across store initialization, candidate exhaustion, and secret resolution.
-SecretStore Test Suite: 16/16 tests passing (server/secrets/testSecretStore.ts).
-Complete Regression Suite: 22/22 suites, 310/310 checks passing (recorded in docs/07_verification/rc-regression/results.json).
-Artifact Preservation: temp.txt preserved (sha256: cdeb737aa...2a27); test.json tracked and preserved.
+Starting Checkpoint: 0a54283cdd4f0d26bc138d01c037ad1dee5bc018
+Phase: CONTRACT & DESIGN ONLY — No bootstrap execution or project creation performed.
+1. Files Added / Changed
+Created: docs/00_control/SELF_BOOTSTRAP_CONTRACT.md
+Comprehensive design contract defining trust boundaries, canonical collections, prohibited fields, structural sensitive-key scanning, idempotency, provenance, dry-run, and atomic execution semantics.
+Created: src/data/selfBootstrapContract.ts
+Strongly typed TypeScript contract, interfaces, canonical JSON serializer, referential-integrity validators, and dry-run report calculator.
+Created: scripts/testSelfBootstrapContract.ts
+Automated test suite (15/15 tests passing) verifying manifest validation, sensitive-key scanning, governance field rejection, referential integrity resolution, canonical hashing determinism, and dry-run reporting.
+2. Exact Bootstrap Schema & Version
+Schema Identifier: SELF_BOOTSTRAP_V1
+Execution Mode: TRUSTED_LOCAL_BOOTSTRAP
+Target Project Identifier: PRJ-DOCMONSTAKRAKIN
+3. Allowed Canonical Collections
+The contract accepts validated arrays adhering strictly to existing src/types.ts domain models:
+project: Canonical project metadata (Project)
+features: High-level capabilities and feature definitions (Feature[])
+requirements: Functional, security, operational, architectural requirements (Requirement[])
+risks: Inherent and residual risk evaluations with drivers and treatments (Risk[])
+threats: STRIDE attack surface threat model entities (Threat[])
+adrs: Architectural Decision Records with context, decision, consequences (ADR[])
+components: System architecture components and trust zones (ArchitectureComponent[])
+workItems: WBS work items, tasks, and epics (WorkItem[])
+evidence: Verification test runs, execution logs, and SHA-256 digests (Evidence[])
+documents: Controlled document references (ControlledDocumentReference[]) with kind (CONTROL | PRODUCT | REQUIREMENTS | ARCHITECTURE | SECURITY | VERIFICATION | OPERATIONS) and authority (REFERENCE | GENERATED_PROJECTION).
+Repository Markdown files are treated as references or generated projections; they never silently override canonical structured state.
+4. Prohibited Fields & Data
+The bootstrap manifest must not contain:
+Passwords or passphrases;
+SecretStore master keys or encryption material;
+Authentication tokens, bearer tokens, or session keys;
+API keys (Gemini or third-party);
+Machine tokens (.machine_token);
+Reviewer password verifiers or credential hashes;
+Private keys or certificates.
+Structural Sensitive-Key Scanner:
+A recursive key scanner rejects any object property matching /password/i, /secret/i, /apikey/i, /api_key/i, /token/i, /privatekey/i, /machinetoken/i, /credential/i, /verifier/i, /passphrase/i, or /auth_tag/i.
+Security Invariant: Error messages report only the offending property path; secret-like values are never printed or exposed.
+5. Governance Safeguards
+Zero Approval Injection: approvals = []. The manifest cannot contain pre-approved sign-offs.
+Gate 7 Invariant: Release Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Release Signoff Absent: Fields such as releaseSignoff, releaseSignOff, gate7Approval, or authorizedBy are strictly forbidden.
+Historical Work State Semantics: Historical milestones (such as Batch 1 / Batch 1.5) may be marked VERIFIED only if they cite explicit supporting evidence IDs existing in manifest.evidence. Work items can never be marked APPROVED or RELEASED in a bootstrap manifest.
+6. Idempotency Rule
+Default Behavior: CREATE_ONLY.
+If PRJ-DOCMONSTAKRAKIN already exists in .local/project-state.json:
+The process immediately halts with an explicit conflict error (PROJECT_ALREADY_EXISTS);
+Exactly zero mutations are made;
+No secondary or random ID is generated;
+Existing state is never silently overwritten.
+7. Referential Integrity Rules
+The entire manifest must validate before any candidate mutation is generated:
+All entity IDs must be unique within their respective collections.
+workItem.requirements must resolve to manifest.requirements.
+workItem.features must resolve to manifest.features.
+workItem.evidence must resolve to manifest.evidence.
+requirement.riskLinks must resolve to manifest.risks.
+requirement.threatLinks must resolve to manifest.threats.
+requirement.linkedFeatureId must resolve to manifest.features.
+component.assignedRequirements must resolve to manifest.requirements, and component.linkedADRs must resolve to manifest.adrs.
+All entity projectId references must match manifest.project.id (no cross-project contamination).
+All enums conform to TypeScript domain types.
+8. Manifest Hashing Approach
+Serialization uses deterministic, whitespace-normalized, key-sorted canonical JSON (canonicalizeJson).
+The executor calculates 
+ prior to commit.
+This digest is permanently attached to the resulting PROJECT_BOOTSTRAPPED audit event.
+9. Future Dry-Run Semantics
+Command: npm run bootstrap:self -- --dry-run
+Validates the entire manifest against schema, security, governance, and referential-integrity rules.
+Resolves all entity references and counts.
+Calculates and displays the canonical manifest SHA-256 digest.
+Reports active governance restrictions and any unresolved link errors.
+Invariant: Enforces mutationCount: 0 (zero disk or memory writes).
+10. Future Atomic Execution Semantics
+The execution transaction follows a strict fail-closed pipeline:
+
+Any validation or system failure before the commit step results in zero canonical state changes.
+11. Separation from Portable Package Importer
+POST /api/projects/package/import remains 100% unchanged. It continues to treat imported external packages as untrusted input (SEC-CTRL-018).
+Self-bootstrap is a dedicated local CLI/service boundary operating in TRUSTED_LOCAL_BOOTSTRAP mode.
+12–14. Confirmations
+Confirmation No Project Injected: Confirmed. .local/project-state.json was not created, modified, or written to.
+Confirmation Batch 2 Not Started: Confirmed. Batch 2 governance UX has not been started.
+Confirmation Gate 7 Not Executed: Confirmed. Gate 7 status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Known Usability Gap Recorded: PROJECTS_WORKSPACE_REQUIRED documented in docs/00_control/SELF_BOOTSTRAP_CONTRACT.md.
 Verification Results
-WBS Drift Check (npm run wbs:check): [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
-Automated QA Check (npx tsx scripts/runAutomatedQa.ts): [PASS] 11/11 criteria evaluated and passed.
-TypeScript Linter (npm run lint): [PASS] (tsc --noEmit exited with code 0).
-Production Compilation (compile_applet): Build succeeded.
+npm run wbs:check: [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
+npx tsx scripts/testSelfBootstrapContract.ts: [PASS] All 15 contract validation tests passed.
+npx tsx scripts/runAutomatedQa.ts: [PASS] 11/11 criteria passed.
+npm run lint: [PASS] tsc --noEmit exited with 0 errors.
+compile_applet: Build succeeded.
