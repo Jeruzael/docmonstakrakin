@@ -4,7 +4,13 @@ Date: 2026-09-19. Technical remediation is READY_FOR_RETEST. Human manual QA rem
 
 ## 1. Session recovery
 
-Project/Git root: `C:/Users/HomePC/dev/docmonstakrakin`. SCM mode: GIT; branch master; observed HEAD `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`. Earlier recovery had no project-owned Git and correctly excluded the unrelated parent checkout. Own Git was later created externally; this task did not initialize it or create commits.
+Historical execution context: Initial protocol baseline run occurred against local workspace path `C:/Users/HomePC/dev/docmonstakrakin` (SCM mode: GIT; branch master; observed starting HEAD `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`). Earlier recovery had no project-owned Git and correctly excluded the unrelated parent checkout. Own Git was later created externally; this task did not initialize it or create commits.
+
+Current review state:
+- Repository: Jeruzael/docmonstakrakin
+- Review branch: gaistudio
+- Review checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
+- Target branch: master
 
 Resumed an existing implementation with control closeout and security verification pending. Preserved the prior remediation and then completed the user's proposal schema 1.1 continuation. Original instructions are retained as `CRYPTODEMON_MANUAL_QA_REQUEST.txt`; subsequent requests are preserved with this evidence.
 
@@ -56,19 +62,19 @@ Evidence: `cryptodemon-fixture-evidence.json`, 14 focused CryptoDemon checks, an
 
 ## 11. Full regression
 
-Final inventory: 21/21 suites passed; 291 observed named checks passed; 0 failed; 0 skipped. `rc-regression/results.json` enumerates every discovered suite and log. Named checks may contain several Node assertions. Historical hardcoded totals were not summed. The final lint/build/npm test commands passed; build reports an existing non-blocking bundle-size warning. Sandbox `spawn EPERM` failures were rerun with authorization, not hidden by weakened tests.
+Final inventory: 22/22 suites passed; 310 observed named checks passed; 0 failed; 0 skipped. `rc-regression/results.json` enumerates every discovered suite and log. (An earlier historical run recorded 21/21 suites and 291 observed named checks). Named checks may contain several Node assertions. Historical hardcoded totals were not summed. The final lint/build/npm test commands passed; build reports an existing non-blocking bundle-size warning. Sandbox `spawn EPERM` failures were rerun with authorization, not hidden by weakened tests.
 
 Some legacy security/release harnesses use fixture stores and modeled boundaries. The new HTTP suite starts the actual server in isolated temporary workspaces. These checks do not constitute live external-service testing or a human browser retest.
 
 ## 12. QA acceptance
 
-93 automated acceptance criteria: PASS 93, FAIL 0, BLOCKED 0, N/A 0. These are separate from 291 named checks. The original 74 mappings remain, with seven security/remediation criteria and twelve proposal criteria added. Human manual retest remains pending outside the automated registry. Historical unsupported global health percentages were removed from current control summaries.
+93 automated acceptance criteria: PASS 93, FAIL 0, BLOCKED 0, N/A 0. These are separate from the 310 named checks (291 in an earlier historical run). The original 74 mappings remain, with seven security/remediation criteria and twelve proposal criteria added. Human manual retest remains pending outside the automated registry. Historical unsupported global health percentages were removed from current control summaries.
 
 ## 13. Files changed
 
 Earlier implementation spans initialization/derivation/applicability, project UI/state, canonical server routes, reviewer sessions/signoff, proposal sessions, package trust, audit/persistence, repository boundary and their tests. Those prior changes were already included in external/user commits before this final protocol diff.
 
-The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT.md`. Control and evidence changes include WBS YAML/generated Markdown, requirements, traceability, project state, handoff, execution plan, QA registry, archived historical records, reports, fixture evidence and regression logs. `rc-diff-summary.txt` is the exact final diff inventory; `rc-checkpoint.json` fingerprints current implementation and evidence. Pre-existing `test.json` was not altered.
+The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT.md`. Control and evidence changes include WBS YAML/generated Markdown, requirements, traceability, project state, handoff, execution plan, QA registry, archived historical records, reports, fixture evidence and regression logs. The authoritative regression inventory and evidence is in `rc-regression/results.json`. Pre-existing `test.json` is tracked and preserved.
 
 ## 14. Evidence and WBS
 
@@ -80,7 +86,7 @@ The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT
 | EV-RC-190 | DMK-190 | Protocol A–J, two review regressions and HTTP round trips; independent review | VERIFIED (technical) |
 | No human evidence yet | DMK-191 | Gio browser retest below | READY |
 
-Planned by the user specifications and Codex execution plan; implemented by `/root`; verified through named automation and the separate reviewer; human-approved-by remains PENDING. Evidence logs, timestamps and digests are recorded in `rc-regression/results.json` and `rc-checkpoint.json`. Seeded canonical hash `63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b` and ancestor `31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f` remain fixture lineage only, distinct from current source/evidence hashes.
+Planned by the user specifications and Codex execution plan; implemented by `/root`; verified through named automation and the separate reviewer; human-approved-by remains PENDING. Evidence logs, timestamps and digests are recorded in `rc-regression/results.json`. Seeded canonical hash `63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b` and ancestor `31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f` remain fixture lineage only, distinct from current source/evidence hashes.
 
 ## 15. Human manual retest checklist
 

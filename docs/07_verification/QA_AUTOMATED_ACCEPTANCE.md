@@ -4,10 +4,10 @@
 **Document ID:** DOC-VER-004  
 **Baseline:** v0.1.0-rc1 (Technically Verified Release Candidate; Gate 7 Human Sign-off Pending)  
 **Total Canonical Criteria:** 93  
-**Total Automated Test Suites:** 21  
-**Observed Named Automated Checks:** 291  
+**Total Automated Test Suites:** 22 (earlier historical run: 21)  
+**Observed Named Automated Checks:** 310 (earlier historical run: 291)  
 **Automated Criteria:** PASS 93 / FAIL 0 / BLOCKED 0 / N/A 0  
-**Named Checks:** PASS 291 / FAIL 0 / SKIP 0  
+**Named Checks:** PASS 310 / FAIL 0 / SKIP 0 (earlier historical run: 291)  
 **Human browser retest:** PENDING (DMK-191; outside automated totals)  
 
 ---
@@ -130,7 +130,7 @@ The **complete canonical automated QA acceptance registry** below maps 93 applic
 
 ## Execution evidence and limits
 
-Complete inventory and exact per-suite counts: [rc-regression/results.json](rc-regression/results.json). Each suite has a retained raw log. A named check may contain multiple Node assertion calls; 291 is the count of observed named successful results, not a guessed raw assert-call count. Historical hardcoded suite banners are not used.
+Complete inventory and exact per-suite counts: [rc-regression/results.json](rc-regression/results.json). Each suite has a retained raw log. A named check may contain multiple Node assertion calls; 310 is the count of observed named successful results across 22 suites (an earlier historical run recorded 291 checks across 21 suites), not a guessed raw assert-call count. Historical hardcoded suite banners are not used.
 
 The original 74 criteria were re-evaluated through their mapped harnesses, with seven security/remediation and twelve protocol criteria added. PASS means the mapped automated assertions passed. Several historical capability and release tests use deterministic fixtures/model checks; they do not demonstrate live external integrations, production deployment or human approval. No criterion in this registry stands in for Gio's browser retest.
 

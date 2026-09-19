@@ -5,6 +5,9 @@ import { EncryptedFileSecretStore } from './encryptedFileStore.ts';
 async function runSecretStoreTests(): Promise<void> {
   console.log('=== Running DMK-157.2 EncryptedFileSecretStore Verification Suite ===');
 
+  const savedMasterKey = process.env.DOCMONSTAKRAKIN_MASTER_KEY;
+  delete process.env.DOCMONSTAKRAKIN_MASTER_KEY;
+
   const testDir = path.join(process.cwd(), '.test_secret_store');
   const storagePath = path.join(testDir, 'test_secrets.enc');
   const saltPath = path.join(testDir, 'test_secrets.salt');
@@ -32,6 +35,7 @@ async function runSecretStoreTests(): Promise<void> {
     const secretKey = 'GEMINI_API_KEY';
     const secretValue = 'AIzaSyDocMonstaKrakinSecureKey9876543210';
     await store.setSecret(secretKey, secretValue, 'Primary AI inference key');
+    console.log('✓ Secret stored successfully');
 
     console.log('[Test 3] Verifying hasSecret...');
     const hasKey = await store.hasSecret(secretKey);
@@ -132,8 +136,348 @@ async function runSecretStoreTests(): Promise<void> {
     }
     console.log('✓ Deletion verified');
 
-    console.log('\n=== ALL DMK-157.2 VERIFICATION TESTS PASSED (9/9) ===');
+    // =========================================================================
+    // Direct SecretStore Migration Test Suite (Scenarios A - F)
+    // =========================================================================
+    console.log('\n--- Beginning Migration Verification Suite (Scenarios A - F) ---');
+
+    // [Test 10 / Scenario A] Primary-key roundtrip
+    console.log('[Test 10] Migration Scenario A: Primary-key roundtrip...');
+    const dirA = path.join(testDir, 'scenario_a');
+    const storeA1 = new EncryptedFileSecretStore({
+      dataDir: dirA,
+      masterPassphrase: 'Primary-Key-Roundtrip-Secret-Passphrase-2026!',
+    });
+    await storeA1.setSecret('SECRET_A', 'plain_value_a', 'Primary roundtrip secret');
+    const storeA2 = new EncryptedFileSecretStore({
+      dataDir: dirA,
+      masterPassphrase: 'Primary-Key-Roundtrip-Secret-Passphrase-2026!',
+    });
+    const retrievedA = await storeA2.getSecret('SECRET_A');
+    if (retrievedA !== 'plain_value_a') {
+      throw new Error(`Scenario A roundtrip failed: got ${retrievedA}`);
+    }
+    const metaA = await storeA2.listSecretMetadata();
+    if (metaA.length !== 1 || metaA[0].description !== 'Primary roundtrip secret') {
+      throw new Error('Scenario A metadata failed');
+    }
+    if (storeA2.getMigrationStatus() !== null) {
+      throw new Error('Scenario A unexpected migration status recorded');
+    }
+    console.log('✓ [Scenario A] Primary-key roundtrip preserved secrets and metadata');
+
+    // [Test 11 / Scenario B] Legacy machine-token migration
+    console.log('[Test 11] Migration Scenario B: Legacy machine-token migration...');
+    const dirB = path.join(testDir, 'scenario_b');
+    const tokenPathB = path.join(dirB, '.machine_token');
+    fs.mkdirSync(dirB, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(tokenPathB, 'legacy-machine-token-abc-1234567890', { encoding: 'utf8', mode: 0o600 });
+
+    const storeB1 = new EncryptedFileSecretStore({
+      dataDir: dirB,
+      machineTokenPath: tokenPathB,
+    });
+    await storeB1.setSecret('LEGACY_SECRET_B', 'legacy_value_b', 'Legacy secret B');
+    const envBeforeMigration = fs.readFileSync(path.join(dirB, 'secrets.enc'), 'utf8');
+
+    // Now instantiate migration store with a new configured primary master passphrase
+    const storeB2 = new EncryptedFileSecretStore({
+      dataDir: dirB,
+      machineTokenPath: tokenPathB,
+      masterPassphrase: 'New-Configured-Master-Passphrase-B-2026!',
+    });
+    const retrievedB = await storeB2.getSecret('LEGACY_SECRET_B');
+    if (retrievedB !== 'legacy_value_b') {
+      throw new Error(`Scenario B legacy retrieval failed: got ${retrievedB}`);
+    }
+    const migrationStatusB = storeB2.getMigrationStatus();
+    if (!migrationStatusB?.migrated || migrationStatusB.source !== 'CURRENT_MACHINE_TOKEN' || migrationStatusB.target !== 'CONFIGURED_MASTER_KEY') {
+      throw new Error(`Scenario B invalid migration status: ${JSON.stringify(migrationStatusB)}`);
+    }
+    const envAfterMigration = fs.readFileSync(path.join(dirB, 'secrets.enc'), 'utf8');
+    if (envBeforeMigration === envAfterMigration) {
+      throw new Error('Scenario B envelope was not re-written after migration');
+    }
+    console.log('✓ [Scenario B] Legacy machine-token fallback migrated and re-keyed envelope to primary passphrase');
+
+    // [Test 12 / Scenario C] Primary-only reopen after migration
+    console.log('[Test 12] Migration Scenario C: Primary-only reopen after migration...');
+    // Delete legacy token file to prove store no longer relies on it
+    fs.unlinkSync(tokenPathB);
+    if (fs.existsSync(tokenPathB)) {
+      throw new Error('Failed to delete legacy token file in Scenario C');
+    }
+    const storeC = new EncryptedFileSecretStore({
+      dataDir: dirB,
+      machineTokenPath: tokenPathB,
+      masterPassphrase: 'New-Configured-Master-Passphrase-B-2026!',
+    });
+    const retrievedC = await storeC.getSecret('LEGACY_SECRET_B');
+    if (retrievedC !== 'legacy_value_b') {
+      throw new Error(`Scenario C primary-only retrieval failed: got ${retrievedC}`);
+    }
+    console.log('✓ [Scenario C] Re-keyed envelope opened with primary key only after legacy token removed');
+
+    // [Test 13 / Scenario D] Missing legacy token does not create one during recovery
+    console.log('[Test 13] Migration Scenario D: Missing legacy token does not create token file during recovery...');
+    const dirD = path.join(testDir, 'scenario_d');
+    const tokenPathD = path.join(dirD, '.machine_token');
+    const storeD1 = new EncryptedFileSecretStore({
+      dataDir: dirD,
+      masterPassphrase: 'Original-Passphrase-D-2026!',
+    });
+    await storeD1.setSecret('SECRET_D', 'val_d');
+    const storagePathD = path.join(dirD, 'secrets.enc');
+    const envBeforeD = fs.readFileSync(storagePathD, 'utf8');
+
+    // Ensure no legacy token file exists
+    if (fs.existsSync(tokenPathD)) {
+      fs.unlinkSync(tokenPathD);
+    }
+
+    const storeD2 = new EncryptedFileSecretStore({
+      dataDir: dirD,
+      machineTokenPath: tokenPathD,
+      masterPassphrase: 'Wrong-Primary-Key-D',
+    });
+
+    let recoveryFailedD = false;
+    try {
+      await storeD2.getSecret('SECRET_D');
+    } catch {
+      recoveryFailedD = true;
+    }
+
+    if (!recoveryFailedD) {
+      throw new Error('Scenario D expected failure with wrong key, but succeeded');
+    }
+    if (fs.existsSync(tokenPathD)) {
+      throw new Error('CRITICAL FLAW: Missing legacy token file was created during failed recovery attempt in Scenario D');
+    }
+    const envAfterD = fs.readFileSync(storagePathD, 'utf8');
+    if (envBeforeD !== envAfterD) {
+      throw new Error('Scenario D original envelope was modified during failed recovery attempt');
+    }
+    console.log('✓ [Scenario D] Missing legacy token does not create token file during failed recovery and envelope remains unmodified');
+
+    // [Test 14 / Scenario E] Wrong primary and wrong legacy fail closed
+    console.log('[Test 14] Migration Scenario E: Wrong primary and wrong legacy fail closed...');
+    const dirE = path.join(testDir, 'scenario_e');
+    const tokenPathE = path.join(dirE, '.machine_token');
+    fs.mkdirSync(dirE, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(tokenPathE, 'valid-legacy-token-e', { encoding: 'utf8', mode: 0o600 });
+
+    const storeE1 = new EncryptedFileSecretStore({
+      dataDir: dirE,
+      machineTokenPath: tokenPathE,
+    });
+    const sensitiveValE = 'TopSecretValE-DoNotLeakInErrors!';
+    await storeE1.setSecret('SECRET_E', sensitiveValE);
+    const storagePathE = path.join(dirE, 'secrets.enc');
+    const envBeforeE = fs.readFileSync(storagePathE, 'utf8');
+
+    // Overwrite token with wrong token
+    fs.writeFileSync(tokenPathE, 'wrong-legacy-token-e', { encoding: 'utf8', mode: 0o600 });
+
+    const storeE2 = new EncryptedFileSecretStore({
+      dataDir: dirE,
+      machineTokenPath: tokenPathE,
+      masterPassphrase: 'wrong-primary-passphrase-e',
+    });
+
+    let errorThrownE: Error | null = null;
+    try {
+      await storeE2.getSecret('SECRET_E');
+    } catch (err: any) {
+      errorThrownE = err;
+    }
+
+    if (!errorThrownE) {
+      throw new Error('Scenario E expected failure with wrong primary and wrong legacy, but succeeded');
+    }
+    if (errorThrownE.message.includes(sensitiveValE) || errorThrownE.message.includes('valid-legacy-token-e')) {
+      throw new Error('Scenario E error message leaked secret value or token');
+    }
+    const envAfterE = fs.readFileSync(storagePathE, 'utf8');
+    if (envBeforeE !== envAfterE) {
+      throw new Error('Scenario E envelope was modified on failed authentication');
+    }
+    console.log('✓ [Scenario E] Wrong primary and wrong legacy fail closed without leaking secrets');
+
+    // [Test 15 / Scenario F] Multiple secrets and metadata survive migration
+    console.log('[Test 15] Migration Scenario F: Multiple secrets and metadata survive migration...');
+    const dirF = path.join(testDir, 'scenario_f');
+    const tokenPathF = path.join(dirF, '.machine_token');
+    fs.mkdirSync(dirF, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(tokenPathF, 'multi-legacy-token-f-12345678', { encoding: 'utf8', mode: 0o600 });
+
+    const storeF1 = new EncryptedFileSecretStore({
+      dataDir: dirF,
+      machineTokenPath: tokenPathF,
+    });
+
+    const multiSecrets: Record<string, { value: string; desc: string }> = {
+      API_KEY_1: { value: 'key-1-alpha-beta-999', desc: 'First API key' },
+      DATABASE_URL: { value: 'postgres://app:pwd@cluster.local/db', desc: 'Database connection URI' },
+      JWT_SIGNING_SECRET: { value: 'jwt-signing-secret-key-32-chars-long!', desc: 'JWT signing secret' },
+    };
+
+    for (const [k, item] of Object.entries(multiSecrets)) {
+      await storeF1.setSecret(k, item.value, item.desc);
+    }
+
+    // Now migrate with configured primary master key
+    const primaryKeyF = 'New-Primary-Multi-Key-2026-Secure!';
+    const storeF2 = new EncryptedFileSecretStore({
+      dataDir: dirF,
+      machineTokenPath: tokenPathF,
+      masterPassphrase: primaryKeyF,
+    });
+
+    const metaF2 = await storeF2.listSecretMetadata();
+    if (metaF2.length !== 3) {
+      throw new Error(`Scenario F expected 3 metadata entries, found ${metaF2.length}`);
+    }
+    for (const [k, item] of Object.entries(multiSecrets)) {
+      const val = await storeF2.getSecret(k);
+      if (val !== item.value) {
+        throw new Error(`Scenario F value mismatch for ${k}: expected ${item.value}, got ${val}`);
+      }
+      const m = metaF2.find((entry) => entry.key === k);
+      if (!m || m.description !== item.desc) {
+        throw new Error(`Scenario F metadata mismatch for ${k}`);
+      }
+    }
+    if (!storeF2.getMigrationStatus()?.migrated) {
+      throw new Error('Scenario F migration status not marked as migrated');
+    }
+
+    // Delete legacy token and reopen with primary key only
+    fs.unlinkSync(tokenPathF);
+    const storeF3 = new EncryptedFileSecretStore({
+      dataDir: dirF,
+      machineTokenPath: tokenPathF,
+      masterPassphrase: primaryKeyF,
+    });
+    for (const [k, item] of Object.entries(multiSecrets)) {
+      const val = await storeF3.getSecret(k);
+      if (val !== item.value) {
+        throw new Error(`Scenario F post-migration reopen mismatch for ${k}`);
+      }
+    }
+    console.log('✓ [Scenario F] Multiple secrets and complete metadata survived migration and primary-only reload');
+
+    // [Test 16 / Scenario Historical Split Layout] Real previous application layout migration
+    console.log('[Test 16] Migration Scenario Historical Split Layout: Historical split-path migration...');
+    const dirHist = path.join(testDir, 'scenario_historical');
+    const secretsDir = path.join(dirHist, '.secrets');
+    const legacyDir = path.join(dirHist, '.docmonstakrakin');
+    const storagePathHist = path.join(secretsDir, 'store.enc');
+    const saltPathHist = path.join(secretsDir, 'store.salt');
+    const currentTokenPathHist = path.join(secretsDir, '.machine_token');
+    const legacyTokenPathHist = path.join(legacyDir, '.machine_token');
+
+    fs.mkdirSync(secretsDir, { recursive: true, mode: 0o700 });
+    fs.mkdirSync(legacyDir, { recursive: true, mode: 0o700 });
+
+    const historicalToken = 'real-historical-machine-token-split-1234567890';
+    fs.writeFileSync(legacyTokenPathHist, historicalToken, { encoding: 'utf8', mode: 0o600 });
+
+    // Step 1: Create the legacy envelope using the historical layout (where machine token was in .docmonstakrakin)
+    const storeHistOld = new EncryptedFileSecretStore({
+      dataDir: secretsDir,
+      storagePath: storagePathHist,
+      saltPath: saltPathHist,
+      machineTokenPath: legacyTokenPathHist,
+    });
+
+    const historicalSecrets: Record<string, { value: string; desc: string }> = {
+      GEMINI_API_KEY: { value: 'AIzaSyHistKey_9876543210_abcdef', desc: 'Production AI Key' },
+      DATABASE_PASSWORD: { value: 'HistDbP@ss_2026_Secure!', desc: 'Historical DB Credential' },
+    };
+
+    for (const [k, v] of Object.entries(historicalSecrets)) {
+      await storeHistOld.setSecret(k, v.value, v.desc);
+    }
+
+    const envBeforeHist = fs.readFileSync(storagePathHist, 'utf8');
+
+    // Confirm currentTokenPath does NOT exist; token was in legacy location
+    if (fs.existsSync(currentTokenPathHist)) {
+      fs.unlinkSync(currentTokenPathHist);
+    }
+
+    // Step 2: Instantiate new store with a NEW configured primary master key and explicit legacyMachineTokenPath
+    const newConfiguredMasterKey = 'Brand-New-Configured-Master-Key-2026-SuperSafe!';
+    const storeHistNew = new EncryptedFileSecretStore({
+      dataDir: secretsDir,
+      storagePath: storagePathHist,
+      saltPath: saltPathHist,
+      machineTokenPath: currentTokenPathHist,
+      legacyMachineTokenPath: legacyTokenPathHist,
+      masterPassphrase: newConfiguredMasterKey,
+    });
+
+    // Step 3: Assert legacy decryption succeeds, secrets and metadata survive
+    const metaHist = await storeHistNew.listSecretMetadata();
+    if (metaHist.length !== 2) {
+      throw new Error(`Scenario Historical expected 2 metadata entries, got ${metaHist.length}`);
+    }
+    for (const [k, v] of Object.entries(historicalSecrets)) {
+      const retrieved = await storeHistNew.getSecret(k);
+      if (retrieved !== v.value) {
+        throw new Error(`Scenario Historical secret mismatch for ${k}: expected ${v.value}, got ${retrieved}`);
+      }
+      const m = metaHist.find((entry) => entry.key === k);
+      if (!m || m.description !== v.desc) {
+        throw new Error(`Scenario Historical metadata mismatch for ${k}`);
+      }
+    }
+
+    // Step 4: Assert migration status reports source LEGACY_MACHINE_TOKEN, target CONFIGURED_MASTER_KEY
+    const migrationStatusHist = storeHistNew.getMigrationStatus();
+    if (
+      !migrationStatusHist?.migrated ||
+      migrationStatusHist.source !== 'LEGACY_MACHINE_TOKEN' ||
+      migrationStatusHist.target !== 'CONFIGURED_MASTER_KEY'
+    ) {
+      throw new Error(`Scenario Historical invalid migration status: ${JSON.stringify(migrationStatusHist)}`);
+    }
+
+    // Step 5: Assert envelope was rewritten under new primary key
+    const envAfterHist = fs.readFileSync(storagePathHist, 'utf8');
+    if (envBeforeHist === envAfterHist) {
+      throw new Error('Scenario Historical envelope was not rewritten under new key');
+    }
+
+    // Step 6: Old legacy token can then be removed
+    fs.unlinkSync(legacyTokenPathHist);
+    if (fs.existsSync(legacyTokenPathHist)) {
+      throw new Error('Failed to delete legacy token file in Scenario Historical');
+    }
+
+    // Step 7: Subsequent reopen succeeds with primary key alone (without legacy token)
+    const storeHistReopen = new EncryptedFileSecretStore({
+      dataDir: secretsDir,
+      storagePath: storagePathHist,
+      saltPath: saltPathHist,
+      machineTokenPath: currentTokenPathHist,
+      masterPassphrase: newConfiguredMasterKey,
+    });
+
+    for (const [k, v] of Object.entries(historicalSecrets)) {
+      const reopenedVal = await storeHistReopen.getSecret(k);
+      if (reopenedVal !== v.value) {
+        throw new Error(`Scenario Historical post-migration reopen mismatch for ${k}`);
+      }
+    }
+    console.log('✓ [Scenario Historical] Historical split-path envelope successfully migrated, re-keyed, and reopened with primary key alone');
+
+    console.log('\n=== ALL DMK-157.2 & MIGRATION VERIFICATION TESTS PASSED (16/16) ===');
   } finally {
+    if (savedMasterKey !== undefined) {
+      process.env.DOCMONSTAKRAKIN_MASTER_KEY = savedMasterKey;
+    }
     // Clean test directory
     if (fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });

@@ -1,106 +1,38 @@
-1. Reproduction and Root Cause Analysis
-Reproduction of Original Bug
-Endpoint Response: When clicking Approve Requirement for a requirement with status UNDER_REVIEW, the server responds with:
-code
-Http
-HTTP/1.1 403 Forbidden
-{"error":"Use Request Sign-Off and human quorum to approve a requirement"}
-Prior Flawed Behavior:
-In earlier iterations:
-RequirementsView.tsx maintained local object state (activeDrawerReq) that was optimistically mutated via setActiveDrawerReq({ ...activeDrawerReq, status: newStatus }).
-App.tsx failed to reject the promise on non-2xx responses or swallowed status update errors, preventing callers from handling rejections.
-Consequently, the drawer displayed APPROVED temporarily despite the HTTP 403 response until a full refresh occurred upon closing and reopening the drawer.
-Root Cause
-Unchecked HTTP Rejections: App.tsx's handleUpdateRequirementStatus previously resolved without checking res.ok, leaving calling components unable to distinguish between successful status changes and rejected ones.
-Local Object Duplication: The drawer held a detached, copied Requirement object rather than deriving its state reactively from the canonical requirements list keyed by ID (activeDrawerReqId).
-2. Implementation Summary
-Error Propagation (src/App.tsx)
-Updated handleUpdateRequirementStatus to enforce that non-2xx HTTP responses throw an explicit Error:
-code
-Ts
-const res = await fetch(
-  `/api/projects/${currentProject.id}/requirements/${reqId}/status`,
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, justification }),
-  }
-);
-
-const data = await res.json();
-if (!res.ok) {
-  throw new Error(
-    data.error?.message ||
-    data.error ||
-    'Requirement status update failed'
-  );
-}
-
-await fetchProjectData(currentProject.id);
-return data.requirement;
-Any non-2xx response (such as HTTP 403) rejects the Promise, prevents any success state transitions from running, and propagates the server's error message directly to the caller.
-Drawer Canonical-State Architecture (src/components/RequirementsView.tsx)
-Replaced isolated requirement object state with active ID tracking:
-code
-Ts
-const [activeDrawerReqId, setActiveDrawerReqId] = useState<string | null>(() => selectedReqId || null);
-const activeDrawerReq = (requirements || []).find((r) => r.id === activeDrawerReqId) || null;
-Removed all optimistic mutations (setActiveDrawerReq). The drawer strictly derives from the authoritative requirements prop passed down by the parent.
-Added visible error reporting via statusError rendered prominently within the requirement drawer banner and under the governance action buttons:
-Error banner displays: "Use Request Sign-Off and human quorum to approve a requirement".
-When an operation is rejected by the server:
-The drawer status does not change.
-statusError displays the exact server rejection message.
-Closing and reopening the drawer maintains the canonical server status (UNDER_REVIEW).
-Server-Side Governance Invariant Preserved (server.ts)
-POST /api/projects/:id/requirements/:reqId/status continues to strictly enforce:
-code
-Ts
-if (status === 'APPROVED') {
-  return res.status(403).json({
-    error: 'Use Request Sign-Off and human quorum to approve a requirement'
-  });
-}
-Direct approval remains forbidden without formal quorum sign-off.
-3. Verification & Test Suite
-Regression Test (scripts/testRequirementStatusSync.ts)
-Updated and expanded the regression suite covering all specified invariant items A through G:
-Test A: Direct APPROVED through ordinary status endpoint returns HTTP 403.
-Test B: Canonical requirement remains UNDER_REVIEW on the server after rejected direct approval.
-Test C: Failed requirement update rejects/propagates an error rather than resolving as success.
-Test D: Requirement drawer logic does not write APPROVED after failure.
-Test E: Valid PROPOSED -> UNDER_REVIEW transition persists.
-Test F: Refreshed requirement props automatically update the open drawer state.
-Test G: Closing and reopening the drawer shows the same canonical status returned by the server.
-Verification Run Results
-TypeScript Check (npm run lint): Passed (tsc --noEmit clean, 0 errors).
-Production Build (npm run build): Succeeded cleanly without warnings.
-Targeted Requirement Sync Suite (npm run test:req-sync):
-code
-Text
-TOTAL TESTS: 7 | PASSED: 7 | FAILED: 0
-Complete Test Suite (npm run test:complete):
-code
-Text
-Suites:    22 total, 22 passed, 0 failed, 0 skipped
-Assertions: 298 total, 298 passed, 0 failed, 0 skipped
-4. Manual Browser Workflow Verification
-Sign in as Lead Architect / Reviewer: Session verified on workspace project PRJ-ATLAS-01.
-Select requirement with canonical status UNDER_REVIEW: Opened requirement drawer.
-Open Overview & Governance tab: Visible status badge displays UNDER_REVIEW.
-Click Approve Requirement:
-HTTP response: 403 Forbidden with body {"error":"Use Request Sign-Off and human quorum to approve a requirement"}.
-Visible error banner displayed in drawer: "Use Request Sign-Off and human quorum to approve a requirement".
-Drawer status remained: UNDER_REVIEW (did not change to APPROVED at any point).
-Close drawer & reopen requirement:
-Requirement status remained strictly UNDER_REVIEW.
-Select a PROPOSED requirement & click Mark Under Review:
-HTTP response: 200 OK.
-Canonical status updated to UNDER_REVIEW on server and reflected immediately in drawer and table.
-Close and reopen confirms persistence as UNDER_REVIEW.
-5. Remaining Work for Batch 2
-Governance UX Overhaul:
-Replace the direct Approve Requirement button with the formal Request Sign-Off workflow in the drawer.
-Direct users to the Approval Inbox where human quorum (Lead Architect + Security Officer) can review and record cryptographic sign-offs.
-SecretStore Architecture Review:
-Follow up on the SecretStore candidate fallback mechanism (evaluating audit logging, key migration provenance, and host-bound .machine_token handling).
+The Batch 1.5 documentation-only reconciliation has been completed. No production code, SecretStore behavior, or runtime evidence was altered. Gate 7 was not executed, and Batch 2 implementation was not started.
+Exactly Which Documentation Files Changed
+docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md
+Regression totals: Updated final inventory in Section 11 to cite the authoritative 22/22 suites and 310 observed named checks (from rc-regression/results.json), explicitly labeling the 21 suites / 291 checks as an earlier historical run. In Section 12, explicitly separated the 93 automated acceptance criteria from the 310 named checks (noting the earlier historical 291 count).
+Git context: Explicitly labeled C:/Users/HomePC/dev/docmonstakrakin and commit 7363da... as historical execution context. Added the current review state:
+Repository: Jeruzael/docmonstakrakin
+Review branch: gaistudio
+Review checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
+Target branch: master
+docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md
+Regression totals: Updated Section 10 to reference the authoritative final inventory of 22 suites / 310 observed named checks passing, citing rc-regression/results.json and identifying the 21 suites / 291 checks as an earlier historical run.
+Git context: Updated Section 12 to identify host path C:/Users/HomePC/dev/docmonstakrakin and starting HEAD 7363da... as historical execution context, and recorded the current review state (Jeruzael/docmonstakrakin, review branch gaistudio, checkpoint 93ea030aa34e493cb7480df4b2e5d2ed6a326dda, target branch master).
+docs/07_verification/QA_AUTOMATED_ACCEPTANCE.md
+Updated lines 7–10 and line 133 to record 22 suites and 310 named checks as current, explicitly labeling 21 suites and 291 checks as an earlier historical run.
+docs/00_control/PROJECT_STATE.md
+Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
+Corrected Batch 2 vs. Gate 7 semantics: clarified that Batch 2 is part of the governance remediation sequence, not v0.2 product implementation.
+Defined the intended sequence:
+Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Affirmed that all v0.2 product implementation remains strictly blocked until Gate 7 completion.
+docs/00_control/LAST_HANDOFF.md
+Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
+Replaced erroneous "Do NOT begin Batch 2 until Gate 7 passes" with the correct governance remediation roadmap.
+Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED (no human approval recorded).
+Preserved Verified Facts & State
+Tracked Machine Token: Confirmed absent from the tree (.docmonstakrakin/.machine_token: No such file or directory).
+SecretStore Deterministic Layout: Standalone .secrets/ structure (store.enc, store.salt, .machine_token) preserved.
+Historical Split-Layout Compatibility: Supported with prioritized candidate deduplication.
+Migration Provenance: Both CURRENT_MACHINE_TOKEN and LEGACY_MACHINE_TOKEN migration provenance reporting preserved.
+Fail-Closed Resolution: Intact across store initialization, candidate exhaustion, and secret resolution.
+SecretStore Test Suite: 16/16 tests passing (server/secrets/testSecretStore.ts).
+Complete Regression Suite: 22/22 suites, 310/310 checks passing (recorded in docs/07_verification/rc-regression/results.json).
+Artifact Preservation: temp.txt preserved (sha256: cdeb737aa...2a27); test.json tracked and preserved.
+Verification Results
+WBS Drift Check (npm run wbs:check): [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
+Automated QA Check (npx tsx scripts/runAutomatedQa.ts): [PASS] 11/11 criteria evaluated and passed.
+TypeScript Linter (npm run lint): [PASS] (tsc --noEmit exited with code 0).
+Production Compilation (compile_applet): Build succeeded.

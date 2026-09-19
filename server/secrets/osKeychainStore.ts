@@ -276,4 +276,11 @@ export class OSKeychainSecretStore implements SecretStore {
     }
     return Array.from(this.metadataCache.values());
   }
+
+  public getMigrationStatus(): any {
+    if (typeof (this.fallbackStore as any).getMigrationStatus === 'function') {
+      return (this.fallbackStore as any).getMigrationStatus();
+    }
+    return null;
+  }
 }

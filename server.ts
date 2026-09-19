@@ -45,6 +45,7 @@ import {
   AgentRunLog,
   Feature,
   DerivationRecord,
+  SecretStore,
 } from './src/types.ts';
 import { DISCOVERY_QUESTION_CATALOG } from './src/data/discoveryCatalog.ts';
 import {
@@ -194,6 +195,7 @@ async function startServer() {
   defaultRedactor.installConsoleInterceptor();
 
   // Initialize SecretStore abstraction (DMK-157)
+  // Startup-fatal fail-closed policy: store integrity or authentication failure halts startup.
   const secretStore = await initializeSecretStore();
 
   // Dynamically register ambient or provisioned credentials

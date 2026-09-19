@@ -3,9 +3,24 @@ import type {Express, Request, Response} from 'express';
 
 export type ReviewerIdentity = {id:string; name:string; roles:string[]; kind:'HUMAN'|'AGENT'; roleSource:'LOCAL_SERVER_ROSTER'};
 
+/** Safely parses the DMK_HUMAN_REVIEWERS environment variable, falling back to empty roster on invalid JSON. */
+function parseConfiguredReviewers(raw?: string): Record<string, any> {
+  if (!raw || !raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw.trim());
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed;
+    }
+    return {};
+  } catch {
+    console.warn('[ReviewerIdentity] DMK_HUMAN_REVIEWERS contains invalid JSON. Defaulting to empty reviewer roster.');
+    return {};
+  }
+}
+
 /** Local reviewer sessions. Only the operator-controlled roster can assign identity or roles. */
 export function installReviewerIdentity(app:Express) {
-  const configured = JSON.parse(process.env.DMK_HUMAN_REVIEWERS || '{}');
+  const configured = parseConfiguredReviewers(process.env.DMK_HUMAN_REVIEWERS);
   const sessions = new Map<string,{identity:ReviewerIdentity;expires:number}>();
   const failures = new Map<string,{count:number;until:number}>();
   const cookieName = 'dmk_reviewer';
