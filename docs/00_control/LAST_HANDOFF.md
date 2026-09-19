@@ -2,12 +2,11 @@
 
 Updated 2026-09-19.
 
-- Source-Control Mode: GIT
-- Project root and Git root: C:/Users/HomePC/dev/docmonstakrakin
-- Branch: master
-- Observed HEAD: 7363da9ef4f0d7f3bf0be296c8662976253eb6e7 (external/user commit; this task created no commit)
-- Working tree: DIRTY; remediation and verification changes remain uncommitted.
-- Earlier no-own-Git checkpoint: parent C:/Users/HomePC/dev was deliberately excluded. Own Git is now present. No parent checkout mutation was performed.
+- Execution Environment: Google AI Studio workspace container
+- Source Repository: GitHub (Jeruzael/docmonstakrakin)
+- Development Branch: gaistudio
+- Workspace Git Metadata: unavailable inside AI Studio environment (Git metadata not present in container)
+- Remote branch checkpoint at start of Batch 1.5: a5b2c89b8cc7aff902f9d7938b21653694bc490b
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.

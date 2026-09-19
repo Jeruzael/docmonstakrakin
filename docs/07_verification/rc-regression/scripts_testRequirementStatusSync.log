@@ -1,0 +1,17 @@
+================================================================
+   REQUIREMENT CANONICAL STATE SYNCHRONIZATION REGRESSION TEST
+   Evaluating Invariant: UI never displays unaccepted state
+   Coverage: Items A through G specified in BATCH 1B contract
+================================================================
+
+✓ [PASS] Test A: Direct APPROVED through ordinary status endpoint returns 403
+✓ [PASS] Test B: Canonical requirement remains UNDER_REVIEW after rejected direct approval
+✓ [PASS] Test C: Failed requirement update rejects/propagates an error rather than resolving as success
+✓ [PASS] Test D: Requirement drawer logic does not write APPROVED after failure
+✓ [PASS] Test E: Valid PROPOSED -> UNDER_REVIEW transition persists
+✓ [PASS] Test F: Refreshed requirement props update the open drawer state
+✓ [PASS] Test G: Closing/reopening the drawer shows the same canonical status returned by the server
+
+================================================================
+TOTAL TESTS: 7 | PASSED: 7 | FAILED: 0
+================================================================

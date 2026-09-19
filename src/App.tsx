@@ -253,18 +253,33 @@ export default function App() {
     status: RequirementStatus,
     justification?: string
   ) => {
-    try {
-      const res = await fetch(`/api/projects/${currentProject.id}/requirements/${reqId}/status`, {
+    const res = await fetch(
+      `/api/projects/${currentProject.id}/requirements/${reqId}/status`,
+      {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, justification }),
-      });
-      if (res.ok) {
-        await fetchProjectData(currentProject.id);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          justification,
+        }),
       }
-    } catch (err) {
-      console.error('Failed to update requirement status:', err);
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(
+        data.error?.message ||
+        data.error ||
+        'Requirement status update failed'
+      );
     }
+
+    await fetchProjectData(currentProject.id);
+
+    return data.requirement;
   };
 
   const handleAddFeature = async (featData: Partial<Feature>) => {

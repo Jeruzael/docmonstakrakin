@@ -160,7 +160,67 @@ async function runRedactionTests(): Promise<void> {
   }
   console.log(`✓ Console interceptor safely redacted console.log output: "${interceptedLog}"`);
 
-  console.log('\n=== ALL DMK-157.5 REDACTION TESTS PASSED (8/8) ===');
+  // Test 9: Normal Error Preservation
+  console.log('[Test 9] Testing normal Error object redaction...');
+  const normalErr = new Error('Database connection failed on port 5432');
+  const redactedNormalErr = redactor.redactObject(normalErr);
+  if (!(redactedNormalErr instanceof Error) && typeof redactedNormalErr !== 'object') {
+    throw new Error('Redacted normal error is not an Error or object');
+  }
+  if (redactedNormalErr.message !== 'Database connection failed on port 5432') {
+    throw new Error(`Normal error message altered unexpectedly: ${redactedNormalErr.message}`);
+  }
+  console.log('✓ Normal Error preserved and legible');
+
+  // Test 10: Secret-bearing Error Redaction
+  console.log('[Test 10] Testing secret-bearing Error object redaction...');
+  const secretKeyVal = 'AIzaSySecretBearingErrorToken98765';
+  redactor.registerSecret(secretKeyVal);
+  const secretErr = new Error(`Authentication failed using key: ${secretKeyVal}`);
+  const redactedSecretErr = redactor.redactObject(secretErr);
+  if (redactedSecretErr.message.includes(secretKeyVal)) {
+    throw new Error(`Secret leaked in Error message: ${redactedSecretErr.message}`);
+  }
+  if (!redactedSecretErr.message.includes('[REDACTED_SECRET]')) {
+    throw new Error(`Secret mask missing in Error message: ${redactedSecretErr.message}`);
+  }
+  console.log('✓ Secret in Error message properly redacted');
+
+  // Test 11: Error with cause Redaction
+  console.log('[Test 11] Testing Error with cause property...');
+  const nestedSecret = 'ghp_NestedCauseToken1234567890abcdefgh';
+  const causeErr = new Error(`Underlying network timeout with token ${nestedSecret}`);
+  const topErr = new Error('Service call failed', { cause: causeErr });
+  const redactedTopErr = redactor.redactObject(topErr);
+  if (!redactedTopErr.cause || typeof redactedTopErr.cause !== 'object') {
+    throw new Error('Nested cause not preserved on redacted error');
+  }
+  if (redactedTopErr.cause.message.includes(nestedSecret)) {
+    throw new Error(`Secret leaked in nested cause: ${redactedTopErr.cause.message}`);
+  }
+  if (!redactedTopErr.cause.message.includes('[REDACTED_SECRET]')) {
+    throw new Error('Mask missing in nested cause message');
+  }
+  console.log('✓ Error with nested cause safely sanitized');
+
+  // Test 12: Cyclic Error Handling
+  console.log('[Test 12] Testing cyclic Error object handling...');
+  const cyclicErr: any = new Error('Cyclic error condition');
+  cyclicErr.self = cyclicErr;
+  const otherObj: any = { note: 'reference' };
+  otherObj.backToErr = cyclicErr;
+  cyclicErr.linked = otherObj;
+
+  const redactedCyclicErr = redactor.redactObject(cyclicErr);
+  if (redactedCyclicErr.self !== '[Circular]') {
+    throw new Error(`Cyclic Error self reference not converted to [Circular]: ${redactedCyclicErr.self}`);
+  }
+  if (redactedCyclicErr.linked?.backToErr !== '[Circular]') {
+    throw new Error(`Indirect cyclic Error reference not converted to [Circular]: ${redactedCyclicErr.linked?.backToErr}`);
+  }
+  console.log('✓ Cyclic Error handled without recursion or stack overflow');
+
+  console.log('\n=== ALL DMK-157.5 REDACTION TESTS PASSED (12/12) ===');
 }
 
 runRedactionTests().catch((err) => {

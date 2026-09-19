@@ -3,19 +3,19 @@
 ================================================================
 
 --- Environment & Source-Control Context ---
-Development Platform: GIT_HOSTED
-Source-Control Mode: GIT
-Git Repository: AVAILABLE
-Git Branch: master
-Git Commit: 7363da9ef4f0d7f3bf0be296c8662976253eb6e7
-Git Working Tree: DIRTY
+Development Platform: LOCAL_WORKSPACE
+Source-Control Mode: AI_STUDIO_WORKSPACE
+Git Repository: NOT AVAILABLE
+Git Branch: NOT_APPLICABLE
+Git Commit: NOT_APPLICABLE
+Git Working Tree: NOT_APPLICABLE
 Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 Previous Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 State Continuity: VERIFIED
 
 --- Automated QA Criterion Evaluation ---
 ✓ [PASS] QA-AUTO-ENV-001 (P0): Source-Control Mode & Git Metadata Honesty
-       GIT mode accurately detected with active branch master.
+       AI_STUDIO_WORKSPACE mode accurately reported with null Git metadata (no fabrication).
 ✓ [PASS] QA-AUTO-ENV-002 (P0): Canonical State Hash Continuity Verification
        Canonical state hash verified (63d08305e50b68e7...). Continuity is VERIFIED.
 ✓ [PASS] QA-AUTO-WBS-001 (P0): WBS Schema Version & Baseline Metadata
@@ -27,9 +27,9 @@ State Continuity: VERIFIED
 ✓ [PASS] QA-AUTO-WBSR-002 (P0): WBS YAML to Markdown Drift Verification
        MASTER_WBS.yaml and MASTER_WBS.md are 100% synchronized with zero detected drift.
 ✓ [PASS] QA-AUTO-DOC-001 (P0): PROJECT_STATE.md Honest Environment & State Hash
-       PROJECT_STATE.md correctly documents AI_STUDIO_WORKSPACE, live canonical state hash, parent checkpoint hash, and verified lineage.
+       PROJECT_STATE.md matches the detected source-control mode and preserves the seeded baseline hash and checkpoint.
 ✓ [PASS] QA-AUTO-DOC-002 (P0): LAST_HANDOFF.md Environment & State Continuity
-       LAST_HANDOFF.md correctly documents AI_STUDIO_WORKSPACE, live state hash, parent checkpoint hash, and State Continuity: VERIFIED.
+       LAST_HANDOFF.md matches detected source-control mode and documents seeded baseline continuity separately from current evidence.
 ✓ [PASS] QA-AUTO-DOC-003 (P0): AGENT_BOOTSTRAP.md Workspace Mode Guidance
        AGENT_BOOTSTRAP.md specifies dual-mode environment detection and strictly bans fabricated Git metadata.
 ✓ [PASS] QA-AUTO-GOV-001 (P0): v0.2 Scope & Implementation Gating Integrity

@@ -1,5 +1,5 @@
 import { RequestSignoff } from './RequestSignoff';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -25,7 +25,7 @@ interface RequirementsViewProps {
   project?: Project;
   requirements?: Requirement[];
   onAddRequirement: (req: Partial<Requirement>) => Promise<void>;
-  onUpdateRequirementStatus?: (reqId: string, status: RequirementStatus, justification?: string) => Promise<void>;
+  onUpdateRequirementStatus?: (reqId: string, status: RequirementStatus, justification?: string) => Promise<any>;
   selectedReqId?: string;
 }
 
@@ -40,12 +40,17 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [activeDrawerReq, setActiveDrawerReq] = useState<Requirement | null>(() => {
+  const [activeDrawerReqId, setActiveDrawerReqId] = useState<string | null>(() => selectedReqId || null);
+  const [statusError, setStatusError] = useState('');
+
+  useEffect(() => {
     if (selectedReqId) {
-      return (requirements || []).find((r) => r.id === selectedReqId) || null;
+      setActiveDrawerReqId(selectedReqId);
+      setStatusError('');
     }
-    return null;
-  });
+  }, [selectedReqId]);
+
+  const activeDrawerReq = (requirements || []).find((r) => r.id === activeDrawerReqId) || null;
   const [drawerTab, setDrawerTab] = useState<'OVERVIEW' | 'TRACEABILITY' | 'EVIDENCE'>('TRACEABILITY');
   const [showAddModal, setShowAddModal] = useState(false);
   const [statusActionNote, setStatusActionNote] = useState('');
@@ -100,15 +105,17 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   };
 
   const handleStatusChange = async (reqId: string, newStatus: RequirementStatus) => {
-    if (onUpdateRequirementStatus) {
+    if (!onUpdateRequirementStatus) return;
+    try {
+      setStatusError('');
       await onUpdateRequirementStatus(reqId, newStatus, statusActionNote);
       setStatusActionNote('');
-      if (activeDrawerReq && activeDrawerReq.id === reqId) {
-        setActiveDrawerReq({
-          ...activeDrawerReq,
-          status: newStatus,
-        });
-      }
+    } catch (error) {
+      setStatusError(
+        error instanceof Error
+          ? error.message
+          : 'Requirement status update failed'
+      );
     }
   };
 
@@ -193,7 +200,10 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
           {filteredRequirements.map((req) => (
             <div
               key={req.id}
-              onClick={() => setActiveDrawerReq(req)}
+              onClick={() => {
+                setStatusError('');
+                setActiveDrawerReqId(req.id);
+              }}
               className="p-5 hover:bg-slate-50/80 transition-colors cursor-pointer group"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
@@ -324,7 +334,10 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
               <h2 className="text-base font-bold text-slate-900 mt-1">{activeDrawerReq.title}</h2>
             </div>
             <button
-              onClick={() => setActiveDrawerReq(null)}
+              onClick={() => {
+                setStatusError('');
+                setActiveDrawerReqId(null);
+              }}
               className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -522,6 +535,20 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
                     <label className="text-slate-700 font-bold block">
                       Requirement Governance Actions:
                     </label>
+
+                    {statusError && (
+                      <div
+                        id="requirement-status-error"
+                        className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5"
+                      >
+                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-red-900">Requirement status update failed</p>
+                          <p className="text-red-700 font-medium mt-0.5">{statusError}</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2">
                       {activeDrawerReq.status !== 'APPROVED' && (
                         <button
