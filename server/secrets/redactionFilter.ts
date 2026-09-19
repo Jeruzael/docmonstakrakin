@@ -98,6 +98,19 @@ export class SecretRedactor {
       return this.redactString(input) as unknown as T;
     }
 
+    if (input instanceof Error) {
+      const errCopy = Object.create(Object.getPrototypeOf(input));
+      for (const key of Object.getOwnPropertyNames(input)) {
+        const val = (input as any)[key];
+        if (typeof val === 'string') {
+          errCopy[key] = this.redactString(val);
+        } else {
+          errCopy[key] = this.redactObject(val, seen);
+        }
+      }
+      return errCopy as T;
+    }
+
     if (typeof input !== 'object') {
       return input;
     }

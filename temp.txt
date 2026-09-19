@@ -1,0 +1,106 @@
+1. Reproduction and Root Cause Analysis
+Reproduction of Original Bug
+Endpoint Response: When clicking Approve Requirement for a requirement with status UNDER_REVIEW, the server responds with:
+code
+Http
+HTTP/1.1 403 Forbidden
+{"error":"Use Request Sign-Off and human quorum to approve a requirement"}
+Prior Flawed Behavior:
+In earlier iterations:
+RequirementsView.tsx maintained local object state (activeDrawerReq) that was optimistically mutated via setActiveDrawerReq({ ...activeDrawerReq, status: newStatus }).
+App.tsx failed to reject the promise on non-2xx responses or swallowed status update errors, preventing callers from handling rejections.
+Consequently, the drawer displayed APPROVED temporarily despite the HTTP 403 response until a full refresh occurred upon closing and reopening the drawer.
+Root Cause
+Unchecked HTTP Rejections: App.tsx's handleUpdateRequirementStatus previously resolved without checking res.ok, leaving calling components unable to distinguish between successful status changes and rejected ones.
+Local Object Duplication: The drawer held a detached, copied Requirement object rather than deriving its state reactively from the canonical requirements list keyed by ID (activeDrawerReqId).
+2. Implementation Summary
+Error Propagation (src/App.tsx)
+Updated handleUpdateRequirementStatus to enforce that non-2xx HTTP responses throw an explicit Error:
+code
+Ts
+const res = await fetch(
+  `/api/projects/${currentProject.id}/requirements/${reqId}/status`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, justification }),
+  }
+);
+
+const data = await res.json();
+if (!res.ok) {
+  throw new Error(
+    data.error?.message ||
+    data.error ||
+    'Requirement status update failed'
+  );
+}
+
+await fetchProjectData(currentProject.id);
+return data.requirement;
+Any non-2xx response (such as HTTP 403) rejects the Promise, prevents any success state transitions from running, and propagates the server's error message directly to the caller.
+Drawer Canonical-State Architecture (src/components/RequirementsView.tsx)
+Replaced isolated requirement object state with active ID tracking:
+code
+Ts
+const [activeDrawerReqId, setActiveDrawerReqId] = useState<string | null>(() => selectedReqId || null);
+const activeDrawerReq = (requirements || []).find((r) => r.id === activeDrawerReqId) || null;
+Removed all optimistic mutations (setActiveDrawerReq). The drawer strictly derives from the authoritative requirements prop passed down by the parent.
+Added visible error reporting via statusError rendered prominently within the requirement drawer banner and under the governance action buttons:
+Error banner displays: "Use Request Sign-Off and human quorum to approve a requirement".
+When an operation is rejected by the server:
+The drawer status does not change.
+statusError displays the exact server rejection message.
+Closing and reopening the drawer maintains the canonical server status (UNDER_REVIEW).
+Server-Side Governance Invariant Preserved (server.ts)
+POST /api/projects/:id/requirements/:reqId/status continues to strictly enforce:
+code
+Ts
+if (status === 'APPROVED') {
+  return res.status(403).json({
+    error: 'Use Request Sign-Off and human quorum to approve a requirement'
+  });
+}
+Direct approval remains forbidden without formal quorum sign-off.
+3. Verification & Test Suite
+Regression Test (scripts/testRequirementStatusSync.ts)
+Updated and expanded the regression suite covering all specified invariant items A through G:
+Test A: Direct APPROVED through ordinary status endpoint returns HTTP 403.
+Test B: Canonical requirement remains UNDER_REVIEW on the server after rejected direct approval.
+Test C: Failed requirement update rejects/propagates an error rather than resolving as success.
+Test D: Requirement drawer logic does not write APPROVED after failure.
+Test E: Valid PROPOSED -> UNDER_REVIEW transition persists.
+Test F: Refreshed requirement props automatically update the open drawer state.
+Test G: Closing and reopening the drawer shows the same canonical status returned by the server.
+Verification Run Results
+TypeScript Check (npm run lint): Passed (tsc --noEmit clean, 0 errors).
+Production Build (npm run build): Succeeded cleanly without warnings.
+Targeted Requirement Sync Suite (npm run test:req-sync):
+code
+Text
+TOTAL TESTS: 7 | PASSED: 7 | FAILED: 0
+Complete Test Suite (npm run test:complete):
+code
+Text
+Suites:    22 total, 22 passed, 0 failed, 0 skipped
+Assertions: 298 total, 298 passed, 0 failed, 0 skipped
+4. Manual Browser Workflow Verification
+Sign in as Lead Architect / Reviewer: Session verified on workspace project PRJ-ATLAS-01.
+Select requirement with canonical status UNDER_REVIEW: Opened requirement drawer.
+Open Overview & Governance tab: Visible status badge displays UNDER_REVIEW.
+Click Approve Requirement:
+HTTP response: 403 Forbidden with body {"error":"Use Request Sign-Off and human quorum to approve a requirement"}.
+Visible error banner displayed in drawer: "Use Request Sign-Off and human quorum to approve a requirement".
+Drawer status remained: UNDER_REVIEW (did not change to APPROVED at any point).
+Close drawer & reopen requirement:
+Requirement status remained strictly UNDER_REVIEW.
+Select a PROPOSED requirement & click Mark Under Review:
+HTTP response: 200 OK.
+Canonical status updated to UNDER_REVIEW on server and reflected immediately in drawer and table.
+Close and reopen confirms persistence as UNDER_REVIEW.
+5. Remaining Work for Batch 2
+Governance UX Overhaul:
+Replace the direct Approve Requirement button with the formal Request Sign-Off workflow in the drawer.
+Direct users to the Approval Inbox where human quorum (Lead Architect + Security Officer) can review and record cryptographic sign-offs.
+SecretStore Architecture Review:
+Follow up on the SecretStore candidate fallback mechanism (evaluating audit logging, key migration provenance, and host-bound .machine_token handling).

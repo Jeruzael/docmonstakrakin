@@ -1,3 +1,4 @@
+PASS historical legacy entries remain readable when current validation is stricter
 PASS malformed diagnostic identifiers never expose objects to the UI
 PASS legitimate prose words are valid, including standalone JavaScript value names
 PASS actual non-finite numbers and unresolved serialization artifacts fail

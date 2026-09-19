@@ -127,8 +127,8 @@ export class EncryptedFileSecretStore implements SecretStore {
   /**
    * Derives a 256-bit symmetric encryption key using PBKDF2.
    */
-  private deriveKey(salt: Buffer): Buffer {
-    return crypto.pbkdf2Sync(this.passphrase, salt, 100_000, 32, 'sha256');
+  private deriveKey(salt: Buffer, customPassphrase?: string): Buffer {
+    return crypto.pbkdf2Sync(customPassphrase || this.passphrase, salt, 100_000, 32, 'sha256');
   }
 
   /**
@@ -157,18 +157,41 @@ export class EncryptedFileSecretStore implements SecretStore {
       }
 
       const salt = Buffer.from(envelope.kdf.saltHex, 'hex');
-      const key = this.deriveKey(salt);
       const iv = Buffer.from(envelope.encryption.ivHex, 'hex');
       const authTag = Buffer.from(envelope.encryption.authTagHex, 'hex');
       const ciphertext = Buffer.from(envelope.ciphertextHex, 'hex');
 
-      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-      decipher.setAuthTag(authTag);
+      // Candidate passphrases: primary configured passphrase, followed by machine token fallback
+      const candidatePassphrases = [this.passphrase];
+      const defaultDataDir = path.join(process.cwd(), '.docmonstakrakin');
+      const machineToken = this.getOrCreateMachineToken(defaultDataDir);
+      if (machineToken && !candidatePassphrases.includes(machineToken)) {
+        candidatePassphrases.push(machineToken);
+      }
 
-      const decryptedBytes = Buffer.concat([
-        decipher.update(ciphertext),
-        decipher.final(),
-      ]);
+      let decryptedBytes: Buffer | null = null;
+      let usedPassphrase = this.passphrase;
+      let lastDecryptErr: Error | null = null;
+
+      for (const pass of candidatePassphrases) {
+        try {
+          const key = this.deriveKey(salt, pass);
+          const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+          decipher.setAuthTag(authTag);
+          decryptedBytes = Buffer.concat([
+            decipher.update(ciphertext),
+            decipher.final(),
+          ]);
+          usedPassphrase = pass;
+          break;
+        } catch (err: any) {
+          lastDecryptErr = err;
+        }
+      }
+
+      if (!decryptedBytes) {
+        throw lastDecryptErr || new Error('Authentication failed for all candidate passphrases');
+      }
 
       const decryptedJson: { secrets: Record<string, string> } = JSON.parse(
         decryptedBytes.toString('utf8')
@@ -184,6 +207,12 @@ export class EncryptedFileSecretStore implements SecretStore {
         metadata: metadataMap,
       };
       this.isInitialized = true;
+
+      // If envelope was decrypted using a fallback passphrase rather than the current primary passphrase,
+      // re-encrypt with current primary passphrase so future accesses use the primary passphrase.
+      if (usedPassphrase !== this.passphrase) {
+        await this.persistToDisk();
+      }
     } catch (err: any) {
       throw new Error(
         `Failed to decrypt local SecretStore at ${this.storagePath}: ${err.message}`

@@ -2,12 +2,12 @@
 
 Updated 2026-09-19.
 
-- Source-Control Mode: GIT
-- Project root and Git root: C:/Users/HomePC/dev/docmonstakrakin
-- Branch: master
-- Observed HEAD: 7363da9ef4f0d7f3bf0be296c8662976253eb6e7 (external/user commit; this task created no commit)
-- Working tree: DIRTY; remediation and verification changes remain uncommitted.
-- Earlier no-own-Git checkpoint: parent C:/Users/HomePC/dev was deliberately excluded. Own Git is now present. No parent checkout mutation was performed.
+- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Project root: /workspace
+- Branch: NOT_APPLICABLE
+- Observed HEAD: NOT_APPLICABLE
+- Working tree: NOT_APPLICABLE
+- Earlier no-own-Git checkpoint: parent was deliberately excluded. Git metadata is not present in AI Studio workspace container. No parent checkout mutation was performed.
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.

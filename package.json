@@ -17,8 +17,9 @@
     "test:tech": "tsx scripts/testTechnicalBaseline.ts",
     "test:cryptodemon": "tsx scripts/testCryptoDemon.ts && tsx scripts/testCryptoDemonIntegration.ts",
     "test:complete": "tsx scripts/runCompleteRegression.ts",
-    "test": "npm run qa && npm run test:remediation && npm run test:tech && npm run test:cryptodemon && npm run test:proposal",
-    "test:proposal": "tsx scripts/testProposalContract.ts"
+    "test": "npm run qa && npm run test:remediation && npm run test:tech && npm run test:cryptodemon && npm run test:proposal && npm run test:req-sync",
+    "test:proposal": "tsx scripts/testProposalContract.ts",
+    "test:req-sync": "tsx scripts/testRequirementStatusSync.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
