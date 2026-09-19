@@ -5,7 +5,7 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 - Execution Environment: Google AI Studio workspace container
 - Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Review Branch: gaistudio-step-2a
+- Review Branch: gaistudio
 - Authoritative Starting Checkpoint: ab3cdda66f59b1e0acef3299d6107cfa09d5efa7
 - Target Branch: master
 - Development Branch: master
@@ -27,7 +27,7 @@ Step 2A (Harden Trusted Self-Bootstrap Contract) is technically complete:
 - Path Traversal Defense: Controlled document references enforce repository-relative paths under `docs/`, reject directory traversal (`..`), absolute POSIX, and absolute Windows paths. Validates 64-hex SHA-256 digests.
 - Canonical JSON Compatibility: Verified 100% serialization equivalence between self-bootstrap canonicalizer and `server/package/portablePackage.ts`.
 - Node Isolation: `src/data/selfBootstrapContract.ts` confirmed structurally isolated from Vite frontend production bundle; `npm run build` cleanly compiles client and server.
-- All 16 automated contract test suites in `scripts/testSelfBootstrapContract.ts` pass cleanly (zero failures).
+- All 16 focused self-bootstrap contract tests in `scripts/testSelfBootstrapContract.ts` pass cleanly (zero failures).
 - No bootstrap execution executed; `.local/project-state.json` untouched; no project created.
 
 Batch 1 and Batch 1.5 Final Correction remain technically complete:
@@ -48,7 +48,14 @@ Batch 1 and Batch 1.5 Final Correction remain technically complete:
 
 The authoritative automated result is in `docs/07_verification/rc-regression/results.json`, with 22/22 suites passing and raw per-suite logs in `docs/07_verification/rc-regression/`. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations, and retest steps are in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md` and `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md`.
 
-Current next action: Merge Batch 1.5 into master and proceed to Batch 2 governance UX in the governance remediation sequence. Gate 7 status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. DMK-166 through DMK-185 remain PROPOSED; no v0.2 implementation began.
+Current next action:
+1. Complete Step 2A technical/source review.
+2. Merge Step 2A into master after review.
+3. Proceed to Step 3: construct and review the real PRJ-DOCMONSTAKRAKIN bootstrap manifest.
+4. Bootstrap execution remains later and requires an explicit reviewed step.
+5. Batch 2 governance UX remains NOT STARTED.
+6. Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+7. v0.2 product work remains blocked.
 
 ## State and evidence identity
 

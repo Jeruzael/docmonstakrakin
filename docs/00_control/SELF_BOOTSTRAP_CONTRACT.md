@@ -1,7 +1,7 @@
 # Trusted Self-Bootstrap Contract & Schema Specification
 
 **Document Identifier:** `DOC-CTRL-BOOTSTRAP-001`  
-**Status:** APPROVED DESIGN CONTRACT (Step 2A — Hardened Contract & Schema)  
+**Status:** HARDENED TECHNICAL CONTRACT — PENDING MERGE (Step 2A — Hardened Contract & Schema)  
 **Schema Identifier:** `SELF_BOOTSTRAP_V1`  
 **Bootstrap Mode:** `TRUSTED_LOCAL_BOOTSTRAP`  
 **Repository:** `Jeruzael/docmonstakrakin`  
