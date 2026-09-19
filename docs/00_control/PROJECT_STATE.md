@@ -16,8 +16,8 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 Batch 1 and Batch 1.5 Final Correction are technically complete:
 - Canonical Requirement state synchronization and `activeDrawerReqId` architecture: PRESERVED and active in UI components.
-- SecretStore deterministic layout: Configured to `.secrets/` (`store.enc`, `store.salt`, `.machine_token`). Git-tracked machine token removed from `.docmonstakrakin/` with gitignore protection maintained.
-- Historical split-layout migration: Verified via `legacyMachineTokenPath` (`.docmonstakrakin/.machine_token`). Successfully decrypts legacy envelopes, preserves all secrets and metadata, re-keys under new primary master passphrase, and removes legacy credentials. Verified in `server/secrets/testSecretStore.ts` (16/16 passing tests).
+- SecretStore deterministic layout: Configured to `.secrets/` (`store.enc`, `store.salt`, `.machine_token`). Tracked machine token removed from `.docmonstakrakin/` with gitignore protection maintained.
+- Historical and current machine-token migration: Verified via `legacyMachineTokenPath` (`.docmonstakrakin/.machine_token`) and current token path. Supports both `CURRENT_MACHINE_TOKEN` and `LEGACY_MACHINE_TOKEN` migration provenance reporting when re-keying to `CONFIGURED_MASTER_KEY`. Successfully decrypts legacy envelopes, preserves all secrets and metadata, re-keys under new primary master passphrase, and removes legacy credentials. Verified in `server/secrets/testSecretStore.ts` (16/16 passing tests).
 - Fail-closed secret resolution: Startup initialization and `resolveSecret()` strictly fail-closed on authentication/decryption/integrity failures. PORT resolution bound to `Number(process.env.PORT || 3000)`.
 - Gate 7 status: NOT EXECUTED. Gate 7 release signoff remains strictly pending human review and verification.
 - Batch 2 status: NOT STARTED. All v0.2 implementation remains strictly blocked until Gate 7 completion.
@@ -32,4 +32,4 @@ Seeded canonical baseline hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad
 
 Seeded parent checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 
-State Continuity: VERIFIED for the seeded baseline fixture only. These are not current CryptoDemon runtime hashes, source-tree digests, or proof of release approval. Current code/evidence fingerprints are recorded separately in ../07_verification/rc-checkpoint.json. Integration fixtures run in isolated temporary workspaces; their human credentials and approvals are synthetic test data. Historical control records remain under ../07_verification/history/.
+State Continuity: VERIFIED for the seeded baseline fixture only. These are not current CryptoDemon runtime hashes, source-tree digests, or proof of release approval. The authoritative current automated regression evidence is recorded in `docs/07_verification/rc-regression/results.json`. Integration fixtures run in isolated temporary workspaces; their human credentials and approvals are synthetic test data. Historical control records remain under `docs/07_verification/history/`.

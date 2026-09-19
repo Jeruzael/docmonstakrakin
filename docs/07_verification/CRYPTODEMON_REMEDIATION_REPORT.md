@@ -68,7 +68,7 @@ Some legacy security/release harnesses use fixture stores and modeled boundaries
 
 Earlier implementation spans initialization/derivation/applicability, project UI/state, canonical server routes, reviewer sessions/signoff, proposal sessions, package trust, audit/persistence, repository boundary and their tests. Those prior changes were already included in external/user commits before this final protocol diff.
 
-The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT.md`. Control and evidence changes include WBS YAML/generated Markdown, requirements, traceability, project state, handoff, execution plan, QA registry, archived historical records, reports, fixture evidence and regression logs. `rc-diff-summary.txt` is the exact final diff inventory; `rc-checkpoint.json` fingerprints current implementation and evidence. Pre-existing `test.json` was not altered.
+The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT.md`. Control and evidence changes include WBS YAML/generated Markdown, requirements, traceability, project state, handoff, execution plan, QA registry, archived historical records, reports, fixture evidence and regression logs. The authoritative regression inventory and evidence is in `rc-regression/results.json`. Pre-existing `test.json` is tracked and preserved.
 
 ## 14. Evidence and WBS
 
@@ -80,7 +80,7 @@ The current uncommitted protocol files are listed in `PROPOSAL_SCHEMA_1_1_REPORT
 | EV-RC-190 | DMK-190 | Protocol A–J, two review regressions and HTTP round trips; independent review | VERIFIED (technical) |
 | No human evidence yet | DMK-191 | Gio browser retest below | READY |
 
-Planned by the user specifications and Codex execution plan; implemented by `/root`; verified through named automation and the separate reviewer; human-approved-by remains PENDING. Evidence logs, timestamps and digests are recorded in `rc-regression/results.json` and `rc-checkpoint.json`. Seeded canonical hash `63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b` and ancestor `31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f` remain fixture lineage only, distinct from current source/evidence hashes.
+Planned by the user specifications and Codex execution plan; implemented by `/root`; verified through named automation and the separate reviewer; human-approved-by remains PENDING. Evidence logs, timestamps and digests are recorded in `rc-regression/results.json`. Seeded canonical hash `63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b` and ancestor `31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f` remain fixture lineage only, distinct from current source/evidence hashes.
 
 ## 15. Human manual retest checklist
 

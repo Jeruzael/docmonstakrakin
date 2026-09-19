@@ -17,7 +17,7 @@ Updated 2026-09-19.
 Resumed existing v0.1 remediation without restarting. Retained neutral initialization, feature generation, project isolation, authenticated reviewer quorum, immutable ADR revisions, untrusted package import, audit redaction/hash ordering, and durable review sessions. Batch 1 and Batch 1.5 final corrections:
 - Requirement State & Drawer Architecture: Preserved canonical Requirement state synchronization and `activeDrawerReqId` architecture with single requirement status error display.
 - SecretStore Deterministic Layout: SecretStore paths standardized to `.secrets/` (`store.enc`, `store.salt`, `.machine_token`). Removed tracking of `.docmonstakrakin/.machine_token` with `.gitignore` enforcement intact.
-- Historical Split-Layout Migration: Added explicit `legacyMachineTokenPath` support for one-time legacy credential recovery from `.docmonstakrakin/.machine_token`. Verified multi-candidate recovery priority, safe deduplication, secret & metadata survival, structured migration reporting (`source: LEGACY_MACHINE_TOKEN`, `target: CONFIGURED_MASTER_KEY`), automatic re-keying, and safe legacy token cleanup.
+- Historical and Current Token Migration: Added explicit `legacyMachineTokenPath` support for one-time legacy credential recovery from `.docmonstakrakin/.machine_token` along with current machine-token fallback. Verified multi-candidate recovery priority, safe deduplication, secret & metadata survival, structured migration reporting (`source: CURRENT_MACHINE_TOKEN` or `source: LEGACY_MACHINE_TOKEN`, `target: CONFIGURED_MASTER_KEY`), automatic re-keying, and safe legacy token cleanup.
 - Fail-Closed Secret Resolution: Eliminated broad try/catch swallowing around SecretStore operations. Startup initialization and `resolveSecret()` now fail closed on store decryption/integrity failures. PORT restored to `Number(process.env.PORT || 3000)`.
 - Test Suite: All 22 automated test suites (310 assertions) pass with 0 failures and 0 skips.
 
@@ -31,7 +31,7 @@ For merge into master and next review:
 3. Do NOT execute Gate 7 until human verification is complete.
 4. Do NOT begin Batch 2 until Gate 7 passes.
 
-Canonical WBS: DMK-187 through DMK-190 VERIFIED for technical remediation; DMK-191 READY for human verification. Review the actual Git diff; no commit or push was created by this task. Preserve the pre-existing untracked test.json.
+Canonical WBS: DMK-187 through DMK-190 VERIFIED for technical remediation; DMK-191 READY for human verification. Review the actual Git diff against the base checkpoint. Preserve the pre-existing tracked test.json.
 
 ## State and evidence identity
 
@@ -39,4 +39,4 @@ Seeded canonical baseline hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad
 
 Seeded parent checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 
-State Continuity: VERIFIED for the seeded baseline fixture only. These are not current CryptoDemon runtime hashes, source-tree digests, or proof of release approval. Current code/evidence fingerprints are recorded separately in ../07_verification/rc-checkpoint.json. Integration fixtures run in isolated temporary workspaces; their human credentials and approvals are synthetic test data. Historical control records remain under ../07_verification/history/.
+State Continuity: VERIFIED for the seeded baseline fixture only. These are not current CryptoDemon runtime hashes, source-tree digests, or proof of release approval. The authoritative current automated regression evidence is recorded in `docs/07_verification/rc-regression/results.json`. Integration fixtures run in isolated temporary workspaces; their human credentials and approvals are synthetic test data. Historical control records remain under `docs/07_verification/history/`.

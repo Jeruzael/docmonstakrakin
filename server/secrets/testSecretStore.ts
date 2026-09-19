@@ -191,7 +191,7 @@ async function runSecretStoreTests(): Promise<void> {
       throw new Error(`Scenario B legacy retrieval failed: got ${retrievedB}`);
     }
     const migrationStatusB = storeB2.getMigrationStatus();
-    if (!migrationStatusB?.migrated || migrationStatusB.source !== 'LEGACY_MACHINE_TOKEN' || migrationStatusB.target !== 'CONFIGURED_MASTER_KEY') {
+    if (!migrationStatusB?.migrated || migrationStatusB.source !== 'CURRENT_MACHINE_TOKEN' || migrationStatusB.target !== 'CONFIGURED_MASTER_KEY') {
       throw new Error(`Scenario B invalid migration status: ${JSON.stringify(migrationStatusB)}`);
     }
     const envAfterMigration = fs.readFileSync(path.join(dirB, 'secrets.enc'), 'utf8');

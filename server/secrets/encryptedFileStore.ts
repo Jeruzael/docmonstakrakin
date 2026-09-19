@@ -20,7 +20,7 @@ export interface EncryptedStoreConfig {
 
 export interface SecretStoreMigrationStatus {
   migrated: boolean;
-  source?: 'LEGACY_MACHINE_TOKEN';
+  source?: 'CURRENT_MACHINE_TOKEN' | 'LEGACY_MACHINE_TOKEN';
   target?: 'CONFIGURED_MASTER_KEY';
 }
 
@@ -421,7 +421,7 @@ export class EncryptedFileSecretStore implements SecretStore {
           this.passphrase = targetPassphrase;
           this.migrationStatus = {
             migrated: true,
-            source: 'LEGACY_MACHINE_TOKEN',
+            source: successfulCandidate.source === 'LEGACY_MACHINE_TOKEN' ? 'LEGACY_MACHINE_TOKEN' : 'CURRENT_MACHINE_TOKEN',
             target: 'CONFIGURED_MASTER_KEY',
           };
           console.warn(

@@ -1,22 +1,41 @@
-The Batch 1.5 final correction findings have been resolved and verified across the codebase:
-Key Findings & Corrections Implemented
-Untracked Machine Token Artifact: Removed the machine token from .docmonstakrakin/ to prevent sensitive host token leakage into source control, while retaining the root .gitignore pattern.
-Deterministic SecretStore Configuration: Standardized the active runtime SecretStore directory to .secrets/ (store.enc, store.salt, and .secrets/.machine_token).
-Historical Split-Layout Compatibility: Extended EncryptedStoreConfig and EncryptedFileSecretStore to support legacyMachineTokenPath (configured to .docmonstakrakin/.machine_token). If an existing envelope was created under the previous layout, it discovers the legacy token in read-only mode, decrypts the store, executes the authenticated re-key ceremony under the new primary master passphrase, and records structured migration status (source: LEGACY_MACHINE_TOKEN, target: CONFIGURED_MASTER_KEY).
-Recovery Candidate Semantics: Invariants enforced in ensureInitialized():
-Priority order: Configured primary key 
- existing current machine token 
- explicit legacy machine token.
-Identical candidate values deduplicated.
-No token files created during recovery.
-Fails closed with safe key-source diagnostic tags if no candidate authenticates.
-Historical Split-Layout Regression Suite: Added Test 16 (Scenario Historical Split Layout) to the verification suite in server/secrets/testSecretStore.ts. It creates an envelope using the historical layout, migrates and re-keys it under a new primary passphrase, deletes the legacy token, and reloads with the primary key alone. All 16 direct SecretStore tests pass.
-Fail-Closed Secret Resolution: Removed broad try/catch error swallowing in server.ts and server/secrets/secretStoreFactory.ts. If the secure store encounters authentication, decryption, or tamper failures, the system fails closed rather than silently falling back to process.env.
-Restored Port Behavior: Reverted port resolution in server.ts to Number(process.env.PORT || 3000).
-Environment Documentation: Restored descriptive, safe comments in .env.example for PORT, DOCMONSTAKRAKIN_MASTER_KEY, DMK_HUMAN_REVIEWERS, and GEMINI_API_KEY.
-Control Documentation Reconciliation: Updated docs/00_control/PROJECT_STATE.md and docs/00_control/LAST_HANDOFF.md to accurately reflect the active drawer requirement architecture, SecretStore layout, fail-closed resolution, historical migration support, exact evidence paths (docs/07_verification/rc-regression/results.json), and clear merge handoff instructions.
-Verification Results
-Complete Regression Suite: npm run test:complete completed with 22/22 suites passed and 310/310 assertions passed (0 failed, 0 skipped).
-Static Typing & Linter: npm run lint (tsc --noEmit) succeeded with 0 errors.
-Production Build: compile_applet (npm run build) succeeded without warnings or errors.
-Governance Status: Gate 7 has not been executed; Batch 2 has not been started.
+The verified source-review cleanup for Batch 1.5 has been completed:
+1. Tracked Machine Token Removal
+.docmonstakrakin/.machine_token is confirmed absent from the workspace and tree.
+No contents were printed, no replacement token was created, and the existing .gitignore exclusion remains intact.
+2. Migration Provenance Correction
+Extended SecretStoreMigrationStatus.source to support 'CURRENT_MACHINE_TOKEN' | 'LEGACY_MACHINE_TOKEN'.
+In EncryptedFileSecretStore.ensureInitialized(), migrationStatus.source is now dynamically derived from successfulCandidate.source:
+Current-token migration: CURRENT_MACHINE_TOKEN 
+ CONFIGURED_MASTER_KEY
+Historical split-layout migration: LEGACY_MACHINE_TOKEN 
+ CONFIGURED_MASTER_KEY
+Updated Scenario B in server/secrets/testSecretStore.ts to assert source === 'CURRENT_MACHINE_TOKEN'.
+Kept Test 16 asserting source === 'LEGACY_MACHINE_TOKEN'.
+Preserved all candidate ordering, fail-closed mechanics, and post-write re-key verification.
+3. Control Documentation Reconciliation
+Reconciled docs/00_control/PROJECT_STATE.md, docs/00_control/LAST_HANDOFF.md, docs/00_control/TRACEABILITY_MATRIX.md, and remediation reports.
+Corrected statements regarding git commits and push history.
+Corrected status of test.json (documented as tracked and preserved).
+Removed references to nonexistent files (rc-checkpoint.json, rc-diff-summary.txt).
+Confirmed docs/07_verification/rc-regression/results.json as the authoritative regression evidence.
+4. Preservation of temp.txt
+temp.txt is retained intact (sha256: cdeb737aa369a3dbe1003cc76f1c2cd9ba7bb414cec549e139558eaa03722a27).
+Verification and Source Tree Confirmations
+.docmonstakrakin/.machine_token: Confirmed absent.
+.secrets/store.enc: Confirmed not present / not tracked.
+.secrets/store.salt: Confirmed not present / not tracked.
+.secrets/.machine_token: Confirmed not present / not tracked.
+temp.txt: Confirmed present and preserved.
+Secret Hygiene: Confirmed zero secret values committed.
+Direct SecretStore Suite (testSecretStore.ts): 16/16 passed (100%).
+Linter (npm run lint): Passed with 0 errors (tsc --noEmit).
+Production Build (npm run build): Vite bundle and Node CJS server built successfully.
+WBS Drift Check (npm run wbs:check): Passed with zero drift between MASTER_WBS.yaml and MASTER_WBS.md.
+Unit & Integration Tests (npm run test): All suites passed.
+Complete Regression Suite (npm run test:complete):
+Suites: 22 total, 22 passed, 0 failed, 0 skipped
+Assertions: 310 total, 310 passed, 0 failed, 0 skipped
+Evidence freshly recorded in docs/07_verification/rc-regression/results.json.
+Governance State:
+Gate 7: NOT EXECUTED (blocked pending human verification).
+Batch 2: NOT STARTED (blocked pending Gate 7 completion).

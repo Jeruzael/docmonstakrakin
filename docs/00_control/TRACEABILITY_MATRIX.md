@@ -64,7 +64,7 @@ $$\text{Requirement (REQ)} \longrightarrow \text{Architecture (CMP/ARC)} \longri
 | --- | --- | --- | --- | --- |
 | REQ-RC-187 | DMK-187 | testCryptoDemon; HTTP fixture; discovery/technical regression | EV-RC-187; cryptodemon-fixture-evidence.json | VERIFIED (automation) |
 | REQ-RC-188 | DMK-188 | HTTP identity/quorum/ADR/package/restart; security/audit regression | EV-RC-188; rc-regression/results.json | VERIFIED (automation and independent review) |
-| REQ-RC-189 | DMK-189 | Complete regression inventory; lint/build; WBS drift | EV-RC-189; rc-checkpoint.json | VERIFIED (technical closeout) |
+| REQ-RC-189 | DMK-189 | Complete regression inventory; lint/build; WBS drift | EV-RC-189; rc-regression/results.json | VERIFIED (technical closeout) |
 | REQ-RC-190 | DMK-190 | testProposalContract; proposalContractScenarios through real HTTP | EV-RC-190; PROPOSAL_SCHEMA_1_1_REPORT.md | VERIFIED (automation and independent review) |
 | REQ-RC-189, REQ-RC-190 | DMK-191 | Gio human browser retest | Not yet recorded | READY / NOT_READY_FOR_SIGNOFF |
 

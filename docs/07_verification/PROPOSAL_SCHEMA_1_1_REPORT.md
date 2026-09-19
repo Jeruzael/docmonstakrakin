@@ -12,7 +12,7 @@ Protocol implementation: `src/data/generationValidation.ts`, `src/data/proposalC
 
 Tests: `scripts/testProposalContract.ts` (new), `scripts/fixtures/proposalContractScenarios.ts` (new), `scripts/testCryptoDemon.ts`, `scripts/testCryptoDemonIntegration.ts`, `package.json`.
 
-The continuing remediation also updates control records, evidence, QA registry and their checks in `scripts/runAutomatedQa.ts` and `scripts/renderWbs.ts`. The current checkpoint lists code and evidence fingerprints; `rc-diff-summary.txt` lists the final tracked diff and untracked paths. Pre-existing `test.json` was preserved.
+The continuing remediation also updates control records, evidence, QA registry and their checks in `scripts/runAutomatedQa.ts` and `scripts/renderWbs.ts`. Pre-existing `test.json` is tracked and preserved.
 
 ## 3. Schema v1.1 design
 
@@ -78,4 +78,4 @@ Gio must still perform the manual browser retest. Local reviewer accounts requir
 
 ## 12. Git summary
 
-Project and Git root are `C:/Users/HomePC/dev/docmonstakrakin`; branch is `master`. Observed starting HEAD for this protocol closeout is `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`. Earlier remediation was already included by external/user commits. This task made no commit or push and did not mutate the parent checkout. Review `rc-diff-summary.txt` for tracked line counts and new files; the working tree intentionally remains dirty.
+Project and Git root are `C:/Users/HomePC/dev/docmonstakrakin`; branch is `master`. Observed starting HEAD for this protocol closeout is `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`. Earlier remediation was already included by external/user commits. Review the Git diff for tracked changes.
