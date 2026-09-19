@@ -32,7 +32,7 @@
 The canonical manifest digest is calculated using the deterministic, key-order-invariant canonical JSON serialization algorithm (`computeBootstrapManifestDigest`):
 
 ```
-SHA-256: abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96
+SHA-256: d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d
 ```
 
 ---
@@ -47,7 +47,7 @@ SHA-256: abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96
 | **Threats** | 8 | STRIDE analysis mapped to controls | All mitigations `IN_PROGRESS` |
 | **ADRs** | 7 | Architecture decisions captured | `PROPOSED` (Zero accepted) |
 | **Architecture Components** | 6 | 5 System components + 1 Bootstrap subsystem | `PROPOSED` |
-| **Work Items** | 13 | 4 Verification, 1 Ready, 8 Backlog/Future | Zero approved / verified |
+| **Work Items** | 13 | 4 Verification, 2 Ready, 7 Backlog/Future | Zero approved / verified |
 | **Evidence Records** | 4 | 4 Artifact-backed real execution records | Raw file byte SHA-256 verified |
 | **Controlled Documents** | 28 | 27 Reference + 1 Generated Projection | 27 Raw file byte digests verified |
 
@@ -71,17 +71,17 @@ SHA-256: abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96
    - The candidate work item `DMK-196 Gate 7 Execution & Official v0.1 Release Sign-Off` was completely removed from the bootstrap manifest.
    - Gate 7 is a formal human release governance gate that cannot be scheduled as an autonomous work item during bootstrap. Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
 
-5. **Future Work Item Sequencing (`DMK-192` through `DMK-199`):**
-   - Rebuilt a clean, dependency-ordered work breakdown structure for post-bootstrap tasks:
-     - `DMK-192`: Trusted Self-Bootstrap Executor & Read-Only Dry-Run (`READY`, `REQ-BOOT-001`)
-     - `DMK-193`: Execute Trusted Self-Bootstrap & Verify Canonical State (`BACKLOG`, depends on `DMK-192`, `REQ-BOOT-001`)
-     - `DMK-194`: Projects Workspace & Reliable Project Switching (`BACKLOG`, depends on `DMK-193`, `REQ-UX-PROJECTS-001`)
-     - `DMK-195`: Controlled Documentation Workspace (`BACKLOG`, depends on `DMK-193`, `REQ-DOC-001`)
-     - `DMK-196`: Batch 2 — Formal Requirement Sign-Off UX (`BACKLOG`, depends on `DMK-194`, `REQ-GOV-SIGNOFF-001`)
-     - `DMK-197`: Batch 3 — Approval Inbox & Canonical Quorum Synchronization (`BACKLOG`, depends on `DMK-196`, `REQ-GOV-QUORUM-001`)
-     - `DMK-198`: Batch 4 — Reviewer Provisioning / Governance Setup Usability (`BACKLOG`, depends on `DMK-197`, `REQ-GOV-REVIEWER-001`)
-     - `DMK-199`: Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, depends on `DMK-198`, `REQ-REL-001`, `REQ-RC-189`, `REQ-RC-190`)
-     - `DMK-191`: Execute Human Browser-Driven Interactive Retest (`READY`, depends on `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`, and `DMK-199`)
+5. **Canonical Domain Conformance and WBS Source Fidelity (`DMK-191` through `DMK-199`):**
+   - Rebuilt a clean, dependency-ordered work breakdown structure conforming strictly to canonical TypeScript domain shapes (`checklist`, `tests`, standard priorities, explicit risks, no unmodeled fields):
+     - `DMK-191`: Self-Bootstrap Manifest & Verification Contract Definition (`READY`, `sprint = 1`, `REQ-BOOT-001`, depends on `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`)
+     - `DMK-192`: Trusted Self-Bootstrap Executor & Read-Only Dry-Run (`READY`, `sprint = 1`, depends on `DMK-191`, `REQ-BOOT-001`)
+     - `DMK-193`: Execute Trusted Self-Bootstrap & Verify Canonical State (`BACKLOG`, `sprint = 1`, depends on `DMK-192`, `REQ-BOOT-001`)
+     - `DMK-194`: Projects Workspace & Reliable Project Switching (`BACKLOG`, `sprint = 2`, depends on `DMK-193`, `REQ-UX-PROJECTS-001`)
+     - `DMK-195`: Controlled Documentation Workspace (`BACKLOG`, `sprint = 2`, depends on `DMK-193`, `REQ-DOC-001`)
+     - `DMK-196`: Governance Remediation Batch 2 — Formal Requirement Sign-Off UX (`BACKLOG`, `sprint = 2`, depends on `DMK-194`, `REQ-GOV-SIGNOFF-001`)
+     - `DMK-197`: Governance Remediation Batch 3 — Approval Inbox & Canonical Quorum Synchronization (`BACKLOG`, `sprint = 3`, depends on `DMK-196`, `REQ-GOV-QUORUM-001`)
+     - `DMK-198`: Governance Remediation Batch 4 — Reviewer Provisioning / Governance Setup Usability (`BACKLOG`, `sprint = 3`, depends on `DMK-197`, `REQ-GOV-REVIEWER-001`)
+     - `DMK-199`: Governance Remediation Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, `sprint = 4`, depends on `DMK-198`, `REQ-REL-001`, `REQ-RC-189`, `REQ-RC-190`)
 
 6. **Threat Mitigation Statuses Set to `IN_PROGRESS`:**
    - In the initial manifest, threat mitigations were marked as `RESOLVED`.
@@ -207,7 +207,7 @@ All evidence records reference real repository files. Hashes were calculated ove
 
 | Verification Suite | Target | Result | Evidence / Log Location |
 | :--- | :--- | :--- | :--- |
-| `npm run test:bootstrap:contract` | `scripts/testSelfBootstrapContract.ts` | **PASS (17/17 tests passing)** | `Console stdout` |
+| `npm run test:bootstrap:contract` | `scripts/testSelfBootstrapContract.ts` | **PASS (19/19 tests passing)** | `Console stdout` |
 | `npm run test:bootstrap:manifest` | `scripts/validateSelfBootstrapManifestFile.ts` | **PASS (5/5 phases, 0 errors, 0 warnings)** | `docs/07_verification/self-bootstrap-manifest-validation.json` |
 | `npm run lint` | Project source & test code | **PASS (Clean)** | `Console stdout` |
 | `npm run wbs:check` | `MASTER_WBS.yaml` integrity check | **PASS (Clean)** | `Console stdout` |

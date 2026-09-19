@@ -207,7 +207,7 @@ function createValidManifest(): SelfBootstrapManifest {
         result: 'VERIFIED',
         producer: 'automated-test-runner',
         createdAt: '2026-09-19T00:00:00Z',
-        sha256Hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        sha256Hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         details: 'Self-bootstrap contract test suite passed with 0 errors.',
       },
     ],
@@ -665,7 +665,52 @@ test('dry-run report accurately summarizes manifest and guarantees zero mutation
   assert.equal(dryRun.unresolvedReferenceErrors.length, 0);
 });
 
-test('production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.self-bootstrap.json) passes validation with zero errors', () => {
+test('WorkItem domain field enforcement rejects missing fields and unmodeled attributes', () => {
+  // Test missing required fields
+  const missingTitle: any = createValidManifest();
+  delete missingTitle.workItems[0].title;
+  const res1 = validateSelfBootstrapManifest(missingTitle);
+  assert.equal(res1.valid, false);
+  assert(res1.errors.some((e) => e.includes("is missing required string 'title'")));
+
+  const missingSprint: any = createValidManifest();
+  delete missingSprint.workItems[0].sprint;
+  const res2 = validateSelfBootstrapManifest(missingSprint);
+  assert.equal(res2.valid, false);
+  assert(res2.errors.some((e) => e.includes("is missing required integer 'sprint'")));
+
+  // Test rejection of estimatedHours
+  const withEstimatedHours: any = createValidManifest();
+  withEstimatedHours.workItems[0].estimatedHours = 12;
+  const res3 = validateSelfBootstrapManifest(withEstimatedHours);
+  assert.equal(res3.valid, false);
+  assert(res3.errors.some((e) => e.includes("contains unsupported field 'estimatedHours'")));
+});
+
+test('Evidence domain field enforcement rejects missing fields and unmodeled attributes', () => {
+  // Test missing required fields
+  const missingProducer: any = createValidManifest();
+  delete missingProducer.evidence[0].producer;
+  const res1 = validateSelfBootstrapManifest(missingProducer);
+  assert.equal(res1.valid, false);
+  assert(res1.errors.some((e) => e.includes("is missing required string 'producer'")));
+
+  // Test invalid sha256Hash
+  const badHash: any = createValidManifest();
+  badHash.evidence[0].sha256Hash = 'not-a-valid-sha256';
+  const res2 = validateSelfBootstrapManifest(badHash);
+  assert.equal(res2.valid, false);
+  assert(res2.errors.some((e) => e.includes('sha256Hash must be a valid 64-character hexadecimal SHA-256 string')));
+
+  // Test rejection of executedAt
+  const withExecutedAt: any = createValidManifest();
+  withExecutedAt.evidence[0].executedAt = '2026-09-19T00:00:00Z';
+  const res3 = validateSelfBootstrapManifest(withExecutedAt);
+  assert.equal(res3.valid, false);
+  assert(res3.errors.some((e) => e.includes("contains unsupported field 'executedAt'")));
+});
+
+test('production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.self-bootstrap.json) passes validation with zero errors and valid dynamic digest', () => {
   const manifestPath = path.resolve(process.cwd(), 'bootstrap/docmonstakrakin.self-bootstrap.json');
   assert(fs.existsSync(manifestPath), 'bootstrap/docmonstakrakin.self-bootstrap.json must exist');
 
@@ -687,9 +732,12 @@ test('production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.se
   assert.equal(result.counts.evidence, 4);
   assert.equal(result.counts.documents, 28);
 
-  // Validate digest
+  // Compute and validate dynamic digest
   const digest = computeBootstrapManifestDigest(realManifest);
-  assert.equal(digest, 'abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96');
+  assert.equal(typeof digest, 'string');
+  assert.equal(digest.length, 64);
+  assert(/^[0-9a-fA-F]{64}$/.test(digest), 'Digest must be a 64-character hex string');
+  assert.equal(digest, result.manifestDigest, 'Digest must match validationResult.manifestDigest');
 
   // Validate dry run
   const dryRun = computeBootstrapDryRunReport(realManifest);

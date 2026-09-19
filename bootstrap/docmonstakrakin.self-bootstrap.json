@@ -367,7 +367,15 @@
       "capability": "Self-Bootstrap & Dogfooding",
       "priority": "P0",
       "status": "PROPOSED",
-      "source": "PRODUCT_BASELINE",
+      "source": "MANUAL_ENTRY",
+      "provenance": {
+        "projectId": "PRJ-DOCMONSTAKRAKIN",
+        "origin": "GOVERNANCE_BOOTSTRAP",
+        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "timestamp": "2026-09-19T00:00:00.000Z",
+        "source": "MANUAL_ENTRY",
+        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+      },
       "personas": [
         "Project Lead",
         "Lead Architect",
@@ -390,7 +398,15 @@
       "capability": "Multi-Project Workspace",
       "priority": "P1",
       "status": "PROPOSED",
-      "source": "PRODUCT_BASELINE",
+      "source": "MANUAL_ENTRY",
+      "provenance": {
+        "projectId": "PRJ-DOCMONSTAKRAKIN",
+        "origin": "GOVERNANCE_BOOTSTRAP",
+        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "timestamp": "2026-09-19T00:00:00.000Z",
+        "source": "MANUAL_ENTRY",
+        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+      },
       "personas": [
         "Software Engineer",
         "Project Lead"
@@ -410,7 +426,15 @@
       "capability": "Documentation Governance",
       "priority": "P1",
       "status": "PROPOSED",
-      "source": "PRODUCT_BASELINE",
+      "source": "MANUAL_ENTRY",
+      "provenance": {
+        "projectId": "PRJ-DOCMONSTAKRAKIN",
+        "origin": "GOVERNANCE_BOOTSTRAP",
+        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "timestamp": "2026-09-19T00:00:00.000Z",
+        "source": "MANUAL_ENTRY",
+        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+      },
       "personas": [
         "Software Engineer",
         "Compliance Auditor",
@@ -1780,14 +1804,13 @@
   "workItems": [
     {
       "id": "DMK-187",
-      "title": "Verify Remediation for Discovery Engine Questionnaire Traversal Defect",
-      "description": "Verify that questionnaires cleanly traverse questions without cyclic dependencies or state corruptions. Full historical dependency graph remains in MASTER_WBS.yaml.",
-      "type": "VERIFICATION",
+      "title": "A-SSDLC Remediation: Discovery & Technical Baseline Re-anchor",
+      "description": "Verify discovery questionnaire traversal and technical baseline re-anchoring. Full historical dependency graph remains in MASTER_WBS.yaml.",
+      "type": "TASK",
       "status": "VERIFICATION",
       "priority": "P0",
-      "sprint": 0,
       "risk": "LOW",
-      "estimatedHours": 4,
+      "sprint": 0,
       "dependencies": [],
       "requirements": [
         "REQ-RC-187"
@@ -1799,18 +1822,27 @@
         "All question traversal tests pass with zero errors",
         "No cycle detection regressions observed"
       ],
+      "checklist": [
+        {
+          "text": "Verify discovery questionnaire traversal and baseline re-anchoring",
+          "done": true
+        }
+      ],
+      "tests": [
+        "scripts/testCryptoDemon.ts",
+        "scripts/testDiscoveryRemediation.ts"
+      ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-188",
-      "title": "Verify CryptoDemon Integration and Path Hardening",
-      "description": "Verify that CryptoDemon path traversal interceptor strictly prevents access outside workspace root. Full historical dependency graph remains in MASTER_WBS.yaml.",
+      "title": "A-SSDLC Remediation: SecretStore Key Isolation & Fail-Closed Behavior",
+      "description": "Verify that SecretStore key isolation and path traversal interceptor strictly prevent access outside workspace root. Full historical dependency graph remains in MASTER_WBS.yaml.",
       "type": "SECURITY",
       "status": "VERIFICATION",
       "priority": "P0",
-      "sprint": 0,
       "risk": "CRITICAL",
-      "estimatedHours": 8,
+      "sprint": 0,
       "dependencies": [],
       "requirements": [
         "REQ-RC-188"
@@ -1822,18 +1854,26 @@
         "All path traversal attempts outside workspace root are rejected",
         "Security assurance report confirms 47 runtime checks pass"
       ],
+      "checklist": [
+        {
+          "text": "Verify SecretStore key isolation and fail-closed behavior",
+          "done": true
+        }
+      ],
+      "tests": [
+        "scripts/testCryptoDemonIntegration.ts"
+      ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-189",
-      "title": "Verify Discovery Remediation and Regression Suite",
+      "title": "A-SSDLC Remediation: RC Technical Regression & Automated QA Verification",
       "description": "Verify 22-suite regression inventory across technical baseline, discovery, and governance modules. Full historical dependency graph remains in MASTER_WBS.yaml.",
       "type": "VERIFICATION",
       "status": "VERIFICATION",
       "priority": "P0",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 6,
+      "sprint": 0,
       "dependencies": [],
       "requirements": [
         "REQ-RC-189"
@@ -1845,18 +1885,27 @@
         "22/22 regression suites pass cleanly with zero failures",
         "Regression inventory report matches expected test assertions"
       ],
+      "checklist": [
+        {
+          "text": "Execute RC technical regression and automated QA verification",
+          "done": true
+        }
+      ],
+      "tests": [
+        "scripts/runCompleteRegression.ts",
+        "scripts/runAutomatedQa.ts"
+      ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-190",
-      "title": "Verify Proposal Contract Schema 1.1 Alignment",
+      "title": "A-SSDLC Remediation: Context Package Compiler & Proposal Contract v1.1",
       "description": "Verify that context package compiler and proposal validation adhere to Schema 1.1 specifications. Full historical dependency graph remains in MASTER_WBS.yaml.",
       "type": "TASK",
       "status": "VERIFICATION",
       "priority": "P0",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 6,
+      "sprint": 0,
       "dependencies": [],
       "requirements": [
         "REQ-RC-190"
@@ -1868,34 +1917,50 @@
         "Proposal schema 1.1 contract tests pass with zero schema validation errors",
         "Proposal migration report confirms clean structural parity"
       ],
+      "checklist": [
+        {
+          "text": "Verify context package compiler and proposal contract v1.1",
+          "done": true
+        }
+      ],
+      "tests": [
+        "scripts/testProposalContract.ts"
+      ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-191",
-      "title": "Execute Human Browser-Driven Interactive Retest",
-      "description": "Perform manual interactive browser verification of fixed flows following completion of all remediation batches. Full historical dependency graph remains in MASTER_WBS.yaml.",
-      "type": "VERIFICATION",
+      "title": "Self-Bootstrap Manifest & Verification Contract Definition",
+      "description": "Define SELF_BOOTSTRAP_V1 schema contract, validation suite, and canonical manifest artifact for PRJ-DOCMONSTAKRAKIN dogfooding.",
+      "type": "TASK",
       "status": "READY",
       "priority": "P0",
-      "sprint": 0,
-      "risk": "MEDIUM",
-      "estimatedHours": 4,
+      "risk": "HIGH",
+      "sprint": 1,
       "dependencies": [
         "DMK-187",
         "DMK-188",
         "DMK-189",
-        "DMK-190",
-        "DMK-199"
+        "DMK-190"
       ],
       "requirements": [
-        "REQ-RC-189",
-        "REQ-RC-190"
+        "REQ-BOOT-001"
       ],
       "evidence": [],
       "acceptanceCriteria": [
-        "Operator completes full interactive browser walkthrough of remediation areas",
-        "No UI errors, unhandled rejections, or console warnings observed",
-        "Human verification signoff recorded following Batch 5 completion"
+        "Define strict SELF_BOOTSTRAP_V1 schema contract and validation rules",
+        "Build canonical self-bootstrap manifest for PRJ-DOCMONSTAKRAKIN",
+        "Verify contract tests pass with zero errors"
+      ],
+      "checklist": [
+        {
+          "text": "Define SELF_BOOTSTRAP_V1 schema contract and manifest verification test suite",
+          "done": false
+        }
+      ],
+      "tests": [
+        "scripts/testSelfBootstrapContract.ts",
+        "scripts/validateSelfBootstrapManifestFile.ts"
       ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
@@ -1906,10 +1971,11 @@
       "type": "TASK",
       "status": "READY",
       "priority": "P0",
-      "sprint": 0,
       "risk": "HIGH",
-      "estimatedHours": 8,
-      "dependencies": [],
+      "sprint": 1,
+      "dependencies": [
+        "DMK-191"
+      ],
       "requirements": [
         "REQ-BOOT-001"
       ],
@@ -1919,18 +1985,26 @@
         "Implement read-only --dry-run validation mode ensuring zero mutations",
         "Validate canonical JSON digest and referential integrity against SELF_BOOTSTRAP_V1"
       ],
+      "checklist": [
+        {
+          "text": "Implement trusted bootstrap executor CLI with --dry-run validation",
+          "done": false
+        }
+      ],
+      "tests": [
+        "scripts/testSelfBootstrapContract.ts"
+      ],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-193",
       "title": "Execute Trusted Self-Bootstrap & Verify Canonical State",
       "description": "After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.",
-      "type": "VERIFICATION",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P0",
-      "sprint": 0,
       "risk": "CRITICAL",
-      "estimatedHours": 4,
+      "sprint": 1,
       "dependencies": [
         "DMK-192"
       ],
@@ -1943,18 +2017,24 @@
         "Restart/reload canonical state and verify PRJ-DOCMONSTAKRAKIN",
         "Confirm unrelated projects remain completely unchanged"
       ],
+      "checklist": [
+        {
+          "text": "Execute trusted bootstrap and verify canonical project state",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-194",
       "title": "Projects Workspace & Reliable Project Switching",
       "description": "Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.",
-      "type": "FEATURE",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 12,
+      "sprint": 2,
       "dependencies": [
         "DMK-193"
       ],
@@ -1968,18 +2048,24 @@
         "Top-bar quick project selector enabled for rapid switching",
         "Portable package import/export entrypoints functional"
       ],
+      "checklist": [
+        {
+          "text": "Implement projects workspace navigation and isolated switching",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-195",
       "title": "Controlled Documentation Workspace",
       "description": "In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows.",
-      "type": "FEATURE",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 12,
+      "sprint": 2,
       "dependencies": [
         "DMK-193"
       ],
@@ -1993,18 +2079,24 @@
         "Controlled editable documents use explicit edit -> diff -> validation -> save with audit logging",
         "Zero arbitrary filesystem browsing outside docs/ boundary"
       ],
+      "checklist": [
+        {
+          "text": "Implement controlled documentation workspace viewer and hash checks",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-196",
-      "title": "Batch 2 — Formal Requirement Sign-Off UX",
+      "title": "Governance Remediation Batch 2 — Formal Requirement Sign-Off UX",
       "description": "Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.",
-      "type": "FEATURE",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 10,
+      "sprint": 2,
       "dependencies": [
         "DMK-194"
       ],
@@ -2020,18 +2112,24 @@
         "Server remains authoritative for reviewer identity; request creation does NOT directly set Requirement.status=APPROVED",
         "Failures remain visible and successful request refreshes canonical approvals"
       ],
+      "checklist": [
+        {
+          "text": "Implement requirement sign-off request flow without direct client approvals",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-197",
-      "title": "Batch 3 — Approval Inbox & Canonical Quorum Synchronization",
+      "title": "Governance Remediation Batch 3 — Approval Inbox & Canonical Quorum Synchronization",
       "description": "Approval Inbox UI with distinct human dual-signoff quorum verification.",
-      "type": "FEATURE",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
-      "sprint": 0,
       "risk": "HIGH",
-      "estimatedHours": 12,
+      "sprint": 3,
       "dependencies": [
         "DMK-196"
       ],
@@ -2046,18 +2144,24 @@
         "After valid distinct quorum, canonical requirement state is refreshed to APPROVED",
         "Drawer and reopened UI reflect canonical APPROVED state with intact audit and provenance"
       ],
+      "checklist": [
+        {
+          "text": "Implement distinct human dual-signoff quorum in Approval Inbox",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-198",
-      "title": "Batch 4 — Reviewer Provisioning / Governance Setup Usability",
+      "title": "Governance Remediation Batch 4 — Reviewer Provisioning / Governance Setup Usability",
       "description": "Reviewer management and onboarding usability without exposing plaintext credentials.",
       "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
-      "sprint": 0,
       "risk": "HIGH",
-      "estimatedHours": 8,
+      "sprint": 3,
       "dependencies": [
         "DMK-197"
       ],
@@ -2072,18 +2176,24 @@
         "UI displays safe configuration status only, never revealing password or verifier material",
         "Preserve HUMAN vs AGENT distinction and distinct quorum enforcement"
       ],
+      "checklist": [
+        {
+          "text": "Implement reviewer provisioning helper and fail-closed roster config",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
       "id": "DMK-199",
-      "title": "Batch 5 — Full Regression & Evidence Cleanup",
+      "title": "Governance Remediation Batch 5 — Full Regression & Evidence Cleanup",
       "description": "Comprehensive end-to-end regression execution, evidence artifact generation, and cleanup before human browser retest.",
-      "type": "VERIFICATION",
+      "type": "TASK",
       "status": "BACKLOG",
       "priority": "P0",
-      "sprint": 0,
       "risk": "MEDIUM",
-      "estimatedHours": 6,
+      "sprint": 4,
       "dependencies": [
         "DMK-198"
       ],
@@ -2098,6 +2208,13 @@
         "Verify zero regression across technical baseline, CryptoDemon, discovery, and governance",
         "Clean up transient test logs and prepare evidence artifacts for final human browser retest"
       ],
+      "checklist": [
+        {
+          "text": "Execute full test suite across all modules and record fresh evidence",
+          "done": false
+        }
+      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     }
   ],
@@ -2106,19 +2223,23 @@
       "id": "EV-RC-187",
       "type": "TEST_RUN",
       "title": "CryptoDemon Unit Test & Boundary Assertion Results",
+      "workItemId": "DMK-187",
       "command": "npx tsx scripts/testCryptoDemon.ts",
       "result": "PASSED",
-      "executedAt": "2026-09-19T02:15:00.000Z",
+      "producer": "Automated Regression Test Runner",
+      "createdAt": "2026-09-19T02:15:00.000Z",
       "sha256Hash": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
-      "details": "Committed evidence records 5/5 passing unit tests and 47 runtime security assertions. Primary artifact: docs/07_verification/cryptodemon-fixture-evidence.json"
+      "details": "Primary artifact is the committed CryptoDemon fixture evidence. The final regression inventory records 14 focused CryptoDemon checks and 47 production HTTP integration checks passing. Primary artifact: docs/07_verification/cryptodemon-fixture-evidence.json"
     },
     {
       "id": "EV-RC-188",
       "type": "SECURITY_SCAN",
       "title": "CryptoDemon Security Remediation & Path Traversal Integration Report",
+      "workItemId": "DMK-188",
       "command": "npx tsx scripts/testCryptoDemonIntegration.ts",
       "result": "PASSED",
-      "executedAt": "2026-09-19T02:20:00.000Z",
+      "producer": "Security Verification Harness",
+      "createdAt": "2026-09-19T02:20:00.000Z",
       "sha256Hash": "3b1b0b11c60d0c82c84197228f27611b9744aae70b2135ad10dc970962be0c7f",
       "details": "Committed evidence records end-to-end integration and security assurance report. Primary artifact: docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md"
     },
@@ -2126,9 +2247,11 @@
       "id": "EV-RC-189",
       "type": "TEST_RUN",
       "title": "RC Regression Suite Execution Inventory",
+      "workItemId": "DMK-189",
       "command": "npm run test:complete",
       "result": "PASSED",
-      "executedAt": "2026-09-19T02:25:00.000Z",
+      "producer": "Automated Regression Test Runner",
+      "createdAt": "2026-09-19T02:25:00.000Z",
       "sha256Hash": "7683a53778267b9494980a74352df6cf82b767f04c5574d357e66b614f419b80",
       "details": "Committed evidence records 22/22 regression suites passing across technical baseline and discovery modules. Primary artifact: docs/07_verification/rc-regression/results.json"
     },
@@ -2136,9 +2259,11 @@
       "id": "EV-RC-190",
       "type": "TEST_RUN",
       "title": "Proposal Contract Schema 1.1 Remediation Report",
+      "workItemId": "DMK-190",
       "command": "npx tsx scripts/testProposalContract.ts",
       "result": "PASSED",
-      "executedAt": "2026-09-19T02:30:00.000Z",
+      "producer": "Proposal Contract Test Runner",
+      "createdAt": "2026-09-19T02:30:00.000Z",
       "sha256Hash": "a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0",
       "details": "Committed evidence records proposal schema 1.1 formal validation and migration verification report. Primary artifact: docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md"
     }

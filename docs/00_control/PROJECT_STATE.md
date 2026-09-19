@@ -19,7 +19,7 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96`.
+- Canonical Manifest SHA-256 Digest: `d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d`.
 - Manifest Entity Accounting:
   - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all `PROPOSED`, source `PRODUCT_BASELINE`)
   - 24 Requirements (14 historical v0.1 requirements, 4 verified remediation requirements `REQ-RC-187`..`190`, 6 dogfooding roadmap requirements `REQ-BOOT-001`, `REQ-UX-PROJECTS-001`, `REQ-DOC-001`, `REQ-GOV-SIGNOFF-001`, `REQ-GOV-QUORUM-001`, `REQ-GOV-REVIEWER-001`)
