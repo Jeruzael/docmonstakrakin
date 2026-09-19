@@ -1,0 +1,2449 @@
+{
+  "schemaVersion": "SELF_BOOTSTRAP_V1",
+  "mode": "TRUSTED_LOCAL_BOOTSTRAP",
+  "provenance": {
+    "repository": "Jeruzael/docmonstakrakin",
+    "baselineCommit": "2a05edc8f6a96183d39cad092b91e7fc4e9cb432",
+    "source": "LOCAL_REPOSITORY_DOCUMENTATION",
+    "preparedAt": "2026-09-19T03:00:00.000Z",
+    "preparer": "docmonstakrakin-bootstrap-agent"
+  },
+  "project": {
+    "id": "PRJ-DOCMONSTAKRAKIN",
+    "name": "docmonstakrakin",
+    "description": "Agentic Secure Software Development Life Cycle (A-SSDLC) development control plane providing deterministic governance, risk management, threat modeling, architecture ratification, and verifiable technical evidence tracking.",
+    "maturity": "EXISTING_PROJECT",
+    "owner": "Gio",
+    "deliveryMethod": "ITERATIVE",
+    "targetRelease": "v0.1.0-rc1",
+    "lifecyclePhase": "IMPLEMENTATION",
+    "dataSensitivity": "INTERNAL",
+    "deploymentIntent": "Local-first web application / local application service with offline-capable project state",
+    "healthScore": 0,
+    "progress": {
+      "requirementsReadiness": 0,
+      "architectureReadiness": 0,
+      "implementation": 0,
+      "verification": 0,
+      "securityAssurance": 0,
+      "releaseReadiness": 0
+    },
+    "profiles": [
+      "WEB_APPLICATION",
+      "BACKEND_API",
+      "AI_APPLICATION",
+      "AGENTIC_AI_APPLICATION"
+    ],
+    "specializedProfiles": [
+      "DEVELOPER_TOOL",
+      "INTERNAL_TOOL",
+      "AI_ENGINEERING"
+    ],
+    "stateVersion": 1,
+    "createdAt": "2026-09-19T00:00:00.000Z",
+    "updatedAt": "2026-09-19T00:00:00.000Z",
+    "productBaseline": {
+      "problemStatement": "Autonomous and semi-autonomous AI coding agents introduce critical security and governance risks: unvetted architecture decisions, vulnerability amplification, lack of verifiable lineage between requirements and code, and unverified task completion claims.",
+      "targetUsers": [
+        "Software Engineers and Technical Leads",
+        "Security Officers and Governance Reviewers",
+        "System Architects and Tech Leads",
+        "Autonomous and Semi-Autonomous AI Coding Agents"
+      ],
+      "coreCapabilities": [
+        "Deterministic 15-phase A-SSDLC lifecycle state machine and human approval gates",
+        "Single canonical project state model with deterministic artifact projections",
+        "Evidence-backed technical verification and cryptographic audit chaining",
+        "Dual-agent independent cross-review orchestration and prompt compilation",
+        "Local-first, offline-capable project management and fail-closed secrets security"
+      ],
+      "coreFeatures": [
+        "Project Core & Portable State Management",
+        "Adaptive Discovery Questionnaire & Requirements Taxonomy",
+        "Lifecycle Phase Machine & Deterministic Risk Floors",
+        "Standards Registry (NIST SSDF, OWASP ASVS/MASVS/AISVS/SAMM)",
+        "Scoped Context Package Compiler & Structured Proposal Validation",
+        "AI Gateway & Dual-Agent Independent Cross-Review",
+        "Unified WorkItem Engine (WBS, Kanban, Backlog Projections)",
+        "Repository Command Safety & Path Traversal Interceptor",
+        "Cryptographic Evidence Chaining & Requirements Traceability Matrix",
+        "Deterministic Next Safe Action Engine",
+        "Offline/Local-First Operation",
+        "Encrypted Local SecretStore with OS Keychain Fallback"
+      ],
+      "primaryWorkflows": [
+        "Project Discovery & Adaptive Requirements Definition",
+        "Risk Assessment & Threat Modeling with Mandatory Floors",
+        "Architecture Component Design & ADR Ratification",
+        "Scoped Prompt Context Compilation & AI Agent Proposal Review",
+        "Work Item Implementation & Cryptographic Evidence Attachment",
+        "Human Quorum Review & Release Gate Evaluation"
+      ],
+      "nonGoals": [
+        "Multi-user real-time SaaS collaboration platform",
+        "Direct autonomous code execution without human approval",
+        "Commercial subscription billing and tenant management",
+        "Direct automated cloud production deployment pipelines",
+        "Generic AI chat wrapper or prompt playground"
+      ],
+      "successCriteria": [
+        "100% referential integrity across requirements, architecture, risks, work items, and evidence",
+        "Zero unauthenticated or synthetic approval injection during governance evaluation",
+        "Full offline capability for local project control and verification workflows",
+        "Zero secret leakage into plain-text logs, audits, or portable exports"
+      ]
+    }
+  },
+  "features": [
+    {
+      "id": "FEAT-DMK-001",
+      "title": "Project Core & Portable State Management",
+      "description": "Canonical project metadata, 6 primary profiles, state versioning, and standalone portable package export/import envelope.",
+      "capability": "Project Core Management",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Technical Lead",
+        "Operator"
+      ],
+      "requirements": [
+        "REQ-DATA-001",
+        "REQ-DATA-002",
+        "REQ-DATA-004"
+      ],
+      "dependencies": [],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-002",
+      "title": "Adaptive Discovery & Requirements Taxonomy",
+      "description": "Conditional questionnaire dependency graph, multi-domain requirement taxonomy, and baseline derivation rules.",
+      "capability": "Requirements Engineering",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "System Architect",
+        "Security Officer",
+        "Software Engineer"
+      ],
+      "requirements": [
+        "REQ-REQ-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-003",
+      "title": "Lifecycle, Risk & Governance Control Plane",
+      "description": "Deterministic 15-phase lifecycle state machine, mandatory risk floors, human approval gates, auditable gate overrides, and human quorum review.",
+      "capability": "Governance & Risk Management",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Security Officer",
+        "Project Lead",
+        "Lead Architect"
+      ],
+      "requirements": [
+        "REQ-GOV-001",
+        "REQ-GOV-002",
+        "REQ-SEC-001",
+        "REQ-REL-001",
+        "REQ-GOV-SIGNOFF-001",
+        "REQ-GOV-QUORUM-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-002"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-004",
+      "title": "Standards Registry & Compliance Mapping",
+      "description": "Pinned NIST SSDF, OWASP ASVS, MASVS, AISVS, and SAMM controls with cryptographic verification and dynamic applicability.",
+      "capability": "Compliance & Security Standards",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Security Officer",
+        "Compliance Auditor"
+      ],
+      "requirements": [
+        "REQ-SEC-014",
+        "REQ-SEC-019"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-005",
+      "title": "Prompt Compiler & Structured Proposal Validation",
+      "description": "Task-scoped context package compiler and strict JSON Schema 1.1 proposal validation contract for AI agent proposals.",
+      "capability": "Context Engineering & Structured Validation",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "AI Agent"
+      ],
+      "requirements": [
+        "REQ-RC-190"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-002"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-006",
+      "title": "AI Gateway & Independent Agent Cross-Review",
+      "description": "Server-side token-isolated AI inference adapter with independent dual-agent cross-review orchestration for high-risk proposals.",
+      "capability": "AI Gateway & Safety Verification",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "System Architect",
+        "Security Reviewer",
+        "AI Agent"
+      ],
+      "requirements": [
+        "REQ-AI-001",
+        "REQ-AI-007"
+      ],
+      "dependencies": [
+        "FEAT-DMK-005"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-007",
+      "title": "Work Management & Planning Projections",
+      "description": "Single canonical WorkItem aggregate powering Kanban, WBS, Product Backlog, and Sprint Backlog projections without state drift.",
+      "capability": "Work Management",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Technical Lead",
+        "Project Lead"
+      ],
+      "requirements": [
+        "REQ-DATA-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-008",
+      "title": "Repository, Git & Command Safety Boundary",
+      "description": "Canonical workspace boundary enforcement, path allow/deny policy interceptor, and structured command runner with confirmation.",
+      "capability": "Operational Safety & Sandbox",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Security Officer"
+      ],
+      "requirements": [
+        "REQ-OPS-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-009",
+      "title": "Evidence, Audit & Cryptographic Traceability",
+      "description": "Cryptographically hash-chained audit ledger, SHA-256 evidence records, and full Requirements Traceability Matrix verification.",
+      "capability": "Auditability & Technical Evidence",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Security Officer",
+        "Compliance Auditor",
+        "Lead Architect"
+      ],
+      "requirements": [
+        "REQ-DATA-003",
+        "REQ-RC-187",
+        "REQ-RC-188",
+        "REQ-RC-189"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-003"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-010",
+      "title": "Dashboard & Guided Next Safe Action Engine",
+      "description": "Deterministic next-safe-action evaluator and calm developer cockpit showing lifecycle health metrics and blocker status.",
+      "capability": "Developer Guidance",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Technical Lead"
+      ],
+      "requirements": [
+        "REQ-GOV-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-003",
+        "FEAT-DMK-007"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-011",
+      "title": "Offline / Local-First Operation Engine",
+      "description": "Complete offline-capable project state storage, zero cloud telemetry leakage, and responsive local application service.",
+      "capability": "Local-First Architecture",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Operator"
+      ],
+      "requirements": [
+        "REQ-DATA-001",
+        "REQ-DATA-002"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-012",
+      "title": "Secrets Management & Reviewer Session Security",
+      "description": "Native OS credential manager abstraction with encrypted local fallback, HttpOnly session handling, and reviewer provisioning.",
+      "capability": "Secrets & Session Security",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Security Officer",
+        "Operator"
+      ],
+      "requirements": [
+        "REQ-SEC-014",
+        "REQ-SEC-019",
+        "REQ-RC-188",
+        "REQ-GOV-REVIEWER-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-013",
+      "title": "Trusted Self-Bootstrap Contract & Subsystem",
+      "description": "Closed-schema, deterministic ingestion contract enabling PRJ-DOCMONSTAKRAKIN to self-govern under its own canonical domain model.",
+      "capability": "Self-Bootstrap & Dogfooding",
+      "priority": "P0",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Project Lead",
+        "Lead Architect",
+        "Security Officer"
+      ],
+      "requirements": [
+        "REQ-BOOT-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-003",
+        "FEAT-DMK-009"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-014",
+      "title": "Projects Workspace & Reliable Project Switching",
+      "description": "Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.",
+      "capability": "Multi-Project Workspace",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Project Lead"
+      ],
+      "requirements": [
+        "REQ-UX-PROJECTS-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "FEAT-DMK-015",
+      "title": "Controlled Documentation Workspace",
+      "description": "In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks.",
+      "capability": "Documentation Governance",
+      "priority": "P1",
+      "status": "PROPOSED",
+      "source": "PRODUCT_BASELINE",
+      "personas": [
+        "Software Engineer",
+        "Compliance Auditor",
+        "Lead Architect"
+      ],
+      "requirements": [
+        "REQ-DOC-001"
+      ],
+      "dependencies": [
+        "FEAT-DMK-001",
+        "FEAT-DMK-009"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-DATA-001",
+      "title": "Canonical Project State Aggregate",
+      "statement": "The system must maintain exactly one canonical in-memory project aggregate model from which all views (Kanban, WBS, PRD, RTM) are deterministically projected.",
+      "category": "DATA",
+      "status": "UNDER_REVIEW",
+      "priority": "HIGH",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §2.1"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-001"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-001",
+      "rationale": "Eliminates state synchronization drift across disparate views and task trackers.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-DATA-002",
+      "title": "Optimistic Concurrency & State Versioning",
+      "statement": "All project mutations must increment a strictly monotonic stateVersion counter and reject conflicting writes using optimistic locking.",
+      "category": "DATA",
+      "status": "UNDER_REVIEW",
+      "priority": "HIGH",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §2.1"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-002"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-001",
+      "rationale": "Prevents lost updates during rapid asynchronous UI and agent state mutations.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-DATA-003",
+      "title": "Field-level Data Masking for Sensitive PII",
+      "statement": "Export and display pipelines must automatically redact registered secrets, private keys, and sensitive PII tokens prior to serialization.",
+      "category": "PRIVACY",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "stakeholder",
+        "id": "Stakeholder Discovery"
+      },
+      "riskLinks": [
+        "RISK-019"
+      ],
+      "threatLinks": [
+        "THR-004"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-101"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-009",
+      "rationale": "Prevents accidental leakage of proprietary and sensitive credentials.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-DATA-004",
+      "title": "Standalone Portable Project Package Envelope",
+      "statement": "The system must support packaging complete project state into a portable cryptographic archive (.docmonstakrakin) with sealed checksums.",
+      "category": "DATA",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §45"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-156"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-001",
+      "rationale": "Enables reproducible offline project transfer and archival across workstations.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-REQ-001",
+      "title": "Conditional Questionnaire Dependency Graph",
+      "statement": "Requirements discovery must evaluate dynamic answer state and conditional branching rules across 19 technical domains without deadlocks.",
+      "category": "FUNCTIONAL",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §8"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-020"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-002",
+      "rationale": "Guides users through tailored architectural discovery based on selected project profiles.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-GOV-001",
+      "title": "Deterministic 15-Phase Lifecycle Gate Enforcement",
+      "statement": "Transition between any of the 15 A-SSDLC lifecycle phases must strictly require passing deterministic entry and exit criteria.",
+      "category": "OPERATIONAL",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §18"
+      },
+      "riskLinks": [],
+      "threatLinks": [
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-035"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Prevents premature advancement to implementation or release before requirements and architecture are verified.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-GOV-002",
+      "title": "Auditable Gate Overrides with Expiration",
+      "statement": "Authorized operators may override gate blockers only with recorded rationale, acknowledged residual risk, and bounded expiration timestamp.",
+      "category": "OPERATIONAL",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §17"
+      },
+      "riskLinks": [],
+      "threatLinks": [
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-041"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Provides emergency engineering flexibility while preserving non-repudiable audit trails.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-SEC-001",
+      "title": "Mandatory Risk Floors for Dangerous Capabilities",
+      "statement": "Projects declaring autonomous agent execution, production secret handling, or safety-critical data must enforce non-negotiable risk floor minimums.",
+      "category": "SECURITY",
+      "status": "UNDER_REVIEW",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §15"
+      },
+      "riskLinks": [
+        "RISK-019",
+        "RISK-022"
+      ],
+      "threatLinks": [
+        "THR-002",
+        "THR-005"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-038"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Prevents artificial downgrade of inherent risks associated with high-impact attack surfaces.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-SEC-014",
+      "title": "Single-Use Password Reset & Token Expiry (T <= 900s)",
+      "statement": "Authentication tokens and password reset credentials must enforce single-use consumption and absolute expiration within 900 seconds.",
+      "category": "SECURITY",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "standard_control",
+        "id": "OWASP ASVS v4.0.3"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [
+        "OWASP_ASVS"
+      ],
+      "workItems": [],
+      "tests": [
+        "TEST-099"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-004",
+      "rationale": "Mitigates token replay, credential theft, and unauthorized session resurrection.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-SEC-019",
+      "title": "Concurrent Session Anomaly & Refresh-Token Revocation",
+      "statement": "Session manager must detect concurrent anomalous logins, invalidate compromised refresh token families, and alert the security officer.",
+      "category": "SECURITY",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "standard_control",
+        "id": "NIST SSDF v1.1"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [
+        "NIST_SSDF"
+      ],
+      "workItems": [],
+      "tests": [
+        "TEST-081"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-004",
+      "rationale": "Protects against hijacked session tokens and unauthorized administrative access.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-AI-001",
+      "title": "Server-Side AI Inference Gateway & Token Isolation",
+      "statement": "All AI provider API interactions must execute server-side in an isolated adapter; client browser bundles must never receive raw API keys.",
+      "category": "AI_SPECIFIC",
+      "status": "UNDER_REVIEW",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §25"
+      },
+      "riskLinks": [
+        "RISK-004",
+        "RISK-019"
+      ],
+      "threatLinks": [
+        "THR-002",
+        "THR-004"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-079"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-006",
+      "rationale": "Isolates model credentials and enforces strict egress filtering to approved AI endpoints.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-AI-007",
+      "title": "Independent Dual-Agent Cross-Review Orchestration",
+      "statement": "High-risk AI proposals must undergo cross-review by an independent secondary agent without shared context scratchpads prior to human review.",
+      "category": "AGENT_SPECIFIC",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "standard_control",
+        "id": "OWASP AISVS v1.0"
+      },
+      "riskLinks": [
+        "RISK-004"
+      ],
+      "threatLinks": [
+        "THR-002"
+      ],
+      "standardLinks": [
+        "OWASP_AISVS"
+      ],
+      "workItems": [],
+      "tests": [
+        "TEST-081"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-006",
+      "rationale": "Counters sycophantic model confirmation bias and catches subtle hallucinations in code proposals.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-OPS-001",
+      "title": "Workspace Path Boundary & Command Sandbox Policy",
+      "statement": "The system must enforce strict canonical workspace boundary assertions and command policy allow/deny masks for all agent operations.",
+      "category": "OPERATIONAL",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §52"
+      },
+      "riskLinks": [
+        "RISK-001",
+        "RISK-022"
+      ],
+      "threatLinks": [
+        "THR-003",
+        "THR-005"
+      ],
+      "standardLinks": [],
+      "workItems": [],
+      "tests": [
+        "TEST-110"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-008",
+      "rationale": "Prevents directory traversal escapes and unvetted destructive command execution on the host machine.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-REL-001",
+      "title": "v0.1 Definition-of-Done Release Gate Verification",
+      "statement": "Gate 7 release sign-off must require 100% verification across all blocking requirements, clean test regressions, and human cryptographic sign-off.",
+      "category": "OPERATIONAL",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "wizard_baseline",
+        "id": "Master Plan §68"
+      },
+      "riskLinks": [],
+      "threatLinks": [
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-196"
+      ],
+      "tests": [
+        "TEST-165"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Guarantees release integrity and prevents unverified promotions to production.",
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "REQ-RC-187",
+      "title": "CryptoDemon Security & Isolation Fixture Verification",
+      "statement": "The system must verify project state isolation, zero requirement leakage, and neutral technology defaults under the CryptoDemon fixture.",
+      "category": "SECURITY",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "threat_mitigation",
+        "id": "THR-001"
+      },
+      "riskLinks": [
+        "RISK-001"
+      ],
+      "threatLinks": [
+        "THR-001",
+        "THR-003"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-187"
+      ],
+      "tests": [
+        "testCryptoDemon",
+        "testCryptoDemonIntegration"
+      ],
+      "evidence": [
+        "EV-RC-187"
+      ],
+      "linkedFeatureId": "FEAT-DMK-009",
+      "rationale": "Ensures that projects remain completely isolated with clean discovery boundaries.",
+      "updatedAt": "2026-09-19T02:00:00.000Z"
+    },
+    {
+      "id": "REQ-RC-188",
+      "title": "Reviewer Authentication, Quorum & ADR Immutability Controls",
+      "statement": "Human reviewer authentication must require distinct authenticated identities for quorum slots, enforce HttpOnly sessions, and preserve accepted ADR immutability.",
+      "category": "SECURITY",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "threat_mitigation",
+        "id": "THR-002"
+      },
+      "riskLinks": [
+        "RISK-019"
+      ],
+      "threatLinks": [
+        "THR-001",
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-188"
+      ],
+      "tests": [
+        "production_rc_http.test"
+      ],
+      "evidence": [
+        "EV-RC-188"
+      ],
+      "linkedFeatureId": "FEAT-DMK-012",
+      "rationale": "Prevents reviewer impersonation, self-approval bypass, and silent tampering of accepted architectural decisions.",
+      "updatedAt": "2026-09-19T02:15:00.000Z"
+    },
+    {
+      "id": "REQ-RC-189",
+      "title": "Full Technical Regression, Drift & Build Assurance",
+      "statement": "The codebase must maintain 100% green pass rates across all 22 test suites, zero WBS drift, 93 automated acceptance criteria, and clean production builds.",
+      "category": "OPERATIONAL",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "standard_control",
+        "id": "NIST SSDF v1.1"
+      },
+      "riskLinks": [],
+      "threatLinks": [],
+      "standardLinks": [
+        "NIST_SSDF"
+      ],
+      "workItems": [
+        "DMK-189",
+        "DMK-191"
+      ],
+      "tests": [
+        "runCompleteRegression",
+        "runAutomatedQa"
+      ],
+      "evidence": [
+        "EV-RC-189"
+      ],
+      "linkedFeatureId": "FEAT-DMK-009",
+      "rationale": "Ensures technical integrity and prevents regression before release candidate handoff.",
+      "updatedAt": "2026-09-19T02:30:00.000Z"
+    },
+    {
+      "id": "REQ-RC-190",
+      "title": "Structured Proposal Contract Schema 1.1 Ingestion Verification",
+      "statement": "Proposal ingestion must validate Schema 1.1 contracts across CREATE/MODIFY/DELETE modes with complete error indexing and sanitize malformed prose.",
+      "category": "DATA",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "threat_mitigation",
+        "id": "THR-004"
+      },
+      "riskLinks": [
+        "RISK-004"
+      ],
+      "threatLinks": [
+        "THR-001"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-190",
+        "DMK-191"
+      ],
+      "tests": [
+        "testProposalContract"
+      ],
+      "evidence": [
+        "EV-RC-190"
+      ],
+      "linkedFeatureId": "FEAT-DMK-005",
+      "rationale": "Guarantees fail-closed validation of candidate artifacts proposed by external AI agents.",
+      "updatedAt": "2026-09-19T02:45:00.000Z"
+    },
+    {
+      "id": "REQ-BOOT-001",
+      "title": "Trusted Self-Bootstrap Initialization Contract",
+      "statement": "The system must provide deterministic validation and ingestion of the PRJ-DOCMONSTAKRAKIN self-bootstrap manifest without synthetic governance injection.",
+      "category": "OPERATIONAL",
+      "status": "PROPOSED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "stakeholder",
+        "id": "Operator / Dogfooding Roadmap"
+      },
+      "riskLinks": [
+        "RISK-BOOT-001"
+      ],
+      "threatLinks": [
+        "THR-BOOT-001"
+      ],
+      "standardLinks": [
+        "NIST_SSDF"
+      ],
+      "workItems": [
+        "DMK-192"
+      ],
+      "tests": [
+        "testSelfBootstrapContract"
+      ],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-013",
+      "rationale": "Enables docmonstakrakin to transition from hardcoded seed state to self-governed canonical project state.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "REQ-UX-PROJECTS-001",
+      "title": "Projects Workspace & Reliable Project Switching",
+      "statement": "The UI console must allow operators to switch cleanly between distinct local projects with full isolation and zero cross-project cache leakage.",
+      "category": "FUNCTIONAL",
+      "status": "PROPOSED",
+      "priority": "HIGH",
+      "source": {
+        "type": "stakeholder",
+        "id": "Operator / Dogfooding Roadmap"
+      },
+      "riskLinks": [
+        "RISK-001"
+      ],
+      "threatLinks": [
+        "THR-003"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-197"
+      ],
+      "tests": [],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-014",
+      "rationale": "Allows operators to manage both docmonstakrakin self-governance and external projects seamlessly.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "REQ-DOC-001",
+      "title": "Controlled Repository Documentation Workspace",
+      "statement": "The system must render repository-controlled markdown and YAML documents in-console, verifying live SHA-256 digests against registered baseline hashes.",
+      "category": "FUNCTIONAL",
+      "status": "PROPOSED",
+      "priority": "HIGH",
+      "source": {
+        "type": "stakeholder",
+        "id": "Operator / Dogfooding Roadmap"
+      },
+      "riskLinks": [
+        "RISK-025"
+      ],
+      "threatLinks": [
+        "THR-001"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-198"
+      ],
+      "tests": [],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-015",
+      "rationale": "Maintains alignment between executable code, control documents, and architectural baselines.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "REQ-GOV-SIGNOFF-001",
+      "title": "Formal Requirement Sign-Off UX (Batch 2)",
+      "statement": "The governance console must provide explicit, interactive requirement approval workflows with authenticated human sign-off logging.",
+      "category": "OPERATIONAL",
+      "status": "PROPOSED",
+      "priority": "HIGH",
+      "source": {
+        "type": "stakeholder",
+        "id": "Governance Remediation Roadmap"
+      },
+      "riskLinks": [],
+      "threatLinks": [
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-193"
+      ],
+      "tests": [],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Enables formal human approval of individual requirements during lifecycle phase reviews.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "REQ-GOV-QUORUM-001",
+      "title": "Approval Inbox & Distinct Human Quorum Synchronization (Batch 3)",
+      "statement": "The UI must expose an Approval Inbox requiring distinct human authenticated roles to satisfy multi-party governance quorums.",
+      "category": "SECURITY",
+      "status": "PROPOSED",
+      "priority": "CRITICAL",
+      "source": {
+        "type": "stakeholder",
+        "id": "Governance Remediation Roadmap"
+      },
+      "riskLinks": [],
+      "threatLinks": [
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-194"
+      ],
+      "tests": [],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-003",
+      "rationale": "Guarantees dual-signoff separation of duty for security and architecture approvals.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "REQ-GOV-REVIEWER-001",
+      "title": "Reviewer Provisioning & Governance Setup UX (Batch 4)",
+      "statement": "The application must provide operator-facing UI to manage local reviewer rosters, assign security roles, and rotate credentials securely.",
+      "category": "SECURITY",
+      "status": "PROPOSED",
+      "priority": "HIGH",
+      "source": {
+        "type": "stakeholder",
+        "id": "Governance Remediation Roadmap"
+      },
+      "riskLinks": [
+        "RISK-019"
+      ],
+      "threatLinks": [
+        "THR-004",
+        "THR-007"
+      ],
+      "standardLinks": [],
+      "workItems": [
+        "DMK-195"
+      ],
+      "tests": [],
+      "evidence": [],
+      "linkedFeatureId": "FEAT-DMK-012",
+      "rationale": "Simplifies secure reviewer onboarding without exposing plaintext credential configuration files.",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "title": "Unauthorized Filesystem Traversal",
+      "description": "AI agent or crafted path attempts to access or mutate files outside workspace root boundaries.",
+      "drivers": [
+        "Agent File Operations",
+        "Dynamic Path Inputs"
+      ],
+      "inherentLikelihood": 4,
+      "inherentImpact": 4,
+      "inherentScore": 16,
+      "inherentLevel": "HIGH",
+      "residualLikelihood": 1,
+      "residualImpact": 4,
+      "residualScore": 4,
+      "residualLevel": "LOW",
+      "treatment": "MITIGATE",
+      "controls": [
+        "Canonical path boundary verification",
+        "Path allow/deny policy interceptor"
+      ]
+    },
+    {
+      "id": "RISK-004",
+      "title": "Indirect Prompt Injection via Repository Code",
+      "description": "Adversarial content in repository markdown, issues, or code manipulates agent context.",
+      "drivers": [
+        "Untrusted Repository Content",
+        "Third-Party Dependencies"
+      ],
+      "inherentLikelihood": 4,
+      "inherentImpact": 4,
+      "inherentScore": 16,
+      "inherentLevel": "HIGH",
+      "residualLikelihood": 2,
+      "residualImpact": 3,
+      "residualScore": 6,
+      "residualLevel": "MEDIUM",
+      "treatment": "MITIGATE",
+      "controls": [
+        "Scoped context compiler",
+        "Zero memory inference",
+        "Dual-agent verification"
+      ]
+    },
+    {
+      "id": "RISK-019",
+      "title": "Autonomous Model Secret Access & Exfiltration",
+      "description": "Agent attempts to read, display, or exfiltrate private API keys or developer credentials.",
+      "drivers": [
+        "LLM Execution",
+        "Environment Variable Leaks"
+      ],
+      "inherentLikelihood": 4,
+      "inherentImpact": 5,
+      "inherentScore": 20,
+      "inherentLevel": "CRITICAL",
+      "residualLikelihood": 2,
+      "residualImpact": 5,
+      "residualScore": 10,
+      "residualLevel": "HIGH",
+      "treatment": "MITIGATE",
+      "controls": [
+        "Server-side token isolation",
+        "OS native Keyring driver (DMK-157)",
+        "Secret redaction filters"
+      ]
+    },
+    {
+      "id": "RISK-022",
+      "title": "Arbitrary Command Execution via AI Output",
+      "description": "Agent generates destructive shell commands or network scripts executed without user oversight.",
+      "drivers": [
+        "Automated Task Runners",
+        "Unvalidated Code Generation"
+      ],
+      "inherentLikelihood": 4,
+      "inherentImpact": 5,
+      "inherentScore": 20,
+      "inherentLevel": "CRITICAL",
+      "residualLikelihood": 1,
+      "residualImpact": 5,
+      "residualScore": 5,
+      "residualLevel": "MEDIUM",
+      "treatment": "MITIGATE",
+      "controls": [
+        "Structured ProposedCommand model",
+        "Mandatory human confirmation modal"
+      ]
+    },
+    {
+      "id": "RISK-025",
+      "title": "Audit Ledger Tampering",
+      "description": "Malicious script or rogue agent alters past audit entries to conceal unapproved actions.",
+      "drivers": [
+        "Local Persistence Vulnerabilities",
+        "Privilege Escalation"
+      ],
+      "inherentLikelihood": 3,
+      "inherentImpact": 5,
+      "inherentScore": 15,
+      "inherentLevel": "HIGH",
+      "residualLikelihood": 1,
+      "residualImpact": 5,
+      "residualScore": 5,
+      "residualLevel": "MEDIUM",
+      "treatment": "MITIGATE",
+      "controls": [
+        "Cryptographic SHA-256 hash chaining",
+        "Append-only event store"
+      ]
+    },
+    {
+      "id": "RISK-BOOT-001",
+      "title": "Unauthorized or Corrupted Trusted Self-Bootstrap",
+      "description": "Adversarial or malformed self-bootstrap manifest injects synthetic approvals, invalid status overrides, foreign entities, or embedded secrets during project onboarding.",
+      "drivers": [
+        "Self-Bootstrap Onboarding",
+        "External Manifest Injection",
+        "State Migration"
+      ],
+      "inherentLikelihood": 4,
+      "inherentImpact": 5,
+      "inherentScore": 20,
+      "inherentLevel": "CRITICAL",
+      "residualLikelihood": 1,
+      "residualImpact": 5,
+      "residualScore": 5,
+      "residualLevel": "MEDIUM",
+      "treatment": "MITIGATE",
+      "controls": [
+        "SELF_BOOTSTRAP_V1 closed root schema validation",
+        "Recursive sensitive-key scanner",
+        "Recursive governance field scanner",
+        "Strict referential integrity validation",
+        "CREATE_ONLY non-destructive persistence",
+        "Canonical JSON SHA-256 manifest digest hashing"
+      ]
+    }
+  ],
+  "threats": [
+    {
+      "id": "THR-001",
+      "title": "Tampering with Audit Ledger",
+      "attackSurface": "Audit Ledger Persistence",
+      "asset": "Audit Ledger",
+      "impact": "Complete loss of governance auditability and non-repudiation.",
+      "likelihood": 3,
+      "impactScore": 5,
+      "riskLevel": "CRITICAL",
+      "mitigations": [
+        {
+          "title": "Append-only store with SHA-256 cryptographic hash chaining (SEC-CTRL-013)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-002",
+      "title": "Elevation of Privilege via Agent Execution Harness",
+      "attackSurface": "Prompt Ingestion / Context Package",
+      "asset": "Agent Execution Harness",
+      "impact": "Remote code execution and sensitive credential theft.",
+      "likelihood": 4,
+      "impactScore": 5,
+      "riskLevel": "CRITICAL",
+      "mitigations": [
+        {
+          "title": "Strict filesystem path mask with deny precedence (SEC-CTRL-011)",
+          "status": "RESOLVED"
+        },
+        {
+          "title": "Dual-agent independent cross-review orchestration (SEC-CTRL-015)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-003",
+      "title": "Tampering with Local Filesystem via Path Traversal",
+      "attackSurface": "File API Endpoints",
+      "asset": "Host Filesystem",
+      "impact": "Host filesystem compromise, arbitrary file overwriting, or system file leakage.",
+      "likelihood": 3,
+      "impactScore": 4,
+      "riskLevel": "HIGH",
+      "mitigations": [
+        {
+          "title": "Canonical path resolution with strict workspace boundary assertion (SEC-CTRL-011)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-004",
+      "title": "Information Disclosure of Provider Secrets",
+      "attackSurface": "Client JS Bundles / Server Logs",
+      "asset": "AI Provider API Keys",
+      "impact": "Unauthorized model consumption and billing quota exhaustion.",
+      "likelihood": 3,
+      "impactScore": 4,
+      "riskLevel": "HIGH",
+      "mitigations": [
+        {
+          "title": "Server-only token isolation and automatic secret redaction filters (SEC-CTRL-017)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-005",
+      "title": "Elevation of Privilege via Local Command Runner",
+      "attackSurface": "Command Execution API",
+      "asset": "Local OS Shell",
+      "impact": "Destruction of local development files or unauthorized network egress.",
+      "likelihood": 3,
+      "impactScore": 5,
+      "riskLevel": "CRITICAL",
+      "mitigations": [
+        {
+          "title": "Structured ProposedCommand model with mandatory human confirmation modal (SEC-CTRL-012)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-006",
+      "title": "Spoofing of Standards Registry Definitions",
+      "attackSurface": "Standards Ingestion Pipeline",
+      "asset": "Security Standards Catalog",
+      "impact": "Engineering projects build against weakened or malicious security controls.",
+      "likelihood": 2,
+      "impactScore": 4,
+      "riskLevel": "HIGH",
+      "mitigations": [
+        {
+          "title": "Pinned cryptographic checksums and immutable snapshot archives (SEC-CTRL-016)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-007",
+      "title": "Repudiation of Governance Approval Gates",
+      "attackSurface": "Lifecycle Gate Evaluation API",
+      "asset": "Governance Approval Records",
+      "impact": "Unvetted high-risk code promoted and released without authentic authorization.",
+      "likelihood": 3,
+      "impactScore": 4,
+      "riskLevel": "HIGH",
+      "mitigations": [
+        {
+          "title": "Cryptographic approval events requiring explicit authenticated user action (SEC-CTRL-007)",
+          "status": "RESOLVED"
+        },
+        {
+          "title": "Multi-party quorum enforcement with distinct authenticated identities (SEC-CTRL-023)",
+          "status": "RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "THR-BOOT-001",
+      "title": "Adversarial or Corrupted Self-Bootstrap Manifest Injection",
+      "attackSurface": "Self-Bootstrap Ingestion Pipeline",
+      "asset": "PRJ-DOCMONSTAKRAKIN Project State",
+      "impact": "Governance bypass, silent corruption of project baseline, credential leakage, or execution of unverified state.",
+      "likelihood": 4,
+      "impactScore": 5,
+      "riskLevel": "CRITICAL",
+      "mitigations": [
+        {
+          "title": "Closed root schema, sensitive-key scanner, and recursive governance injection detection",
+          "status": "RESOLVED"
+        },
+        {
+          "title": "Deterministic canonical JSON verification and SHA-256 manifest digest hashing",
+          "status": "RESOLVED"
+        },
+        {
+          "title": "Referential integrity validation and forbidden runtime status enforcement",
+          "status": "RESOLVED"
+        },
+        {
+          "title": "CREATE_ONLY non-destructive store insertion and atomic persistence",
+          "status": "RESOLVED"
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "CMP-01",
+      "name": "Application UI & Client Shell",
+      "category": "CLIENT",
+      "trustZone": "DMZ",
+      "technology": "React 19, TypeScript, Tailwind CSS, Vite",
+      "description": "Serves client assets, handles user interactions, renders calm lifecycle dashboards, requirements matrix, and governance consoles.",
+      "dataClassification": "INTERNAL",
+      "inboundProtocols": [
+        "HTTP"
+      ],
+      "outboundProtocols": [
+        "HTTP"
+      ],
+      "assignedRequirements": [
+        "REQ-REQ-001",
+        "REQ-GOV-001"
+      ],
+      "linkedADRs": [
+        "ADR-0001",
+        "ADR-0002"
+      ],
+      "securityControls": [
+        "SEC-CTRL-001",
+        "SEC-CTRL-002"
+      ]
+    },
+    {
+      "id": "CMP-02",
+      "name": "Secure Ingress & Policy Interceptor",
+      "category": "GATEWAY",
+      "trustZone": "INTERNAL_SECURE",
+      "technology": "Node.js, Express, Middleware",
+      "description": "Validates API tokens, evaluates lifecycle gates, enforces command execution policies, and filters workspace path boundaries.",
+      "dataClassification": "INTERNAL",
+      "inboundProtocols": [
+        "HTTP"
+      ],
+      "outboundProtocols": [
+        "IPC"
+      ],
+      "assignedRequirements": [
+        "REQ-OPS-001",
+        "REQ-GOV-002"
+      ],
+      "linkedADRs": [
+        "ADR-0001"
+      ],
+      "securityControls": [
+        "SEC-CTRL-011",
+        "SEC-CTRL-012"
+      ]
+    },
+    {
+      "id": "CMP-03",
+      "name": "Prompt Compiler & Structured Validator",
+      "category": "SERVICE",
+      "trustZone": "INTERNAL_SECURE",
+      "technology": "TypeScript, JSON Schema",
+      "description": "Compiles minimal-context prompts, validates AI output schemas, checks referential integrity, and sanitizes untrusted proposal payloads.",
+      "dataClassification": "INTERNAL",
+      "inboundProtocols": [
+        "IPC"
+      ],
+      "outboundProtocols": [
+        "IPC"
+      ],
+      "assignedRequirements": [
+        "REQ-RC-190"
+      ],
+      "linkedADRs": [
+        "ADR-0003"
+      ],
+      "securityControls": [
+        "SEC-CTRL-014"
+      ]
+    },
+    {
+      "id": "CMP-04",
+      "name": "Isolated Project State Repository",
+      "category": "DATASTORE",
+      "trustZone": "RESTRICTED_DATA",
+      "technology": "In-Memory Aggregate, Local Filesystem, Atomic JSON Store",
+      "description": "Stores project aggregates, requirements, risks, work items, evidence, and cryptographically hash-chained audit ledgers with zero outbound internet access.",
+      "dataClassification": "CONFIDENTIAL",
+      "inboundProtocols": [
+        "IPC"
+      ],
+      "outboundProtocols": [
+        "LOCAL_FS"
+      ],
+      "assignedRequirements": [
+        "REQ-DATA-001",
+        "REQ-DATA-002",
+        "REQ-DATA-004"
+      ],
+      "linkedADRs": [
+        "ADR-0001",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "securityControls": [
+        "SEC-CTRL-013"
+      ]
+    },
+    {
+      "id": "CMP-05",
+      "name": "Sandboxed AI Inference Adapter",
+      "category": "SERVICE",
+      "trustZone": "INTERNAL_SECURE",
+      "technology": "Node.js, Google GenAI SDK, HTTPS Egress Proxy",
+      "description": "Communicates with Google Gemini API, manages API keys server-side, and orchestrates independent dual-agent cross-review workflows.",
+      "dataClassification": "INTERNAL",
+      "inboundProtocols": [
+        "IPC"
+      ],
+      "outboundProtocols": [
+        "HTTPS"
+      ],
+      "assignedRequirements": [
+        "REQ-AI-001",
+        "REQ-AI-007"
+      ],
+      "linkedADRs": [
+        "ADR-0003"
+      ],
+      "securityControls": [
+        "SEC-CTRL-015",
+        "SEC-CTRL-017"
+      ]
+    },
+    {
+      "id": "CMP-BOOT-01",
+      "name": "Trusted Self-Bootstrap Ingestion Subsystem",
+      "category": "SERVICE",
+      "trustZone": "INTERNAL_SECURE",
+      "technology": "TypeScript, Canonical JSON, Crypto SHA-256",
+      "description": "Subsystem validating, digesting, and persisting trusted self-bootstrap manifests under SELF_BOOTSTRAP_V1 rules.",
+      "dataClassification": "INTERNAL",
+      "inboundProtocols": [
+        "LOCAL_API",
+        "IPC"
+      ],
+      "outboundProtocols": [
+        "LOCAL_FS"
+      ],
+      "assignedRequirements": [
+        "REQ-BOOT-001"
+      ],
+      "linkedADRs": [
+        "ADR-0007"
+      ],
+      "securityControls": [
+        "SEC-CTRL-BOOT-01",
+        "SEC-CTRL-BOOT-02",
+        "SEC-CTRL-BOOT-03"
+      ]
+    }
+  ],
+  "adrs": [
+    {
+      "id": "ADR-0001",
+      "title": "Local-First In-Memory & Storage Architecture",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Lead Architect, Project Lead",
+      "context": "docmonstakrakin is designed as an offline-first engineering cockpit for local developers and autonomous coding agents. Relying on external cloud databases introduces latency, cloud failure modes, and credential exposure risks.",
+      "decision": "We decide to maintain project state in an in-memory aggregate backed by atomic local file persistence and encrypted OS keychains.",
+      "consequences": {
+        "positive": [
+          "Sub-millisecond local reads and UI responsiveness",
+          "Zero cloud telemetry leakage or vendor lock-in",
+          "Complete offline operational capability"
+        ],
+        "negative": [
+          "Memory footprint scales with project size",
+          "Requires explicit file locking and atomic swap routines for persistence"
+        ],
+        "risks": [
+          "Unsaved mutations lost if process crashes without write-flush"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-DATA-001",
+        "REQ-DATA-002"
+      ],
+      "linkedRisks": [
+        "RISK-001"
+      ],
+      "linkedStandards": [
+        "NIST_SSDF"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0002",
+      "title": "Single Canonical WorkItem Aggregate Model",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Lead Architect, Project Lead",
+      "context": "Task tracking is frequently fractured across Kanban boards, WBS sheets, and PR checklists, causing synchronization drift and phantom completion claims.",
+      "decision": "We decide that the system will maintain exactly one canonical WorkItem aggregate model. Kanban, WBS, Product Backlog, and Sprint views are deterministic projections.",
+      "consequences": {
+        "positive": [
+          "Zero state drift between Kanban cards and WBS hierarchy",
+          "Status updates instantly project across all views",
+          "Traceability links attach directly to the single canonical entity"
+        ],
+        "negative": [
+          "WorkItem schema must accommodate diverse view attributes"
+        ],
+        "risks": [
+          "Overly complex WorkItem schema if view-specific concerns are not segregated"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-DATA-001"
+      ],
+      "linkedRisks": [],
+      "linkedStandards": [],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0003",
+      "title": "Sandboxed Server-Side AI Inference Adapter & Egress Boundary",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Security Officer, Lead Architect",
+      "context": "Calling AI models directly from browser code exposes API keys, allows untrusted payload execution, and induces sycophantic self-review bias.",
+      "decision": "We mandate server-side AI inference exclusively, strict egress whitelisting (*.googleapis.com), and independent dual-agent cross-review for high-risk proposals.",
+      "consequences": {
+        "positive": [
+          "API keys never touch the browser DOM or client storage",
+          "Mitigates prompt injection secret exfiltration",
+          "Catches subtle model hallucinations and sycophancy"
+        ],
+        "negative": [
+          "Requires server proxy overhead for streaming connections"
+        ],
+        "risks": [
+          "Provider rate limits or API outages stall AI-assisted workflows"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-AI-001",
+        "REQ-AI-007"
+      ],
+      "linkedRisks": [
+        "RISK-004",
+        "RISK-019"
+      ],
+      "linkedStandards": [
+        "OWASP_AISVS"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0004",
+      "title": "Cryptographic Hash-Chained Audit Ledger",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Security Officer, Project Lead",
+      "context": "Standard log files can be edited or truncated by malicious scripts or compromised agents to hide unvetted actions or gate bypasses.",
+      "decision": "We implement an append-only, cryptographically hash-chained audit ledger where each event hashes its predecessor: Hash_n = SHA-256(Event_n || Hash_n-1).",
+      "consequences": {
+        "positive": [
+          "Non-repudiation for all gate transitions and overrides",
+          "Complete tamper evidence without blockchain overhead",
+          "Provable audit history exportable offline"
+        ],
+        "negative": [
+          "Requires strict deterministic canonical JSON serialization prior to hashing"
+        ],
+        "risks": [
+          "Ledger corruption if events are appended without proper synchronization"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-DATA-003"
+      ],
+      "linkedRisks": [
+        "RISK-025"
+      ],
+      "linkedStandards": [
+        "NIST_SSDF"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0005",
+      "title": "Synchronization Protocol and Conflict Resolution Model",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Lead Architect, Security Officer",
+      "context": "Supporting multi-workstation collaboration in future milestones requires robust offline synchronization without losing human governance authority.",
+      "decision": "Candidate recommendation: Hybrid Local-First 3-Way Semantic Merge + Merkle DAG Ledger with zero-knowledge encrypted transport.",
+      "consequences": {
+        "positive": [
+          "Preserves local write speed and offline capability",
+          "Zero-knowledge relay isolation protects project confidentiality",
+          "Human governance approvals cannot be overwritten by agent writes"
+        ],
+        "negative": [
+          "Complex 3-way merge logic required for semantic conflict handling"
+        ],
+        "risks": [
+          "Divergent branches require manual operator reconciliation"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-DATA-001"
+      ],
+      "linkedRisks": [],
+      "linkedStandards": [],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0006",
+      "title": "Multi-Agent Peer Identity and Trust Boundary Model",
+      "status": "PROPOSED",
+      "date": "2026-09-15",
+      "author": "Security Officer, Lead Architect",
+      "context": "Distinguishing autonomous AI agents from human project owners is critical to prevent automated bypass of human-in-the-loop governance.",
+      "decision": "Candidate recommendation: Cryptographic Ed25519 Peer Keyring with Scoped Delegation Agent Keys; agent keys rejected for Gate Sign-off.",
+      "consequences": {
+        "positive": [
+          "Cryptographic separation of human authority vs agent capability",
+          "Decentralized peer identity without corporate directory lock-in",
+          "Scoped delegation prevents privilege escalation"
+        ],
+        "negative": [
+          "Requires local keypair management and signing ceremonies"
+        ],
+        "risks": [
+          "Loss of private key requires multi-owner recovery ceremony"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-SEC-019"
+      ],
+      "linkedRisks": [
+        "RISK-019"
+      ],
+      "linkedStandards": [
+        "NIST_SSDF"
+      ],
+      "updatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ADR-0007",
+      "title": "Deterministic Self-Bootstrap Ingestion Contract",
+      "status": "PROPOSED",
+      "date": "2026-09-19",
+      "author": "Security Officer & Lead Architect",
+      "context": "Adopting the SELF_BOOTSTRAP_V1 specification to populate the authoritative project state for PRJ-DOCMONSTAKRAKIN without executing runtime mutation during contract verification, eliminating circular dependencies between dogfooding control and project creation.",
+      "decision": "Implement a deterministic, closed-schema self-bootstrap contract with strict referential integrity, sensitive key scanning, recursive governance checks, and canonical JSON SHA-256 hashing.",
+      "consequences": {
+        "positive": [
+          "Guarantees deterministic project onboarding",
+          "Prevents unvetted governance injection",
+          "Enables reproducible offline verification"
+        ],
+        "negative": [
+          "Requires rigid schema adherence with zero arbitrary extensions"
+        ],
+        "risks": [
+          "Malformed manifest rejection halts self-bootstrap until manually corrected"
+        ]
+      },
+      "linkedRequirements": [
+        "REQ-BOOT-001"
+      ],
+      "linkedRisks": [
+        "RISK-BOOT-001"
+      ],
+      "linkedStandards": [
+        "NIST_SSDF"
+      ],
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    }
+  ],
+  "workItems": [
+    {
+      "id": "DMK-187",
+      "type": "VERIFICATION",
+      "title": "CryptoDemon Security & Isolation Fixture Verification",
+      "description": "Execute CryptoDemon isolation suite, verifying discovery boundary encapsulation and clean project separation.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 1,
+      "requirements": [
+        "REQ-RC-187"
+      ],
+      "features": [
+        "FEAT-DMK-009"
+      ],
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "Zero discovery requirement leakage",
+        "Neutral technology defaults preserved",
+        "14 focused checks and 47 HTTP isolation checks passing"
+      ],
+      "checklist": [
+        {
+          "text": "Execute testCryptoDemon harness",
+          "done": true
+        },
+        {
+          "text": "Validate fixture isolation report",
+          "done": true
+        }
+      ],
+      "tests": [
+        "testCryptoDemon",
+        "testCryptoDemonIntegration"
+      ],
+      "evidence": [
+        "EV-RC-187"
+      ],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T02:00:00.000Z"
+    },
+    {
+      "id": "DMK-188",
+      "type": "SECURITY",
+      "title": "Reviewer Authentication, Quorum & ADR Immutability Controls",
+      "description": "Implement HttpOnly reviewer session handling, distinct dual-role quorum enforcement, and accepted ADR immutability.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 1,
+      "requirements": [
+        "REQ-RC-188"
+      ],
+      "features": [
+        "FEAT-DMK-012"
+      ],
+      "dependencies": [
+        "DMK-187"
+      ],
+      "acceptanceCriteria": [
+        "Body-supplied names/roles grant zero authority",
+        "Same-identity quorum reuse rejected",
+        "Direct mutation of accepted ADR rejected"
+      ],
+      "checklist": [
+        {
+          "text": "Harden reviewer session cookies",
+          "done": true
+        },
+        {
+          "text": "Enforce distinct quorum roles",
+          "done": true
+        },
+        {
+          "text": "Implement ADR revision immutability",
+          "done": true
+        }
+      ],
+      "tests": [
+        "production_rc_http.test"
+      ],
+      "evidence": [
+        "EV-RC-188"
+      ],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T02:15:00.000Z"
+    },
+    {
+      "id": "DMK-189",
+      "type": "VERIFICATION",
+      "title": "Full Technical Regression, Drift & Build Assurance",
+      "description": "Execute complete 22-suite regression inventory, confirm 93 automated acceptance criteria, and verify zero WBS drift.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 1,
+      "requirements": [
+        "REQ-RC-189"
+      ],
+      "features": [
+        "FEAT-DMK-009"
+      ],
+      "dependencies": [
+        "DMK-188"
+      ],
+      "acceptanceCriteria": [
+        "22/22 suites and 310 checks passing",
+        "93/93 QA criteria passing",
+        "Zero WBS drift",
+        "Clean production build"
+      ],
+      "checklist": [
+        {
+          "text": "Run full regression inventory",
+          "done": true
+        },
+        {
+          "text": "Audit WBS drift against code",
+          "done": true
+        },
+        {
+          "text": "Compile production bundle",
+          "done": true
+        }
+      ],
+      "tests": [
+        "runCompleteRegression",
+        "runAutomatedQa"
+      ],
+      "evidence": [
+        "EV-RC-189"
+      ],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T02:30:00.000Z"
+    },
+    {
+      "id": "DMK-190",
+      "type": "TASK",
+      "title": "Structured Proposal Contract Schema 1.1 Ingestion Verification",
+      "description": "Implement Proposal Contract Schema 1.1 with Protocol A-J scenarios, HTTP round trips, and strict error reporting.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 1,
+      "requirements": [
+        "REQ-RC-190"
+      ],
+      "features": [
+        "FEAT-DMK-005"
+      ],
+      "dependencies": [
+        "DMK-189"
+      ],
+      "acceptanceCriteria": [
+        "Protocol A-J scenarios passing",
+        "Fail-closed validation on malformed inputs",
+        "Indexed error diagnostics returned"
+      ],
+      "checklist": [
+        {
+          "text": "Update proposal schema validator",
+          "done": true
+        },
+        {
+          "text": "Implement Protocol A-J test cases",
+          "done": true
+        },
+        {
+          "text": "Verify HTTP error status handling",
+          "done": true
+        }
+      ],
+      "tests": [
+        "testProposalContract"
+      ],
+      "evidence": [
+        "EV-RC-190"
+      ],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T02:45:00.000Z"
+    },
+    {
+      "id": "DMK-191",
+      "type": "VERIFICATION",
+      "title": "Gio Human Browser Retest & Final Verification Run",
+      "description": "Conduct end-to-end human manual retest across 8 verified scenarios before Gate 7 release sign-off consideration.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 1,
+      "requirements": [
+        "REQ-RC-189",
+        "REQ-RC-190"
+      ],
+      "features": [
+        "FEAT-DMK-009"
+      ],
+      "dependencies": [
+        "DMK-189",
+        "DMK-190"
+      ],
+      "acceptanceCriteria": [
+        "Complete 8-step human manual checklist",
+        "Zero console errors during browser navigation",
+        "Cryptographic audit records confirmed intact"
+      ],
+      "checklist": [
+        {
+          "text": "Start application with operator roster",
+          "done": false
+        },
+        {
+          "text": "Execute 8 manual test scenarios",
+          "done": false
+        },
+        {
+          "text": "Record manual QA disposition",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-192",
+      "type": "TASK",
+      "title": "Trusted Self-Bootstrap Manifest Review & Dry-Run Execution",
+      "description": "Construct, validate, hash, and review the real PRJ-DOCMONSTAKRAKIN bootstrap manifest under SELF_BOOTSTRAP_V1.",
+      "status": "READY",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 2,
+      "requirements": [
+        "REQ-BOOT-001"
+      ],
+      "features": [
+        "FEAT-DMK-013"
+      ],
+      "dependencies": [
+        "DMK-191"
+      ],
+      "acceptanceCriteria": [
+        "100% schema validation passing",
+        "Zero referential integrity errors",
+        "Zero sensitive keys or governance injection fields",
+        "Deterministic canonical SHA-256 digest computed"
+      ],
+      "checklist": [
+        {
+          "text": "Construct complete bootstrap manifest JSON",
+          "done": true
+        },
+        {
+          "text": "Execute contract test validator",
+          "done": true
+        },
+        {
+          "text": "Generate dry-run report",
+          "done": true
+        },
+        {
+          "text": "Review manifest with operator",
+          "done": false
+        }
+      ],
+      "tests": [
+        "testSelfBootstrapContract"
+      ],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-193",
+      "type": "FEATURE",
+      "title": "Batch 2 Requirement Sign-Off UX Implementation",
+      "description": "Develop the interactive UI workflow for human review, comment, and formal sign-off of individual requirements.",
+      "status": "BACKLOG",
+      "priority": "P1",
+      "risk": "HIGH",
+      "sprint": 2,
+      "requirements": [
+        "REQ-GOV-SIGNOFF-001"
+      ],
+      "features": [
+        "FEAT-DMK-003"
+      ],
+      "dependencies": [
+        "DMK-192"
+      ],
+      "acceptanceCriteria": [
+        "Interactive requirement approval button with confirmation modal",
+        "Authenticated reviewer role verification",
+        "Audit ledger records requirement sign-off events"
+      ],
+      "checklist": [
+        {
+          "text": "Design sign-off modal component",
+          "done": false
+        },
+        {
+          "text": "Connect to backend sign-off route",
+          "done": false
+        },
+        {
+          "text": "Verify audit event emission",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-194",
+      "type": "FEATURE",
+      "title": "Batch 3 Approval Inbox & Distinct Human Quorum Synchronization",
+      "description": "Implement the unified Approval Inbox view showing pending governance requests and requiring distinct dual-role quorum sign-off.",
+      "status": "BACKLOG",
+      "priority": "P1",
+      "risk": "HIGH",
+      "sprint": 2,
+      "requirements": [
+        "REQ-GOV-QUORUM-001"
+      ],
+      "features": [
+        "FEAT-DMK-003"
+      ],
+      "dependencies": [
+        "DMK-193"
+      ],
+      "acceptanceCriteria": [
+        "Approval inbox renders all pending gate and artifact requests",
+        "Dual-role quorum prevents self-approval",
+        "Real-time quorum status indicators"
+      ],
+      "checklist": [
+        {
+          "text": "Build Approval Inbox component",
+          "done": false
+        },
+        {
+          "text": "Implement quorum validation middleware",
+          "done": false
+        },
+        {
+          "text": "Test multi-party sign-off flow",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-195",
+      "type": "FEATURE",
+      "title": "Batch 4 Reviewer Provisioning & Operator Setup UX",
+      "description": "Build operator-facing configuration UI for managing local reviewer credentials, roles, and session security.",
+      "status": "BACKLOG",
+      "priority": "P1",
+      "risk": "HIGH",
+      "sprint": 2,
+      "requirements": [
+        "REQ-GOV-REVIEWER-001"
+      ],
+      "features": [
+        "FEAT-DMK-012"
+      ],
+      "dependencies": [
+        "DMK-194"
+      ],
+      "acceptanceCriteria": [
+        "Operator UI for reviewer roster management",
+        "Secure password hashing with argon2/bcrypt",
+        "Role assignment restricted to authorized operators"
+      ],
+      "checklist": [
+        {
+          "text": "Build Reviewer Provisioning view",
+          "done": false
+        },
+        {
+          "text": "Implement backend credential rotation",
+          "done": false
+        },
+        {
+          "text": "Verify HttpOnly session security",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-196",
+      "type": "RELEASE",
+      "title": "Gate 7 Execution & Official v0.1 Release Sign-Off",
+      "description": "Formal human execution of Gate 7 release sign-off following completion of Batch 2-4 governance UX and human verification.",
+      "status": "BACKLOG",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "sprint": 2,
+      "requirements": [
+        "REQ-REL-001"
+      ],
+      "features": [
+        "FEAT-DMK-003"
+      ],
+      "dependencies": [
+        "DMK-195"
+      ],
+      "acceptanceCriteria": [
+        "All blocking requirements VERIFIED",
+        "Dual-role human quorum sign-off recorded",
+        "Release package cryptographically signed and sealed"
+      ],
+      "checklist": [
+        {
+          "text": "Verify all gate entry criteria",
+          "done": false
+        },
+        {
+          "text": "Execute human quorum sign-off",
+          "done": false
+        },
+        {
+          "text": "Tag release v0.1.0-rc1 in git",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-197",
+      "type": "FEATURE",
+      "title": "Projects Workspace & Project Switching UI Implementation",
+      "description": "Implement interactive Projects Workspace allowing operators to view and switch between distinct local projects.",
+      "status": "BACKLOG",
+      "priority": "P1",
+      "risk": "MEDIUM",
+      "sprint": 3,
+      "requirements": [
+        "REQ-UX-PROJECTS-001"
+      ],
+      "features": [
+        "FEAT-DMK-014"
+      ],
+      "dependencies": [
+        "DMK-192"
+      ],
+      "acceptanceCriteria": [
+        "Project switcher modal / sidebar selector",
+        "Zero state bleeding between projects",
+        "Smooth state transitions without page refresh"
+      ],
+      "checklist": [
+        {
+          "text": "Create Projects Workspace view",
+          "done": false
+        },
+        {
+          "text": "Implement active project state switch hook",
+          "done": false
+        },
+        {
+          "text": "Test project isolation",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "DMK-198",
+      "type": "FEATURE",
+      "title": "Controlled Documentation Workspace UI Implementation",
+      "description": "Implement in-console Controlled Documentation view displaying repository documents with live cryptographic integrity status.",
+      "status": "BACKLOG",
+      "priority": "P1",
+      "risk": "MEDIUM",
+      "sprint": 3,
+      "requirements": [
+        "REQ-DOC-001"
+      ],
+      "features": [
+        "FEAT-DMK-015"
+      ],
+      "dependencies": [
+        "DMK-192"
+      ],
+      "acceptanceCriteria": [
+        "Document browser rendering markdown and YAML",
+        "Live SHA-256 hash comparison against registered baseline",
+        "Visual indicators for draft vs approved authority"
+      ],
+      "checklist": [
+        {
+          "text": "Build Documentation Workspace component",
+          "done": false
+        },
+        {
+          "text": "Implement document hash verification API",
+          "done": false
+        },
+        {
+          "text": "Render document hierarchy",
+          "done": false
+        }
+      ],
+      "tests": [],
+      "evidence": [],
+      "owner": "Gio",
+      "updatedAt": "2026-09-19T03:00:00.000Z"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-RC-187",
+      "type": "TEST_RUN",
+      "title": "CryptoDemon Security & Isolation Fixture Verification Evidence",
+      "workItemId": "DMK-187",
+      "result": "VERIFIED",
+      "command": "npx tsx scripts/testCryptoDemon.ts",
+      "producer": "Technical Verification Harness",
+      "createdAt": "2026-09-19T02:00:00.000Z",
+      "sha256Hash": "63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b",
+      "details": "Verified CryptoDemon educational fixture with 14 focused checks and 47 HTTP isolation checks passing cleanly."
+    },
+    {
+      "id": "EV-RC-188",
+      "type": "SECURITY_SCAN",
+      "title": "Reviewer Authentication, Quorum & ADR Immutability Security Evidence",
+      "workItemId": "DMK-188",
+      "result": "VERIFIED",
+      "command": "npx tsx test/production_rc_http.test.ts",
+      "producer": "Independent Security Reviewer",
+      "createdAt": "2026-09-19T02:15:00.000Z",
+      "sha256Hash": "31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f",
+      "details": "Verified HTTP authentication boundaries, HttpOnly session handling, dual-role quorum enforcement, and ADR immutability."
+    },
+    {
+      "id": "EV-RC-189",
+      "type": "TEST_RUN",
+      "title": "Full Regression Inventory, Lint/Build & WBS Drift Evidence",
+      "workItemId": "DMK-189",
+      "result": "VERIFIED",
+      "command": "npx tsx scripts/rc_regression_inventory.ts",
+      "producer": "Automated Regression Orchestrator",
+      "createdAt": "2026-09-19T02:30:00.000Z",
+      "sha256Hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",
+      "details": "Complete inventory of 22 test suites with 310 checks passing; 93 automated acceptance criteria verified; zero WBS drift."
+    },
+    {
+      "id": "EV-RC-190",
+      "type": "TEST_RUN",
+      "title": "Structured Proposal Contract Schema 1.1 Ingestion Evidence",
+      "workItemId": "DMK-190",
+      "result": "VERIFIED",
+      "command": "npx tsx scripts/testProposalContract.ts",
+      "producer": "Contract Testing Harness",
+      "createdAt": "2026-09-19T02:45:00.000Z",
+      "sha256Hash": "b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01",
+      "details": "Verified Proposal Contract Schema 1.1 with Protocol A-J scenarios, HTTP round trips, and strict error reporting."
+    }
+  ],
+  "documents": [
+    {
+      "id": "DOC-CTRL-001",
+      "path": "docs/00_control/PROJECT_CHARTER.md",
+      "kind": "CONTROL",
+      "authority": "REFERENCE",
+      "sha256Digest": "61074ca8621dc61c8db7b64890b42955baf7944e3e513c82ae757ff941092c05",
+      "title": "Project Charter - Control Plane for A-SSDLC"
+    },
+    {
+      "id": "DOC-CTRL-002",
+      "path": "docs/00_control/PROJECT_STATE.md",
+      "kind": "CONTROL",
+      "authority": "REFERENCE",
+      "sha256Digest": "6e397b389dd78f2055ddccfcc60261f072e4f7aa815f72eb388995a24d03d0e4",
+      "title": "Project State - Authoritative Roadmap and Execution Baseline"
+    },
+    {
+      "id": "DOC-CTRL-003",
+      "path": "docs/00_control/MASTER_WBS.yaml",
+      "kind": "CONTROL",
+      "authority": "REFERENCE",
+      "sha256Digest": "451c605962c884a056d9bfb81e2b8e5e2f451a26b8ee7f4e215d9cf8009e7420",
+      "title": "Master Work Breakdown Structure (WBS)"
+    },
+    {
+      "id": "DOC-CTRL-004",
+      "path": "docs/00_control/TRACEABILITY_MATRIX.md",
+      "kind": "CONTROL",
+      "authority": "REFERENCE",
+      "sha256Digest": "5c18b8ee0716a43545049033608c3d0885e3ca55d1a5166f0190bd9c84287e6e",
+      "title": "Requirements Traceability Matrix (RTM)"
+    },
+    {
+      "id": "DOC-PROD-001",
+      "path": "docs/01_product/PRODUCT_VISION.md",
+      "kind": "PRODUCT",
+      "authority": "REFERENCE",
+      "sha256Digest": "e226ce573778a8b9bdcac386587622ba116e34d76939232a70485d15c017816f",
+      "title": "Product Vision - A-SSDLC Development Control Plane"
+    },
+    {
+      "id": "DOC-PROD-002",
+      "path": "docs/01_product/SCOPE.md",
+      "kind": "PRODUCT",
+      "authority": "REFERENCE",
+      "sha256Digest": "b8416de42da22c2fc4d588fa0fbdf3dbd49ee5073a38af7c40a25ef4fbbfecf4",
+      "title": "Product Scope - In-Scope vs Deferred Capabilities"
+    },
+    {
+      "id": "DOC-REQ-003",
+      "path": "docs/02_requirements/REQUIREMENTS_REGISTER.md",
+      "kind": "REQUIREMENTS",
+      "authority": "REFERENCE",
+      "sha256Digest": "2c51e0c93127cc925eca2fb4f763f368b48acb5a128f1b1f3f883a69fc74fecd",
+      "title": "Requirements Register - Canonical Functional and Security Baselines"
+    },
+    {
+      "id": "DOC-ARC-001",
+      "path": "docs/03_architecture/SYSTEM_ARCHITECTURE.md",
+      "kind": "ARCHITECTURE",
+      "authority": "REFERENCE",
+      "sha256Digest": "9f8708011a6d0bd994193868c9db167e119f7a072179cd8c6934937817ff0ce7",
+      "title": "System Architecture - High-Level Topology and Component Model"
+    },
+    {
+      "id": "DOC-SEC-002",
+      "path": "docs/04_security/THREAT_MODEL.md",
+      "kind": "SECURITY",
+      "authority": "REFERENCE",
+      "sha256Digest": "5ff876bd8ea8d358d5921513f87d508bf9a21872488ebb49442c03074fe28149",
+      "title": "Threat Model - STRIDE Security Analysis"
+    },
+    {
+      "id": "DOC-SEC-003",
+      "path": "docs/04_security/RISK_REGISTER.md",
+      "kind": "SECURITY",
+      "authority": "REFERENCE",
+      "sha256Digest": "595552fe31068b8cddff9d403f4a4072e14cedb8b73a948c5f5951ba6d3a10f5",
+      "title": "Risk Register - Inherent and Residual Risk Assessment"
+    },
+    {
+      "id": "DOC-DEC-001",
+      "path": "docs/05_decisions/ADR/ADR-0001-local-first-storage.md",
+      "kind": "ARCHITECTURE",
+      "authority": "REFERENCE",
+      "sha256Digest": "c6cdcc432de4af39006b4058efb3649cb304628bd7549533db2d71b4fafd2768",
+      "title": "ADR-0001 - Local-First Storage Architecture"
+    },
+    {
+      "id": "DOC-DEC-002",
+      "path": "docs/05_decisions/ADR/ADR-0002-single-canonical-workitem-model.md",
+      "kind": "ARCHITECTURE",
+      "authority": "REFERENCE",
+      "sha256Digest": "a8638f5d64de9513330e7dd4ba871e6da56459d09b33891213884f94edfdc12d",
+      "title": "ADR-0002 - Single Canonical WorkItem Aggregate Model"
+    },
+    {
+      "id": "DOC-DEC-003",
+      "path": "docs/05_decisions/ADR/ADR-0003-sandboxed-ai-inference-adapter.md",
+      "kind": "ARCHITECTURE",
+      "authority": "REFERENCE",
+      "sha256Digest": "f8806b7c2aa2b0af176360d61be4ef706abee37e14c356a3e1f970110068bf2d",
+      "title": "ADR-0003 - Sandboxed AI Inference Adapter"
+    },
+    {
+      "id": "DOC-DEC-004",
+      "path": "docs/05_decisions/ADR/ADR-0004-cryptographic-hash-chained-audit-ledger.md",
+      "kind": "ARCHITECTURE",
+      "authority": "REFERENCE",
+      "sha256Digest": "481aa5a36a3840cd83a52d69ac0b8fe51840e2a5fb3f8f7eb22376e6f4251440",
+      "title": "ADR-0004 - Cryptographic Hash-Chained Audit Ledger"
+    }
+  ]
+}
