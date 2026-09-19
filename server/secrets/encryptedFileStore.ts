@@ -4,12 +4,22 @@ import path from 'node:path';
 import { SecretStore, SecretMetadata, SecretProviderType } from '../../src/types.ts';
 
 export interface EncryptedStoreConfig {
+  /** Base directory where store files reside. Defaults to process.cwd()/.docmonstakrakin */
+  dataDir?: string;
   /** File path where encrypted payload envelope is stored */
   storagePath?: string;
   /** File path where the local derivation salt is persisted */
   saltPath?: string;
-  /** Optional user-provided master passphrase. If omitted, derived from local machine install token. */
+  /** File path where the host-bound machine token is persisted */
+  machineTokenPath?: string;
+  /** Optional user-provided master passphrase. If omitted, derived from DOCMONSTAKRAKIN_MASTER_KEY or machine token. */
   masterPassphrase?: string;
+}
+
+export interface SecretStoreMigrationStatus {
+  migrated: boolean;
+  source?: 'LEGACY_MACHINE_TOKEN';
+  target?: 'CONFIGURED_MASTER_KEY';
 }
 
 interface StoredEnvelope {
@@ -57,23 +67,38 @@ function computeFingerprint(value: string): string {
  * - Zero plaintext secret values in envelope metadata or logs.
  */
 export class EncryptedFileSecretStore implements SecretStore {
+  private readonly dataDir: string;
   private readonly storagePath: string;
   private readonly saltPath: string;
-  private readonly passphrase: string;
+  private readonly machineTokenPath: string;
+  private readonly configuredPassphrase: string | null;
+  private passphrase: string;
   private cachedPayload: DecryptedPayload | null = null;
   private isInitialized = false;
+  private migrationStatus: SecretStoreMigrationStatus | null = null;
 
   constructor(config: EncryptedStoreConfig = {}) {
     const rootDir = process.cwd();
-    const defaultDataDir = path.join(rootDir, '.docmonstakrakin');
+    this.dataDir = config.dataDir ?? (config.storagePath ? path.dirname(config.storagePath) : path.join(rootDir, '.docmonstakrakin'));
 
-    this.storagePath = config.storagePath ?? path.join(defaultDataDir, 'secrets.enc');
-    this.saltPath = config.saltPath ?? path.join(defaultDataDir, 'secrets.salt');
-    
-    // Master passphrase fallback: configured passphrase -> machine-specific seed -> fallback token
-    this.passphrase = config.masterPassphrase ||
-      process.env.DOCMONSTAKRAKIN_MASTER_KEY ||
-      this.getOrCreateMachineToken(defaultDataDir);
+    this.storagePath = config.storagePath ?? path.join(this.dataDir, 'secrets.enc');
+    this.saltPath = config.saltPath ?? path.join(this.dataDir, 'secrets.salt');
+    this.machineTokenPath = config.machineTokenPath ?? path.join(this.dataDir, '.machine_token');
+
+    const envKey = process.env.DOCMONSTAKRAKIN_MASTER_KEY?.trim() || undefined;
+    this.configuredPassphrase = config.masterPassphrase || envKey || null;
+
+    if (this.configuredPassphrase) {
+      this.passphrase = this.configuredPassphrase;
+    } else {
+      // Existing envelope recovery: only read an existing token, never create one as a recovery attempt.
+      // New store: generating a local machine token is appropriate when no master passphrase is configured.
+      if (fs.existsSync(this.storagePath)) {
+        this.passphrase = this.readExistingMachineToken() || '';
+      } else {
+        this.passphrase = this.getOrCreateMachineToken();
+      }
+    }
   }
 
   public getProviderType(): SecretProviderType {
@@ -81,14 +106,20 @@ export class EncryptedFileSecretStore implements SecretStore {
   }
 
   /**
+   * Exposes structured provenance for legacy re-key migration ceremonies.
+   */
+  public getMigrationStatus(): SecretStoreMigrationStatus | null {
+    return this.migrationStatus;
+  }
+
+  /**
    * Reads an existing host-bound machine installation token without generating or creating one.
    * Used for legacy fallback key candidate discovery.
    */
-  private readExistingMachineToken(dataDir: string): string | null {
-    const tokenFile = path.join(dataDir, '.machine_token');
+  public readExistingMachineToken(): string | null {
     try {
-      if (fs.existsSync(tokenFile)) {
-        const token = fs.readFileSync(tokenFile, 'utf8').trim();
+      if (fs.existsSync(this.machineTokenPath)) {
+        const token = fs.readFileSync(this.machineTokenPath, 'utf8').trim();
         return token.length > 0 ? token : null;
       }
     } catch {
@@ -99,12 +130,15 @@ export class EncryptedFileSecretStore implements SecretStore {
 
   /**
    * Generates or retrieves a host-bound installation token used for local KDF derivation.
+   * Only called when establishing a brand new unencrypted store with no configured master passphrase.
    */
-  private getOrCreateMachineToken(dataDir: string): string {
-    const tokenFile = path.join(dataDir, '.machine_token');
+  public getOrCreateMachineToken(): string {
     try {
-      if (fs.existsSync(tokenFile)) {
-        return fs.readFileSync(tokenFile, 'utf8').trim();
+      if (fs.existsSync(this.machineTokenPath)) {
+        const token = fs.readFileSync(this.machineTokenPath, 'utf8').trim();
+        if (token.length > 0) {
+          return token;
+        }
       }
     } catch {
       // Fall through to generation
@@ -112,10 +146,11 @@ export class EncryptedFileSecretStore implements SecretStore {
 
     const token = crypto.randomBytes(32).toString('hex');
     try {
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+      const dir = path.dirname(this.machineTokenPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
       }
-      fs.writeFileSync(tokenFile, token, { encoding: 'utf8', mode: 0o600 });
+      fs.writeFileSync(this.machineTokenPath, token, { encoding: 'utf8', mode: 0o600 });
     } catch {
       // If filesystem restricted, return token in memory
     }
@@ -145,11 +180,13 @@ export class EncryptedFileSecretStore implements SecretStore {
    * Derives a 256-bit symmetric encryption key using PBKDF2.
    */
   private deriveKey(salt: Buffer, customPassphrase?: string): Buffer {
-    return crypto.pbkdf2Sync(customPassphrase || this.passphrase, salt, 100_000, 32, 'sha256');
+    const passphraseToUse = customPassphrase || this.passphrase;
+    return crypto.pbkdf2Sync(passphraseToUse, salt, 100_000, 32, 'sha256');
   }
 
   /**
    * Initializes store and loads existing payload from disk if present.
+   * Handles authenticated decryption, candidate fallback, and post-verified re-key migration.
    */
   private async ensureInitialized(): Promise<void> {
     if (this.isInitialized && this.cachedPayload) {
@@ -169,8 +206,8 @@ export class EncryptedFileSecretStore implements SecretStore {
       const rawEnvelope = fs.readFileSync(this.storagePath, 'utf8');
       const envelope: StoredEnvelope = JSON.parse(rawEnvelope);
 
-      if (envelope.version !== 1 || envelope.encryption.algorithm !== 'AES-256-GCM') {
-        throw new Error(`Unsupported secret envelope format: v${envelope.version}`);
+      if (envelope.version !== 1 || envelope.encryption?.algorithm !== 'AES-256-GCM') {
+        throw new Error(`Unsupported secret envelope format: v${envelope?.version}`);
       }
 
       const salt = Buffer.from(envelope.kdf.saltHex, 'hex');
@@ -178,67 +215,181 @@ export class EncryptedFileSecretStore implements SecretStore {
       const authTag = Buffer.from(envelope.encryption.authTagHex, 'hex');
       const ciphertext = Buffer.from(envelope.ciphertextHex, 'hex');
 
-      // Candidate passphrases: primary configured passphrase, followed by machine token fallback
-      const candidatePassphrases: Array<{ source: 'primary' | 'machine_token_fallback'; passphrase: string }> = [
-        { source: 'primary', passphrase: this.passphrase },
-      ];
-      const defaultDataDir = path.join(process.cwd(), '.docmonstakrakin');
-      const existingMachineToken = this.readExistingMachineToken(defaultDataDir);
-      if (existingMachineToken && existingMachineToken !== this.passphrase) {
-        candidatePassphrases.push({ source: 'machine_token_fallback', passphrase: existingMachineToken });
-      }
-
+      const primaryKey = this.passphrase;
       let decryptedBytes: Buffer | null = null;
-      let usedCandidate = candidatePassphrases[0];
-      let lastDecryptErr: Error | null = null;
+      let usedSource: 'primary' | 'legacy_machine_token' = 'primary';
+      let primaryError: Error | null = null;
 
-      for (const candidate of candidatePassphrases) {
+      // 1. Attempt active primary key
+      if (primaryKey && primaryKey.length > 0) {
         try {
-          const key = this.deriveKey(salt, candidate.passphrase);
+          const key = this.deriveKey(salt, primaryKey);
           const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
           decipher.setAuthTag(authTag);
           decryptedBytes = Buffer.concat([
             decipher.update(ciphertext),
             decipher.final(),
           ]);
-          usedCandidate = candidate;
-          break;
+          usedSource = 'primary';
         } catch (err: any) {
-          lastDecryptErr = err;
+          primaryError = err;
+        }
+      } else {
+        primaryError = new Error('No primary master passphrase configured');
+      }
+
+      // 2. If primary fails and an existing legacy token is available, try legacy token
+      if (!decryptedBytes) {
+        const legacyToken = this.readExistingMachineToken();
+        if (legacyToken && legacyToken !== primaryKey) {
+          try {
+            const key = this.deriveKey(salt, legacyToken);
+            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+            decipher.setAuthTag(authTag);
+            decryptedBytes = Buffer.concat([
+              decipher.update(ciphertext),
+              decipher.final(),
+            ]);
+            usedSource = 'legacy_machine_token';
+          } catch (err: any) {
+            throw new Error(
+              `Authentication failed for both primary key and legacy machine token: ${err.message}`
+            );
+          }
+        } else {
+          throw primaryError || new Error('Authentication failed for primary key');
         }
       }
 
-      if (!decryptedBytes) {
-        throw lastDecryptErr || new Error('Authentication failed for all candidate passphrases');
-      }
-
+      // 3. If legacy authentication succeeds, deserialize secrets and metadata
       const decryptedJson: { secrets: Record<string, string> } = JSON.parse(
         decryptedBytes.toString('utf8')
       );
 
       const metadataMap: Record<string, SecretMetadata> = {};
-      for (const meta of envelope.metadata) {
-        metadataMap[meta.key] = meta;
+      if (Array.isArray(envelope.metadata)) {
+        for (const meta of envelope.metadata) {
+          metadataMap[meta.key] = meta;
+        }
       }
 
       this.cachedPayload = {
         secrets: decryptedJson.secrets || {},
         metadata: metadataMap,
       };
-      this.isInitialized = true;
 
-      // If envelope was decrypted using a fallback passphrase rather than the current primary passphrase,
-      // re-encrypt with current primary passphrase so future accesses use the primary passphrase.
-      if (usedCandidate.source === 'machine_token_fallback') {
+      // 4. If legacy token fallback was used and a primary master key is configured, execute re-key ceremony
+      if (usedSource === 'legacy_machine_token' && this.configuredPassphrase) {
         console.warn(
           '[SecretStore] Decrypted envelope using legacy machine token fallback. Re-encrypting envelope with primary master passphrase...'
         );
-        await this.persistToDisk();
-        console.warn(
-          '[SecretStore] Successfully re-encrypted envelope with primary master passphrase.'
-        );
+
+        const targetPassphrase = this.configuredPassphrase;
+        const newSalt = this.getOrCreateSalt();
+        const newKey = this.deriveKey(newSalt, targetPassphrase);
+        const newIv = crypto.randomBytes(12);
+
+        const plaintext = JSON.stringify({
+          secrets: this.cachedPayload.secrets,
+        });
+
+        const cipher = crypto.createCipheriv('aes-256-gcm', newKey, newIv);
+        const newCiphertext = Buffer.concat([
+          cipher.update(Buffer.from(plaintext, 'utf8')),
+          cipher.final(),
+        ]);
+        const newAuthTag = cipher.getAuthTag();
+
+        const newEnvelope: StoredEnvelope = {
+          version: 1,
+          kdf: {
+            algorithm: 'PBKDF2-SHA256',
+            iterations: 100_000,
+            saltHex: newSalt.toString('hex'),
+          },
+          encryption: {
+            algorithm: 'AES-256-GCM',
+            ivHex: newIv.toString('hex'),
+            authTagHex: newAuthTag.toString('hex'),
+          },
+          ciphertextHex: newCiphertext.toString('hex'),
+          metadata: Object.values(this.cachedPayload.metadata),
+          updatedAt: new Date().toISOString(),
+        };
+
+        const targetDir = path.dirname(this.storagePath);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true, mode: 0o700 });
+        }
+
+        const tempFile = `${this.storagePath}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+        const backupFile = `${this.storagePath}.${crypto.randomBytes(4).toString('hex')}.orig.bak`;
+
+        fs.writeFileSync(tempFile, JSON.stringify(newEnvelope, null, 2), {
+          encoding: 'utf8',
+          mode: 0o600,
+        });
+
+        // Atomically replace envelope, preserving an encrypted backup of original in case post-write verification fails
+        try {
+          fs.copyFileSync(this.storagePath, backupFile);
+          fs.renameSync(tempFile, this.storagePath);
+        } catch (writeErr: any) {
+          try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile); } catch {}
+          try { if (fs.existsSync(backupFile)) fs.unlinkSync(backupFile); } catch {}
+          throw new Error(`Failed to commit re-keyed envelope to disk: ${writeErr.message}`);
+        }
+
+        // 5. Post-write verification: confirm newly written envelope decrypts with primary key
+        try {
+          const verifyRaw = fs.readFileSync(this.storagePath, 'utf8');
+          const verifyEnv: StoredEnvelope = JSON.parse(verifyRaw);
+          const vSalt = Buffer.from(verifyEnv.kdf.saltHex, 'hex');
+          const vIv = Buffer.from(verifyEnv.encryption.ivHex, 'hex');
+          const vTag = Buffer.from(verifyEnv.encryption.authTagHex, 'hex');
+          const vCipher = Buffer.from(verifyEnv.ciphertextHex, 'hex');
+
+          const vKey = this.deriveKey(vSalt, targetPassphrase);
+          const vDecipher = crypto.createDecipheriv('aes-256-gcm', vKey, vIv);
+          vDecipher.setAuthTag(vTag);
+          const vBytes = Buffer.concat([
+            vDecipher.update(vCipher),
+            vDecipher.final(),
+          ]);
+          const vJson = JSON.parse(vBytes.toString('utf8'));
+          if (JSON.stringify(vJson.secrets) !== JSON.stringify(this.cachedPayload.secrets)) {
+            throw new Error('Re-key verification mismatch between original and re-keyed payload');
+          }
+
+          // 6. Only then report migration success and remove backup
+          try { if (fs.existsSync(backupFile)) fs.unlinkSync(backupFile); } catch {}
+          this.passphrase = targetPassphrase;
+          this.migrationStatus = {
+            migrated: true,
+            source: 'LEGACY_MACHINE_TOKEN',
+            target: 'CONFIGURED_MASTER_KEY',
+          };
+          console.warn(
+            '[SecretStore] Successfully re-encrypted and verified envelope with primary master passphrase.'
+          );
+        } catch (verifyErr: any) {
+          // Post-write verification failed: fail closed and restore original envelope
+          try {
+            if (fs.existsSync(backupFile)) {
+              fs.copyFileSync(backupFile, this.storagePath);
+              fs.unlinkSync(backupFile);
+            }
+          } catch {}
+          throw new Error(
+            `Post-write re-key verification failed: ${verifyErr.message}. Original envelope preserved.`
+          );
+        }
       }
+
+      this.isInitialized = true;
     } catch (err: any) {
+      this.cachedPayload = null;
+      this.isInitialized = false;
       throw new Error(
         `Failed to decrypt local SecretStore at ${this.storagePath}: ${err.message}`
       );

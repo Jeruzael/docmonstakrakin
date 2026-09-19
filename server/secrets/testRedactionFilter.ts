@@ -195,10 +195,11 @@ async function runRedactionTests(): Promise<void> {
   if (!redactedTopErr.cause || typeof redactedTopErr.cause !== 'object') {
     throw new Error('Nested cause not preserved on redacted error');
   }
-  if (redactedTopErr.cause.message.includes(nestedSecret)) {
-    throw new Error(`Secret leaked in nested cause: ${redactedTopErr.cause.message}`);
+  const causeObj = redactedTopErr.cause as { message: string };
+  if (causeObj.message.includes(nestedSecret)) {
+    throw new Error(`Secret leaked in nested cause: ${causeObj.message}`);
   }
-  if (!redactedTopErr.cause.message.includes('[REDACTED_SECRET]')) {
+  if (!causeObj.message.includes('[REDACTED_SECRET]')) {
     throw new Error('Mask missing in nested cause message');
   }
   console.log('✓ Error with nested cause safely sanitized');

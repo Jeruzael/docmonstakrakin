@@ -45,6 +45,7 @@ import {
   AgentRunLog,
   Feature,
   DerivationRecord,
+  SecretStore,
 } from './src/types.ts';
 import { DISCOVERY_QUESTION_CATALOG } from './src/data/discoveryCatalog.ts';
 import {
@@ -194,16 +195,26 @@ async function startServer() {
   defaultRedactor.installConsoleInterceptor();
 
   // Initialize SecretStore abstraction (DMK-157)
-  const secretStore = await initializeSecretStore();
+  let secretStore: SecretStore;
+  try {
+    secretStore = await initializeSecretStore();
+  } catch (err) {
+    console.warn('[SecretStore] Notice during secret store initialization:', err);
+    secretStore = getSecretStore();
+  }
 
   // Dynamically register ambient or provisioned credentials
-  const ambientKey = await resolveSecret('GEMINI_API_KEY');
-  if (ambientKey) {
-    defaultRedactor.registerSecret(ambientKey);
+  try {
+    const ambientKey = await resolveSecret('GEMINI_API_KEY');
+    if (ambientKey) {
+      defaultRedactor.registerSecret(ambientKey);
+    }
+  } catch (err) {
+    console.warn('[SecretStore] Notice resolving ambient key:', err);
   }
 
   const app = express();
-  const PORT = Number(process.env.PORT || 3000);
+  const PORT = process.env.PORT && process.env.PORT !== '8080' ? Number(process.env.PORT) : 3000;
 
   app.use(express.json({ limit: '10mb' }));
   installProjectPersistence(app, store);

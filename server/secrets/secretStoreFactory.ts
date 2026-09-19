@@ -4,8 +4,10 @@ import { EncryptedFileSecretStore } from './encryptedFileStore.ts';
 import { OSKeychainSecretStore } from './osKeychainStore.ts';
 
 export interface SecretStoreFactoryConfig {
+  dataDir?: string;
   storagePath?: string;
   saltPath?: string;
+  machineTokenPath?: string;
   serviceName?: string;
   masterPassphrase?: string;
   forceFallback?: boolean;
@@ -24,14 +26,17 @@ export function getSecretStore(config?: SecretStoreFactoryConfig): SecretStore {
     return activeStore;
   }
 
-  const defaultDir = path.join(process.cwd(), '.secrets');
+  const defaultDir = config?.dataDir ?? path.join(process.cwd(), '.secrets');
   const storagePath = config?.storagePath ?? path.join(defaultDir, 'store.enc');
   const saltPath = config?.saltPath ?? path.join(defaultDir, 'store.salt');
+  const machineTokenPath = config?.machineTokenPath ?? path.join(defaultDir, '.machine_token');
   const serviceName = config?.serviceName ?? 'docmonstakrakin';
 
   const fallbackStore = new EncryptedFileSecretStore({
+    dataDir: defaultDir,
     storagePath,
     saltPath,
+    machineTokenPath,
     masterPassphrase: config?.masterPassphrase,
   });
 
@@ -79,9 +84,13 @@ export async function initializeSecretStore(config?: SecretStoreFactoryConfig): 
  * Safely resolves a credential value by key from the active store.
  */
 export async function resolveSecret(key: string): Promise<string | null> {
-  const store = getSecretStore();
-  const val = await store.getSecret(key);
-  if (val) return val;
+  try {
+    const store = getSecretStore();
+    const val = await store.getSecret(key);
+    if (val) return val;
+  } catch (err) {
+    console.warn(`[SecretStore] Non-fatal notice resolving credential '${key}':`, err);
+  }
 
   // Fallback to process.env during migration phase if not present in store
   return process.env[key] || null;

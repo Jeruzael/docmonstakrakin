@@ -3,10 +3,11 @@
 Updated 2026-09-19.
 
 - Execution Environment: Google AI Studio workspace container
+- Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Development Branch: gaistudio
-- Workspace Git Metadata: unavailable inside AI Studio environment (Git metadata not present in container)
-- Remote branch checkpoint at start of Batch 1.5: a5b2c89b8cc7aff902f9d7938b21653694bc490b
+- Development Branch: master
+- Workspace Git Metadata: unavailable inside local AI Studio container (Git metadata is not present in container snapshot; repository tracking managed via remote checkpoints)
+- Remote branch checkpoint at start of Batch 1.5 continuation: 8361785159ef044a256afd32ae7587b6c6c790a3
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
