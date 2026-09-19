@@ -1,94 +1,60 @@
-Trusted Self-Bootstrap Contract & Schema Specification (Step 2 Closeout)
+Step 2A — Harden Trusted Self-Bootstrap Contract (Closeout)
 Repository: Jeruzael/docmonstakrakin
-Starting Checkpoint: 0a54283cdd4f0d26bc138d01c037ad1dee5bc018
-Phase: CONTRACT & DESIGN ONLY — No bootstrap execution or project creation performed.
-1. Files Added / Changed
-Created: docs/00_control/SELF_BOOTSTRAP_CONTRACT.md
-Comprehensive design contract defining trust boundaries, canonical collections, prohibited fields, structural sensitive-key scanning, idempotency, provenance, dry-run, and atomic execution semantics.
-Created: src/data/selfBootstrapContract.ts
-Strongly typed TypeScript contract, interfaces, canonical JSON serializer, referential-integrity validators, and dry-run report calculator.
-Created: scripts/testSelfBootstrapContract.ts
-Automated test suite (15/15 tests passing) verifying manifest validation, sensitive-key scanning, governance field rejection, referential integrity resolution, canonical hashing determinism, and dry-run reporting.
-2. Exact Bootstrap Schema & Version
-Schema Identifier: SELF_BOOTSTRAP_V1
-Execution Mode: TRUSTED_LOCAL_BOOTSTRAP
-Target Project Identifier: PRJ-DOCMONSTAKRAKIN
-3. Allowed Canonical Collections
-The contract accepts validated arrays adhering strictly to existing src/types.ts domain models:
-project: Canonical project metadata (Project)
-features: High-level capabilities and feature definitions (Feature[])
-requirements: Functional, security, operational, architectural requirements (Requirement[])
-risks: Inherent and residual risk evaluations with drivers and treatments (Risk[])
-threats: STRIDE attack surface threat model entities (Threat[])
-adrs: Architectural Decision Records with context, decision, consequences (ADR[])
-components: System architecture components and trust zones (ArchitectureComponent[])
-workItems: WBS work items, tasks, and epics (WorkItem[])
-evidence: Verification test runs, execution logs, and SHA-256 digests (Evidence[])
-documents: Controlled document references (ControlledDocumentReference[]) with kind (CONTROL | PRODUCT | REQUIREMENTS | ARCHITECTURE | SECURITY | VERIFICATION | OPERATIONS) and authority (REFERENCE | GENERATED_PROJECTION).
-Repository Markdown files are treated as references or generated projections; they never silently override canonical structured state.
-4. Prohibited Fields & Data
-The bootstrap manifest must not contain:
-Passwords or passphrases;
-SecretStore master keys or encryption material;
-Authentication tokens, bearer tokens, or session keys;
-API keys (Gemini or third-party);
-Machine tokens (.machine_token);
-Reviewer password verifiers or credential hashes;
-Private keys or certificates.
-Structural Sensitive-Key Scanner:
-A recursive key scanner rejects any object property matching /password/i, /secret/i, /apikey/i, /api_key/i, /token/i, /privatekey/i, /machinetoken/i, /credential/i, /verifier/i, /passphrase/i, or /auth_tag/i.
-Security Invariant: Error messages report only the offending property path; secret-like values are never printed or exposed.
-5. Governance Safeguards
-Zero Approval Injection: approvals = []. The manifest cannot contain pre-approved sign-offs.
-Gate 7 Invariant: Release Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-Release Signoff Absent: Fields such as releaseSignoff, releaseSignOff, gate7Approval, or authorizedBy are strictly forbidden.
-Historical Work State Semantics: Historical milestones (such as Batch 1 / Batch 1.5) may be marked VERIFIED only if they cite explicit supporting evidence IDs existing in manifest.evidence. Work items can never be marked APPROVED or RELEASED in a bootstrap manifest.
-6. Idempotency Rule
-Default Behavior: CREATE_ONLY.
-If PRJ-DOCMONSTAKRAKIN already exists in .local/project-state.json:
-The process immediately halts with an explicit conflict error (PROJECT_ALREADY_EXISTS);
-Exactly zero mutations are made;
-No secondary or random ID is generated;
-Existing state is never silently overwritten.
-7. Referential Integrity Rules
-The entire manifest must validate before any candidate mutation is generated:
-All entity IDs must be unique within their respective collections.
-workItem.requirements must resolve to manifest.requirements.
-workItem.features must resolve to manifest.features.
-workItem.evidence must resolve to manifest.evidence.
-requirement.riskLinks must resolve to manifest.risks.
-requirement.threatLinks must resolve to manifest.threats.
-requirement.linkedFeatureId must resolve to manifest.features.
-component.assignedRequirements must resolve to manifest.requirements, and component.linkedADRs must resolve to manifest.adrs.
-All entity projectId references must match manifest.project.id (no cross-project contamination).
-All enums conform to TypeScript domain types.
-8. Manifest Hashing Approach
-Serialization uses deterministic, whitespace-normalized, key-sorted canonical JSON (canonicalizeJson).
-The executor calculates 
- prior to commit.
-This digest is permanently attached to the resulting PROJECT_BOOTSTRAPPED audit event.
-9. Future Dry-Run Semantics
-Command: npm run bootstrap:self -- --dry-run
-Validates the entire manifest against schema, security, governance, and referential-integrity rules.
-Resolves all entity references and counts.
-Calculates and displays the canonical manifest SHA-256 digest.
-Reports active governance restrictions and any unresolved link errors.
-Invariant: Enforces mutationCount: 0 (zero disk or memory writes).
-10. Future Atomic Execution Semantics
-The execution transaction follows a strict fail-closed pipeline:
-
-Any validation or system failure before the commit step results in zero canonical state changes.
-11. Separation from Portable Package Importer
-POST /api/projects/package/import remains 100% unchanged. It continues to treat imported external packages as untrusted input (SEC-CTRL-018).
-Self-bootstrap is a dedicated local CLI/service boundary operating in TRUSTED_LOCAL_BOOTSTRAP mode.
-12–14. Confirmations
-Confirmation No Project Injected: Confirmed. .local/project-state.json was not created, modified, or written to.
-Confirmation Batch 2 Not Started: Confirmed. Batch 2 governance UX has not been started.
-Confirmation Gate 7 Not Executed: Confirmed. Gate 7 status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-Known Usability Gap Recorded: PROJECTS_WORKSPACE_REQUIRED documented in docs/00_control/SELF_BOOTSTRAP_CONTRACT.md.
-Verification Results
-npm run wbs:check: [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
-npx tsx scripts/testSelfBootstrapContract.ts: [PASS] All 15 contract validation tests passed.
-npx tsx scripts/runAutomatedQa.ts: [PASS] 11/11 criteria passed.
-npm run lint: [PASS] tsc --noEmit exited with 0 errors.
-compile_applet: Build succeeded.
+Authoritative Baseline Checkpoint: ab3cdda66f59b1e0acef3299d6107cfa09d5efa7
+Review Target: gaistudio-step-2a
+Phase: CONTRACT & DESIGN ONLY — Zero bootstrap execution, zero runtime mutations, and no project record created in .local/project-state.json.
+1. Summary of Hardening Implemented
+The trusted self-bootstrap mechanism has been hardened according to the full Step 2A specification:
+WorkItem Governance Semantics (Sections 3 & 10):
+WorkItems during bootstrap strictly forbid VERIFIED, APPROVED, or RELEASED.
+Permitted bootstrap statuses: PROPOSED, BACKLOG, READY, IN_PROGRESS, VERIFICATION, DEFERRED.
+Prior completed technical work is represented as status = 'VERIFICATION' accompanied by legitimate Evidence records in manifest.evidence.
+Enforced the core invariant: Technical evidence exists ≠ authenticated human verification occurred.
+Plain-text heuristic matching on acceptanceCriteria (e.g., EVID-, rc-regression) has been completely removed. Evidence linkage requires explicit foreign keys in workItem.evidence.
+Governance-Bearing Artifact Protections (Section 4):
+Requirements cannot be APPROVED during bootstrap (permitted: PROPOSED, UNDER_REVIEW, REJECTED, DEFERRED, VERIFIED).
+ADRs cannot be ACCEPTED during bootstrap; formal ratification requires human sign-off (permitted: PROPOSED, REJECTED, DEPRECATED, SUPERSEDED).
+Features cannot be APPROVED during bootstrap (permitted: PROPOSED, UNDER_REVIEW, DEFERRED, REJECTED).
+No synthetic approval records are generated to back-fill or simulate historical sign-offs.
+Strict Runtime Enum Validation (Section 5):
+Validates all domain enums against explicit allowlists at runtime without leaking unvalidated values into error messages.
+Covers Project maturity, profiles, specialized profiles, delivery method, data sensitivity, lifecycle phase; Feature priority, status, source; Requirement category, status, priority, source type; Risk level, treatment; Threat risk level, mitigation status; ADR status; ArchitectureComponent category, trust zone, data classification; WorkItem type, status, priority, risk; Evidence type, result; and ControlledDocument kind and authority.
+Stable Identity & Provenance (Section 6):
+Requires project.id === 'PRJ-DOCMONSTAKRAKIN'.
+Requires provenance.repository === 'Jeruzael/docmonstakrakin'.
+Validates provenance.baselineCommit as a 40-character hexadecimal Git commit SHA.
+Closed Root Schema (Section 7):
+The root schema enforces an explicit allowlist of permitted keys (schemaVersion, mode, provenance, project, features, requirements, risks, threats, adrs, components, workItems, evidence, documents).
+Any unknown, extra, or extension properties are rejected.
+Recursive Governance Injection Detection (Section 8):
+Recursively scans the entire manifest across all object depths and arrays for prohibited governance fields (approvals, approvalsCollected, signatures, releaseSignoff, releaseSignOff, gate7Approval, authorizedBy).
+Adheres to strict error hygiene: reports property path only, never leaks values.
+Structural Sensitive-Key Scanner (Section 9):
+Preserved recursive scanning for passwords, passphrases, secrets, API keys, tokens, machine tokens, credentials, verifiers, and private keys with zero value leakage.
+Complete Referential Integrity (Section 11):
+100% link resolution enforced across Features, Requirements, Risks, Threats, ADRs, Components, WorkItems, and Evidence.
+Cross-project entity contamination rejected.
+Controlled Document Path & Traversal Defense (Section 12):
+Enforces repository-relative paths under docs/.
+Rejects directory traversal (..), absolute POSIX paths (/), absolute Windows paths (C:\..., \\...), and escaping paths.
+Validates optional sha256Digest as a 64-character hexadecimal SHA-256 string.
+Canonical JSON Compatibility (Section 16):
+Added automated compatibility tests proving that canonicalizeJson in src/data/selfBootstrapContract.ts and canonicalizeJson in server/package/portablePackage.ts produce 100% identical serialized strings.
+Node-Specific Code Isolation (Section 17):
+src/data/selfBootstrapContract.ts is explicitly documented as a CLI and server-side lifecycle contract (npm run bootstrap:self). It is structurally isolated from the browser bundle, and production compilation (npm run build) succeeds cleanly without bundling errors.
+Documentation Updates (Sections 13, 14, 15):
+Corrected the atomic execution flow in docs/00_control/SELF_BOOTSTRAP_CONTRACT.md to seal the PROJECT_BOOTSTRAPPED audit event inside the candidate state prior to atomic persistence (zero post-commit mutation).
+Clarified that production portable-package import preserves the incoming project ID, failing closed on existing projects unless overwrite: true is explicitly provided.
+Documented the mandatory future executor invariant to preserve all existing projects and collections.
+2. Modified Files
+src/data/selfBootstrapContract.ts: Hardened schema, runtime enum allowlists, recursive governance scanner, closed root schema validator, and complete referential integrity checks.
+docs/00_control/SELF_BOOTSTRAP_CONTRACT.md: Updated contract specification incorporating all Step 2A invariants, atomic execution model, and preservation rules.
+scripts/testSelfBootstrapContract.ts: Expanded test suite covering all 16 negative and positive validation scenarios, enum allowlists, traversal defense, and canonicalization compatibility.
+package.json: Added test:bootstrap:contract script.
+docs/00_control/PROJECT_STATE.md: Updated operational project state reflecting Step 2A completion.
+3. Verification Evidence
+npm run test:bootstrap:contract: 16/16 test suites passing (all assertions green).
+npm test: Full regression suite passing (QA, discovery remediation, technical baseline, CryptoDemon integration [47 checks], proposal contract, requirement status sync).
+npm run wbs:check: Zero drift between MASTER_WBS.md and MASTER_WBS.yaml.
+npm run lint: TypeScript check clean with 0 errors.
+compile_applet: Production Vite client and Node server bundles compiled cleanly.
