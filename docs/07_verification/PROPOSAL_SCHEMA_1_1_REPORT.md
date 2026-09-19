@@ -68,7 +68,7 @@ The first sandboxed npm test attempt stopped at an esbuild `spawn EPERM`; the au
 
 ## 10. Results
 
-Lint, production build, npm test and the complete regression inventory pass. Final inventory: 21 suites; 291 observed named checks passed, 0 failures, 0 skipped. Counts are named result lines, not individual assert-call counts. The QA registry separately maps 93 automated criteria: 93 PASS, 0 FAIL, 0 BLOCKED, 0 N/A. Human browser retest is outside those counts.
+Lint, production build, npm test and the complete regression inventory pass. Final inventory: 22 suites; 310 observed named checks passed, 0 failures, 0 skipped. Authoritative current evidence is in `rc-regression/results.json`. (An earlier historical run recorded 21 suites / 291 checks). Counts are named result lines, not individual assert-call counts. The QA registry separately maps 93 automated criteria: 93 PASS, 0 FAIL, 0 BLOCKED, 0 N/A. Human browser retest is outside those counts.
 
 Independent bounded protocol review initially found two P2 display issues and one P3 label issue. All were fixed, independently re-reviewed and tested. Final unresolved protocol findings: P0 0 / P1 0 / P2 0 / P3 0.
 
@@ -78,4 +78,12 @@ Gio must still perform the manual browser retest. Local reviewer accounts requir
 
 ## 12. Git summary
 
-Project and Git root are `C:/Users/HomePC/dev/docmonstakrakin`; branch is `master`. Observed starting HEAD for this protocol closeout is `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`. Earlier remediation was already included by external/user commits. Review the Git diff for tracked changes.
+Historical execution context: Initial protocol closeout was conducted against host path `C:/Users/HomePC/dev/docmonstakrakin` (branch `master`, starting HEAD `7363da9ef4f0d7f3bf0be296c8662976253eb6e7`). Earlier remediation was already included by external/user commits.
+
+Current review state:
+- Repository: Jeruzael/docmonstakrakin
+- Review branch: gaistudio
+- Review checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
+- Target branch: master
+
+Review the Git diff for tracked changes.

@@ -1,41 +1,38 @@
-The verified source-review cleanup for Batch 1.5 has been completed:
-1. Tracked Machine Token Removal
-.docmonstakrakin/.machine_token is confirmed absent from the workspace and tree.
-No contents were printed, no replacement token was created, and the existing .gitignore exclusion remains intact.
-2. Migration Provenance Correction
-Extended SecretStoreMigrationStatus.source to support 'CURRENT_MACHINE_TOKEN' | 'LEGACY_MACHINE_TOKEN'.
-In EncryptedFileSecretStore.ensureInitialized(), migrationStatus.source is now dynamically derived from successfulCandidate.source:
-Current-token migration: CURRENT_MACHINE_TOKEN 
- CONFIGURED_MASTER_KEY
-Historical split-layout migration: LEGACY_MACHINE_TOKEN 
- CONFIGURED_MASTER_KEY
-Updated Scenario B in server/secrets/testSecretStore.ts to assert source === 'CURRENT_MACHINE_TOKEN'.
-Kept Test 16 asserting source === 'LEGACY_MACHINE_TOKEN'.
-Preserved all candidate ordering, fail-closed mechanics, and post-write re-key verification.
-3. Control Documentation Reconciliation
-Reconciled docs/00_control/PROJECT_STATE.md, docs/00_control/LAST_HANDOFF.md, docs/00_control/TRACEABILITY_MATRIX.md, and remediation reports.
-Corrected statements regarding git commits and push history.
-Corrected status of test.json (documented as tracked and preserved).
-Removed references to nonexistent files (rc-checkpoint.json, rc-diff-summary.txt).
-Confirmed docs/07_verification/rc-regression/results.json as the authoritative regression evidence.
-4. Preservation of temp.txt
-temp.txt is retained intact (sha256: cdeb737aa369a3dbe1003cc76f1c2cd9ba7bb414cec549e139558eaa03722a27).
-Verification and Source Tree Confirmations
-.docmonstakrakin/.machine_token: Confirmed absent.
-.secrets/store.enc: Confirmed not present / not tracked.
-.secrets/store.salt: Confirmed not present / not tracked.
-.secrets/.machine_token: Confirmed not present / not tracked.
-temp.txt: Confirmed present and preserved.
-Secret Hygiene: Confirmed zero secret values committed.
-Direct SecretStore Suite (testSecretStore.ts): 16/16 passed (100%).
-Linter (npm run lint): Passed with 0 errors (tsc --noEmit).
-Production Build (npm run build): Vite bundle and Node CJS server built successfully.
-WBS Drift Check (npm run wbs:check): Passed with zero drift between MASTER_WBS.yaml and MASTER_WBS.md.
-Unit & Integration Tests (npm run test): All suites passed.
-Complete Regression Suite (npm run test:complete):
-Suites: 22 total, 22 passed, 0 failed, 0 skipped
-Assertions: 310 total, 310 passed, 0 failed, 0 skipped
-Evidence freshly recorded in docs/07_verification/rc-regression/results.json.
-Governance State:
-Gate 7: NOT EXECUTED (blocked pending human verification).
-Batch 2: NOT STARTED (blocked pending Gate 7 completion).
+The Batch 1.5 documentation-only reconciliation has been completed. No production code, SecretStore behavior, or runtime evidence was altered. Gate 7 was not executed, and Batch 2 implementation was not started.
+Exactly Which Documentation Files Changed
+docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md
+Regression totals: Updated final inventory in Section 11 to cite the authoritative 22/22 suites and 310 observed named checks (from rc-regression/results.json), explicitly labeling the 21 suites / 291 checks as an earlier historical run. In Section 12, explicitly separated the 93 automated acceptance criteria from the 310 named checks (noting the earlier historical 291 count).
+Git context: Explicitly labeled C:/Users/HomePC/dev/docmonstakrakin and commit 7363da... as historical execution context. Added the current review state:
+Repository: Jeruzael/docmonstakrakin
+Review branch: gaistudio
+Review checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
+Target branch: master
+docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md
+Regression totals: Updated Section 10 to reference the authoritative final inventory of 22 suites / 310 observed named checks passing, citing rc-regression/results.json and identifying the 21 suites / 291 checks as an earlier historical run.
+Git context: Updated Section 12 to identify host path C:/Users/HomePC/dev/docmonstakrakin and starting HEAD 7363da... as historical execution context, and recorded the current review state (Jeruzael/docmonstakrakin, review branch gaistudio, checkpoint 93ea030aa34e493cb7480df4b2e5d2ed6a326dda, target branch master).
+docs/07_verification/QA_AUTOMATED_ACCEPTANCE.md
+Updated lines 7–10 and line 133 to record 22 suites and 310 named checks as current, explicitly labeling 21 suites and 291 checks as an earlier historical run.
+docs/00_control/PROJECT_STATE.md
+Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
+Corrected Batch 2 vs. Gate 7 semantics: clarified that Batch 2 is part of the governance remediation sequence, not v0.2 product implementation.
+Defined the intended sequence:
+Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Affirmed that all v0.2 product implementation remains strictly blocked until Gate 7 completion.
+docs/00_control/LAST_HANDOFF.md
+Added review branch (gaistudio), review checkpoint (93ea030aa34e493cb7480df4b2e5d2ed6a326dda), and target branch (master).
+Replaced erroneous "Do NOT begin Batch 2 until Gate 7 passes" with the correct governance remediation roadmap.
+Maintained Gate 7 status as HUMAN_APPROVAL_REQUIRED / NOT EXECUTED (no human approval recorded).
+Preserved Verified Facts & State
+Tracked Machine Token: Confirmed absent from the tree (.docmonstakrakin/.machine_token: No such file or directory).
+SecretStore Deterministic Layout: Standalone .secrets/ structure (store.enc, store.salt, .machine_token) preserved.
+Historical Split-Layout Compatibility: Supported with prioritized candidate deduplication.
+Migration Provenance: Both CURRENT_MACHINE_TOKEN and LEGACY_MACHINE_TOKEN migration provenance reporting preserved.
+Fail-Closed Resolution: Intact across store initialization, candidate exhaustion, and secret resolution.
+SecretStore Test Suite: 16/16 tests passing (server/secrets/testSecretStore.ts).
+Complete Regression Suite: 22/22 suites, 310/310 checks passing (recorded in docs/07_verification/rc-regression/results.json).
+Artifact Preservation: temp.txt preserved (sha256: cdeb737aa...2a27); test.json tracked and preserved.
+Verification Results
+WBS Drift Check (npm run wbs:check): [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
+Automated QA Check (npx tsx scripts/runAutomatedQa.ts): [PASS] 11/11 criteria evaluated and passed.
+TypeScript Linter (npm run lint): [PASS] (tsc --noEmit exited with code 0).
+Production Compilation (compile_applet): Build succeeded.

@@ -5,6 +5,9 @@ Updated 2026-09-19.
 - Execution Environment: Google AI Studio workspace container
 - Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
+- Review Branch: gaistudio
+- Review Checkpoint: 93ea030aa34e493cb7480df4b2e5d2ed6a326dda
+- Target Branch: master
 - Development Branch: master
 - Workspace Git Metadata: unavailable inside local AI Studio container (Git metadata is not present in container snapshot; repository tracking managed via remote checkpoints)
 - Remote branch checkpoint at start of Batch 1.5 continuation: 8361785159ef044a256afd32ae7587b6c6c790a3
@@ -21,15 +24,22 @@ Resumed existing v0.1 remediation without restarting. Retained neutral initializ
 - Fail-Closed Secret Resolution: Eliminated broad try/catch swallowing around SecretStore operations. Startup initialization and `resolveSecret()` now fail closed on store decryption/integrity failures. PORT restored to `Number(process.env.PORT || 3000)`.
 - Test Suite: All 22 automated test suites (310 assertions) pass with 0 failures and 0 skips.
 
-Independent protocol review findings were fixed and re-reviewed. No real release ceremony ran. Gate 7 is NOT executed; Batch 2 is NOT started.
+Independent protocol review findings were fixed and re-reviewed. No real release ceremony ran. Gate 7 status is HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; Batch 2 is NOT started.
 
 ## Next safe action
 
 For merge into master and next review:
-1. Merge `gaistudio` branch into master (preserving passing Batch 1 & 1.5 work).
-2. Human reviewer (Gio) performs DMK-191 manual browser retest using the report checklist. Configure distinct local HUMAN reviewer identities with Security Officer and Lead Architect roles using the server-controlled roster; the application fails closed without a configured roster. No real credentials are stored in this repository. Do not use test identities for real signoff. See docs/07_verification/REVIEWER_SESSION_SETUP.md.
-3. Do NOT execute Gate 7 until human verification is complete.
-4. Do NOT begin Batch 2 until Gate 7 passes.
+1. Merge `gaistudio` review branch (checkpoint `93ea030aa34e493cb7480df4b2e5d2ed6a326dda`) into `master` (preserving passing Batch 1 & 1.5 work).
+2. Follow the intended governance remediation sequence:
+   - Batch 1 (complete)
+   - Batch 1.5 (complete)
+   - Batch 2 governance UX (next in remediation sequence — NOT STARTED)
+   - Batch 3 governance/quorum synchronization
+   - Final technical regression
+   - DMK-191 human browser retest (Gio configures distinct local HUMAN reviewer identities with Security Officer and Lead Architect roles using the server-controlled roster; see docs/07_verification/REVIEWER_SESSION_SETUP.md)
+   - Gate 7 human release approval
+3. Note that Batch 2 is part of the governance remediation sequence, NOT v0.2 product implementation. All v0.2 product implementation remains strictly blocked until Gate 7 passes.
+4. Gate 7 status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. Do not record any human approval until the human release ceremony completes.
 
 Canonical WBS: DMK-187 through DMK-190 VERIFIED for technical remediation; DMK-191 READY for human verification. Review the actual Git diff against the base checkpoint. Preserve the pre-existing tracked test.json.
 
