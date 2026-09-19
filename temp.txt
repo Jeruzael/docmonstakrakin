@@ -1,94 +1,66 @@
-Trusted Self-Bootstrap Contract & Schema Specification (Step 2 Closeout)
-Repository: Jeruzael/docmonstakrakin
-Starting Checkpoint: 0a54283cdd4f0d26bc138d01c037ad1dee5bc018
-Phase: CONTRACT & DESIGN ONLY — No bootstrap execution or project creation performed.
-1. Files Added / Changed
-Created: docs/00_control/SELF_BOOTSTRAP_CONTRACT.md
-Comprehensive design contract defining trust boundaries, canonical collections, prohibited fields, structural sensitive-key scanning, idempotency, provenance, dry-run, and atomic execution semantics.
-Created: src/data/selfBootstrapContract.ts
-Strongly typed TypeScript contract, interfaces, canonical JSON serializer, referential-integrity validators, and dry-run report calculator.
-Created: scripts/testSelfBootstrapContract.ts
-Automated test suite (15/15 tests passing) verifying manifest validation, sensitive-key scanning, governance field rejection, referential integrity resolution, canonical hashing determinism, and dry-run reporting.
-2. Exact Bootstrap Schema & Version
-Schema Identifier: SELF_BOOTSTRAP_V1
-Execution Mode: TRUSTED_LOCAL_BOOTSTRAP
-Target Project Identifier: PRJ-DOCMONSTAKRAKIN
-3. Allowed Canonical Collections
-The contract accepts validated arrays adhering strictly to existing src/types.ts domain models:
-project: Canonical project metadata (Project)
-features: High-level capabilities and feature definitions (Feature[])
-requirements: Functional, security, operational, architectural requirements (Requirement[])
-risks: Inherent and residual risk evaluations with drivers and treatments (Risk[])
-threats: STRIDE attack surface threat model entities (Threat[])
-adrs: Architectural Decision Records with context, decision, consequences (ADR[])
-components: System architecture components and trust zones (ArchitectureComponent[])
-workItems: WBS work items, tasks, and epics (WorkItem[])
-evidence: Verification test runs, execution logs, and SHA-256 digests (Evidence[])
-documents: Controlled document references (ControlledDocumentReference[]) with kind (CONTROL | PRODUCT | REQUIREMENTS | ARCHITECTURE | SECURITY | VERIFICATION | OPERATIONS) and authority (REFERENCE | GENERATED_PROJECTION).
-Repository Markdown files are treated as references or generated projections; they never silently override canonical structured state.
-4. Prohibited Fields & Data
-The bootstrap manifest must not contain:
-Passwords or passphrases;
-SecretStore master keys or encryption material;
-Authentication tokens, bearer tokens, or session keys;
-API keys (Gemini or third-party);
-Machine tokens (.machine_token);
-Reviewer password verifiers or credential hashes;
-Private keys or certificates.
-Structural Sensitive-Key Scanner:
-A recursive key scanner rejects any object property matching /password/i, /secret/i, /apikey/i, /api_key/i, /token/i, /privatekey/i, /machinetoken/i, /credential/i, /verifier/i, /passphrase/i, or /auth_tag/i.
-Security Invariant: Error messages report only the offending property path; secret-like values are never printed or exposed.
-5. Governance Safeguards
-Zero Approval Injection: approvals = []. The manifest cannot contain pre-approved sign-offs.
-Gate 7 Invariant: Release Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-Release Signoff Absent: Fields such as releaseSignoff, releaseSignOff, gate7Approval, or authorizedBy are strictly forbidden.
-Historical Work State Semantics: Historical milestones (such as Batch 1 / Batch 1.5) may be marked VERIFIED only if they cite explicit supporting evidence IDs existing in manifest.evidence. Work items can never be marked APPROVED or RELEASED in a bootstrap manifest.
-6. Idempotency Rule
-Default Behavior: CREATE_ONLY.
-If PRJ-DOCMONSTAKRAKIN already exists in .local/project-state.json:
-The process immediately halts with an explicit conflict error (PROJECT_ALREADY_EXISTS);
-Exactly zero mutations are made;
-No secondary or random ID is generated;
-Existing state is never silently overwritten.
-7. Referential Integrity Rules
-The entire manifest must validate before any candidate mutation is generated:
-All entity IDs must be unique within their respective collections.
-workItem.requirements must resolve to manifest.requirements.
-workItem.features must resolve to manifest.features.
-workItem.evidence must resolve to manifest.evidence.
-requirement.riskLinks must resolve to manifest.risks.
-requirement.threatLinks must resolve to manifest.threats.
-requirement.linkedFeatureId must resolve to manifest.features.
-component.assignedRequirements must resolve to manifest.requirements, and component.linkedADRs must resolve to manifest.adrs.
-All entity projectId references must match manifest.project.id (no cross-project contamination).
-All enums conform to TypeScript domain types.
-8. Manifest Hashing Approach
-Serialization uses deterministic, whitespace-normalized, key-sorted canonical JSON (canonicalizeJson).
-The executor calculates 
- prior to commit.
-This digest is permanently attached to the resulting PROJECT_BOOTSTRAPPED audit event.
-9. Future Dry-Run Semantics
-Command: npm run bootstrap:self -- --dry-run
-Validates the entire manifest against schema, security, governance, and referential-integrity rules.
-Resolves all entity references and counts.
-Calculates and displays the canonical manifest SHA-256 digest.
-Reports active governance restrictions and any unresolved link errors.
-Invariant: Enforces mutationCount: 0 (zero disk or memory writes).
-10. Future Atomic Execution Semantics
-The execution transaction follows a strict fail-closed pipeline:
-
-Any validation or system failure before the commit step results in zero canonical state changes.
-11. Separation from Portable Package Importer
-POST /api/projects/package/import remains 100% unchanged. It continues to treat imported external packages as untrusted input (SEC-CTRL-018).
-Self-bootstrap is a dedicated local CLI/service boundary operating in TRUSTED_LOCAL_BOOTSTRAP mode.
-12–14. Confirmations
-Confirmation No Project Injected: Confirmed. .local/project-state.json was not created, modified, or written to.
-Confirmation Batch 2 Not Started: Confirmed. Batch 2 governance UX has not been started.
-Confirmation Gate 7 Not Executed: Confirmed. Gate 7 status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-Known Usability Gap Recorded: PROJECTS_WORKSPACE_REQUIRED documented in docs/00_control/SELF_BOOTSTRAP_CONTRACT.md.
-Verification Results
-npm run wbs:check: [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
-npx tsx scripts/testSelfBootstrapContract.ts: [PASS] All 15 contract validation tests passed.
-npx tsx scripts/runAutomatedQa.ts: [PASS] 11/11 criteria passed.
-npm run lint: [PASS] tsc --noEmit exited with 0 errors.
-compile_applet: Build succeeded.
+Step 2A — Source-Review Correction Report
+The requested source-control, documentation, and fixture cleanups for Step 2A (Harden Trusted Self-Bootstrap Contract) are complete:
+1. Resulting Branch Ancestry Status Relative to Master
+Ancestry Verification: Confirmed that gaistudio is a direct descendant of current origin/master (ab3cdda66f59b1e0acef3299d6107cfa09d5efa7).
+Sync Workflow: Non-destructive merge of origin/master was completed without force-pushing or rewriting published history (git merge-base --is-ancestor origin/master HEAD evaluated to YES).
+2. Exact Files Differing from Master
+Only the 6 intended Step 2A files differ from current master:
+docs/00_control/SELF_BOOTSTRAP_CONTRACT.md
+docs/00_control/PROJECT_STATE.md
+src/data/selfBootstrapContract.ts
+scripts/testSelfBootstrapContract.ts
+package.json
+temp.txt
+Zero other tracked files in the workspace differ from master.
+3. Confirmation .env.example Was Restored
+Confirmed: .env.example has been restored to the exact version on master (zero diff).
+Retains full documentation for:
+GEMINI_API_KEY
+PORT=3000
+DOCMONSTAKRAKIN_MASTER_KEY
+DMK_HUMAN_REVIEWERS
+Runtime secret behavior was not altered.
+4. Confirmation CryptoDemon Fixture Was Restored
+Confirmed: docs/07_verification/cryptodemon-fixture-evidence.json has been restored to the exact version on master (zero diff).
+No unrelated runtime fixture evidence was regenerated.
+5. Focused Contract Test Count
+16 focused self-bootstrap contract test cases executed in scripts/testSelfBootstrapContract.ts.
+Result: 16/16 tests passing (0 failures).
+6. Lint Result
+npm run lint (tsc --noEmit): Clean with 0 errors.
+7. WBS Drift Result
+npm run wbs:check (tsx scripts/renderWbs.ts --check): PASS (100% synchronized between MASTER_WBS.md and MASTER_WBS.yaml with zero detected drift).
+8. Automated QA Result
+npx tsx scripts/runAutomatedQa.ts: 11/11 criteria passed (0 failed).
+All P0 criteria evaluated clean (QA-AUTO-ENV-001, QA-AUTO-ENV-002, QA-AUTO-WBS-001, QA-AUTO-WBS-004, QA-AUTO-WBSR-001, QA-AUTO-WBSR-002, QA-AUTO-DOC-001, QA-AUTO-DOC-002, QA-AUTO-DOC-003, QA-AUTO-GOV-001, QA-AUTO-REL-001).
+9. Production Build Result
+npm run build and platform compilation: PASS.
+Client Vite build and Node CommonJS server bundle (dist/server.cjs) compiled cleanly without bundling issues.
+10. Corrected Contract Status Wording
+In docs/00_control/SELF_BOOTSTRAP_CONTRACT.md, the document status has been updated to:
+code
+Markdown
+**Status:** HARDENED TECHNICAL CONTRACT — PENDING MERGE (Step 2A — Hardened Contract & Schema)
+No synthetic governance approval records were created.
+11. Corrected PROJECT_STATE.md Next Action
+Review branch reference updated to gaistudio.
+Authoritative baseline preserved as ab3cdda66f59b1e0acef3299d6107cfa09d5efa7.
+Next actions section replaced with the verified roadmap:
+code
+Markdown
+Current next action:
+1. Complete Step 2A technical/source review.
+2. Merge Step 2A into master after review.
+3. Proceed to Step 3: construct and review the real PRJ-DOCMONSTAKRAKIN bootstrap manifest.
+4. Bootstrap execution remains later and requires an explicit reviewed step.
+5. Batch 2 governance UX remains NOT STARTED.
+6. Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+7. v0.2 product work remains blocked.
+12. Confirmation No Bootstrap Executor Exists
+Confirmed: No runtime or CLI bootstrap executor has been implemented. Only the contract schema, validator, canonical serializer, and dry-run evaluator exist.
+13. Confirmation No Self-Project Was Injected
+Confirmed: Zero mutations occurred in .local/project-state.json. No PRJ-DOCMONSTAKRAKIN record or test state was written.
+14. Confirmation Batch 2 Was Not Started
+Confirmed: Batch 2 governance UX remains strictly NOT STARTED.
+15. Confirmation Gate 7 Was Not Executed
+Confirmed: Gate 7 release status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. All v0.2 product scope remains strictly blocked. 
