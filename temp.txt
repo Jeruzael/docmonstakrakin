@@ -1,66 +1,54 @@
-Step 2A — Source-Review Correction Report
-The requested source-control, documentation, and fixture cleanups for Step 2A (Harden Trusted Self-Bootstrap Contract) are complete:
-1. Resulting Branch Ancestry Status Relative to Master
-Ancestry Verification: Confirmed that gaistudio is a direct descendant of current origin/master (ab3cdda66f59b1e0acef3299d6107cfa09d5efa7).
-Sync Workflow: Non-destructive merge of origin/master was completed without force-pushing or rewriting published history (git merge-base --is-ancestor origin/master HEAD evaluated to YES).
-2. Exact Files Differing from Master
-Only the 6 intended Step 2A files differ from current master:
-docs/00_control/SELF_BOOTSTRAP_CONTRACT.md
-docs/00_control/PROJECT_STATE.md
-src/data/selfBootstrapContract.ts
-scripts/testSelfBootstrapContract.ts
-package.json
-temp.txt
-Zero other tracked files in the workspace differ from master.
-3. Confirmation .env.example Was Restored
-Confirmed: .env.example has been restored to the exact version on master (zero diff).
-Retains full documentation for:
-GEMINI_API_KEY
-PORT=3000
-DOCMONSTAKRAKIN_MASTER_KEY
-DMK_HUMAN_REVIEWERS
-Runtime secret behavior was not altered.
-4. Confirmation CryptoDemon Fixture Was Restored
-Confirmed: docs/07_verification/cryptodemon-fixture-evidence.json has been restored to the exact version on master (zero diff).
-No unrelated runtime fixture evidence was regenerated.
-5. Focused Contract Test Count
-16 focused self-bootstrap contract test cases executed in scripts/testSelfBootstrapContract.ts.
-Result: 16/16 tests passing (0 failures).
-6. Lint Result
-npm run lint (tsc --noEmit): Clean with 0 errors.
-7. WBS Drift Result
-npm run wbs:check (tsx scripts/renderWbs.ts --check): PASS (100% synchronized between MASTER_WBS.md and MASTER_WBS.yaml with zero detected drift).
-8. Automated QA Result
-npx tsx scripts/runAutomatedQa.ts: 11/11 criteria passed (0 failed).
-All P0 criteria evaluated clean (QA-AUTO-ENV-001, QA-AUTO-ENV-002, QA-AUTO-WBS-001, QA-AUTO-WBS-004, QA-AUTO-WBSR-001, QA-AUTO-WBSR-002, QA-AUTO-DOC-001, QA-AUTO-DOC-002, QA-AUTO-DOC-003, QA-AUTO-GOV-001, QA-AUTO-REL-001).
-9. Production Build Result
-npm run build and platform compilation: PASS.
-Client Vite build and Node CommonJS server bundle (dist/server.cjs) compiled cleanly without bundling issues.
-10. Corrected Contract Status Wording
-In docs/00_control/SELF_BOOTSTRAP_CONTRACT.md, the document status has been updated to:
-code
-Markdown
-**Status:** HARDENED TECHNICAL CONTRACT — PENDING MERGE (Step 2A — Hardened Contract & Schema)
-No synthetic governance approval records were created.
-11. Corrected PROJECT_STATE.md Next Action
-Review branch reference updated to gaistudio.
-Authoritative baseline preserved as ab3cdda66f59b1e0acef3299d6107cfa09d5efa7.
-Next actions section replaced with the verified roadmap:
-code
-Markdown
-Current next action:
-1. Complete Step 2A technical/source review.
-2. Merge Step 2A into master after review.
-3. Proceed to Step 3: construct and review the real PRJ-DOCMONSTAKRAKIN bootstrap manifest.
-4. Bootstrap execution remains later and requires an explicit reviewed step.
-5. Batch 2 governance UX remains NOT STARTED.
-6. Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-7. v0.2 product work remains blocked.
-12. Confirmation No Bootstrap Executor Exists
-Confirmed: No runtime or CLI bootstrap executor has been implemented. Only the contract schema, validator, canonical serializer, and dry-run evaluator exist.
-13. Confirmation No Self-Project Was Injected
-Confirmed: Zero mutations occurred in .local/project-state.json. No PRJ-DOCMONSTAKRAKIN record or test state was written.
-14. Confirmation Batch 2 Was Not Started
-Confirmed: Batch 2 governance UX remains strictly NOT STARTED.
-15. Confirmation Gate 7 Was Not Executed
-Confirmed: Gate 7 release status remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. All v0.2 product scope remains strictly blocked. 
+Step 3A Summary — Correction & Completion of Real Self-Bootstrap Manifest
+The self-bootstrap manifest for PRJ-DOCMONSTAKRAKIN has been corrected, verified, and documented for formal human review. All schema constraints, evidence integrity rules, and governance restrictions under SELF_BOOTSTRAP_V1 and TRUSTED_LOCAL_BOOTSTRAP are satisfied.
+Key Accomplishments & Deliverables
+Manifest Relocation & Decoupling:
+Relocated from src/data/selfBootstrapManifest.json to bootstrap/docmonstakrakin.self-bootstrap.json.
+The manifest is strictly treated as an initialization and control plane artifact, preventing exposure or bundling inside the client-side SPA bundle.
+Factual & Governance Corrections:
+Work Item Classifications: Historical remediation items DMK-187..DMK-190 are set to status = 'VERIFICATION', sprint = 0, with real evidence linkages (EV-RC-187..EV-RC-190) and synthetic sequential dependency chains removed.
+Gate 7 Removal: Removed candidate task DMK-196 Gate 7 Execution. Release Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+Future Work Sequencing: Rebuilt ordered work chain DMK-192 through DMK-199 for the self-bootstrap executor, project workspace, documentation workspace, and governance remediation Batches 2–5.
+Threat Mitigations: All threat mitigations (THR-001..THR-007, THR-BOOT-001) are set to IN_PROGRESS pending implementation and operational sign-off.
+ADR Historical Alignment: Restored original creation dates (2026-08-15, 2026-08-20, 2026-09-15, 2026-09-19) and preserved PROPOSED status for all 7 ADRs.
+Architecture Component: Added CMP-BOOT-01 ("Trusted Self-Bootstrap Ingestion Subsystem") as PROPOSED, explicitly documenting that the validator exists while the persistence executor is not yet implemented.
+Byte-Level Evidence & Document Integrity:
+Every Evidence.sha256Hash was calculated directly from raw file bytes of real repository artifacts:
+EV-RC-187: 6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b (docs/07_verification/cryptodemon-fixture-evidence.json)
+EV-RC-188: 3b1b0b11c60d0c82c84197228f27611b9744aae70b2135ad10dc970962be0c7f (docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md)
+EV-RC-189: 7683a53778267b9494980a74352df6cf82b767f04c5574d357e66b614f419b80 (docs/07_verification/rc-regression/results.json)
+EV-RC-190: a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0 (docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md)
+All 14 VERIFIED requirements cite real evidence records.
+28 controlled documents are cataloged, with pre-computed file-byte SHA-256 digests for all 27 stable documents (self-hash omitted for PROJECT_STATE.md).
+Dedicated Read-Only Manifest Validator:
+Created scripts/validateSelfBootstrapManifestFile.ts (bound to npm run test:bootstrap:manifest).
+Generates machine-readable verification reports at docs/07_verification/self-bootstrap-manifest-validation.json.
+Human Review Documentation & Project State:
+Created formal human review artifact: docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md.
+Updated docs/00_control/PROJECT_STATE.md to READY_FOR_HUMAN_REVIEW with exact entity counts and manifest digest.
+Manifest Metrics & Accounting
+Canonical Manifest Digest: abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96
+Entity Counts:
+Features: 15 (PROPOSED)
+Requirements: 24 (14 VERIFIED, 4 UNDER_REVIEW, 6 PROPOSED)
+Risks: 6
+Threats: 8 (All mitigations IN_PROGRESS)
+ADRs: 7 (PROPOSED)
+Architecture Components: 6 (PROPOSED)
+Work Items: 13 (4 VERIFICATION, 2 READY, 7 BACKLOG)
+Evidence Records: 4 (Raw byte hashes verified)
+Controlled Documents: 28 (27 raw byte digests verified)
+Verification Results
+Check / Command	Status	Notes
+npm run test:bootstrap:contract	PASS	17/17 test suites passing
+npm run test:bootstrap:manifest	PASS	5/5 phases valid; 0 errors, 0 warnings; mutation count: 0
+npm run lint	PASS	tsc --noEmit clean (0 errors)
+npm run wbs:check	PASS	Zero drift between MASTER_WBS.yaml and MASTER_WBS.md
+npx tsx scripts/runAutomatedQa.ts	PASS	11/11 criteria passing
+npm run build	PASS	Production Vite SPA and Node CommonJS bundle compiled cleanly
+Governance Invariants Preserved
+Bootstrap Execution: NOT EXECUTED.
+Persistence State: .local/project-state.json DOES NOT EXIST (zero mutations).
+Batch 2 Governance UX: NOT STARTED.
+Release Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+v0.1.0-rc1 Status: NOT RELEASED.
+Next Safe Action: Operator human review of docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md and bootstrap/docmonstakrakin.self-bootstrap.json.

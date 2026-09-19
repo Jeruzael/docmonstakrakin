@@ -6,6 +6,8 @@
  */
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   SELF_BOOTSTRAP_SCHEMA_VERSION,
   SELF_BOOTSTRAP_MODE,
@@ -661,6 +663,39 @@ test('dry-run report accurately summarizes manifest and guarantees zero mutation
   assert(dryRun.governanceRestrictions.some((r) => r.includes('Closed root schema enforced')));
   assert.equal(typeof dryRun.manifestDigest, 'string');
   assert.equal(dryRun.unresolvedReferenceErrors.length, 0);
+});
+
+test('production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.self-bootstrap.json) passes validation with zero errors', () => {
+  const manifestPath = path.resolve(process.cwd(), 'bootstrap/docmonstakrakin.self-bootstrap.json');
+  assert(fs.existsSync(manifestPath), 'bootstrap/docmonstakrakin.self-bootstrap.json must exist');
+
+  const raw = fs.readFileSync(manifestPath, 'utf-8');
+  const realManifest = JSON.parse(raw) as SelfBootstrapManifest;
+
+  const result = validateSelfBootstrapManifest(realManifest);
+  assert.equal(result.valid, true, `Validation failed: ${result.errors.join('; ')}`);
+  assert.equal(result.errors.length, 0);
+
+  // Validate entity counts
+  assert.equal(result.counts.features, 15);
+  assert.equal(result.counts.requirements, 24);
+  assert.equal(result.counts.risks, 6);
+  assert.equal(result.counts.threats, 8);
+  assert.equal(result.counts.adrs, 7);
+  assert.equal(result.counts.components, 6);
+  assert.equal(result.counts.workItems, 13);
+  assert.equal(result.counts.evidence, 4);
+  assert.equal(result.counts.documents, 28);
+
+  // Validate digest
+  const digest = computeBootstrapManifestDigest(realManifest);
+  assert.equal(digest, 'abd3dfa123b2502f2f1ba27722dc98015045c931572c98ad1d7dcfa47fffaa96');
+
+  // Validate dry run
+  const dryRun = computeBootstrapDryRunReport(realManifest);
+  assert.equal(dryRun.valid, true);
+  assert.equal(dryRun.mutationCount, 0);
+  assert.equal(dryRun.projectToCreate?.id, 'PRJ-DOCMONSTAKRAKIN');
 });
 
 console.log(`\n=== Self-Bootstrap Contract Verification Complete ===`);
