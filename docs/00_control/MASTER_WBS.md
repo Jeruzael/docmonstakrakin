@@ -76,7 +76,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run
 - **WBS Path:** `13.06.06`
 - **Type:** `FEATURE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `EV-BOOT-192, docs/07_verification/self-bootstrap-manifest-validation.json`)
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md, docs/07_verification/self-bootstrap-manifest-validation.json`)
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1.
 - **Acceptance Criteria:**

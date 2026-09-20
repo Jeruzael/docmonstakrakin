@@ -108,7 +108,7 @@ items:
     wbs_path: "13.06.06"
     parent_id: "EPIC-13"
     title: "Trusted Self-Bootstrap Executor & Read-Only Dry-Run"
-    description: "Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1."
+    description: "Implement the actual trusted executor boundary and --dry-run behavior defined by STRAP_V1."
     type: "FEATURE"
     phase: "PHASE-12"
     epic: "EPIC-13"
@@ -122,7 +122,7 @@ items:
     acceptance_criteria:
       - "Implement trusted bootstrap executor CLI / entrypoint with read-only --dry-run validation"
     verification_method: "scripts/testSelfBootstrapContract.ts; scripts/testSelfBootstrapExecutor.ts; npm run test:bootstrap:manifest; npm run bootstrap:self -- --dry-run"
-    evidence: ["EV-BOOT-192", "docs/07_verification/self-bootstrap-manifest-validation.json"]
+    evidence: ["docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md", "docs/07_verification/self-bootstrap-manifest-validation.json"]
     planned_by: "SELF_BOOTSTRAP_CONTRACT.md"
     implemented_by: "AI Studio /applet"
     verified_by: "npm run test:bootstrap:executor; npm run bootstrap:self -- --dry-run"
