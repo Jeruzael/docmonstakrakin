@@ -1,29 +1,71 @@
-All requested Step 3C corrections and validations have been completed and verified.
-Implementation Summary
-Branch & Repository Alignment
-Merged origin/master into gaistudio-3.
-Verified git merge-base --is-ancestor origin/master HEAD returns exit code 0.
-File Deletion & Cleanup
-Deleted stale non-canonical files:
-src/data/selfBootstrapManifest.json
-scripts/buildAndValidateManifest.ts
-docs/07_verification/BOOTSTRAP_DRY_RUN_REPORT.json
-Fixture Restoration
-Restored docs/07_verification/cryptodemon-fixture-evidence.json byte-for-byte from commit 2a05edc8f6a96183d39cad092b91e7fc4e9cb432 without regenerating or mutating timestamps.
-Self-Bootstrap Manifest Fidelity (bootstrap/docmonstakrakin.self-bootstrap.json)
-Feature Provenance: Corrected FEAT-DMK-013 through FEAT-DMK-015 provenance to MANUAL_ENTRY, retaining PRODUCT_BASELINE for FEAT-DMK-001 through FEAT-DMK-012.
-Work Items: Work items start at DMK-192 (READY) through DMK-199 (BACKLOG), preserving DMK-191 in BACKLOG for the Gio CryptoDemon human browser retest per docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md.
-Evidence Timestamps: Updated createdAt timestamps for EV-RC-187 through EV-RC-190 to reflect actual source creation times (2026-09-17T02:07:37.000Z, 2026-09-17T02:08:52.000Z, 2026-09-17T02:09:59.000Z, 2026-09-17T02:11:15.000Z).
-Document Hashes: Pre-computed live SHA-256 digests for all 27 controlled documents, updating MASTER_WBS.yaml and MASTER_WBS.md.
-WBS Dependency Integrity
-Updated docs/00_control/MASTER_WBS.yaml with DMK-191 dependencies (DMK-187, DMK-188, DMK-189, DMK-190, DMK-199) and added DMK-192 through DMK-199.
-Rendered docs/00_control/MASTER_WBS.md with zero drift (npm run wbs:check passed).
-Documentation & State Accounting
-Updated docs/00_control/PROJECT_STATE.md, docs/00_control/LAST_HANDOFF.md, and docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md to reflect canonical manifest digest 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5, active Source-Control Mode: GIT, and current entity accounting.
-Validation Results
-npm run test:bootstrap:contract: 19/19 tests passed.
-npm run test:bootstrap:manifest: Validated manifest with 0 mutations, 27 document digests verified, and 4 evidence artifact hashes verified.
-npm run lint: Passed (TypeScript --noEmit 0 errors).
-npx tsx scripts/runAutomatedQa.ts: 11/11 criteria passed.
-npm run build: Production bundle succeeded with zero errors.
-git diff --check: Clean (no whitespace or patch errors).
+Step 3D — Final Source-Fidelity & Manifest Cleanup Complete
+All required Step 3D reconciliations, stale artifact cleanups, WBS synchronizations, and manifest/control documentation updates have been completed. In accordance with the operational boundary, zero Git/repository management commands were executed, zero commits were made, and no bootstrap execution or persistence was initiated.
+1. File Changes Summary
+Deleted Stale / Duplicate Files
+src/data/selfBootstrapManifest.json: Removed stale in-tree manifest duplicate.
+scripts/buildAndValidateManifest.ts: Removed obsolete manifest builder. The canonical read-only validator remains scripts/validateSelfBootstrapManifestFile.ts.
+docs/07_verification/BOOTSTRAP_DRY_RUN_REPORT.json: Removed stale root dry-run projection. The authoritative validation report is located at docs/07_verification/self-bootstrap-manifest-validation.json.
+Modified Files
+bootstrap/docmonstakrakin.self-bootstrap.json:
+FEAT-DMK-013, FEAT-DMK-014, and FEAT-DMK-015: Strict 4-field provenance schema (projectId: "PRJ-DOCMONSTAKRAKIN", origin: "MANUAL_ENTRY", input: "Step 3 dogfooding roadmap", timestamp: "2026-09-19T22:30:00Z").
+DMK-188: Removed stale "SecretStore key isolation..." criterion; acceptance criteria now match MASTER_WBS.yaml exactly.
+DMK-199: Aligned requirements to include REQ-REL-001, REQ-RC-189, and REQ-RC-190.
+DOC-CTRL-003 (MASTER_WBS.yaml) & DOC-CTRL-004 (MASTER_WBS.md): Pre-computed raw file byte SHA-256 digests updated to match exact post-render contents.
+docs/00_control/MASTER_WBS.yaml:
+DMK-199: Updated requirements from [REQ-RC-189] to [REQ-REL-001, REQ-RC-189, REQ-RC-190].
+docs/00_control/MASTER_WBS.md:
+Re-rendered deterministically via npm run wbs:render; verified drift-free (npm run wbs:check).
+docs/00_control/LAST_HANDOFF.md:
+Updated canonical manifest SHA-256 digest to 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289.
+Updated Feature accounting: 15 Features total (FEAT-DMK-001 through FEAT-DMK-015: 12 PRODUCT_BASELINE, 3 MANUAL_ENTRY, all PROPOSED).
+Updated WorkItem accounting: 13 total (4 VERIFICATION: DMK-187, DMK-188, DMK-189, DMK-190; 1 READY: DMK-192; 8 BACKLOG: DMK-191, DMK-193..199).
+docs/00_control/PROJECT_STATE.md:
+Updated canonical manifest SHA-256 digest to 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289.
+Documented Feature accounting (12 PRODUCT_BASELINE, 3 MANUAL_ENTRY, all PROPOSED) and WorkItem accounting (4 VERIFICATION, 1 READY, 8 BACKLOG).
+Updated the next safe sequence to trace Step 4 through Gate 7 release approval.
+docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md:
+Updated canonical manifest digest to 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289.
+Updated DMK-199 requirements description to REQ-REL-001, REQ-RC-189, REQ-RC-190.
+Documented CMP-BOOT-01 as a new Step 3 proposed component (source: SELF_BOOTSTRAP_CONTRACT.md), distinguishing existing validator/contract logic from unimplemented persistence/runtime capabilities.
+Standardized regression description to "covering 310 observed named checks" across 22 automated test suites.
+Updated DOC-CTRL-003 and DOC-CTRL-004 digest entries.
+Documented ADR status transitions: ADR-0001..0004 (historical source ACCEPTED, bootstrap PROPOSED), ADR-0005..0006 (historical source PROPOSED, bootstrap PROPOSED), and ADR-0007 (new proposal, bootstrap PROPOSED).
+Updated test execution table to document 19/19 focused self-bootstrap contract tests and 11/11 automated QA acceptance criteria passed.
+docs/07_verification/self-bootstrap-manifest-validation.json:
+Generated verification report matching the final manifest digest and zero mutation count.
+2. Verification Command Results
+Command	Status	Result / Metrics
+npm run test:bootstrap:contract	PASS	19/19 focused self-bootstrap contract tests passed
+npm run test:bootstrap:manifest	PASS	5/5 validation phases passed (0 errors, 0 warnings); Digest: 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289
+npm run wbs:check	PASS	Zero drift between MASTER_WBS.yaml and MASTER_WBS.md
+npm run lint	PASS	tsc --noEmit passed with zero errors
+npm run build	PASS	Full production build clean compilation (Vite client + CommonJS Node server)
+npx tsx scripts/runAutomatedQa.ts	PASS	11/11 automated QA acceptance criteria passed
+3. Canonical Manifest Accounting Summary
+Manifest Path: bootstrap/docmonstakrakin.self-bootstrap.json
+Canonical SHA-256 Digest: 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289
+Features (15 total, all PROPOSED):
+12 PRODUCT_BASELINE: FEAT-DMK-001 through FEAT-DMK-012
+3 MANUAL_ENTRY: FEAT-DMK-013, FEAT-DMK-014, FEAT-DMK-015
+Requirements (24 total, 0 approved):
+14 VERIFIED (historical remediation & baseline)
+4 UNDER_REVIEW (REQ-RC-187..190)
+6 PROPOSED (REQ-BOOT-001, REQ-UX-PROJECTS-001, REQ-DOC-001, REQ-GOV-SIGNOFF-001, REQ-GOV-QUORUM-001, REQ-GOV-REVIEWER-001)
+Risks (6 total): RISK-001, RISK-004, RISK-019, RISK-022, RISK-025, RISK-BOOT-001 (all PROPOSED / IDENTIFIED)
+Threats (8 total): THR-001 through THR-007, THR-BOOT-001 (all mitigations IN_PROGRESS)
+ADRs (7 total, all PROPOSED): ADR-0001 through ADR-0007
+Components (6 total, all PROPOSED): CMP-01 through CMP-05, CMP-BOOT-01
+WorkItems (13 total, 0 verified/approved):
+4 VERIFICATION: DMK-187, DMK-188, DMK-189, DMK-190 (backed by real evidence EV-RC-187..190)
+1 READY: DMK-192
+8 BACKLOG: DMK-191, DMK-193, DMK-194, DMK-195, DMK-196, DMK-197, DMK-198, DMK-199
+Controlled Documents (28 total): 27 stable documents with pre-computed file-byte digests, 1 omitted (PROJECT_STATE.md to prevent recursive digest churn)
+Evidence Records (4 total): EV-RC-187 through EV-RC-190 with verified raw file-byte SHA-256 hashes
+4. Governance & Execution Invariants Preserved
+Bootstrap Execution: NOT EXECUTED.
+Persistence State: .local/project-state.json DOES NOT EXIST.
+Project State: PRJ-DOCMONSTAKRAKIN has NOT been created in runtime storage.
+Batches 2–5: NOT STARTED.
+Gate 7 Status: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+v0.2 Product Features: Strictly blocked until Gate 7 passes.
+The workspace is ready for local operator inspection, reconciliation, and commit.

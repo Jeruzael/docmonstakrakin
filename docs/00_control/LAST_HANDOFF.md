@@ -38,15 +38,15 @@ Step 2A (Harden Trusted Self-Bootstrap Contract):
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest):
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5`.
+- Canonical Manifest SHA-256 Digest: `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289`.
 - Manifest Entity Accounting:
-  - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all `PROPOSED`, source `PRODUCT_BASELINE`)
+  - 15 Features total (`FEAT-DMK-001` through `FEAT-DMK-015`: 12 `PRODUCT_BASELINE`, 3 `MANUAL_ENTRY`, all `PROPOSED`)
   - 24 Requirements (14 historical v0.1 requirements, 4 verified remediation requirements `REQ-RC-187`..`190`, 6 dogfooding roadmap requirements `REQ-BOOT-001`, `REQ-UX-PROJECTS-001`, `REQ-DOC-001`, `REQ-GOV-SIGNOFF-001`, `REQ-GOV-QUORUM-001`, `REQ-GOV-REVIEWER-001`)
   - 6 Risks (`RISK-001`, `RISK-004`, `RISK-019`, `RISK-022`, `RISK-025`, `RISK-BOOT-001`)
   - 8 Threats (`THR-001` through `THR-007`, `THR-BOOT-001`, all mitigations `IN_PROGRESS`)
   - 7 ADRs (`ADR-0001` through `ADR-0007`, all `PROPOSED`)
   - 6 Architecture Components (`CMP-01` through `CMP-05`, `CMP-BOOT-01`)
-  - 13 WorkItems (Remediation verification items `DMK-187`..`190` as `VERIFICATION` with real evidence; `DMK-191` & `DMK-192` as `READY`; `DMK-193`..`199` as `BACKLOG`)
+  - 13 WorkItems total (4 `VERIFICATION`: `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190` with real evidence; 1 `READY`: `DMK-192`; 8 `BACKLOG`: `DMK-191`, `DMK-193`, `DMK-194`, `DMK-195`, `DMK-196`, `DMK-197`, `DMK-198`, `DMK-199`)
   - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190` with raw file byte hashes)
   - 28 Controlled Documents (`DOC-CTRL-001`..`007`, `DOC-PROD-001`..`003`, `DOC-REQ-001`, `DOC-ARC-001`..`003`, `DOC-SEC-001`..`004`, `DOC-DEC-001`..`006`, `DOC-VER-001`..`004` with 27 pre-computed live SHA-256 digests)
 - Verification Report: Generated at `docs/07_verification/self-bootstrap-manifest-validation.json` (`valid: true`, `mutationCount: 0`, 27 document digests verified, 4 evidence artifact hashes verified).
