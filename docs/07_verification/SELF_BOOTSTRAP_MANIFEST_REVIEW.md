@@ -4,7 +4,8 @@
 **Document ID:** DOC-VER-005  
 **Review Status:** READY_FOR_HUMAN_REVIEW  
 **Target Release:** v0.1.0-rc1  
-**Target Branch:** master (Commit: `2a05edc8f6a96183d39cad092b91e7fc4e9cb432`)  
+**Target Branch:** master (Commit: `f1073e740adabec44f22eb946b36cdf7b216a7ea`)  
+**Self-Bootstrap Source Baseline:** `2a05edc8f6a96183d39cad092b91e7fc4e9cb432`
 **Working Branch:** gaistudio-3  
 **Bootstrap Schema:** SELF_BOOTSTRAP_V1  
 **Bootstrap Mode:** TRUSTED_LOCAL_BOOTSTRAP  
