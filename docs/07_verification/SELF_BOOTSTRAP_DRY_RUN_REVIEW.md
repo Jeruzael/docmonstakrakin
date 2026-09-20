@@ -27,7 +27,7 @@ In accordance with `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`, the executor mo
 ### Critical Hardened Governance & Security Invariants Verified
 
 1. **Zero Runtime Mutations**: Running `npm run bootstrap:self -- --dry-run` performs 100% in-memory candidate state projection and cryptographic validation with zero disk writes (`mutationCount: 0`).
-2. **Directory & File Protection**: `.local/` was not created, and `.local/project-state.json` remains untouched.
+2. **Directory & File Protection**: An existing `.local/project-state.json` snapshot was present in the authoritative local environment and remained untouched. The dry-run created no temporary files and performed no persistence.
 3. **No Unrelated State Drift**: Existing local canonical state containing three projects (`PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`, `PRJ-ATLAS-01`, and `PRJ-FINPAY-02`) was preserved with identical unrelated-state hashes.
 4. **Zero Governance Forgery**: Zero approvals injected (`approvalsInjected: 0`); release sign-off uncreated (`releaseSignoffInjected: false`); Gate 7 remains strictly unexecuted.
 5. **No Blind Verification Bypass**: Removed code-level heuristic bypasses (`isEvolvingControlDoc`). Document integrity is strictly enforced: all referenced documents must exist; documents declaring `sha256Digest` must match exact disk bytes; unpinned living documents are explicitly declared in the manifest contract without hashes.
@@ -98,7 +98,7 @@ Under `SELF_BOOTSTRAP_V1`, the manifest schema allows `sha256Digest` to be omitt
 
 ---
 
-## 4. Dry-Run Projection Summary
+## 4. Historical AI Studio Sandbox Dry-Run Projection
 
 | Attribute | Projected Value | Invariant Verification |
 | :--- | :--- | :--- |
