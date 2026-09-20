@@ -66,12 +66,99 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-191` — Gio CryptoDemon human browser retest
 - **WBS Path:** `13.06.05`
 - **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `READY`
-- **Dependencies:** `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`, `DMK-199`
 - **Requirements:** `REQ-RC-189`, `REQ-RC-190` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Acceptance Criteria:**
-  - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks; records new evidence without executing Gate 7"
+  - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks per the 10-step human browser retest in docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md; records new evidence without executing Gate 7"
 - **Verification Method:** docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md human retest checklist
+
+#### `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run
+- **WBS Path:** `13.06.06`
+- **Type:** `FEATURE` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `READY`
+- **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1.
+- **Acceptance Criteria:**
+  - "Implement trusted bootstrap executor CLI / entrypoint with read-only --dry-run validation"
+- **Verification Method:** scripts/testSelfBootstrapContract.ts; npm run test:bootstrap:manifest
+
+#### `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
+- **WBS Path:** `13.06.07`
+- **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `CRITICAL`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-192`
+- **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.
+- **Acceptance Criteria:**
+  - "Execute trusted bootstrap and verify canonical project state"
+- **Verification Method:** npm run test:bootstrap:manifest
+
+#### `DMK-194` — Projects Workspace & Reliable Project Switching
+- **WBS Path:** `13.06.08`
+- **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-193`
+- **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
+- **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.
+- **Acceptance Criteria:**
+  - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
+- **Verification Method:** UI project switching test
+
+#### `DMK-195` — Controlled Documentation Workspace
+- **WBS Path:** `13.06.09`
+- **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-193`
+- **Requirements:** `REQ-DOC-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows.
+- **Acceptance Criteria:**
+  - "Browse repository-controlled documentation within permitted docs/ boundaries"
+- **Verification Method:** Documentation viewer test
+
+#### `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
+- **WBS Path:** `13.06.10`
+- **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-194`
+- **Requirements:** `REQ-GOV-SIGNOFF-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
+- **Description:** Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.
+- **Acceptance Criteria:**
+  - "Remove direct Approve Requirement UX; replace with Request Sign-Off"
+- **Verification Method:** Sign-off request workflow test
+
+#### `DMK-197` — Batch 3 — Approval Inbox & Canonical Quorum Synchronization
+- **WBS Path:** `13.06.11`
+- **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-196`
+- **Requirements:** `REQ-GOV-QUORUM-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
+- **Description:** Approval Inbox UI with distinct human dual-signoff quorum verification.
+- **Acceptance Criteria:**
+  - "Distinct Security Officer and Lead Architect human identities required for quorum"
+- **Verification Method:** Quorum verification test
+
+#### `DMK-198` — Batch 4 — Reviewer Provisioning / Governance Setup Usability
+- **WBS Path:** `13.06.12`
+- **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-197`
+- **Requirements:** `REQ-GOV-REVIEWER-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
+- **Description:** Reviewer management and onboarding usability without exposing plaintext credentials.
+- **Acceptance Criteria:**
+  - "No default reviewer credentials; fail closed when reviewer configuration is absent"
+- **Verification Method:** Reviewer provisioning helper test
+
+#### `DMK-199` — Batch 5 — Full Regression & Evidence Cleanup
+- **WBS Path:** `13.06.13`
+- **Type:** `QUALITY` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-198`
+- **Requirements:** `REQ-RC-189` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** Run full regression suite across all components, compile complete evidence, and clean up temporary artifacts.
+- **Acceptance Criteria:**
+  - "Full automated regression passes cleanly across all test suites"
+- **Verification Method:** Full automated regression run
 
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`

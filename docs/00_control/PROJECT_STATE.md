@@ -3,13 +3,13 @@
 Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
 - Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Source-Control Mode: GIT
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
 - Review Branch: gaistudio-3
 - Authoritative Starting Checkpoint: 2a05edc8f6a96183d39cad092b91e7fc4e9cb432
 - Target Branch: master
 - Development Branch: master
-- Workspace Git Metadata: unavailable inside local AI Studio container (Git metadata is not present in container snapshot; repository tracking managed via remote checkpoints)
+- Workspace Git Metadata: active local git branch gaistudio-3 tracking origin/gaistudio-3 (merged with origin/master)
 - Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
@@ -19,18 +19,18 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d`.
+- Canonical Manifest SHA-256 Digest: `253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5`.
 - Manifest Entity Accounting:
-  - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all `PROPOSED`, source `PRODUCT_BASELINE`)
-  - 24 Requirements (14 historical v0.1 requirements, 4 verified remediation requirements `REQ-RC-187`..`190`, 6 dogfooding roadmap requirements `REQ-BOOT-001`, `REQ-UX-PROJECTS-001`, `REQ-DOC-001`, `REQ-GOV-SIGNOFF-001`, `REQ-GOV-QUORUM-001`, `REQ-GOV-REVIEWER-001`)
-  - 6 Risks (`RISK-001`, `RISK-004`, `RISK-019`, `RISK-022`, `RISK-025`, `RISK-BOOT-001`)
+  - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all 15 `PROPOSED`; `FEAT-DMK-001`..`012` source `PRODUCT_BASELINE`, `FEAT-DMK-013`..`015` source `MANUAL_ENTRY`)
+  - 24 Requirements (14 `VERIFIED`, 4 `UNDER_REVIEW`, 6 `PROPOSED`)
+  - 6 Risks (`RISK-001`, `RISK-004`, `RISK-019`, `RISK-022`, `RISK-025`, `RISK-BOOT-001`, all `PROPOSED` / `IDENTIFIED`)
   - 8 Threats (`THR-001` through `THR-007`, `THR-BOOT-001`, all mitigations `IN_PROGRESS`)
   - 7 ADRs (`ADR-0001` through `ADR-0007`, all `PROPOSED`)
-  - 6 Architecture Components (`CMP-01` through `CMP-05`, `CMP-BOOT-01`)
-  - 13 WorkItems (Remediation verification items `DMK-187`..`190` as `VERIFICATION` with real evidence; `DMK-191` & `DMK-192` as `READY`; `DMK-193`..`199` as `BACKLOG`)
-  - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190` with raw file byte hashes)
-  - 28 Controlled Documents (`DOC-CTRL-001`..`007`, `DOC-PROD-001`..`003`, `DOC-REQ-001`, `DOC-ARC-001`..`003`, `DOC-SEC-001`..`004`, `DOC-DEC-001`..`006`, `DOC-VER-001`..`004` with 27 pre-computed live SHA-256 digests)
-- Future Work Items Planned: `DMK-192` through `DMK-199` (Bootstrap Executor, Bootstrap Verification, Projects Workspace, Controlled Docs, Batch 2 Sign-Off UX, Batch 3 Quorum Sync, Batch 4 Reviewer Usability, Batch 5 Full Regression).
+  - 6 Architecture Components (`CMP-01` through `CMP-05`, `CMP-BOOT-01`, all `PROPOSED`)
+  - 13 WorkItems: 4 `VERIFICATION` (`DMK-187`..`190` with real evidence); 1 `READY` (`DMK-192`); 8 `BACKLOG` (`DMK-191`, `DMK-193`..`199`)
+  - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190` with exact real timestamps and real SHA-256 digests)
+  - 28 Controlled Documents (27 with pre-computed `sha256Digest`, `PROJECT_STATE.md` omitted to avoid recursive self-hash churn)
+- Future Work Items Planned: `DMK-192` through `DMK-199` (Self-bootstrap work starts at `DMK-192`: Trusted Bootstrap Executor, Bootstrap Verification, Projects Workspace, Controlled Docs, Batch 2 Sign-Off UX, Batch 3 Quorum Sync, Batch 4 Reviewer Usability, Batch 5 Full Regression). `DMK-191` is reserved for Gio CryptoDemon human browser retest per `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md`.
 - Read-Only Validator Script: `scripts/validateSelfBootstrapManifestFile.ts` (invoked via `npm run test:bootstrap:manifest`).
 - Verification Report: Generated at `docs/07_verification/self-bootstrap-manifest-validation.json` (`valid: true`, `mutationCount: 0`, 27 document digests verified, 4 evidence artifact hashes verified).
 - Review Report: Generated at `docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md`.
@@ -46,7 +46,7 @@ Step 2A (Harden Trusted Self-Bootstrap Contract) is technically complete:
 - Path Traversal Defense: Controlled document references enforce repository-relative paths under `docs/`, reject directory traversal (`..`), absolute POSIX, and absolute Windows paths. Validates 64-hex SHA-256 digests.
 - Canonical JSON Compatibility: Verified 100% serialization equivalence between self-bootstrap canonicalizer and `server/package/portablePackage.ts`.
 - Node Isolation: `src/data/selfBootstrapContract.ts` confirmed structurally isolated from Vite frontend production bundle; `npm run build` cleanly compiles client and server.
-- All 16 focused self-bootstrap contract tests in `scripts/testSelfBootstrapContract.ts` pass cleanly (zero failures).
+- All 19 focused self-bootstrap contract tests in `scripts/testSelfBootstrapContract.ts` pass cleanly (zero failures).
 - No bootstrap execution executed; `.local/project-state.json` untouched; no project created.
 
 Batch 1 and Batch 1.5 Final Correction remain technically complete:

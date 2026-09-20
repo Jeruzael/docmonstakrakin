@@ -3,12 +3,12 @@
 Updated 2026-09-19.
 
 - Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Source-Control Mode: GIT
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
 - Review Branch: gaistudio-3
 - Target Branch: master
 - Development Branch: master
-- Workspace Git Metadata: unavailable inside local AI Studio container (Git metadata is not present in container snapshot; repository tracking managed via remote checkpoints)
+- Workspace Git Metadata: active local git branch gaistudio-3 tracking origin/gaistudio-3 (merged with origin/master)
 - Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
@@ -38,7 +38,7 @@ Step 2A (Harden Trusted Self-Bootstrap Contract):
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest):
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d`.
+- Canonical Manifest SHA-256 Digest: `253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5`.
 - Manifest Entity Accounting:
   - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all `PROPOSED`, source `PRODUCT_BASELINE`)
   - 24 Requirements (14 historical v0.1 requirements, 4 verified remediation requirements `REQ-RC-187`..`190`, 6 dogfooding roadmap requirements `REQ-BOOT-001`, `REQ-UX-PROJECTS-001`, `REQ-DOC-001`, `REQ-GOV-SIGNOFF-001`, `REQ-GOV-QUORUM-001`, `REQ-GOV-REVIEWER-001`)

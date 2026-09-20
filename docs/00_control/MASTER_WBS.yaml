@@ -93,16 +93,176 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "READY"
-    dependencies: ["DMK-187", "DMK-188", "DMK-189", "DMK-190"]
+    status: "BACKLOG"
+    dependencies: ["DMK-187", "DMK-188", "DMK-189", "DMK-190", "DMK-199"]
     requirements: ["REQ-RC-189", "REQ-RC-190"]
     architecture_links: ["CMP-01", "CMP-04"]
     security_controls: ["SEC-CTRL-020"]
     acceptance_criteria:
-      - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks; records new evidence without executing Gate 7"
+      - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks per the 10-step human browser retest in docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md; records new evidence without executing Gate 7"
     verification_method: "docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md human retest checklist"
     evidence: []
     owner: "Gio"
+
+  - id: "DMK-192"
+    wbs_path: "13.06.06"
+    parent_id: "EPIC-13"
+    title: "Trusted Self-Bootstrap Executor & Read-Only Dry-Run"
+    description: "Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "READY"
+    dependencies: []
+    requirements: ["REQ-BOOT-001"]
+    architecture_links: ["CMP-BOOT-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Implement trusted bootstrap executor CLI / entrypoint with read-only --dry-run validation"
+    verification_method: "scripts/testSelfBootstrapContract.ts; npm run test:bootstrap:manifest"
+    evidence: []
+
+  - id: "DMK-193"
+    wbs_path: "13.06.07"
+    parent_id: "EPIC-13"
+    title: "Execute Trusted Self-Bootstrap & Verify Canonical State"
+    description: "After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "BACKLOG"
+    dependencies: ["DMK-192"]
+    requirements: ["REQ-BOOT-001"]
+    architecture_links: ["CMP-BOOT-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Execute trusted bootstrap and verify canonical project state"
+    verification_method: "npm run test:bootstrap:manifest"
+    evidence: []
+
+  - id: "DMK-194"
+    wbs_path: "13.06.08"
+    parent_id: "EPIC-13"
+    title: "Projects Workspace & Reliable Project Switching"
+    description: "Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "BACKLOG"
+    dependencies: ["DMK-193"]
+    requirements: ["REQ-UX-PROJECTS-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-004"]
+    acceptance_criteria:
+      - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
+    verification_method: "UI project switching test"
+    evidence: []
+
+  - id: "DMK-195"
+    wbs_path: "13.06.09"
+    parent_id: "EPIC-13"
+    title: "Controlled Documentation Workspace"
+    description: "In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "BACKLOG"
+    dependencies: ["DMK-193"]
+    requirements: ["REQ-DOC-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Browse repository-controlled documentation within permitted docs/ boundaries"
+    verification_method: "Documentation viewer test"
+    evidence: []
+
+  - id: "DMK-196"
+    wbs_path: "13.06.10"
+    parent_id: "EPIC-13"
+    title: "Batch 2 — Formal Requirement Sign-Off UX"
+    description: "Interactive requirement sign-off requesting workflow routing through formal Approval Inbox."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "BACKLOG"
+    dependencies: ["DMK-194"]
+    requirements: ["REQ-GOV-SIGNOFF-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Remove direct Approve Requirement UX; replace with Request Sign-Off"
+    verification_method: "Sign-off request workflow test"
+    evidence: []
+
+  - id: "DMK-197"
+    wbs_path: "13.06.11"
+    parent_id: "EPIC-13"
+    title: "Batch 3 — Approval Inbox & Canonical Quorum Synchronization"
+    description: "Approval Inbox UI with distinct human dual-signoff quorum verification."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-196"]
+    requirements: ["REQ-GOV-QUORUM-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Distinct Security Officer and Lead Architect human identities required for quorum"
+    verification_method: "Quorum verification test"
+    evidence: []
+
+  - id: "DMK-198"
+    wbs_path: "13.06.12"
+    parent_id: "EPIC-13"
+    title: "Batch 4 — Reviewer Provisioning / Governance Setup Usability"
+    description: "Reviewer management and onboarding usability without exposing plaintext credentials."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-197"]
+    requirements: ["REQ-GOV-REVIEWER-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "No default reviewer credentials; fail closed when reviewer configuration is absent"
+    verification_method: "Reviewer provisioning helper test"
+    evidence: []
+
+  - id: "DMK-199"
+    wbs_path: "13.06.13"
+    parent_id: "EPIC-13"
+    title: "Batch 5 — Full Regression & Evidence Cleanup"
+    description: "Run full regression suite across all components, compile complete evidence, and clean up temporary artifacts."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-198"]
+    requirements: ["REQ-RC-189"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Full automated regression passes cleanly across all test suites"
+    verification_method: "Full automated regression run"
+    evidence: []
   - id: "DMK-187"
     wbs_path: "13.06.01"
     parent_id: "EPIC-13"

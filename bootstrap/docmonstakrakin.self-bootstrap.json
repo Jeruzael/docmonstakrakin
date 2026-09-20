@@ -372,9 +372,7 @@
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
         "input": "Step 3 / 3A / 3B governance bootstrap intake",
-        "timestamp": "2026-09-19T00:00:00.000Z",
-        "source": "MANUAL_ENTRY",
-        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+        "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
         "Project Lead",
@@ -403,9 +401,7 @@
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
         "input": "Step 3 / 3A / 3B governance bootstrap intake",
-        "timestamp": "2026-09-19T00:00:00.000Z",
-        "source": "MANUAL_ENTRY",
-        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+        "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
         "Software Engineer",
@@ -431,9 +427,7 @@
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
         "input": "Step 3 / 3A / 3B governance bootstrap intake",
-        "timestamp": "2026-09-19T00:00:00.000Z",
-        "source": "MANUAL_ENTRY",
-        "notes": "Step 3 / 3A / 3B governance bootstrap intake"
+        "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
         "Software Engineer",
@@ -1804,12 +1798,12 @@
   "workItems": [
     {
       "id": "DMK-187",
-      "title": "A-SSDLC Remediation: Discovery & Technical Baseline Re-anchor",
-      "description": "Verify discovery questionnaire traversal and technical baseline re-anchoring. Full historical dependency graph remains in MASTER_WBS.yaml.",
+      "title": "CryptoDemon project initialization and derivation remediation",
+      "description": "Verify project initialization, derivation remediation, honest questionnaire traversal, and baseline feature isolation per specifications A–J.",
       "type": "TASK",
       "status": "VERIFICATION",
       "priority": "P0",
-      "risk": "LOW",
+      "risk": "HIGH",
       "sprint": 0,
       "dependencies": [],
       "requirements": [
@@ -1819,12 +1813,12 @@
         "EV-RC-187"
       ],
       "acceptanceCriteria": [
-        "All question traversal tests pass with zero errors",
-        "No cycle detection regressions observed"
+        "User QA specification A-J: isolated inputs, 8 proposed features, honest discovery and validated derivation",
+        "All question traversal tests pass with zero errors and no cycle detection regressions"
       ],
       "checklist": [
         {
-          "text": "Verify discovery questionnaire traversal and baseline re-anchoring",
+          "text": "Verify CryptoDemon project initialization and derivation remediation",
           "done": true
         }
       ],
@@ -1836,12 +1830,12 @@
     },
     {
       "id": "DMK-188",
-      "title": "A-SSDLC Remediation: SecretStore Key Isolation & Fail-Closed Behavior",
-      "description": "Verify that SecretStore key isolation and path traversal interceptor strictly prevent access outside workspace root. Full historical dependency graph remains in MASTER_WBS.yaml.",
-      "type": "SECURITY",
+      "title": "External AI review sessions and explicit human sign-off remediation",
+      "description": "Verify external AI proposal review sessions, durable staging, per-change review, provenance tracking, and explicit distinct human sign-off per specifications K–Q.",
+      "type": "TASK",
       "status": "VERIFICATION",
       "priority": "P0",
-      "risk": "CRITICAL",
+      "risk": "HIGH",
       "sprint": 0,
       "dependencies": [],
       "requirements": [
@@ -1851,12 +1845,12 @@
         "EV-RC-188"
       ],
       "acceptanceCriteria": [
-        "All path traversal attempts outside workspace root are rejected",
-        "Security assurance report confirms 47 runtime checks pass"
+        "User QA specification K-Q: durable staging, per-change review, provenance, proposed artifacts, distinct human quorum",
+        "SecretStore key isolation and path boundary interceptor prevent access outside workspace root"
       ],
       "checklist": [
         {
-          "text": "Verify SecretStore key isolation and fail-closed behavior",
+          "text": "Verify external AI review sessions and explicit human sign-off remediation",
           "done": true
         }
       ],
@@ -1867,12 +1861,12 @@
     },
     {
       "id": "DMK-189",
-      "title": "A-SSDLC Remediation: RC Technical Regression & Automated QA Verification",
-      "description": "Verify 22-suite regression inventory across technical baseline, discovery, and governance modules. Full historical dependency graph remains in MASTER_WBS.yaml.",
+      "title": "CryptoDemon task context and release regression verification",
+      "description": "Verify linked task context compilation, complete automated regression battery, and honest pending human retest per specifications R–U.",
       "type": "VERIFICATION",
       "status": "VERIFICATION",
       "priority": "P0",
-      "risk": "MEDIUM",
+      "risk": "HIGH",
       "sprint": 0,
       "dependencies": [],
       "requirements": [
@@ -1882,12 +1876,12 @@
         "EV-RC-189"
       ],
       "acceptanceCriteria": [
-        "22/22 regression suites pass cleanly with zero failures",
-        "Regression inventory report matches expected test assertions"
+        "User QA specification R-U: linked implementation context, complete automated battery and honest pending human retest",
+        "22/22 regression suites pass cleanly with zero failures"
       ],
       "checklist": [
         {
-          "text": "Execute RC technical regression and automated QA verification",
+          "text": "Verify CryptoDemon task context and release regression battery",
           "done": true
         }
       ],
@@ -1899,12 +1893,12 @@
     },
     {
       "id": "DMK-190",
-      "title": "A-SSDLC Remediation: Context Package Compiler & Proposal Contract v1.1",
-      "description": "Verify that context package compiler and proposal validation adhere to Schema 1.1 specifications. Full historical dependency graph remains in MASTER_WBS.yaml.",
+      "title": "Explicit external proposal schema 1.1 and MODIFY target validation",
+      "description": "Verify prose validation, distinct proposal/target IDs, scoped manifests, typed targets, structured errors, v1.0 compatibility, and immutable proposed amendments.",
       "type": "TASK",
       "status": "VERIFICATION",
       "priority": "P0",
-      "risk": "MEDIUM",
+      "risk": "HIGH",
       "sprint": 0,
       "dependencies": [],
       "requirements": [
@@ -1914,12 +1908,12 @@
         "EV-RC-190"
       ],
       "acceptanceCriteria": [
-        "Proposal schema 1.1 contract tests pass with zero schema validation errors",
-        "Proposal migration report confirms clean structural parity"
+        "Prose validation, distinct proposal/target IDs, scoped manifests, typed targets, structured errors, v1.0 compatibility and immutable proposed amendments",
+        "Proposal schema 1.1 contract tests pass with zero schema validation errors"
       ],
       "checklist": [
         {
-          "text": "Verify context package compiler and proposal contract v1.1",
+          "text": "Verify explicit external proposal schema 1.1 and MODIFY target validation",
           "done": true
         }
       ],
@@ -1930,38 +1924,45 @@
     },
     {
       "id": "DMK-191",
-      "title": "Self-Bootstrap Manifest & Verification Contract Definition",
-      "description": "Define SELF_BOOTSTRAP_V1 schema contract, validation suite, and canonical manifest artifact for PRJ-DOCMONSTAKRAKIN dogfooding.",
-      "type": "TASK",
-      "status": "READY",
+      "title": "Gio CryptoDemon human browser retest",
+      "description": "Manual human browser retest of CryptoDemon across wizard, discovery, import/review, sign-off, and state persistence without executing Gate 7.",
+      "type": "VERIFICATION",
+      "status": "BACKLOG",
       "priority": "P0",
       "risk": "HIGH",
-      "sprint": 1,
+      "sprint": 0,
       "dependencies": [
         "DMK-187",
         "DMK-188",
         "DMK-189",
-        "DMK-190"
+        "DMK-190",
+        "DMK-199"
       ],
       "requirements": [
-        "REQ-BOOT-001"
+        "REQ-RC-189",
+        "REQ-RC-190"
       ],
       "evidence": [],
       "acceptanceCriteria": [
-        "Define strict SELF_BOOTSTRAP_V1 schema contract and validation rules",
-        "Build canonical self-bootstrap manifest for PRJ-DOCMONSTAKRAKIN",
-        "Verify contract tests pass with zero errors"
+        "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks per the 10-step human browser retest in docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md",
+        "Step 1: Start build with operator-configured local reviewer roster; fresh CryptoDemon project with original supplied inputs; no synthetic test credentials or fixture approvals",
+        "Step 2: Verify maturity, assurance/risk, local deployment, open technical/SCM decisions and exactly 8 proposed baseline features; reopen/save without duplicates",
+        "Step 3: Inspect questionnaire coverage and derived requirements; no unrelated assumptions; deferred/blocked work remains visibly unresolved",
+        "Step 4: Compile linked ledger task; verify governing requirements, relevant features/ADRs, selected vs ratified architecture, omissions, and editable target manifest; unlinked task remains blocked",
+        "Step 5: Import schema 1.1 CREATE containing NaN/null/undefined prose; confirm no canonical artifact or approval request was created before review; sign in as authorized HUMAN, accept, and confirm server-assigned PROPOSED artifact with provenance",
+        "Step 6: Import valid MODIFY; verify original unchanged and acceptance adds proposed amendment; test nonexistent target, type mismatch, duplicate IDs, ${walletId} text; inspect indexed UI errors",
+        "Step 7: Open legacy schema 1.0 history; confirm readable; modify/reject proposals, reopen history, navigate imported workspaces and restart to verify persistence",
+        "Step 8: Request Sign-Off explicitly; verify unauthenticated/forged reviewers fail, same person cannot fill two quorum slots, and only distinct authorized human reviewers complete artifact approval; do not invoke release signoff",
+        "Step 9: Edit accepted ADR and verify new proposed revision; import package claiming approval and confirm governance becomes untrusted/proposed with historical claims retained",
+        "Step 10: Switch projects A-to-B-to-A and inspect collections/agents/next action; record screenshots, observed results, and defects as new DMK-191 evidence; leave Gate 7 unexecuted"
       ],
       "checklist": [
         {
-          "text": "Define SELF_BOOTSTRAP_V1 schema contract and manifest verification test suite",
+          "text": "Execute 10-step human manual retest checklist in docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md",
           "done": false
         }
       ],
-      "tests": [
-        "scripts/testSelfBootstrapContract.ts",
-        "scripts/validateSelfBootstrapManifestFile.ts"
-      ],
+      "tests": [],
       "updatedAt": "2026-09-19T00:00:00.000Z"
     },
     {
@@ -1972,10 +1973,8 @@
       "status": "READY",
       "priority": "P0",
       "risk": "HIGH",
-      "sprint": 1,
-      "dependencies": [
-        "DMK-191"
-      ],
+      "sprint": 0,
+      "dependencies": [],
       "requirements": [
         "REQ-BOOT-001"
       ],
@@ -2000,11 +1999,11 @@
       "id": "DMK-193",
       "title": "Execute Trusted Self-Bootstrap & Verify Canonical State",
       "description": "After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.",
-      "type": "TASK",
+      "type": "VERIFICATION",
       "status": "BACKLOG",
       "priority": "P0",
       "risk": "CRITICAL",
-      "sprint": 1,
+      "sprint": 0,
       "dependencies": [
         "DMK-192"
       ],
@@ -2030,11 +2029,11 @@
       "id": "DMK-194",
       "title": "Projects Workspace & Reliable Project Switching",
       "description": "Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.",
-      "type": "TASK",
+      "type": "FEATURE",
       "status": "BACKLOG",
       "priority": "P1",
       "risk": "MEDIUM",
-      "sprint": 2,
+      "sprint": 0,
       "dependencies": [
         "DMK-193"
       ],
@@ -2061,11 +2060,11 @@
       "id": "DMK-195",
       "title": "Controlled Documentation Workspace",
       "description": "In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows.",
-      "type": "TASK",
+      "type": "FEATURE",
       "status": "BACKLOG",
       "priority": "P1",
       "risk": "MEDIUM",
-      "sprint": 2,
+      "sprint": 0,
       "dependencies": [
         "DMK-193"
       ],
@@ -2090,13 +2089,13 @@
     },
     {
       "id": "DMK-196",
-      "title": "Governance Remediation Batch 2 — Formal Requirement Sign-Off UX",
+      "title": "Batch 2 — Formal Requirement Sign-Off UX",
       "description": "Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.",
-      "type": "TASK",
+      "type": "FEATURE",
       "status": "BACKLOG",
       "priority": "P1",
       "risk": "MEDIUM",
-      "sprint": 2,
+      "sprint": 0,
       "dependencies": [
         "DMK-194"
       ],
@@ -2123,13 +2122,13 @@
     },
     {
       "id": "DMK-197",
-      "title": "Governance Remediation Batch 3 — Approval Inbox & Canonical Quorum Synchronization",
+      "title": "Batch 3 — Approval Inbox & Canonical Quorum Synchronization",
       "description": "Approval Inbox UI with distinct human dual-signoff quorum verification.",
-      "type": "TASK",
+      "type": "FEATURE",
       "status": "BACKLOG",
       "priority": "P1",
       "risk": "HIGH",
-      "sprint": 3,
+      "sprint": 0,
       "dependencies": [
         "DMK-196"
       ],
@@ -2155,13 +2154,13 @@
     },
     {
       "id": "DMK-198",
-      "title": "Governance Remediation Batch 4 — Reviewer Provisioning / Governance Setup Usability",
+      "title": "Batch 4 — Reviewer Provisioning / Governance Setup Usability",
       "description": "Reviewer management and onboarding usability without exposing plaintext credentials.",
       "type": "TASK",
       "status": "BACKLOG",
       "priority": "P1",
       "risk": "HIGH",
-      "sprint": 3,
+      "sprint": 0,
       "dependencies": [
         "DMK-197"
       ],
@@ -2187,30 +2186,28 @@
     },
     {
       "id": "DMK-199",
-      "title": "Governance Remediation Batch 5 — Full Regression & Evidence Cleanup",
-      "description": "Comprehensive end-to-end regression execution, evidence artifact generation, and cleanup before human browser retest.",
-      "type": "TASK",
+      "title": "Batch 5 — Full Regression & Evidence Cleanup",
+      "description": "Run full regression suite across all components, compile complete evidence, and clean up temporary artifacts.",
+      "type": "VERIFICATION",
       "status": "BACKLOG",
-      "priority": "P0",
-      "risk": "MEDIUM",
-      "sprint": 4,
+      "priority": "P1",
+      "risk": "HIGH",
+      "sprint": 0,
       "dependencies": [
         "DMK-198"
       ],
       "requirements": [
-        "REQ-REL-001",
-        "REQ-RC-189",
-        "REQ-RC-190"
+        "REQ-RC-189"
       ],
       "evidence": [],
       "acceptanceCriteria": [
-        "Execute complete test suite across all modules and record fresh evidence records",
-        "Verify zero regression across technical baseline, CryptoDemon, discovery, and governance",
-        "Clean up transient test logs and prepare evidence artifacts for final human browser retest"
+        "Full automated regression passes cleanly across all test suites",
+        "Zero lint errors and clean production build",
+        "All evidence records compiled and linked to appropriate requirements and work items"
       ],
       "checklist": [
         {
-          "text": "Execute full test suite across all modules and record fresh evidence",
+          "text": "Execute full regression suite and verify evidence completeness",
           "done": false
         }
       ],
@@ -2227,7 +2224,7 @@
       "command": "npx tsx scripts/testCryptoDemon.ts",
       "result": "PASSED",
       "producer": "Automated Regression Test Runner",
-      "createdAt": "2026-09-19T02:15:00.000Z",
+      "createdAt": "2026-09-19T10:50:22Z",
       "sha256Hash": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
       "details": "Primary artifact is the committed CryptoDemon fixture evidence. The final regression inventory records 14 focused CryptoDemon checks and 47 production HTTP integration checks passing. Primary artifact: docs/07_verification/cryptodemon-fixture-evidence.json"
     },
@@ -2239,7 +2236,7 @@
       "command": "npx tsx scripts/testCryptoDemonIntegration.ts",
       "result": "PASSED",
       "producer": "Security Verification Harness",
-      "createdAt": "2026-09-19T02:20:00.000Z",
+      "createdAt": "2026-09-19T10:50:22Z",
       "sha256Hash": "3b1b0b11c60d0c82c84197228f27611b9744aae70b2135ad10dc970962be0c7f",
       "details": "Committed evidence records end-to-end integration and security assurance report. Primary artifact: docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md"
     },
@@ -2251,7 +2248,7 @@
       "command": "npm run test:complete",
       "result": "PASSED",
       "producer": "Automated Regression Test Runner",
-      "createdAt": "2026-09-19T02:25:00.000Z",
+      "createdAt": "2026-09-19T07:10:08.114Z",
       "sha256Hash": "7683a53778267b9494980a74352df6cf82b767f04c5574d357e66b614f419b80",
       "details": "Committed evidence records 22/22 regression suites passing across technical baseline and discovery modules. Primary artifact: docs/07_verification/rc-regression/results.json"
     },
@@ -2263,7 +2260,7 @@
       "command": "npx tsx scripts/testProposalContract.ts",
       "result": "PASSED",
       "producer": "Proposal Contract Test Runner",
-      "createdAt": "2026-09-19T02:30:00.000Z",
+      "createdAt": "2026-09-19T10:50:22Z",
       "sha256Hash": "a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0",
       "details": "Committed evidence records proposal schema 1.1 formal validation and migration verification report. Primary artifact: docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md"
     }
@@ -2290,7 +2287,7 @@
       "kind": "CONTROL",
       "authority": "REFERENCE",
       "title": "Master Work Breakdown Structure (WBS)",
-      "sha256Digest": "451c605962c884a056d9bfb81e2b8e5e2f451a26b8ee7f4e215d9cf8009e7420"
+      "sha256Digest": "e2b17499a1d4800da31f8cc92f1b46e3eb0345d6c395803db083f7dda281a06a"
     },
     {
       "id": "DOC-CTRL-004",
@@ -2298,7 +2295,7 @@
       "kind": "CONTROL",
       "authority": "GENERATED_PROJECTION",
       "title": "Master Work Breakdown Structure (WBS Projection)",
-      "sha256Digest": "7db0f1dfb6e0b76d65bc8e72668aec20156a00f93822dc0c4d49e7a2b4740610"
+      "sha256Digest": "f32f4ea6c32bb29ee89a85dc8bc5f0b0ba46087160025c40909a786d6c499c6f"
     },
     {
       "id": "DOC-CTRL-005",
