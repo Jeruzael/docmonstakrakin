@@ -1,16 +1,33 @@
 # Current session handoff
 
-Updated 2026-09-19.
+Updated 2026-09-20.
 
-- Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Supported Source-Control Environments:
+  - GIT (local clone / developer workstation / CI)
+  - AI_STUDIO_WORKSPACE (cloud container / sandbox)
+- Runtime Behavior:
+  - In GIT mode: runtime inspection reads branch, commit, and working-tree status directly from the local repository.
+  - In AI_STUDIO_WORKSPACE mode: git metadata is NOT_APPLICABLE and write access to parent repository git metadata is disabled by design.
+  - Static repository documentation must not fabricate runtime-specific git metadata.
+- Authoritative Local Operator Dry-Run Verification:
+  - Operator Execution Environment: GIT
+  - Branch at verification: gaistudio-4
+  - Verified Commit: 76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5
+  - Working Tree at verification: CLEAN
+  - Evaluated Manifest Digest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
+  - Dry-Run Status: SAFE_TO_REVIEW
+  - Mutation Count: 0
+  - Real Snapshot: NOT CREATED (.local/project-state.json absent)
+  - Review Binding Enforced: YES
+  - Anti-TOCTOU Protection Enforced: YES
+  - Preserved Projects: 2 (PRJ-ATLAS-01, PRJ-FINPAY-02)
+- Environment Note: AI Studio dry-run is valid for sandbox inspection, while local Git checkout is the authoritative merge/execute environment.
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Git Metadata: NOT AVAILABLE (AI Studio container sandbox; branch/commit/working-tree are NOT_APPLICABLE)
 - Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 4A — Trusted Self-Bootstrap Executor Security & Review Binding
+- Current Step: Step 4B — Environment-Neutral Control State & Local Dry-Run Record
 - DMK-192: VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW
 - DMK-193: BACKLOG / BLOCKED pending human authorization
 - Reviewed Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
@@ -62,11 +79,10 @@ The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39d
 ### Prior Batch Remediations (Historical Baseline)
 Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement state synchronization, `activeDrawerReqId` architecture, SecretStore standardized to `.secrets/`, legacy machine-token migration, fail-closed secret resolution, and reverse-chronological audit hashing. Gate 7 status is HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; Batch 2 is NOT started.
 
-## Next safe action
+## Next safe action (Human Operator Actions)
 
-1. Human review Step 4A (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md` and dry-run report).
-2. Synchronize gaistudio-4 with master.
-3. Run authoritative local verification.
-4. Merge Step 4A into master.
-5. Rerun dry-run from merged master.
-6. Only then consider explicit DMK-193 authorization.
+1. Review Step 4A / Step 4B changes (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md` and dry-run report).
+2. Verify on local Git checkout (`gaistudio-4`).
+3. Merge reviewed Step 4A / Step 4B into `master`.
+4. Rerun dry-run on `master` (`npm run bootstrap:self -- --dry-run`).
+5. Explicitly authorize DMK-193 before real bootstrap execution.

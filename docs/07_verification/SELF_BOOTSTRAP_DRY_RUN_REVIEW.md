@@ -1,10 +1,11 @@
-# Step 4 / DMK-192: Trusted Self-Bootstrap Dry-Run Review (Hardened Step 4A)
+# Step 4 / DMK-192: Trusted Self-Bootstrap Dry-Run Review (Hardened Step 4A / Step 4B)
 
 **Status**: READY_FOR_HUMAN_REVIEW  
 **Target Work Item**: `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run  
 **WBS Status**: `VERIFICATION_PENDING` (Blocked on Human Review)  
 **Next Work Item (Gated)**: `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State  
-**Execution Environment**: Google AI Studio workspace container (`AI_STUDIO_WORKSPACE`)  
+**Supported Environments**: `GIT` (Authoritative local clone) | `AI_STUDIO_WORKSPACE` (Sandbox container)  
+**Authoritative Local Verification**: `GIT` (branch: `gaistudio-4`, commit: `76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5`, status: `CLEAN`)  
 **Target Project ID**: `PRJ-DOCMONSTAKRAKIN`  
 **Manifest**: `bootstrap/docmonstakrakin.self-bootstrap.json`  
 **Authoritative Manifest SHA-256 Digest**: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`  
@@ -17,7 +18,7 @@
 
 ## 1. Executive Summary
 
-This document presents the formal technical review for **Step 4 / DMK-192** incorporating the **Step 4A Security & Review-Binding Corrections**.
+This document presents the formal technical review for **Step 4 / DMK-192** incorporating the **Step 4A Security & Review-Binding Corrections** and **Step 4B Environment-Neutral Operational State**.
 
 In accordance with `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`, the executor module (`server/bootstrap/selfBootstrapExecutor.ts`), pure integrity verification engine (`server/bootstrap/selfBootstrapIntegrity.ts`), and administrative CLI entrypoint (`scripts/bootstrapSelf.ts`) have been hardened and verified against the canonical manifest (`bootstrap/docmonstakrakin.self-bootstrap.json`).
 
@@ -34,7 +35,34 @@ In accordance with `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`, the executor mo
 
 ---
 
-## 2. Unpinned Living Control Documents
+## 2. Authoritative Local Operator Dry-Run Verification
+
+The canonical repository supports dual source-control environments (`GIT` and `AI_STUDIO_WORKSPACE`). While AI Studio dry-run is valid for sandbox inspection, local Git checkout verification is the authoritative gate prior to merging to `master` and executing canonical bootstrap.
+
+- **Execution Date**: 2026-09-20
+- **Environment**: `GIT` (local developer workstation / clone)
+- **Branch**: `gaistudio-4`
+- **Commit**: `76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5`
+- **Working Tree**: `CLEAN`
+- **Command**:
+  ```bash
+  npm run bootstrap:self -- --dry-run
+  ```
+- **Evaluated Manifest Digest**:
+  `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+- **Result**: `SAFE_TO_REVIEW`
+- **Mutation Count**: `0`
+- **Verified no files written to `.local/`**: Yes (`.local/project-state.json` absent and untouched)
+- **Verified existing snapshot untouched**: Yes (Preserved baseline `PRJ-ATLAS-01` and `PRJ-FINPAY-02` byte-identical)
+- **Verified review-binding guard and TOCTOU protection**: Yes (`--confirm-manifest-digest 229215f6...` required; post-review changes trigger fail-closed abort)
+- **Preserved Projects**: `2` (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`)
+- **Preservation Equivalence Hash**: `124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`
+
+*(Note: The historical AI Studio workspace dry-run record documented in Section 4 below remains intact for sandbox traceability.)*
+
+---
+
+## 3. Unpinned Living Control Documents
 
 Under `SELF_BOOTSTRAP_V1`, the manifest schema allows `sha256Digest` to be omitted for living control documents whose contents evolve continuously during project development. Rather than maintaining a brittle, hidden bypass list in the code, the manifest explicitly declares these documents with their canonical reference path, title, kind, and authority:
 
@@ -52,7 +80,7 @@ Under `SELF_BOOTSTRAP_V1`, the manifest schema allows `sha256Digest` to be omitt
 
 ---
 
-## 3. Dry-Run Projection Summary
+## 4. Dry-Run Projection Summary
 
 | Attribute | Projected Value | Invariant Verification |
 | :--- | :--- | :--- |
@@ -88,7 +116,7 @@ Under `SELF_BOOTSTRAP_V1`, the manifest schema allows `sha256Digest` to be omitt
 
 ---
 
-## 4. Verification Commands and Raw Execution Evidence
+## 5. Verification Commands and Raw Execution Evidence
 
 ### 4.1 Contract Verification (`npm run test:bootstrap:contract`)
 
@@ -245,7 +273,7 @@ FILESYSTEM & MUTATION TOTALS:
 
 ---
 
-## 5. Notice to Human Operator: Step 5 Execution Boundary
+## 6. Notice to Human Operator: Step 5 Execution Boundary
 
 > [!CAUTION]
 > **STEP 5 (`DMK-193`) IS STRICTLY BLOCKED PENDING EXPLICIT HUMAN AUTHORIZATION.**
