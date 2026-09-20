@@ -47,7 +47,9 @@ function printHumanReport(report: SelfBootstrapReport): void {
   console.log('================================================================');
   console.log(`Execution Mode:          ${report.mode}`);
   console.log(`Target Project ID:       ${report.projectToCreate}`);
-  console.log(`Bootstrap Schema:        v${report.schemaVersion} (${report.bootstrapMode})`);
+  console.log(`Manifest Schema:         ${report.manifestSchemaVersion}`);
+  console.log(`Project State Schema:    ${report.projectStateSchemaVersion}`);
+  console.log(`Bootstrap Mode:          ${report.bootstrapMode}`);
   console.log(`Manifest Digest:         ${report.manifestDigest ?? 'N/A'}`);
   console.log(`Overall Status:          ${report.status}`);
   console.log('----------------------------------------------------------------');

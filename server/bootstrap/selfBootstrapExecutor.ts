@@ -58,6 +58,8 @@ export interface SelfBootstrapReport {
   errors: string[];
   warnings: string[];
   mode: 'DRY_RUN' | 'EXECUTE';
+  manifestSchemaVersion: string;
+  projectStateSchemaVersion: number;
   schemaVersion: number;
   bootstrapMode: string;
   projectToCreate: string;
@@ -175,6 +177,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
     errors,
     warnings,
     mode,
+    manifestSchemaVersion: 'SELF_BOOTSTRAP_V1',
+    projectStateSchemaVersion: PROJECT_STATE_SCHEMA_VERSION,
     schemaVersion: PROJECT_STATE_SCHEMA_VERSION,
     bootstrapMode: 'TRUSTED_LOCAL_BOOTSTRAP',
     projectToCreate: 'PRJ-DOCMONSTAKRAKIN',
@@ -280,6 +284,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
   if (targetProjectAlreadyExists) {
     errors.push(`Project '${targetProjectId}' already exists in canonical store. Self-bootstrap is CREATE_ONLY.`);
     const conflictReport = defaultReport('PROJECT_ALREADY_EXISTS');
+    conflictReport.manifestSchemaVersion = manifest.schemaVersion;
+    conflictReport.projectStateSchemaVersion = PROJECT_STATE_SCHEMA_VERSION;
+    conflictReport.bootstrapMode = manifest.mode;
     conflictReport.snapshot.targetProjectExists = true;
     conflictReport.manifestDigest = integrityResult.manifestDigest;
     conflictReport.existingProjects = {
@@ -411,6 +418,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       errors: [],
       warnings,
       mode: 'DRY_RUN',
+      manifestSchemaVersion: manifest.schemaVersion,
+      projectStateSchemaVersion: PROJECT_STATE_SCHEMA_VERSION,
       schemaVersion: PROJECT_STATE_SCHEMA_VERSION,
       bootstrapMode: manifest.mode,
       projectToCreate: targetProjectId,
@@ -479,6 +488,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       `Execution authorization guard failed. Required: --confirm-project-id ${targetProjectId} and DMK_SELF_BOOTSTRAP_EXECUTE=${targetProjectId}`
     );
     const unauthReport = defaultReport('UNAUTHORIZED_EXECUTION');
+    unauthReport.manifestSchemaVersion = manifest.schemaVersion;
+    unauthReport.projectStateSchemaVersion = PROJECT_STATE_SCHEMA_VERSION;
+    unauthReport.bootstrapMode = manifest.mode;
     unauthReport.manifestDigest = manifestDigest;
     unauthReport.existingProjects = {
       ids: existingProjectIds,
@@ -500,6 +512,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       `Manifest digest confirmation mismatch or missing. Required: --confirm-manifest-digest matching reviewed manifest digest (${manifestDigest})`
     );
     const mismatchReport = defaultReport('MANIFEST_DIGEST_MISMATCH');
+    mismatchReport.manifestSchemaVersion = manifest.schemaVersion;
+    mismatchReport.projectStateSchemaVersion = PROJECT_STATE_SCHEMA_VERSION;
+    mismatchReport.bootstrapMode = manifest.mode;
     mismatchReport.manifestDigest = manifestDigest;
     mismatchReport.existingProjects = {
       ids: existingProjectIds,
@@ -524,6 +539,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
     errors: [],
     warnings,
     mode: 'EXECUTE',
+    manifestSchemaVersion: manifest.schemaVersion,
+    projectStateSchemaVersion: PROJECT_STATE_SCHEMA_VERSION,
     schemaVersion: PROJECT_STATE_SCHEMA_VERSION,
     bootstrapMode: manifest.mode,
     projectToCreate: targetProjectId,

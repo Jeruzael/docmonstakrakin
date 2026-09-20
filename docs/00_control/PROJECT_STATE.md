@@ -19,18 +19,19 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 Step 4 / Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review-Binding Correction) is VERIFICATION_PENDING (READY_FOR_HUMAN_REVIEW):
 - Self-Bootstrap Executor: `server/bootstrap/selfBootstrapExecutor.ts` implements `executeSelfBootstrap` independently of the web server, without Vite or live secret store initialization.
-- Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification. Code-level bypass heuristics (`isEvolvingControlDoc`) completely removed in favor of manifest-declared unpinned living control documents (`DOC-CTRL-002`, `003`, `004`, `006`).
+- Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification. Code-level bypass heuristics completely removed in favor of manifest-declared unpinned living control documents (`DOC-CTRL-002`, `003`, `004`, `006`).
 - Review-Binding & Anti-TOCTOU Guard: Execution strictly requires `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`), `--confirm-project-id PRJ-DOCMONSTAKRAKIN`, and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Manifest changes after review trigger fail-closed abort.
-- CLI Entrypoint: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs). Arbitrary `--manifest` CLI selection removed to preserve trust boundary.
+- CLI Entrypoint & Clean Schema Reporting: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs). Arbitrary `--manifest` CLI selection removed. Separates Manifest Schema (`SELF_BOOTSTRAP_V1`), Project State Schema (`1`), and Bootstrap Mode (`TRUSTED_LOCAL_BOOTSTRAP`).
 - Zero Mutations in Dry-Run: Performs 100% candidate state projection, verifies existing project preservation (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state equivalence hash (`124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`), constructs deterministic candidate audit event, verifies chained genesis audit, and produces `mutationCount: 0`. Leaves `.local/` uncreated and untouched.
 - Accurate Snapshot Action Semantics: Projected snapshot status distinguishes create vs replace: `wouldWriteSnapshot: true`, `wouldCreateSnapshot: true` (since `.local/project-state.json` is uncreated), `wouldReplaceSnapshot: false`.
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are guaranteed cleaned up.
 - Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 16 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, validation report non-interference, TOCTOU defense, and pinned vs unpinned document handling (16/16 passing).
-- Step 5 (DMK-193: Real Canonical Self-Bootstrap Execution) remains strictly BLOCKED until human operator review and explicit authorization.
+- Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).
+- Step 5 (DMK-193: Real Canonical Self-Bootstrap Execution) remains strictly BLOCKED / BACKLOG until human operator review and explicit authorization.
 
-Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
+### Historical Step 3 Baseline (Construct Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest)
+Note: The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289` is historical. The current authoritative reviewed manifest digest for execution is `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`.
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289`.
 - Manifest Entity Accounting:
   - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all 15 `PROPOSED`; 12 `PRODUCT_BASELINE`, 3 `MANUAL_ENTRY`)
   - 24 Requirements (14 `VERIFIED`, 4 `UNDER_REVIEW`, 6 `PROPOSED`)
@@ -40,12 +41,12 @@ Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is REA
   - 6 Architecture Components (`CMP-01` through `CMP-05`, `CMP-BOOT-01`, all `PROPOSED`)
   - 13 WorkItems: 4 `VERIFICATION` (`DMK-187`..`190` with real evidence); 1 `READY` (`DMK-192`); 8 `BACKLOG` (`DMK-191`, `DMK-193`..`199`)
   - 4 Evidence Records (`EV-RC-187`, `EV-RC-188`, `EV-RC-189`, `EV-RC-190` with exact real timestamps and real SHA-256 digests)
-  - 28 Controlled Documents (27 with pre-computed `sha256Digest`, `PROJECT_STATE.md` omitted to avoid recursive self-hash churn)
+  - 28 Controlled Documents (24 pinned with verified SHA-256 byte digests, 4 unpinned living control documents)
 - Future Work Items Planned: `DMK-192` through `DMK-199` (Self-bootstrap work starts at `DMK-192`: Trusted Bootstrap Executor, Bootstrap Verification, Projects Workspace, Controlled Docs, Batch 2 Sign-Off UX, Batch 3 Quorum Sync, Batch 4 Reviewer Usability, Batch 5 Full Regression). `DMK-191` is reserved for Gio CryptoDemon human browser retest per `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md`.
 - Read-Only Validator Script: `scripts/validateSelfBootstrapManifestFile.ts` (invoked via `npm run test:bootstrap:manifest`).
-- Verification Report: Generated at `docs/07_verification/self-bootstrap-manifest-validation.json` (`valid: true`, `mutationCount: 0`, 27 document digests verified, 4 evidence artifact hashes verified).
-- Review Report: Generated at `docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md`.
-- Invariant: Zero bootstrap execution performed during Step 3; `.local/project-state.json` untouched; Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`; Batch 2 governance UX remains `NOT STARTED`.
+- Verification Report: Generated at `docs/07_verification/self-bootstrap-manifest-validation.json` (`valid: true`, `mutationCount: 0`, 24 pinned document digests verified, 4 unpinned living control documents checked, 4 evidence artifact hashes verified).
+- Review Report: Generated at `docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`.
+- Invariant: Zero bootstrap execution performed; `.local/project-state.json` untouched; Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`; Batch 2 governance UX remains `NOT STARTED`.
 
 Step 2A (Harden Trusted Self-Bootstrap Contract) is technically complete:
 - Hardened Schema: `SELF_BOOTSTRAP_V1` enforced with closed root schema (`PERMITTED_ROOT_KEYS`), rejecting unexpected properties.
@@ -79,14 +80,15 @@ Batch 1 and Batch 1.5 Final Correction remain technically complete:
 The authoritative automated result is in `docs/07_verification/rc-regression/results.json`, with 22/22 suites passing and raw per-suite logs in `docs/07_verification/rc-regression/`. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations, and retest steps are in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md` and `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md`.
 
 Next safe sequence:
-human review of Step 3
-→ operator merges Step 3
-→ Step 4 implements DMK-192 executor + true dry-run
-→ dry-run review
-→ explicit execution authorization
-→ DMK-193 execution and canonical verification
+Step 4A human review
+→ synchronize gaistudio-4 with master
+→ authoritative local verification
+→ merge reviewed Step 4A into master
+→ rerun bootstrap dry-run from merged master
+→ explicit DMK-193 authorization
+→ DMK-193 bootstrap execution and canonical verification
 → DMK-194 Projects Workspace
-→ DMK-195 Controlled Docs Workspace
+→ DMK-195 Controlled Documentation Workspace
 → DMK-196 Batch 2
 → DMK-197 Batch 3
 → DMK-198 Batch 4

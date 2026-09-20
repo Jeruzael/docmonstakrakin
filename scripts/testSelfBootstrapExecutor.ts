@@ -97,6 +97,9 @@ console.log('================================================================');
 
     assert.equal(report.status, 'SAFE_TO_REVIEW');
     assert.equal(report.mode, 'DRY_RUN');
+    assert.equal(report.manifestSchemaVersion, 'SELF_BOOTSTRAP_V1');
+    assert.equal(report.projectStateSchemaVersion, 1);
+    assert.equal(report.bootstrapMode, 'TRUSTED_LOCAL_BOOTSTRAP');
     assert.equal(report.mutationCount, 0);
     assert.equal(report.snapshot.existedBefore, false);
     assert.equal(report.snapshot.wouldWriteSnapshot, true);
