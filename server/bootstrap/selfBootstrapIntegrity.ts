@@ -14,7 +14,9 @@ export interface SelfBootstrapIntegrityResult {
   warnings: string[];
   counts: BootstrapEntityCounts;
   manifestDigest: string | null;
+  documentReferencesChecked: number;
   documentHashesVerified: number;
+  documentHashesUnpinned: number;
   evidenceHashesVerified: number;
   unresolvedReferenceErrors: string[];
   mutationCount: 0;
@@ -61,9 +63,12 @@ export function verifySelfBootstrapIntegrity(
   }
 
   // 3. Controlled Document Existence & SHA-256 Digest Verification
+  let documentReferencesChecked = 0;
   let documentHashesVerified = 0;
+  let documentHashesUnpinned = 0;
   if (Array.isArray(manifest.documents)) {
     for (const doc of manifest.documents) {
+      documentReferencesChecked++;
       const docPath = path.resolve(workspaceRoot, doc.path);
       if (!fs.existsSync(docPath)) {
         errors.push(`Document not found on disk: id=${doc.id}, path=${doc.path}`);
@@ -75,29 +80,17 @@ export function verifySelfBootstrapIntegrity(
           const docBytes = fs.readFileSync(docPath);
           const computedDigest = crypto.createHash('sha256').update(docBytes).digest('hex');
           if (computedDigest.toLowerCase() !== doc.sha256Digest.toLowerCase()) {
-            const isEvolvingControlDoc = [
-              'docs/00_control/MASTER_WBS.yaml',
-              'docs/00_control/MASTER_WBS.md',
-              'docs/00_control/TRACEABILITY_MATRIX.md',
-              'docs/00_control/PROJECT_STATE.md',
-            ].includes(doc.path);
-
-            if (isEvolvingControlDoc) {
-              warnings.push(
-                `Document digest updated from baseline for ${doc.id} (${doc.path}): baseline ${doc.sha256Digest}, current ${computedDigest}`
-              );
-              documentHashesVerified++;
-            } else {
-              errors.push(
-                `Document digest mismatch for ${doc.id} (${doc.path}): expected ${doc.sha256Digest}, computed ${computedDigest}`
-              );
-            }
+            errors.push(
+              `Document digest mismatch for ${doc.id} (${doc.path}): expected ${doc.sha256Digest}, computed ${computedDigest}`
+            );
           } else {
             documentHashesVerified++;
           }
         } catch (readErr: unknown) {
           errors.push(`Failed to read document file for digest verification: ${doc.path} (${String(readErr)})`);
         }
+      } else {
+        documentHashesUnpinned++;
       }
     }
   }
@@ -174,7 +167,9 @@ export function verifySelfBootstrapIntegrity(
     warnings,
     counts: validationResult.counts,
     manifestDigest: validationResult.manifestDigest ?? null,
+    documentReferencesChecked,
     documentHashesVerified,
+    documentHashesUnpinned,
     evidenceHashesVerified,
     unresolvedReferenceErrors: dryRunReport.unresolvedReferenceErrors,
     mutationCount: 0,

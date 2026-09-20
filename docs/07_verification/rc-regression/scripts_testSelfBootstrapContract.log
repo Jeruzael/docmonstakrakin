@@ -1,0 +1,22 @@
+PASS valid complete manifest passes validation with zero errors
+PASS invalid schemaVersion and mode fail validation
+PASS closed root schema: unexpected root properties are strictly rejected
+PASS provenance & identity: enforces PRJ-DOCMONSTAKRAKIN, repository, and 40-character Git SHA
+PASS structural sensitive-key scanner detects prohibited credential fields at root or nested levels
+PASS recursive governance field scanning detects injection at any depth without leaking values
+PASS workItem status rules: VERIFIED, APPROVED, and RELEASED are strictly forbidden
+PASS governance-bearing entity statuses: Requirement APPROVED, ADR ACCEPTED, Feature APPROVED are rejected
+PASS strict runtime enum validation: domain types validated against allowlists without leaking raw values
+PASS duplicate entity IDs in any canonical collection are detected and rejected
+PASS complete referential integrity: verifies cross-entity link resolution
+PASS controlled document path validation: enforces repository-relative, docs/ prefix, traversal rejection
+PASS cross-project entity contamination is rejected
+PASS canonical JSON serialization is key-order invariant and produces deterministic SHA-256 digest
+PASS canonical JSON compatibility: self-bootstrap helper matches portable-package helper identically
+PASS dry-run report accurately summarizes manifest and guarantees zero mutations
+PASS WorkItem domain field enforcement rejects missing fields and unmodeled attributes
+PASS Evidence domain field enforcement rejects missing fields and unmodeled attributes
+PASS production PRJ-DOCMONSTAKRAKIN real manifest (bootstrap/docmonstakrakin.self-bootstrap.json) passes validation with zero errors and valid dynamic digest
+
+=== Self-Bootstrap Contract Verification Complete ===
+Results: ALL TESTS PASSED

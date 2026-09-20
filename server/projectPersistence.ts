@@ -77,7 +77,15 @@ export function snapshotProjectStore(store: ProjectStore | any): ProjectStateSna
  * 3. Atomically renames the temporary file to target.
  * 4. Cleans up temporary file on failure.
  */
-export function writeProjectSnapshotAtomic(snapshot: ProjectStateSnapshot, workspaceRoot: string = process.cwd()): void {
+export interface WriteSnapshotAtomicOptions {
+  beforeRename?: (tempPath: string, targetPath: string) => void;
+}
+
+export function writeProjectSnapshotAtomic(
+  snapshot: ProjectStateSnapshot,
+  workspaceRoot: string = process.cwd(),
+  options?: WriteSnapshotAtomicOptions
+): void {
   if (!snapshot || snapshot.schemaVersion !== PROJECT_STATE_SCHEMA_VERSION || !Array.isArray(snapshot.state?.projects)) {
     throw new Error('Cannot write malformed project state snapshot');
   }
@@ -91,6 +99,9 @@ export function writeProjectSnapshotAtomic(snapshot: ProjectStateSnapshot, works
   const tempFile = path.join(targetDir, `project-state.json.tmp.${crypto.randomUUID()}`);
   try {
     fs.writeFileSync(tempFile, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
+    if (options?.beforeRename) {
+      options.beforeRename(tempFile, targetFile);
+    }
     fs.renameSync(tempFile, targetFile);
   } catch (err: unknown) {
     try {

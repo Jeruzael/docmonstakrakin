@@ -10,20 +10,22 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 4 — Trusted Self-Bootstrap Executor & Read-Only Dry-Run (DMK-192 COMPLETE / READY_FOR_HUMAN_REVIEW)
+- Current Step: Step 4 / Step 4A — Trusted Self-Bootstrap Executor Security & Review-Binding Correction (DMK-192 VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## Current work and evidence
 
-Step 4 (DMK-192: Trusted Self-Bootstrap Executor & Read-Only Dry-Run) is COMPLETE (READY_FOR_HUMAN_REVIEW):
+Step 4 / Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review-Binding Correction) is VERIFICATION_PENDING (READY_FOR_HUMAN_REVIEW):
 - Self-Bootstrap Executor: `server/bootstrap/selfBootstrapExecutor.ts` implements `executeSelfBootstrap` independently of the web server, without Vite or live secret store initialization.
-- Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification.
-- CLI Entrypoint: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs).
-- Zero Mutations in Dry-Run: Performs 100% candidate state projection, verifies existing project preservation (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state equivalence hash, constructs deterministic candidate audit event, verifies chained genesis audit, and produces `mutationCount: 0`. Leaves `.local/` uncreated and untouched.
-- Execution Authorization Guard: Multi-factor CLI and environment guard (`--confirm-project-id PRJ-DOCMONSTAKRAKIN` and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`) strictly blocks unauthorized execution.
-- Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 11 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, and validation report non-interference.
+- Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification. Code-level bypass heuristics (`isEvolvingControlDoc`) completely removed in favor of manifest-declared unpinned living control documents (`DOC-CTRL-002`, `003`, `004`, `006`).
+- Review-Binding & Anti-TOCTOU Guard: Execution strictly requires `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`), `--confirm-project-id PRJ-DOCMONSTAKRAKIN`, and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Manifest changes after review trigger fail-closed abort.
+- CLI Entrypoint: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs). Arbitrary `--manifest` CLI selection removed to preserve trust boundary.
+- Zero Mutations in Dry-Run: Performs 100% candidate state projection, verifies existing project preservation (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state equivalence hash (`124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`), constructs deterministic candidate audit event, verifies chained genesis audit, and produces `mutationCount: 0`. Leaves `.local/` uncreated and untouched.
+- Accurate Snapshot Action Semantics: Projected snapshot status distinguishes create vs replace: `wouldWriteSnapshot: true`, `wouldCreateSnapshot: true` (since `.local/project-state.json` is uncreated), `wouldReplaceSnapshot: false`.
+- Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are guaranteed cleaned up.
+- Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 16 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, validation report non-interference, TOCTOU defense, and pinned vs unpinned document handling (16/16 passing).
 - Step 5 (DMK-193: Real Canonical Self-Bootstrap Execution) remains strictly BLOCKED until human operator review and explicit authorization.
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:

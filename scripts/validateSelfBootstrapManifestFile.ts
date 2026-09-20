@@ -56,7 +56,8 @@ function main(): void {
   console.log(`Result:               ${overallValid ? 'PASSED (VALID)' : 'FAILED (INVALID)'}`);
   console.log(`Manifest Digest:      ${result.manifestDigest ?? 'N/A'}`);
   console.log(`Mutation Count:       ${result.mutationCount} (In-memory verification only)`);
-  console.log(`Document Hashes:      ${result.documentHashesVerified} verified`);
+  console.log(`Document References:  ${result.documentReferencesChecked} checked`);
+  console.log(`Document Hashes:      ${result.documentHashesVerified} verified (${result.documentHashesUnpinned} unpinned living docs)`);
   console.log(`Evidence Hashes:      ${result.evidenceHashesVerified} verified`);
   console.log(`Entity Counts:`);
   console.log(`  Features:           ${result.counts.features}`);
@@ -93,7 +94,9 @@ function main(): void {
     warnings: result.warnings,
     counts: result.counts,
     manifestDigest: result.manifestDigest ?? null,
+    documentReferencesChecked: result.documentReferencesChecked,
     documentHashesVerified: result.documentHashesVerified,
+    documentHashesUnpinned: result.documentHashesUnpinned,
     evidenceHashesVerified: result.evidenceHashesVerified,
     unresolvedReferenceErrors: result.unresolvedReferenceErrors,
     mutationCount: 0,

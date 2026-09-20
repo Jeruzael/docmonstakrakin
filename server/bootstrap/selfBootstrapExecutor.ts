@@ -9,6 +9,7 @@ import {
   writeProjectSnapshotAtomic,
   resolveProjectStatePath,
   PROJECT_STATE_SCHEMA_VERSION,
+  type WriteSnapshotAtomicOptions,
 } from '../projectPersistence.ts';
 import {
   verifySelfBootstrapIntegrity,
@@ -34,19 +35,22 @@ export type SelfBootstrapStatus =
   | 'INVALID_EXISTING_SNAPSHOT'
   | 'PRESERVATION_CHECK_FAILED'
   | 'AUDIT_VALIDATION_FAILED'
-  | 'UNAUTHORIZED_EXECUTION';
+  | 'UNAUTHORIZED_EXECUTION'
+  | 'MANIFEST_DIGEST_MISMATCH';
 
 export interface SelfBootstrapOptions {
   workspaceRoot?: string;
   manifestPath?: string;
   mode: 'DRY_RUN' | 'EXECUTE';
   confirmProjectId?: string;
+  confirmManifestDigest?: string;
   authEnvValue?: string;
   actor?: string;
   clock?: () => string;
   generateAuditId?: () => string;
   // Test hook for simulating mutation/preservation failures
   simulateUnrelatedMutation?: boolean;
+  writeAtomicOptions?: WriteSnapshotAtomicOptions;
 }
 
 export interface SelfBootstrapReport {
@@ -61,7 +65,9 @@ export interface SelfBootstrapReport {
   snapshot: {
     path: string;
     existedBefore: boolean;
+    wouldWriteSnapshot: boolean;
     wouldCreateSnapshot: boolean;
+    wouldReplaceSnapshot: boolean;
     targetProjectExists: boolean;
   };
   existingProjects: {
@@ -72,8 +78,8 @@ export interface SelfBootstrapReport {
     preservedProjectIds: string[];
     preservedProjectCount: number;
     unrelatedStateEquivalent: boolean;
-    beforeHash: string;
-    candidateHash: string;
+    beforeUnrelatedStateHash: string;
+    candidateUnrelatedStateHash: string;
   };
   candidate: {
     projectCountAfterBootstrap: number;
@@ -176,7 +182,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
     snapshot: {
       path: snapshotPath,
       existedBefore: snapshotExistedBefore,
+      wouldWriteSnapshot: false,
       wouldCreateSnapshot: !snapshotExistedBefore,
+      wouldReplaceSnapshot: snapshotExistedBefore,
       targetProjectExists: false,
     },
     existingProjects: {
@@ -187,8 +195,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       preservedProjectIds: [],
       preservedProjectCount: 0,
       unrelatedStateEquivalent: false,
-      beforeHash: '',
-      candidateHash: '',
+      beforeUnrelatedStateHash: '',
+      candidateUnrelatedStateHash: '',
     },
     candidate: {
       projectCountAfterBootstrap: 0,
@@ -380,7 +388,20 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
 
   if (!unrelatedStateEquivalent) {
     errors.push('Unrelated project state was modified during candidate construction. Fail-closed.');
-    return defaultReport('PRESERVATION_CHECK_FAILED');
+    const failPreserveReport = defaultReport('PRESERVATION_CHECK_FAILED');
+    failPreserveReport.manifestDigest = integrityResult.manifestDigest;
+    failPreserveReport.existingProjects = {
+      ids: existingProjectIds,
+      count: existingProjectIds.length,
+    };
+    failPreserveReport.preservation = {
+      preservedProjectIds: existingProjectIds,
+      preservedProjectCount: existingProjectIds.length,
+      unrelatedStateEquivalent: false,
+      beforeUnrelatedStateHash: beforeHash,
+      candidateUnrelatedStateHash: candidateHash,
+    };
+    return failPreserveReport;
   }
 
   // STEP 11: DRY_RUN mode handling
@@ -397,7 +418,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       snapshot: {
         path: snapshotPath,
         existedBefore: snapshotExistedBefore,
-        wouldCreateSnapshot: true,
+        wouldWriteSnapshot: true,
+        wouldCreateSnapshot: !snapshotExistedBefore,
+        wouldReplaceSnapshot: snapshotExistedBefore,
         targetProjectExists: false,
       },
       existingProjects: {
@@ -408,8 +431,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
         preservedProjectIds: existingProjectIds,
         preservedProjectCount: existingProjectIds.length,
         unrelatedStateEquivalent: true,
-        beforeHash,
-        candidateHash,
+        beforeUnrelatedStateHash: beforeHash,
+        candidateUnrelatedStateHash: candidateHash,
       },
       candidate: {
         projectCountAfterBootstrap: candidate.projects.length,
@@ -455,12 +478,46 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
     errors.push(
       `Execution authorization guard failed. Required: --confirm-project-id ${targetProjectId} and DMK_SELF_BOOTSTRAP_EXECUTE=${targetProjectId}`
     );
-    return defaultReport('UNAUTHORIZED_EXECUTION');
+    const unauthReport = defaultReport('UNAUTHORIZED_EXECUTION');
+    unauthReport.manifestDigest = manifestDigest;
+    unauthReport.existingProjects = {
+      ids: existingProjectIds,
+      count: existingProjectIds.length,
+    };
+    unauthReport.preservation = {
+      preservedProjectIds: existingProjectIds,
+      preservedProjectCount: existingProjectIds.length,
+      unrelatedStateEquivalent: true,
+      beforeUnrelatedStateHash: beforeHash,
+      candidateUnrelatedStateHash: candidateHash,
+    };
+    return unauthReport;
+  }
+
+  // Verify reviewed manifest digest guard
+  if (!options.confirmManifestDigest || options.confirmManifestDigest.toLowerCase() !== (manifestDigest ?? '').toLowerCase()) {
+    errors.push(
+      `Manifest digest confirmation mismatch or missing. Required: --confirm-manifest-digest matching reviewed manifest digest (${manifestDigest})`
+    );
+    const mismatchReport = defaultReport('MANIFEST_DIGEST_MISMATCH');
+    mismatchReport.manifestDigest = manifestDigest;
+    mismatchReport.existingProjects = {
+      ids: existingProjectIds,
+      count: existingProjectIds.length,
+    };
+    mismatchReport.preservation = {
+      preservedProjectIds: existingProjectIds,
+      preservedProjectCount: existingProjectIds.length,
+      unrelatedStateEquivalent: true,
+      beforeUnrelatedStateHash: beforeHash,
+      candidateUnrelatedStateHash: candidateHash,
+    };
+    return mismatchReport;
   }
 
   // Atomically persist candidate state snapshot
   const snapshotToPersist = snapshotProjectStore(candidate);
-  writeProjectSnapshotAtomic(snapshotToPersist, workspaceRoot);
+  writeProjectSnapshotAtomic(snapshotToPersist, workspaceRoot, options.writeAtomicOptions);
 
   return {
     status: 'EXECUTED',
@@ -474,7 +531,9 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
     snapshot: {
       path: snapshotPath,
       existedBefore: snapshotExistedBefore,
-      wouldCreateSnapshot: true,
+      wouldWriteSnapshot: true,
+      wouldCreateSnapshot: !snapshotExistedBefore,
+      wouldReplaceSnapshot: snapshotExistedBefore,
       targetProjectExists: false,
     },
     existingProjects: {
@@ -485,8 +544,8 @@ export function executeSelfBootstrap(options: SelfBootstrapOptions): SelfBootstr
       preservedProjectIds: existingProjectIds,
       preservedProjectCount: existingProjectIds.length,
       unrelatedStateEquivalent: true,
-      beforeHash,
-      candidateHash,
+      beforeUnrelatedStateHash: beforeHash,
+      candidateUnrelatedStateHash: candidateHash,
     },
     candidate: {
       projectCountAfterBootstrap: candidate.projects.length,

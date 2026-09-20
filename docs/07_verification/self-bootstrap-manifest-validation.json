@@ -1,11 +1,7 @@
 {
   "valid": true,
   "errors": [],
-  "warnings": [
-    "Document digest updated from baseline for DOC-CTRL-003 (docs/00_control/MASTER_WBS.yaml): baseline 42c8c5008f537875649d8a0bb68437608d22648f9836ac324d0cdfb0238659ab, current 21dbc3ddd5f50d005ae7db1fb1517215fe7a6cd7e0350ad61ff20346bce78eb3",
-    "Document digest updated from baseline for DOC-CTRL-004 (docs/00_control/MASTER_WBS.md): baseline a8fb49215649e669f9582ffb9a42cd310c11b13565f6f24ad249040e93fcea7f, current 953a6d66e6af574a9a1ff3f04356438aa12c888681be8a27270d4d9185540e3d",
-    "Document digest updated from baseline for DOC-CTRL-006 (docs/00_control/TRACEABILITY_MATRIX.md): baseline 5c18b8ee0716a43545049033608c3d0885e3ca55d1a5166f0190bd9c84287e6e, current 23046b21e16aee40d1ded332cb7d9cd8983126a81a69ed858b7697a6d2c0fe02"
-  ],
+  "warnings": [],
   "counts": {
     "features": 15,
     "requirements": 24,
@@ -17,8 +13,10 @@
     "evidence": 4,
     "documents": 28
   },
-  "manifestDigest": "937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289",
-  "documentHashesVerified": 27,
+  "manifestDigest": "229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36",
+  "documentReferencesChecked": 28,
+  "documentHashesVerified": 24,
+  "documentHashesUnpinned": 4,
   "evidenceHashesVerified": 4,
   "unresolvedReferenceErrors": [],
   "mutationCount": 0

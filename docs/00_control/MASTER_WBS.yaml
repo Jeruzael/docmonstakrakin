@@ -114,7 +114,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "COMPLETE"
+    status: "VERIFICATION_PENDING"
     dependencies: []
     requirements: ["REQ-BOOT-001"]
     architecture_links: ["CMP-BOOT-01"]

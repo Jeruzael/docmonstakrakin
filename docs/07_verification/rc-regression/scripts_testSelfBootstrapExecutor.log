@@ -1,0 +1,22 @@
+================================================================
+docmonstakrakin - SELF-BOOTSTRAP EXECUTOR REGRESSION SUITE (DMK-192)
+================================================================
+✓ [PASS] Test A: Dry-run with no .local snapshot preserves built-in baseline with 0 mutations
+✓ [PASS] Test B: Dry-run with existing unrelated snapshot preserves state and leaves snapshot byte-identical
+✓ [PASS] Test C: CREATE_ONLY conflict check rejects pre-existing PRJ-DOCMONSTAKRAKIN with zero mutations
+✓ [PASS] Test D: Invalid manifest fails closed before candidate persistence
+✓ [PASS] Test E: Document/evidence byte digest mismatch fails closed with zero mutations
+✓ [PASS] Test F: Execution in temporary workspace creates verified atomic canonical snapshot
+✓ [PASS] Test G: Second execute in same workspace fails closed with PROJECT_ALREADY_EXISTS and 0 mutations
+✓ [PASS] Test H: Execution authorization guard strictly blocks unconfirmed or unauthorized execution
+✓ [PASS] Test I: Atomic persistence failure cleans up temp files and leaves target file 100% byte-identical
+✓ [PASS] Test J: Preservation check detects unrelated mutation and fails closed
+✓ [PASS] Test K: Dry-run execution uses pure integrity check and never touches validation report file
+✓ [PASS] Test L: Execution fails closed with MANIFEST_DIGEST_MISMATCH when confirmManifestDigest is omitted
+✓ [PASS] Test M: Execution fails closed with MANIFEST_DIGEST_MISMATCH when confirmManifestDigest does not match
+✓ [PASS] Test N: Manifest-digest TOCTOU protection blocks execution when manifest changed after review
+✓ [PASS] Test O: Pinned controlled document byte digest mismatch fails closed with zero mutations
+✓ [PASS] Test P: Unpinned living document can evolve without hash error when reference exists on disk
+================================================================
+TOTAL TESTS: 16 | ALL TESTS PASSED SUCCESSFULLY
+================================================================
