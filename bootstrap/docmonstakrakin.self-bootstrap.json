@@ -2287,16 +2287,14 @@
       "path": "docs/00_control/MASTER_WBS.yaml",
       "kind": "CONTROL",
       "authority": "REFERENCE",
-      "title": "Master Work Breakdown Structure (WBS)",
-      "sha256Digest": "42c8c5008f537875649d8a0bb68437608d22648f9836ac324d0cdfb0238659ab"
+      "title": "Master Work Breakdown Structure (WBS)"
     },
     {
       "id": "DOC-CTRL-004",
       "path": "docs/00_control/MASTER_WBS.md",
       "kind": "CONTROL",
       "authority": "GENERATED_PROJECTION",
-      "title": "Master Work Breakdown Structure (WBS Projection)",
-      "sha256Digest": "a8fb49215649e669f9582ffb9a42cd310c11b13565f6f24ad249040e93fcea7f"
+      "title": "Master Work Breakdown Structure (WBS Projection)"
     },
     {
       "id": "DOC-CTRL-005",
@@ -2311,8 +2309,7 @@
       "path": "docs/00_control/TRACEABILITY_MATRIX.md",
       "kind": "CONTROL",
       "authority": "REFERENCE",
-      "title": "Requirements Traceability Matrix (RTM)",
-      "sha256Digest": "5c18b8ee0716a43545049033608c3d0885e3ca55d1a5166f0190bd9c84287e6e"
+      "title": "Requirements Traceability Matrix (RTM)"
     },
     {
       "id": "DOC-CTRL-007",

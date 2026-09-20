@@ -17,7 +17,7 @@ function parseArgs(args: string[]) {
   let execute = false;
   let json = false;
   let confirmProjectId: string | undefined;
-  let manifestPath: string | undefined;
+  let confirmManifestDigest: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -31,14 +31,14 @@ function parseArgs(args: string[]) {
       confirmProjectId = args[++i];
     } else if (arg.startsWith('--confirm-project-id=')) {
       confirmProjectId = arg.split('=')[1];
-    } else if (arg === '--manifest' && i + 1 < args.length) {
-      manifestPath = args[++i];
-    } else if (arg.startsWith('--manifest=')) {
-      manifestPath = arg.split('=')[1];
+    } else if (arg === '--confirm-manifest-digest' && i + 1 < args.length) {
+      confirmManifestDigest = args[++i];
+    } else if (arg.startsWith('--confirm-manifest-digest=')) {
+      confirmManifestDigest = arg.split('=')[1];
     }
   }
 
-  return { dryRun, execute, json, confirmProjectId, manifestPath };
+  return { dryRun, execute, json, confirmProjectId, confirmManifestDigest };
 }
 
 function printHumanReport(report: SelfBootstrapReport): void {
@@ -47,7 +47,9 @@ function printHumanReport(report: SelfBootstrapReport): void {
   console.log('================================================================');
   console.log(`Execution Mode:          ${report.mode}`);
   console.log(`Target Project ID:       ${report.projectToCreate}`);
-  console.log(`Bootstrap Schema:        v${report.schemaVersion} (${report.bootstrapMode})`);
+  console.log(`Manifest Schema:         ${report.manifestSchemaVersion}`);
+  console.log(`Project State Schema:    ${report.projectStateSchemaVersion}`);
+  console.log(`Bootstrap Mode:          ${report.bootstrapMode}`);
   console.log(`Manifest Digest:         ${report.manifestDigest ?? 'N/A'}`);
   console.log(`Overall Status:          ${report.status}`);
   console.log('----------------------------------------------------------------');
@@ -56,8 +58,8 @@ function printHumanReport(report: SelfBootstrapReport): void {
   console.log(`  Snapshot Existed:      ${report.snapshot.existedBefore ? 'YES' : 'NO (Using built-in baseline state)'}`);
   console.log(`  Preserved Projects:    ${report.preservation.preservedProjectCount} (${report.preservation.preservedProjectIds.join(', ') || 'None'})`);
   console.log(`  State Equivalence:     ${report.preservation.unrelatedStateEquivalent ? 'VERIFIED (100% unchanged)' : 'FAILED'}`);
-  console.log(`  Pre-Bootstrap Hash:    ${report.preservation.beforeHash}`);
-  console.log(`  Candidate State Hash:  ${report.preservation.candidateHash}`);
+  console.log(`  Unrelated State Before Hash:     ${report.preservation.beforeUnrelatedStateHash}`);
+  console.log(`  Unrelated State Candidate Hash:  ${report.preservation.candidateUnrelatedStateHash}`);
   console.log('----------------------------------------------------------------');
   console.log('CANDIDATE SELF-PROJECT DATA:');
   console.log(`  Features:              ${report.candidate.featuresCount}`);
@@ -113,10 +115,10 @@ function printHumanReport(report: SelfBootstrapReport): void {
 }
 
 function main(): void {
-  const { dryRun, execute, json, confirmProjectId, manifestPath } = parseArgs(process.argv.slice(2));
+  const { dryRun, execute, json, confirmProjectId, confirmManifestDigest } = parseArgs(process.argv.slice(2));
 
   if (!dryRun && !execute) {
-    console.error('Usage: tsx scripts/bootstrapSelf.ts [--dry-run | --execute] [--json] [--confirm-project-id ID]');
+    console.error('Usage: tsx scripts/bootstrapSelf.ts [--dry-run | --execute] [--json] [--confirm-project-id ID] [--confirm-manifest-digest DIGEST]');
     console.error('Error: Must specify either --dry-run or --execute');
     process.exit(1);
   }
@@ -129,9 +131,9 @@ function main(): void {
   const mode = dryRun ? 'DRY_RUN' : 'EXECUTE';
   const report = executeSelfBootstrap({
     workspaceRoot: process.cwd(),
-    manifestPath,
     mode,
     confirmProjectId,
+    confirmManifestDigest,
   });
 
   if (json) {
