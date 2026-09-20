@@ -256,7 +256,7 @@ items:
     risk: "HIGH"
     status: "BACKLOG"
     dependencies: ["DMK-198"]
-    requirements: ["REQ-RC-189"]
+    requirements: ["REQ-REL-001", "REQ-RC-189", "REQ-RC-190"]
     architecture_links: ["CMP-01"]
     security_controls: ["SEC-CTRL-020"]
     acceptance_criteria:

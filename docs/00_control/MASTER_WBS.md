@@ -154,7 +154,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 - **Type:** `QUALITY` | **Priority:** `P1` | **Risk:** `HIGH`
 - **Status:** `BACKLOG`
 - **Dependencies:** `DMK-198`
-- **Requirements:** `REQ-RC-189` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Requirements:** `REQ-REL-001`, `REQ-RC-189`, `REQ-RC-190` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Run full regression suite across all components, compile complete evidence, and clean up temporary artifacts.
 - **Acceptance Criteria:**
   - "Full automated regression passes cleanly across all test suites"

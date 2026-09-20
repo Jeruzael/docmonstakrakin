@@ -371,7 +371,7 @@
       "provenance": {
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
-        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "input": "Step 3 dogfooding roadmap",
         "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
@@ -400,7 +400,7 @@
       "provenance": {
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
-        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "input": "Step 3 dogfooding roadmap",
         "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
@@ -426,7 +426,7 @@
       "provenance": {
         "projectId": "PRJ-DOCMONSTAKRAKIN",
         "origin": "GOVERNANCE_BOOTSTRAP",
-        "input": "Step 3 / 3A / 3B governance bootstrap intake",
+        "input": "Step 3 dogfooding roadmap",
         "timestamp": "2026-09-19T00:00:00.000Z"
       },
       "personas": [
@@ -1845,8 +1845,7 @@
         "EV-RC-188"
       ],
       "acceptanceCriteria": [
-        "User QA specification K-Q: durable staging, per-change review, provenance, proposed artifacts, distinct human quorum",
-        "SecretStore key isolation and path boundary interceptor prevent access outside workspace root"
+        "User QA specification K-Q: durable staging, per-change review, provenance, proposed artifacts, distinct human quorum"
       ],
       "checklist": [
         {
@@ -2197,7 +2196,9 @@
         "DMK-198"
       ],
       "requirements": [
-        "REQ-RC-189"
+        "REQ-REL-001",
+        "REQ-RC-189",
+        "REQ-RC-190"
       ],
       "evidence": [],
       "acceptanceCriteria": [
@@ -2287,7 +2288,7 @@
       "kind": "CONTROL",
       "authority": "REFERENCE",
       "title": "Master Work Breakdown Structure (WBS)",
-      "sha256Digest": "e2b17499a1d4800da31f8cc92f1b46e3eb0345d6c395803db083f7dda281a06a"
+      "sha256Digest": "42c8c5008f537875649d8a0bb68437608d22648f9836ac324d0cdfb0238659ab"
     },
     {
       "id": "DOC-CTRL-004",
@@ -2295,7 +2296,7 @@
       "kind": "CONTROL",
       "authority": "GENERATED_PROJECTION",
       "title": "Master Work Breakdown Structure (WBS Projection)",
-      "sha256Digest": "f32f4ea6c32bb29ee89a85dc8bc5f0b0ba46087160025c40909a786d6c499c6f"
+      "sha256Digest": "a8fb49215649e669f9582ffb9a42cd310c11b13565f6f24ad249040e93fcea7f"
     },
     {
       "id": "DOC-CTRL-005",

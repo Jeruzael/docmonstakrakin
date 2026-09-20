@@ -32,7 +32,7 @@
 The canonical manifest digest is calculated using the deterministic, key-order-invariant canonical JSON serialization algorithm (`computeBootstrapManifestDigest`):
 
 ```
-SHA-256: 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5
+SHA-256: 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289
 ```
 
 ---
@@ -82,7 +82,7 @@ SHA-256: 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5
      - `DMK-196`: Batch 2 — Formal Requirement Sign-Off UX (`BACKLOG`, `sprint = 0`, depends on `DMK-194`, `REQ-GOV-SIGNOFF-001`)
      - `DMK-197`: Batch 3 — Approval Inbox & Canonical Quorum Synchronization (`BACKLOG`, `sprint = 0`, depends on `DMK-196`, `REQ-GOV-QUORUM-001`)
      - `DMK-198`: Batch 4 — Reviewer Provisioning / Governance Setup Usability (`BACKLOG`, `sprint = 0`, depends on `DMK-197`, `REQ-GOV-REVIEWER-001`)
-     - `DMK-199`: Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, `sprint = 0`, depends on `DMK-198`, `REQ-RC-189`)
+     - `DMK-199`: Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, `sprint = 0`, depends on `DMK-198`, `REQ-REL-001`, `REQ-RC-189`, `REQ-RC-190`)
 
 6. **Threat Mitigation Statuses Set to `IN_PROGRESS`:**
    - In the initial manifest, threat mitigations were marked as `RESOLVED`.
@@ -97,9 +97,19 @@ SHA-256: 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5
      - `ADR-0007`: `2026-09-19`
    - All ADR statuses are set to `PROPOSED`. In accordance with `SELF_BOOTSTRAP_V1` contract rules, human architecture ratification cannot be synthesized during bootstrap; `ACCEPTED` status is strictly forbidden.
 
-8. **Addition of `CMP-BOOT-01` Architecture Component:**
-   - Added `CMP-BOOT-01` ("Trusted Self-Bootstrap Ingestion Subsystem") as `PROPOSED`, assigned to `REQ-BOOT-001` and `ADR-0007`.
-   - Description explicitly notes that while the contract validator exists, the atomic persistence executor is NOT YET IMPLEMENTED.
+8. **Addition of `CMP-BOOT-01` Architecture Component (NEW STEP 3 PROPOSED COMPONENT):**
+   - Source: `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`.
+   - Component status: `PROPOSED`, assigned to `REQ-BOOT-001` and `ADR-0007`.
+   - Implemented today:
+     - `SELF_BOOTSTRAP_V1` contract schema and type definitions;
+     - deterministic validation engine and security scanners (`selfBootstrapContract.ts`);
+     - canonical SHA-256 digest computation;
+     - read-only manifest inspection and CLI validation script (`validateSelfBootstrapManifestFile.ts`).
+   - NOT implemented:
+     - persistence executor;
+     - atomic project creation (`.local/project-state.json`);
+     - bootstrap runtime API;
+     - actual bootstrap execution.
 
 9. **Complete Controlled Document Catalog Expansion:**
    - Expanded controlled document references from 14 to 28 documents, covering all project control, product, requirements, architecture, security, decision, and verification baselines.
@@ -119,7 +129,7 @@ All evidence records reference real repository files. Hashes were calculated ove
 | **EV-RC-190** | `TEST_RUN` | `npx tsx scripts/testProposalContract.ts` | `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md` | `a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0` | `REQ-RC-190` | `DMK-190`, `DMK-191`, `DMK-199` |
 
 ### Technical Verification vs. Human Approval Traceability Note
-- `EV-RC-189` represents shared technical verification across 22 automated test suites (covering 324 passing assertions).
+- `EV-RC-189` represents shared technical verification across 22 automated test suites (covering 310 observed named checks).
 - `docs/00_control/TRACEABILITY_MATRIX.md` maps each individual requirement to its specific automated unit/integration test suite.
 - Associating `EV-RC-189` with verified technical requirements establishes that code execution conforms to technical criteria; it does NOT import or synthesize human sign-off authority.
 
@@ -131,8 +141,8 @@ All evidence records reference real repository files. Hashes were calculated ove
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **DOC-CTRL-001** | `docs/00_control/PROJECT_CHARTER.md` | `CONTROL` | `REFERENCE` | Project Charter - Control Plane for A-SSDLC | `61074ca8621dc61c8db7b64890b42955baf7944e3e513c82ae757ff941092c05` |
 | **DOC-CTRL-002** | `docs/00_control/PROJECT_STATE.md` | `CONTROL` | `REFERENCE` | Project State - Authoritative Roadmap and Execution Baseline | *(Omitted to avoid recursive self-hash churn)* |
-| **DOC-CTRL-003** | `docs/00_control/MASTER_WBS.yaml` | `CONTROL` | `REFERENCE` | Master Work Breakdown Structure (WBS) | `e2b17499a1d4800da31f8cc92f1b46e3eb0345d6c395803db083f7dda281a06a` |
-| **DOC-CTRL-004** | `docs/00_control/MASTER_WBS.md` | `CONTROL` | `GENERATED_PROJECTION` | Master Work Breakdown Structure (WBS Projection) | `f32f4ea6c32bb29ee89a85dc8bc5f0b0ba46087160025c40909a786d6c499c6f` |
+| **DOC-CTRL-003** | `docs/00_control/MASTER_WBS.yaml` | `CONTROL` | `REFERENCE` | Master Work Breakdown Structure (WBS) | `42c8c5008f537875649d8a0bb68437608d22648f9836ac324d0cdfb0238659ab` |
+| **DOC-CTRL-004** | `docs/00_control/MASTER_WBS.md` | `CONTROL` | `GENERATED_PROJECTION` | Master Work Breakdown Structure (WBS Projection) | `a8fb49215649e669f9582ffb9a42cd310c11b13565f6f24ad249040e93fcea7f` |
 | **DOC-CTRL-005** | `docs/00_control/ROADMAP.md` | `CONTROL` | `REFERENCE` | Product & Engineering Roadmap | `15001b7e42f1660b5048dbd4c1541979f164d05f7b55f3413cfca7b99221271f` |
 | **DOC-CTRL-006** | `docs/00_control/TRACEABILITY_MATRIX.md` | `CONTROL` | `REFERENCE` | Requirements Traceability Matrix (RTM) | `5c18b8ee0716a43545049033608c3d0885e3ca55d1a5166f0190bd9c84287e6e` |
 | **DOC-CTRL-007** | `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md` | `CONTROL` | `REFERENCE` | Trusted Self-Bootstrap Ingestion Contract | `826fea3bdde6dda0797b6e0fc9124fd5177bef866a1b116469c28a80c3333751` |
@@ -162,15 +172,17 @@ All evidence records reference real repository files. Hashes were calculated ove
 
 ## 7. Architecture Decision Records (ADRs)
 
-| ADR ID | Original Document Date | Manifest Status | Title | Governance Ratification Note |
-| :--- | :--- | :--- | :--- | :--- |
-| **ADR-0001** | `2026-08-15` | `PROPOSED` | Local-First In-Memory & Storage Architecture | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0002** | `2026-08-20` | `PROPOSED` | Single Canonical WorkItem Aggregate Model | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0003** | `2026-09-15` | `PROPOSED` | Sandboxed Server-Side AI Inference Adapter & Egress Boundary | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0004** | `2026-09-15` | `PROPOSED` | Cryptographic Hash-Chained Audit Ledger | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0005** | `2026-09-15` | `PROPOSED` | Synchronization Protocol and Conflict Resolution Model | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0006** | `2026-09-15` | `PROPOSED` | Multi-Agent Peer Identity and Trust Boundary Model | Requires formal architecture sign-off post-bootstrap |
-| **ADR-0007** | `2026-09-19` | `PROPOSED` | Deterministic Self-Bootstrap Ingestion Contract | Requires formal architecture sign-off post-bootstrap |
+| ADR ID | Original Document Date | Historical Source Status | Manifest Bootstrap Status | Title | Governance & Ratification Mapping |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **ADR-0001** | `2026-08-15` | `ACCEPTED` | `PROPOSED` | Local-First In-Memory & Storage Architecture | Historical source status `ACCEPTED`. Bootstrap status `PROPOSED`: bootstrap does not import historical governance authority; requires formal architecture sign-off post-bootstrap |
+| **ADR-0002** | `2026-08-20` | `ACCEPTED` | `PROPOSED` | Single Canonical WorkItem Aggregate Model | Historical source status `ACCEPTED`. Bootstrap status `PROPOSED`: bootstrap does not import historical governance authority; requires formal architecture sign-off post-bootstrap |
+| **ADR-0003** | `2026-09-15` | `ACCEPTED` | `PROPOSED` | Sandboxed Server-Side AI Inference Adapter & Egress Boundary | Historical source status `ACCEPTED`. Bootstrap status `PROPOSED`: bootstrap does not import historical governance authority; requires formal architecture sign-off post-bootstrap |
+| **ADR-0004** | `2026-09-15` | `ACCEPTED` | `PROPOSED` | Cryptographic Hash-Chained Audit Ledger | Historical source status `ACCEPTED`. Bootstrap status `PROPOSED`: bootstrap does not import historical governance authority; requires formal architecture sign-off post-bootstrap |
+| **ADR-0005** | `2026-09-15` | `PROPOSED` | `PROPOSED` | Synchronization Protocol and Conflict Resolution Model | Historical source status `PROPOSED`. Bootstrap status `PROPOSED`: non-final architecture decision requiring future review |
+| **ADR-0006** | `2026-09-15` | `PROPOSED` | `PROPOSED` | Multi-Agent Peer Identity and Trust Boundary Model | Historical source status `PROPOSED`. Bootstrap status `PROPOSED`: non-final architecture decision requiring future review |
+| **ADR-0007** | `2026-09-19` | *(New)* | `PROPOSED` | Deterministic Self-Bootstrap Ingestion Contract | NEW STEP 3 PROPOSAL (Source: `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`). Bootstrap status `PROPOSED`: requires formal architecture sign-off post-bootstrap |
+
+*Note on Governance Authority*: ADR-0001 through ADR-0004 had historical source status `ACCEPTED` in v0.1 documents, but are imported into the bootstrap manifest as `PROPOSED` because `SELF_BOOTSTRAP_V1` strictly forbids importing pre-ratified governance states without live quorum ratification. ADR-0005 and ADR-0006 were historically `PROPOSED` in their source documents and remain `PROPOSED` (they were never historically accepted). ADR-0007 is a new Step 3 proposal.
 
 ---
 
@@ -208,11 +220,11 @@ All evidence records reference real repository files. Hashes were calculated ove
 
 | Verification Suite | Target | Result | Evidence / Log Location |
 | :--- | :--- | :--- | :--- |
-| `npm run test:bootstrap:contract` | `scripts/testSelfBootstrapContract.ts` | **PASS (19/19 tests passing)** | `Console stdout` |
+| `npm run test:bootstrap:contract` | `scripts/testSelfBootstrapContract.ts` | **PASS (19/19 focused self-bootstrap contract tests passed)** | `Console stdout` |
 | `npm run test:bootstrap:manifest` | `scripts/validateSelfBootstrapManifestFile.ts` | **PASS (5/5 phases, 0 errors, 0 warnings)** | `docs/07_verification/self-bootstrap-manifest-validation.json` |
 | `npm run lint` | Project source & test code | **PASS (Clean)** | `Console stdout` |
 | `npm run wbs:check` | `MASTER_WBS.yaml` integrity check | **PASS (Clean)** | `Console stdout` |
-| `npx tsx scripts/runAutomatedQa.ts` | Automated QA Suite (22/22 regression suites) | **PASS (All passing)** | `docs/07_verification/rc-regression/results.json` |
+| `npx tsx scripts/runAutomatedQa.ts` | Automated QA Acceptance Suite | **PASS (11/11 automated QA acceptance criteria passed)** | `docs/07_verification/rc-regression/results.json` |
 | `npm run build` | Full production build (Vite + esbuild) | **PASS (Clean compilation)** | `dist/` |
 
 ---

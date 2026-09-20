@@ -19,9 +19,9 @@ Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserv
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.
-- Canonical Manifest SHA-256 Digest: `253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5`.
+- Canonical Manifest SHA-256 Digest: `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289`.
 - Manifest Entity Accounting:
-  - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all 15 `PROPOSED`; `FEAT-DMK-001`..`012` source `PRODUCT_BASELINE`, `FEAT-DMK-013`..`015` source `MANUAL_ENTRY`)
+  - 15 Features (`FEAT-DMK-001` through `FEAT-DMK-015`, all 15 `PROPOSED`; 12 `PRODUCT_BASELINE`, 3 `MANUAL_ENTRY`)
   - 24 Requirements (14 `VERIFIED`, 4 `UNDER_REVIEW`, 6 `PROPOSED`)
   - 6 Risks (`RISK-001`, `RISK-004`, `RISK-019`, `RISK-022`, `RISK-025`, `RISK-BOOT-001`, all `PROPOSED` / `IDENTIFIED`)
   - 8 Threats (`THR-001` through `THR-007`, `THR-BOOT-001`, all mitigations `IN_PROGRESS`)
@@ -67,12 +67,21 @@ Batch 1 and Batch 1.5 Final Correction remain technically complete:
 
 The authoritative automated result is in `docs/07_verification/rc-regression/results.json`, with 22/22 suites passing and raw per-suite logs in `docs/07_verification/rc-regression/`. QA acceptance criteria and observed named checks are counted separately. Review findings, resolution evidence, limitations, and retest steps are in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md` and `docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md`.
 
-Current next action:
-1. Human review of Step 3 review document (docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md) and canonical manifest (bootstrap/docmonstakrakin.self-bootstrap.json).
-2. Upon operator approval, proceed to reviewed bootstrap executor implementation (DMK-192) and execution step (DMK-193).
-3. Batch 2 governance UX remains NOT STARTED.
-4. Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-5. v0.2 product work remains blocked.
+Next safe sequence:
+human review of Step 3
+→ operator merges Step 3
+→ Step 4 implements DMK-192 executor + true dry-run
+→ dry-run review
+→ explicit execution authorization
+→ DMK-193 execution and canonical verification
+→ DMK-194 Projects Workspace
+→ DMK-195 Controlled Docs Workspace
+→ DMK-196 Batch 2
+→ DMK-197 Batch 3
+→ DMK-198 Batch 4
+→ DMK-199 Batch 5
+→ DMK-191 human browser retest
+→ Gate 7 human release approval
 
 ## State and evidence identity
 
