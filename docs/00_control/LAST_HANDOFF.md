@@ -3,13 +3,14 @@
 Updated 2026-09-19.
 
 - Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: GIT
+- Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Review Branch: gaistudio-3
-- Target Branch: master
-- Development Branch: master
-- Workspace Git Metadata: active local git branch gaistudio-3 tracking origin/gaistudio-3 (merged with origin/master)
-- Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (READY_FOR_HUMAN_REVIEW)
+- Git Metadata: NOT AVAILABLE (AI Studio container sandbox; branch/commit/working-tree are NOT_APPLICABLE)
+- Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
+- Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
+- Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
+- State Continuity: VERIFIED
+- Current Step: Step 4 — Trusted Self-Bootstrap Executor & Read-Only Dry-Run (DMK-192 COMPLETE / READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
@@ -17,6 +18,16 @@ Updated 2026-09-19.
 ## Recovery and completed work
 
 Resumed existing v0.1 remediation without restarting. Retained neutral initialization, feature generation, project isolation, authenticated reviewer quorum, immutable ADR revisions, untrusted package import, audit redaction/hash ordering, and durable review sessions.
+
+Step 4 (DMK-192: Trusted Self-Bootstrap Executor & Read-Only Dry-Run):
+- Implemented `server/bootstrap/selfBootstrapExecutor.ts`: Independent execution engine decoupled from the web server/Vite/secret store.
+- Pure Integrity Validator: `server/bootstrap/selfBootstrapIntegrity.ts` provides non-mutating schema, referential, document digest, and evidence hash verification.
+- Reusable Validator CLI: `scripts/validateSelfBootstrapManifestFile.ts` updated to reuse the pure helper, maintaining existing report generation when called directly (`npm run test:bootstrap:manifest`).
+- Dedicated CLI: `scripts/bootstrapSelf.ts` supports `npm run bootstrap:self -- --dry-run` (with human-readable and `--json` outputs).
+- Dry-run verification: Successfully projects candidate state, verifies 100% preservation of pre-existing baseline state (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state hash equivalence, checks candidate audit ledger chained from genesis, and produces `mutationCount: 0`. `.local/` remains uncreated and untouched.
+- Execution Authorization Guard: Strictly gates actual execution behind `--confirm-project-id PRJ-DOCMONSTAKRAKIN` and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`.
+- Regression Suite: 11 tests in `scripts/testSelfBootstrapExecutor.ts` pass cleanly (`npm run test:bootstrap:executor`).
+- Step 5 (DMK-193: Execute Trusted Self-Bootstrap) remains strictly BLOCKED until human operator review and explicit authorization.
 
 Batch 1 and Batch 1.5 final corrections:
 - Requirement State & Drawer Architecture: Preserved canonical Requirement state synchronization and `activeDrawerReqId` architecture with single requirement status error display.

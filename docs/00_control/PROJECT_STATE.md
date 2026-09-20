@@ -3,19 +3,28 @@
 Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
 - Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: GIT
+- Source-Control Mode: AI_STUDIO_WORKSPACE
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Review Branch: gaistudio-3
-- Authoritative Starting Checkpoint: 2a05edc8f6a96183d39cad092b91e7fc4e9cb432
-- Target Branch: master
-- Development Branch: master
-- Workspace Git Metadata: active local git branch gaistudio-3 tracking origin/gaistudio-3 (merged with origin/master)
-- Current Step: Step 3 — Construct and Review the Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest (READY_FOR_HUMAN_REVIEW)
+- Git Metadata: NOT AVAILABLE (AI Studio container sandbox; branch/commit/working-tree are NOT_APPLICABLE)
+- Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
+- Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
+- Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
+- State Continuity: VERIFIED
+- Current Step: Step 4 — Trusted Self-Bootstrap Executor & Read-Only Dry-Run (DMK-192 COMPLETE / READY_FOR_HUMAN_REVIEW)
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## Current work and evidence
+
+Step 4 (DMK-192: Trusted Self-Bootstrap Executor & Read-Only Dry-Run) is COMPLETE (READY_FOR_HUMAN_REVIEW):
+- Self-Bootstrap Executor: `server/bootstrap/selfBootstrapExecutor.ts` implements `executeSelfBootstrap` independently of the web server, without Vite or live secret store initialization.
+- Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification.
+- CLI Entrypoint: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs).
+- Zero Mutations in Dry-Run: Performs 100% candidate state projection, verifies existing project preservation (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state equivalence hash, constructs deterministic candidate audit event, verifies chained genesis audit, and produces `mutationCount: 0`. Leaves `.local/` uncreated and untouched.
+- Execution Authorization Guard: Multi-factor CLI and environment guard (`--confirm-project-id PRJ-DOCMONSTAKRAKIN` and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`) strictly blocks unauthorized execution.
+- Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 11 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, and validation report non-interference.
+- Step 5 (DMK-193: Real Canonical Self-Bootstrap Execution) remains strictly BLOCKED until human operator review and explicit authorization.
 
 Step 3 (Construct and Review Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest) is READY_FOR_HUMAN_REVIEW:
 - Real Canonical Manifest: `bootstrap/docmonstakrakin.self-bootstrap.json` populated adhering strictly to `SELF_BOOTSTRAP_V1` and `TRUSTED_LOCAL_BOOTSTRAP`.

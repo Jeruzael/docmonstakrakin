@@ -67,5 +67,6 @@ $$\text{Requirement (REQ)} \longrightarrow \text{Architecture (CMP/ARC)} \longri
 | REQ-RC-189 | DMK-189 | Complete regression inventory; lint/build; WBS drift | EV-RC-189; rc-regression/results.json | VERIFIED (technical closeout) |
 | REQ-RC-190 | DMK-190 | testProposalContract; proposalContractScenarios through real HTTP | EV-RC-190; PROPOSAL_SCHEMA_1_1_REPORT.md | VERIFIED (automation and independent review) |
 | REQ-RC-189, REQ-RC-190 | DMK-191 | Gio human browser retest | Not yet recorded | READY / NOT_READY_FOR_SIGNOFF |
+| REQ-BOOT-001 | DMK-192 | testSelfBootstrapContract; testSelfBootstrapExecutor; validateSelfBootstrapManifestFile; bootstrapSelf --dry-run | EV-BOOT-192; self-bootstrap-manifest-validation.json | VERIFIED (automation and dry-run) |
 
-Evidence paths resolve under docs/07_verification. All four EV-RC records are defined in CRYPTODEMON_REMEDIATION_REPORT.md. No Gate 7 authority was exercised.
+Evidence paths resolve under docs/07_verification. All four EV-RC records are defined in CRYPTODEMON_REMEDIATION_REPORT.md. EV-BOOT-192 records executor and read-only dry-run verification. No Gate 7 authority was exercised.
