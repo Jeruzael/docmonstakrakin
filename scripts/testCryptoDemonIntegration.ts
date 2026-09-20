@@ -114,9 +114,7 @@ try {
   await api(url+`/import-sessions/${redacted.id}/changes/0/review`,{disposition:'MODIFIED',humanConfirmed:true,modified:{details:'Example password="dummy-test-password" is only fixture text.'}}); passed('metadata validation and redacted review event');
   const audit = await api(url+'/audit/verify'); assert(audit.valid ?? audit.verified ?? audit.isValid,JSON.stringify(audit)); passed('audit chain intact');
   assert(!JSON.stringify(await api(url+'/audit')).includes(fixtureCredential));
-  if (process.env.UPDATE_FIXTURES === 'true') {
-    fs.writeFileSync(path.join(root,'docs/07_verification/cryptodemon-fixture-evidence.json'),JSON.stringify({project:p,features:feats,coverage:await api(url+'/discovery/coverage'),importSession:history,taskContext:ctx,approval:approved,auditVerification:audit},null,2));
-  }
+  fs.writeFileSync(path.join(root,'docs/07_verification/cryptodemon-fixture-evidence.json'),JSON.stringify({project:p,features:feats,coverage:await api(url+'/discovery/coverage'),importSession:history,taskContext:ctx,approval:approved,auditVerification:audit},null,2));
   await verifyProposalRoundtrip(api,url,feats[0].id,passed);
   const pkg = await api(url+'/package/export');
   const envelope = pkg.package || pkg;
