@@ -1,17 +1,19 @@
 # Step 4 / DMK-192: Trusted Self-Bootstrap Dry-Run Review (Hardened Step 4A / Step 4B)
 
-**Status**: READY_FOR_HUMAN_REVIEW  
-**Target Work Item**: `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run  
-**WBS Status**: `VERIFICATION_PENDING` (Blocked on Human Review)  
-**Next Work Item (Gated)**: `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State  
-**Supported Environments**: `GIT` (Authoritative local clone) | `AI_STUDIO_WORKSPACE` (Sandbox container)  
-**Authoritative Local Verification**: `GIT` (branch: `gaistudio-4`, commit: `76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5`, status: `CLEAN`)  
-**Target Project ID**: `PRJ-DOCMONSTAKRAKIN`  
-**Manifest**: `bootstrap/docmonstakrakin.self-bootstrap.json`  
-**Authoritative Manifest SHA-256 Digest**: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`  
-**Dry-Run Evaluation Status**: `SAFE_TO_REVIEW`  
-**Disk Mutations**: `0`  
-**Snapshot Written**: `NO` (`.local/project-state.json` uncreated and untouched)  
+**Status**: READY_FOR_HUMAN_REVIEW
+**Target Work Item**: `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run
+**WBS Status**: `VERIFICATION_PENDING` (Blocked on Human Review)
+**Next Work Item (Gated)**: `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
+**Supported Environments**: `GIT` (Authoritative local clone) | `AI_STUDIO_WORKSPACE` (Sandbox container)
+**Authoritative Local Verification**: `GIT` (`gaistudio-4`)
+**Target Project ID**: `PRJ-DOCMONSTAKRAKIN`
+**Manifest**: `bootstrap/docmonstakrakin.self-bootstrap.json`
+**Authoritative Manifest SHA-256 Digest**: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+**Dry-Run Evaluation Status**: `SAFE_TO_REVIEW`
+**Disk Mutations**: `0`
+**Existing Snapshot Before Dry-Run**: `YES`
+**Snapshot Written by Dry-Run**: `NO`
+**Projected Snapshot Action**: `REPLACE`
 **Gate 7 Authority**: `NOT EXECUTED` (Preserved as `HUMAN_APPROVAL_REQUIRED`)
 
 ---
@@ -26,37 +28,53 @@ In accordance with `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md`, the executor mo
 
 1. **Zero Runtime Mutations**: Running `npm run bootstrap:self -- --dry-run` performs 100% in-memory candidate state projection and cryptographic validation with zero disk writes (`mutationCount: 0`).
 2. **Directory & File Protection**: `.local/` was not created, and `.local/project-state.json` remains untouched.
-3. **No Unrelated State Drift**: Existing canonical baseline state (`PRJ-ATLAS-01` and `PRJ-FINPAY-02`) was preserved with 100% cryptographic equivalence (`beforeUnrelatedStateHash === candidateUnrelatedStateHash`).
+3. **No Unrelated State Drift**: Existing local canonical state containing three projects (`PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`, `PRJ-ATLAS-01`, and `PRJ-FINPAY-02`) was preserved with identical unrelated-state hashes.
 4. **Zero Governance Forgery**: Zero approvals injected (`approvalsInjected: 0`); release sign-off uncreated (`releaseSignoffInjected: false`); Gate 7 remains strictly unexecuted.
 5. **No Blind Verification Bypass**: Removed code-level heuristic bypasses (`isEvolvingControlDoc`). Document integrity is strictly enforced: all referenced documents must exist; documents declaring `sha256Digest` must match exact disk bytes; unpinned living documents are explicitly declared in the manifest contract without hashes.
 6. **Manifest Review Binding & Anti-TOCTOU**: Actual execution strictly enforces `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`) alongside `--confirm-project-id PRJ-DOCMONSTAKRAKIN` and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Any manifest modification after dry-run review causes immediate fail-closed execution abort with zero writes.
-7. **Snapshot Action Semantics**: Accurate distinction between snapshot creation and replacement. Because `.local/project-state.json` is absent, the execution would be a CREATE operation (`wouldWriteSnapshot: true`, `wouldCreateSnapshot: true`, `wouldReplaceSnapshot: false`).
+7. **Snapshot Action Semantics**: Accurate distinction between snapshot creation and replacement. In the authoritative local operator environment, `.local/project-state.json` already exists. A future authorized execution would atomically REPLACE the existing snapshot with the complete candidate snapshot while preserving all unrelated project state. The dry-run itself performed no write.
 8. **Step 5 Execution Gating**: **Step 5 (`DMK-193`) remains strictly BLOCKED** until a human operator reviews this dry-run report and explicitly authorizes real execution.
 
 ---
 
 ## 2. Authoritative Local Operator Dry-Run Verification
 
-The canonical repository supports dual source-control environments (`GIT` and `AI_STUDIO_WORKSPACE`). While AI Studio dry-run is valid for sandbox inspection, local Git checkout verification is the authoritative gate prior to merging to `master` and executing canonical bootstrap.
+The repository supports both `GIT` and `AI_STUDIO_WORKSPACE` execution contexts. The authoritative pre-execution verification was performed from the operator's local Git checkout.
 
 - **Execution Date**: 2026-09-20
-- **Environment**: `GIT` (local developer workstation / clone)
+- **Environment**: `GIT`
 - **Branch**: `gaistudio-4`
-- **Commit**: `76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5`
-- **Working Tree**: `CLEAN`
 - **Command**:
   ```bash
   npm run bootstrap:self -- --dry-run
   ```
-- **Evaluated Manifest Digest**:
+- **Evaluated Manifest Digest:**
   `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
-- **Result**: `SAFE_TO_REVIEW`
-- **Mutation Count**: `0`
-- **Verified no files written to `.local/`**: Yes (`.local/project-state.json` absent and untouched)
-- **Verified existing snapshot untouched**: Yes (Preserved baseline `PRJ-ATLAS-01` and `PRJ-FINPAY-02` byte-identical)
-- **Verified review-binding guard and TOCTOU protection**: Yes (`--confirm-manifest-digest 229215f6...` required; post-review changes trigger fail-closed abort)
-- **Preserved Projects**: `2` (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`)
-- **Preservation Equivalence Hash**: `124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`
+
+- **Result:** `SAFE_TO_REVIEW`
+- **Mutation Count:** `0`
+- **Snapshot Existed Before Dry-Run:** `YES`
+- **Snapshot Written During Dry-Run:** `NO`
+- **Projected Snapshot Action:** `REPLACE`
+- **wouldWriteSnapshot:** `true`
+- **wouldCreateSnapshot:** `false`
+- **wouldReplaceSnapshot:** `true`
+
+- **Preserved Projects:** `3`
+  - `PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`
+  - `PRJ-ATLAS-01`
+  - `PRJ-FINPAY-02`
+
+- **Unrelated State Before Hash:**
+  `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+
+- **Unrelated State Candidate Hash:**
+  `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+
+- **Unrelated State Equivalence:** `VERIFIED`
+- **Review-Binding Guard:** `VERIFIED`
+- **Anti-TOCTOU Guard:** `VERIFIED`
+- **Real Bootstrap Executed:** `NO`
 
 *(Note: The historical AI Studio workspace dry-run record documented in Section 4 below remains intact for sandbox traceability.)*
 

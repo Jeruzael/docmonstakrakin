@@ -10,17 +10,21 @@ Updated 2026-09-20.
   - In AI_STUDIO_WORKSPACE mode: git metadata is NOT_APPLICABLE and write access to parent repository git metadata is disabled by design.
   - Static repository documentation must not fabricate runtime-specific git metadata.
 - Authoritative Local Operator Dry-Run Verification:
-  - Operator Execution Environment: GIT
-  - Branch at verification: gaistudio-4
-  - Verified Commit: 76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5
-  - Working Tree at verification: CLEAN
-  - Evaluated Manifest Digest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
-  - Dry-Run Status: SAFE_TO_REVIEW
-  - Mutation Count: 0
-  - Real Snapshot: NOT CREATED (.local/project-state.json absent)
-  - Review Binding Enforced: YES
-  - Anti-TOCTOU Protection Enforced: YES
-  - Preserved Projects: 2 (PRJ-ATLAS-01, PRJ-FINPAY-02)
+  - Environment: `GIT`
+  - Branch: `gaistudio-4`
+  - Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+  - Result: `SAFE_TO_REVIEW`
+  - Snapshot Existed Before Dry-Run: `YES`
+  - Snapshot Written: `NO`
+  - Projected Snapshot Action: `REPLACE`
+  - Preserved Projects: `3`
+    - `PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`
+    - `PRJ-ATLAS-01`
+    - `PRJ-FINPAY-02`
+  - Unrelated State Before Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - Unrelated State Candidate Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - State Equivalence: `VERIFIED`
+  - Mutation Count: `0`
 - Environment Note: AI Studio dry-run is valid for sandbox inspection, while local Git checkout is the authoritative merge/execute environment.
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
 - Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
