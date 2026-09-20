@@ -1,24 +1,29 @@
-The previous task has been completed and verified.
-Status & Verification Summary
-Self-Bootstrap Contract Hardening (src/data/selfBootstrapContract.ts):
-Enforced strict domain typing for WorkItem (checklist: Array<{ text: string, done: boolean }>, tests: string[], forbidden estimatedHours).
-Enforced strict domain typing for Evidence (workItemId, producer, createdAt, forbidden executedAt and unmodeled attributes).
-Closed root schema (PERMITTED_ROOT_KEYS), recursive governance scanning, path traversal protections, and enum validations active.
-Verification: npm run test:bootstrap:contract passes all 19/19 tests.
-Canonical Manifest Realignment (bootstrap/docmonstakrakin.self-bootstrap.json):
-Verified 15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 WorkItems, 4 Evidence records, and 28 Controlled Documents.
-Deterministic canonical manifest SHA-256 digest:
-code
-Code
-d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d
-Read-only validation via npm run test:bootstrap:manifest passes with 0 errors, 0 warnings, 0 mutations, 27 raw document digests verified, and 4 evidence artifact hashes verified.
-Project Control Documentation Synchronized:
-docs/00_control/LAST_HANDOFF.md: Synchronized with current Step 3 completion state, manifest digest, entity accounting, and explicit next safe actions.
-docs/00_control/PROJECT_STATE.md: Aligned with verified manifest digest, Step 3 READY_FOR_HUMAN_REVIEW status, and operational invariants.
-docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md: Up to date with the 19 contract tests and the canonical manifest digest.
-MASTER_WBS.yaml / MASTER_WBS.md: Verified with npm run wbs:check (zero drift).
-System Health & Invariants:
-npm test: All test suites passing (36 discovery, 10 technical baseline, 14 CryptoDemon, 47 CryptoDemon integration, 12 proposal contract, 7 requirement sync).
-npm run lint: Clean (0 errors).
-npm run build: Clean production bundle.
-Preserved boundaries: Zero bootstrap execution performed, .local/project-state.json untouched, Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED, and Batch 2 governance remediation remains NOT STARTED.
+All requested Step 3C corrections and validations have been completed and verified.
+Implementation Summary
+Branch & Repository Alignment
+Merged origin/master into gaistudio-3.
+Verified git merge-base --is-ancestor origin/master HEAD returns exit code 0.
+File Deletion & Cleanup
+Deleted stale non-canonical files:
+src/data/selfBootstrapManifest.json
+scripts/buildAndValidateManifest.ts
+docs/07_verification/BOOTSTRAP_DRY_RUN_REPORT.json
+Fixture Restoration
+Restored docs/07_verification/cryptodemon-fixture-evidence.json byte-for-byte from commit 2a05edc8f6a96183d39cad092b91e7fc4e9cb432 without regenerating or mutating timestamps.
+Self-Bootstrap Manifest Fidelity (bootstrap/docmonstakrakin.self-bootstrap.json)
+Feature Provenance: Corrected FEAT-DMK-013 through FEAT-DMK-015 provenance to MANUAL_ENTRY, retaining PRODUCT_BASELINE for FEAT-DMK-001 through FEAT-DMK-012.
+Work Items: Work items start at DMK-192 (READY) through DMK-199 (BACKLOG), preserving DMK-191 in BACKLOG for the Gio CryptoDemon human browser retest per docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md.
+Evidence Timestamps: Updated createdAt timestamps for EV-RC-187 through EV-RC-190 to reflect actual source creation times (2026-09-17T02:07:37.000Z, 2026-09-17T02:08:52.000Z, 2026-09-17T02:09:59.000Z, 2026-09-17T02:11:15.000Z).
+Document Hashes: Pre-computed live SHA-256 digests for all 27 controlled documents, updating MASTER_WBS.yaml and MASTER_WBS.md.
+WBS Dependency Integrity
+Updated docs/00_control/MASTER_WBS.yaml with DMK-191 dependencies (DMK-187, DMK-188, DMK-189, DMK-190, DMK-199) and added DMK-192 through DMK-199.
+Rendered docs/00_control/MASTER_WBS.md with zero drift (npm run wbs:check passed).
+Documentation & State Accounting
+Updated docs/00_control/PROJECT_STATE.md, docs/00_control/LAST_HANDOFF.md, and docs/07_verification/SELF_BOOTSTRAP_MANIFEST_REVIEW.md to reflect canonical manifest digest 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5, active Source-Control Mode: GIT, and current entity accounting.
+Validation Results
+npm run test:bootstrap:contract: 19/19 tests passed.
+npm run test:bootstrap:manifest: Validated manifest with 0 mutations, 27 document digests verified, and 4 evidence artifact hashes verified.
+npm run lint: Passed (TypeScript --noEmit 0 errors).
+npx tsx scripts/runAutomatedQa.ts: 11/11 criteria passed.
+npm run build: Production bundle succeeded with zero errors.
+git diff --check: Clean (no whitespace or patch errors).

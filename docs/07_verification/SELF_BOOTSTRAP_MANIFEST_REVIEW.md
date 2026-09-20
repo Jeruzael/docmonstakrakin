@@ -32,7 +32,7 @@
 The canonical manifest digest is calculated using the deterministic, key-order-invariant canonical JSON serialization algorithm (`computeBootstrapManifestDigest`):
 
 ```
-SHA-256: d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d
+SHA-256: 253b8aedf5d2b2f7b85c5d6b88f71db3ab00cf7a664932e64170b14942523cf5
 ```
 
 ---
@@ -41,13 +41,13 @@ SHA-256: d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d
 
 | Entity Collection | Manifest Count | Baseline Verification Status | Governance Status |
 | :--- | :---: | :--- | :--- |
-| **Features** | 15 | 15 Proposed (`PRODUCT_BASELINE`) | `PROPOSED` (Zero approved) |
+| **Features** | 15 | 15 Proposed (12 `PRODUCT_BASELINE`, 3 `MANUAL_ENTRY`) | `PROPOSED` (Zero approved) |
 | **Requirements** | 24 | 14 Verified (Evidence-backed), 4 Under Review, 6 Proposed | Zero approved |
-| **Risks** | 6 | Inherent/residual assessment captured | `MITIGATE` treatment assigned |
+| **Risks** | 6 | Inherent/residual assessment captured | `PROPOSED` / `IDENTIFIED` |
 | **Threats** | 8 | STRIDE analysis mapped to controls | All mitigations `IN_PROGRESS` |
 | **ADRs** | 7 | Architecture decisions captured | `PROPOSED` (Zero accepted) |
 | **Architecture Components** | 6 | 5 System components + 1 Bootstrap subsystem | `PROPOSED` |
-| **Work Items** | 13 | 4 Verification, 2 Ready, 7 Backlog/Future | Zero approved / verified |
+| **Work Items** | 13 | 4 Verification, 1 Ready, 8 Backlog | Zero approved / verified |
 | **Evidence Records** | 4 | 4 Artifact-backed real execution records | Raw file byte SHA-256 verified |
 | **Controlled Documents** | 28 | 27 Reference + 1 Generated Projection | 27 Raw file byte digests verified |
 
@@ -71,17 +71,18 @@ SHA-256: d357e20e050405db6fcf6b7ac0853a6fbe96698020390940541dd2f1478ef12d
    - The candidate work item `DMK-196 Gate 7 Execution & Official v0.1 Release Sign-Off` was completely removed from the bootstrap manifest.
    - Gate 7 is a formal human release governance gate that cannot be scheduled as an autonomous work item during bootstrap. Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
 
-5. **Canonical Domain Conformance and WBS Source Fidelity (`DMK-191` through `DMK-199`):**
+5. **Canonical Domain Conformance and WBS Source Fidelity (`DMK-187` through `DMK-199`):**
    - Rebuilt a clean, dependency-ordered work breakdown structure conforming strictly to canonical TypeScript domain shapes (`checklist`, `tests`, standard priorities, explicit risks, no unmodeled fields):
-     - `DMK-191`: Self-Bootstrap Manifest & Verification Contract Definition (`READY`, `sprint = 1`, `REQ-BOOT-001`, depends on `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`)
-     - `DMK-192`: Trusted Self-Bootstrap Executor & Read-Only Dry-Run (`READY`, `sprint = 1`, depends on `DMK-191`, `REQ-BOOT-001`)
-     - `DMK-193`: Execute Trusted Self-Bootstrap & Verify Canonical State (`BACKLOG`, `sprint = 1`, depends on `DMK-192`, `REQ-BOOT-001`)
-     - `DMK-194`: Projects Workspace & Reliable Project Switching (`BACKLOG`, `sprint = 2`, depends on `DMK-193`, `REQ-UX-PROJECTS-001`)
-     - `DMK-195`: Controlled Documentation Workspace (`BACKLOG`, `sprint = 2`, depends on `DMK-193`, `REQ-DOC-001`)
-     - `DMK-196`: Governance Remediation Batch 2 — Formal Requirement Sign-Off UX (`BACKLOG`, `sprint = 2`, depends on `DMK-194`, `REQ-GOV-SIGNOFF-001`)
-     - `DMK-197`: Governance Remediation Batch 3 — Approval Inbox & Canonical Quorum Synchronization (`BACKLOG`, `sprint = 3`, depends on `DMK-196`, `REQ-GOV-QUORUM-001`)
-     - `DMK-198`: Governance Remediation Batch 4 — Reviewer Provisioning / Governance Setup Usability (`BACKLOG`, `sprint = 3`, depends on `DMK-197`, `REQ-GOV-REVIEWER-001`)
-     - `DMK-199`: Governance Remediation Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, `sprint = 4`, depends on `DMK-198`, `REQ-REL-001`, `REQ-RC-189`, `REQ-RC-190`)
+     - `DMK-187`..`DMK-190`: Remediation work items restored with authoritative `MASTER_WBS.yaml` metadata as `VERIFICATION`, sprint 0, with evidence records `EV-RC-187` through `EV-RC-190`.
+     - `DMK-191`: Gio CryptoDemon human browser retest (`BACKLOG`, `sprint = 0`, depends on `DMK-187`, `DMK-188`, `DMK-189`, `DMK-190`, `DMK-199`). References the 10-step human browser retest in `docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md`. Reserved for human retest; self-bootstrap work starts at `DMK-192`.
+     - `DMK-192`: Trusted Self-Bootstrap Executor & Read-Only Dry-Run (`READY`, `sprint = 0`, `dependencies: []`, `REQ-BOOT-001`)
+     - `DMK-193`: Execute Trusted Self-Bootstrap & Verify Canonical State (`BACKLOG`, `sprint = 0`, depends on `DMK-192`, `REQ-BOOT-001`)
+     - `DMK-194`: Projects Workspace & Reliable Project Switching (`BACKLOG`, `sprint = 0`, depends on `DMK-193`, `REQ-UX-PROJECTS-001`)
+     - `DMK-195`: Controlled Documentation Workspace (`BACKLOG`, `sprint = 0`, depends on `DMK-193`, `REQ-DOC-001`)
+     - `DMK-196`: Batch 2 — Formal Requirement Sign-Off UX (`BACKLOG`, `sprint = 0`, depends on `DMK-194`, `REQ-GOV-SIGNOFF-001`)
+     - `DMK-197`: Batch 3 — Approval Inbox & Canonical Quorum Synchronization (`BACKLOG`, `sprint = 0`, depends on `DMK-196`, `REQ-GOV-QUORUM-001`)
+     - `DMK-198`: Batch 4 — Reviewer Provisioning / Governance Setup Usability (`BACKLOG`, `sprint = 0`, depends on `DMK-197`, `REQ-GOV-REVIEWER-001`)
+     - `DMK-199`: Batch 5 — Full Regression & Evidence Cleanup (`BACKLOG`, `sprint = 0`, depends on `DMK-198`, `REQ-RC-189`)
 
 6. **Threat Mitigation Statuses Set to `IN_PROGRESS`:**
    - In the initial manifest, threat mitigations were marked as `RESOLVED`.
@@ -130,8 +131,8 @@ All evidence records reference real repository files. Hashes were calculated ove
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **DOC-CTRL-001** | `docs/00_control/PROJECT_CHARTER.md` | `CONTROL` | `REFERENCE` | Project Charter - Control Plane for A-SSDLC | `61074ca8621dc61c8db7b64890b42955baf7944e3e513c82ae757ff941092c05` |
 | **DOC-CTRL-002** | `docs/00_control/PROJECT_STATE.md` | `CONTROL` | `REFERENCE` | Project State - Authoritative Roadmap and Execution Baseline | *(Omitted to avoid recursive self-hash churn)* |
-| **DOC-CTRL-003** | `docs/00_control/MASTER_WBS.yaml` | `CONTROL` | `REFERENCE` | Master Work Breakdown Structure (WBS) | `451c605962c884a056d9bfb81e2b8e5e2f451a26b8ee7f4e215d9cf8009e7420` |
-| **DOC-CTRL-004** | `docs/00_control/MASTER_WBS.md` | `CONTROL` | `GENERATED_PROJECTION` | Master Work Breakdown Structure (WBS Projection) | `7db0f1dfb6e0b76d65bc8e72668aec20156a00f93822dc0c4d49e7a2b4740610` |
+| **DOC-CTRL-003** | `docs/00_control/MASTER_WBS.yaml` | `CONTROL` | `REFERENCE` | Master Work Breakdown Structure (WBS) | `e2b17499a1d4800da31f8cc92f1b46e3eb0345d6c395803db083f7dda281a06a` |
+| **DOC-CTRL-004** | `docs/00_control/MASTER_WBS.md` | `CONTROL` | `GENERATED_PROJECTION` | Master Work Breakdown Structure (WBS Projection) | `f32f4ea6c32bb29ee89a85dc8bc5f0b0ba46087160025c40909a786d6c499c6f` |
 | **DOC-CTRL-005** | `docs/00_control/ROADMAP.md` | `CONTROL` | `REFERENCE` | Product & Engineering Roadmap | `15001b7e42f1660b5048dbd4c1541979f164d05f7b55f3413cfca7b99221271f` |
 | **DOC-CTRL-006** | `docs/00_control/TRACEABILITY_MATRIX.md` | `CONTROL` | `REFERENCE` | Requirements Traceability Matrix (RTM) | `5c18b8ee0716a43545049033608c3d0885e3ca55d1a5166f0190bd9c84287e6e` |
 | **DOC-CTRL-007** | `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md` | `CONTROL` | `REFERENCE` | Trusted Self-Bootstrap Ingestion Contract | `826fea3bdde6dda0797b6e0fc9124fd5177bef866a1b116469c28a80c3333751` |
