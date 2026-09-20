@@ -94,99 +94,7 @@ import {
   evaluateReleaseGates,
   executeReleaseSignoff,
 } from './server/release/releaseGateEvaluator.ts';
-
-// In-memory canonical state store
-class ProjectStore {
-  importSessions: Record<string, import('./src/proposalTypes.ts').ImportSession[]> = {};
-  projects: Project[] = [...INITIAL_PROJECTS];
-  questions: Record<string, Question[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_QUESTIONS],
-  };
-  requirements: Record<string, Requirement[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_REQUIREMENTS],
-  };
-  adrs: Record<string, ADR[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_ADRS],
-  };
-  components: Record<string, ArchitectureComponent[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_COMPONENTS],
-  };
-  risks: Record<string, Risk[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_RISKS],
-  };
-  threats: Record<string, any[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_THREATS],
-  };
-  standards: Record<string, any[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_STANDARDS],
-  };
-  workItems: Record<string, WorkItem[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_WORK_ITEMS],
-  };
-  evidence: Record<string, Evidence[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_EVIDENCE],
-  };
-  auditLogs: Record<string, AuditEvent[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_AUDIT_EVENTS],
-  };
-  overrides: Record<string, GateOverride[]> = {
-    'PRJ-ATLAS-01': [],
-  };
-  approvals: Record<string, ApprovalItem[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_APPROVALS],
-  };
-  agentRoles: Record<string, AgentRole[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_AGENT_ROLES],
-  };
-  agentRuns: Record<string, AgentRunLog[]> = {
-    'PRJ-ATLAS-01': [...INITIAL_AGENT_RUNS],
-  };
-  features: Record<string, Feature[]> = {
-    'PRJ-ATLAS-01': [
-      {
-        id: 'FEAT-CORE-001',
-        title: 'Deterministic Workflow Engine',
-        description: 'Core state transition machine governing A-SSDLC lifecycle phases.',
-        capability: 'Workflow Automation',
-        priority: 'P0',
-        status: 'APPROVED',
-        source: 'MANUAL_ENTRY',
-        personas: ['Technical Operators'],
-        requirements: ['REQ-OPS-001'],
-        dependencies: [],
-        updatedAt: '2026-09-15T15:25:00Z',
-      },
-    ],
-  };
-  derivations: Record<string, DerivationRecord[]> = {
-    'PRJ-ATLAS-01': [],
-  };
-
-  addAuditEvent(projectId: string, actor: string, action: string, target: string, reason?: string, details?: any) {
-    if (!this.auditLogs[projectId]) {
-      this.auditLogs[projectId] = [];
-    }
-    const previousEvent = this.auditLogs[projectId][0];
-    const previousHash = previousEvent ? previousEvent.stateHash : GENESIS_AUDIT_HASH;
-    const timestamp = new Date().toISOString();
-    const id = `AUD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-    const rawEvent: AuditEvent = {
-      id,
-      actor,
-      timestamp,
-      action,
-      target,
-      reason,
-      stateHash: '',
-      previousHash,
-      details,
-    };
-    const event = sanitizeAndHashAudit(rawEvent);
-    this.auditLogs[projectId].unshift(event);
-    return event;
-  }
-}
+import { ProjectStore } from './server/projectStore.ts';
 
 const store = new ProjectStore();
 
@@ -542,6 +450,7 @@ async function startServer() {
     store.approvals[newId] = [];
     store.agentRoles[newId] = [];
     store.agentRuns[newId] = [];
+    store.documents[newId] = [];
     store.risks[newId][0].inherentScore = newProject.computedRisk!.score;
     store.risks[newId][0].inherentLevel = newProject.computedRisk!.level;
     store.risks[newId][0].drivers = newProject.computedRisk!.drivers;
@@ -1138,6 +1047,7 @@ async function startServer() {
       store.derivations[targetProjectId] = pkg.knowledge.derivations || [];
       store.agentRoles[targetProjectId] = pkg.knowledge.agentRoles || [];
       store.agentRuns[targetProjectId] = pkg.knowledge.agentRuns || [];
+      store.documents[targetProjectId] = [];
 
       // Restore audit ledger (reversed back to store format: newest first)
       const restoredAudit = pkg.auditLedger ? [...pkg.auditLedger].reverse() : [];

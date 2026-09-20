@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Automated remediation); human retest `READY`; Gate 7 pending |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -76,12 +76,12 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run
 - **WBS Path:** `13.06.06`
 - **Type:** `FEATURE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `READY`
+- **Status:** `COMPLETE` (Evidence: `EV-BOOT-192, docs/07_verification/self-bootstrap-manifest-validation.json`)
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1.
 - **Acceptance Criteria:**
   - "Implement trusted bootstrap executor CLI / entrypoint with read-only --dry-run validation"
-- **Verification Method:** scripts/testSelfBootstrapContract.ts; npm run test:bootstrap:manifest
+- **Verification Method:** scripts/testSelfBootstrapContract.ts; scripts/testSelfBootstrapExecutor.ts; npm run test:bootstrap:manifest; npm run bootstrap:self -- --dry-run
 
 #### `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
 - **WBS Path:** `13.06.07`

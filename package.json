@@ -21,7 +21,9 @@
     "test:proposal": "tsx scripts/testProposalContract.ts",
     "test:req-sync": "tsx scripts/testRequirementStatusSync.ts",
     "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts",
-    "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts"
+    "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts",
+    "test:bootstrap:executor": "tsx scripts/testSelfBootstrapExecutor.ts",
+    "bootstrap:self": "tsx scripts/bootstrapSelf.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
