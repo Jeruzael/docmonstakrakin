@@ -349,6 +349,27 @@ export const FORBIDDEN_BOOTSTRAP_WORK_ITEM_STATUSES = ['VERIFIED', 'APPROVED', '
 
 export const VALID_WORK_ITEM_PRIORITIES = ['P0', 'P1', 'P2'] as const;
 
+export const ALLOWED_WORK_ITEM_KEYS = new Set([
+  'id',
+  'type',
+  'title',
+  'description',
+  'status',
+  'priority',
+  'risk',
+  'sprint',
+  'requirements',
+  'dependencies',
+  'acceptanceCriteria',
+  'checklist',
+  'tests',
+  'evidence',
+  'updatedAt',
+  'parentEpicId',
+  'owner',
+  'features',
+]);
+
 // Evidence
 export const VALID_EVIDENCE_TYPES = [
   'TEST_RUN',
@@ -361,6 +382,20 @@ export const VALID_EVIDENCE_TYPES = [
 ] as const;
 
 export const VALID_EVIDENCE_RESULTS = ['PASSED', 'FAILED', 'VERIFIED', 'UNTRUSTED'] as const;
+
+export const ALLOWED_EVIDENCE_KEYS = new Set([
+  'id',
+  'type',
+  'title',
+  'workItemId',
+  'result',
+  'producer',
+  'createdAt',
+  'sha256Hash',
+  'details',
+  'command',
+  'commitHash',
+]);
 
 // Documents
 export const VALID_DOCUMENT_KINDS = [
@@ -780,6 +815,50 @@ export function validateSelfBootstrapManifest(raw: unknown): SelfBootstrapValida
 
   // --- Validate WorkItems ---
   validateCollection<WorkItem>('workItems', m.workItems, workItemIds, (item, idx) => {
+    // Reject unsupported fields
+    for (const k of Object.keys(item)) {
+      if (!ALLOWED_WORK_ITEM_KEYS.has(k)) {
+        errors.push(`WorkItem '${item.id}' contains unsupported field '${k}'.`);
+      }
+    }
+
+    // Required string fields
+    if (typeof item.title !== 'string' || item.title.trim().length === 0) {
+      errors.push(`WorkItem '${item.id}' is missing required string 'title'.`);
+    }
+    if (typeof item.description !== 'string' || item.description.trim().length === 0) {
+      errors.push(`WorkItem '${item.id}' is missing required string 'description'.`);
+    }
+    if (typeof item.sprint !== 'number' || !Number.isInteger(item.sprint)) {
+      errors.push(`WorkItem '${item.id}' is missing required integer 'sprint'.`);
+    }
+    if (!Array.isArray(item.requirements) || !item.requirements.every((r: unknown) => typeof r === 'string')) {
+      errors.push(`WorkItem '${item.id}' is missing required string array 'requirements'.`);
+    }
+    if (!Array.isArray(item.dependencies) || !item.dependencies.every((d: unknown) => typeof d === 'string')) {
+      errors.push(`WorkItem '${item.id}' is missing required string array 'dependencies'.`);
+    }
+    if (!Array.isArray(item.acceptanceCriteria) || !item.acceptanceCriteria.every((a: unknown) => typeof a === 'string')) {
+      errors.push(`WorkItem '${item.id}' is missing required string array 'acceptanceCriteria'.`);
+    }
+    if (
+      !Array.isArray(item.checklist) ||
+      !item.checklist.every(
+        (c: any) => c && typeof c === 'object' && typeof c.text === 'string' && typeof c.done === 'boolean'
+      )
+    ) {
+      errors.push(`WorkItem '${item.id}' is missing required checklist array '{ text: string, done: boolean }[]'.`);
+    }
+    if (!Array.isArray(item.tests) || !item.tests.every((t: unknown) => typeof t === 'string')) {
+      errors.push(`WorkItem '${item.id}' is missing required string array 'tests'.`);
+    }
+    if (!Array.isArray(item.evidence) || !item.evidence.every((e: unknown) => typeof e === 'string')) {
+      errors.push(`WorkItem '${item.id}' is missing required string array 'evidence'.`);
+    }
+    if (typeof item.updatedAt !== 'string' || item.updatedAt.trim().length === 0) {
+      errors.push(`WorkItem '${item.id}' is missing required string 'updatedAt'.`);
+    }
+
     if (FORBIDDEN_BOOTSTRAP_WORK_ITEM_STATUSES.includes(item.status as any)) {
       errors.push(
         `WorkItem '${item.id}' has forbidden status '${item.status}'. WorkItems during bootstrap cannot be VERIFIED, APPROVED, or RELEASED.`
@@ -799,6 +878,35 @@ export function validateSelfBootstrapManifest(raw: unknown): SelfBootstrapValida
 
   // --- Validate Evidence ---
   validateCollection<Evidence>('evidence', m.evidence, evidenceIds, (ev, idx) => {
+    // Reject unsupported fields
+    for (const k of Object.keys(ev)) {
+      if (!ALLOWED_EVIDENCE_KEYS.has(k)) {
+        errors.push(`Evidence '${ev.id}' contains unsupported field '${k}'.`);
+      }
+    }
+
+    // Required fields
+    if (typeof ev.title !== 'string' || ev.title.trim().length === 0) {
+      errors.push(`Evidence '${ev.id}' is missing required string 'title'.`);
+    }
+    if (typeof ev.workItemId !== 'string' || ev.workItemId.trim().length === 0) {
+      errors.push(`Evidence '${ev.id}' is missing required string 'workItemId'.`);
+    }
+    if (typeof ev.producer !== 'string' || ev.producer.trim().length === 0) {
+      errors.push(`Evidence '${ev.id}' is missing required string 'producer'.`);
+    }
+    if (typeof ev.createdAt !== 'string' || ev.createdAt.trim().length === 0) {
+      errors.push(`Evidence '${ev.id}' is missing required string 'createdAt'.`);
+    }
+    if (typeof ev.sha256Hash !== 'string' || !SHA256_HEX_REGEX.test(ev.sha256Hash)) {
+      errors.push(
+        `Evidence '${ev.id}' sha256Hash must be a valid 64-character hexadecimal SHA-256 string.`
+      );
+    }
+    if (typeof ev.details !== 'string' || ev.details.trim().length === 0) {
+      errors.push(`Evidence '${ev.id}' is missing required string 'details'.`);
+    }
+
     validateEnum(ev.type, VALID_EVIDENCE_TYPES, `evidence[${idx}].type`, errors);
     validateEnum(ev.result, VALID_EVIDENCE_RESULTS, `evidence[${idx}].result`, errors);
   });
