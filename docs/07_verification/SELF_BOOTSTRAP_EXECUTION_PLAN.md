@@ -1,11 +1,13 @@
 # Step 5 / DMK-193: Trusted Self-Bootstrap Execution & Verification Plan
 
 **Document ID**: `DOC-VER-005`  
-**Status**: `PREPARED_FOR_OPERATOR_EXECUTION`  
+**Status**: `EXECUTED_AND_VERIFIED`  
 **Target Work Item**: `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State  
-**WBS Status**: `IN_PROGRESS` (Prepared; Awaiting Human Operator Execution)  
+**WBS Status**: `VERIFIED`  
+**Execution Result**: `EXECUTED`  
+**Verification Result**: `BOOTSTRAP_VERIFIED`  
 **Preceding Work Item**: `DMK-192` — `VERIFIED` (Dry-Run Approved by Human Operator)  
-**Next Stage (Gated)**: Gate 7 Human Sign-Off / Batch 2 Implementation (**STRICTLY BLOCKED**)  
+**Next Controlled Work Item**: `DMK-194` — Projects Workspace & Reliable Project Switching  
 **Supported Environments**: `GIT` (Authoritative local clone) | `AI_STUDIO_WORKSPACE` (Sandbox container)  
 **Target Project ID**: `PRJ-DOCMONSTAKRAKIN`  
 **Authoritative Manifest**: `bootstrap/docmonstakrakin.self-bootstrap.json`  
@@ -14,23 +16,46 @@
 
 ---
 
+## Execution Outcome
+
+> [!CAUTION]
+> **THE TRUSTED PRJ-DOCMONSTAKRAKIN SELF-BOOTSTRAP HAS ALREADY BEEN EXECUTED SUCCESSFULLY.**  
+> **DO NOT RUN THE EXECUTION COMMAND AGAIN FOR THE EXISTING SELF-PROJECT.**  
+> Any subsequent attempt will fail-closed under `CREATE_ONLY` conflict rules.
+
+- **Execution Source Commit**: `90afc1790b1b56da443fd66c4d29e5015dd5161f` (on merged `master`)
+- **Reviewed Manifest Digest**: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+- **Baseline Project Count**: `3`
+- **Current Project Count**: `4`
+- **New Project Added**: `PRJ-DOCMONSTAKRAKIN` (only)
+- **Pre-Bootstrap Canonical State SHA-256**: `8e094692baf216415c6428553f49d7c3cfe724cd2e58bd72be67dd22f79b42bb`
+- **Post-Bootstrap Canonical State SHA-256**: `e314ed62494e34065694166bac5273ef9e20a13821f686de1f5f92dc81434f62`
+- **Unrelated-State Hash**: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527` (Preserved 100% Unchanged)
+- **Machine Evidence Path**: `docs/07_verification/self-bootstrap-execution-verification.json`
+- **Machine Evidence SHA-256**: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`
+- **Verification Result**: `BOOTSTRAP_VERIFIED`
+- **Gate 7 Status**: `NOT EXECUTED` (Remains strictly `HUMAN_APPROVAL_REQUIRED`)
+- **Downstream Transition**: DMK-193 completion advances the controlled sequence to `DMK-194` (Projects Workspace & Reliable Project Switching). It does **NOT** directly authorize Batch 2, and does **NOT** authorize Gate 7.
+
+---
+
 ## 1. Governance Boundary & Execution Authority
 
 In accordance with `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md` and explicit human operator directives:
 
 1. **Human Operator Execution Exclusivity**:
-   - The AI assistant is **STRICTLY PROHIBITED** from executing the live self-bootstrap (`npm run bootstrap:self -- --execute ...`).
-   - The real self-bootstrap ceremony MUST be performed manually by the authorized human operator.
+   - The real self-bootstrap ceremony was performed manually by the authorized human operator.
+   - The AI assistant remains strictly prohibited from executing live bootstrap or modifying repository git metadata.
 2. **Read-Only Assistant Scope**:
-   - Step 5A is strictly limited to developing, testing, and documenting the post-execution verification tooling (`scripts/verifySelfBootstrapExecution.ts`) and this execution plan.
-   - All verification tooling is 100% read-only (`mutationCount: 0`).
+   - Post-execution verification tooling (`scripts/verifySelfBootstrapExecution.ts`) is 100% read-only (`mutationCount: 0`).
 3. **Source Control Boundary**:
    - All Git operations (`git commit`, `git push`, `git checkout`, etc.) are 100% owned by the human operator.
 4. **WBS Transition Integrity**:
-   - `DMK-192` has transitioned to `VERIFIED` following operator approval of Step 4.
-   - `DMK-193` is currently `IN_PROGRESS`. It MUST NOT transition to `VERIFIED` until the operator has executed the real bootstrap and post-execution verification passes with zero errors.
+   - `DMK-192` is `VERIFIED`.
+   - `DMK-193` is `VERIFIED` following operator execution, canonical verification, and review documentation.
 5. **Downstream Blocks**:
-   - Gate 7, Batch 2, and v0.2 implementation remain **STRICTLY BLOCKED** until DMK-193 verification is complete.
+   - Completion of `DMK-193` unblocks progression to `DMK-194` (Projects Workspace & Reliable Project Switching).
+   - Batch 2 and Gate 7 remain strictly blocked pending their downstream prerequisite work items and human-review gates.
 
 ---
 
@@ -51,9 +76,11 @@ An authorized live self-bootstrap execution must satisfy the following strict in
 
 ---
 
-## 3. Step-by-Step Operator Execution Instructions
+## 3. Step-by-Step Operator Execution Instructions (Historical Procedure)
 
-The human operator should execute the ceremony following these sequential phases:
+*(The steps below document the historical ceremony executed on 2026-09-21 by the human operator. As recorded in the Execution Outcome above, the self-project has already been created and verified; these instructions are retained for auditing and historical traceability.)*
+
+The human operator executed the ceremony following these sequential phases:
 
 ### Phase 1: Pre-Execution Baseline Capture
 

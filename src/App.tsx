@@ -17,6 +17,7 @@ import { RepositoryView } from './components/RepositoryView';
 import { ApprovalsView } from './components/ApprovalsView';
 import { AgentCenterView } from './components/AgentCenterView';
 import { FeaturesView } from './components/FeaturesView';
+import { ProjectsView } from './components/ProjectsView';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { OverrideModal } from './components/OverrideModal';
 import { PackageTransferModal } from './components/PackageTransferModal';
@@ -184,7 +185,13 @@ export default function App() {
   // Handlers
   const handleSelectProject = (id: string) => {
     loadSequence.current++;
-    setSelectedReqId(undefined); setSelectedQuestionId(undefined); setSelectedWorkItemId(undefined);
+    setSelectedReqId(undefined);
+    setSelectedQuestionId(undefined);
+    setSelectedWorkItemId(undefined);
+    const target = projects.find((p) => p.id === id);
+    if (target) {
+      setCurrentProject(target);
+    }
     setActiveProjectId(id);
   };
 
@@ -628,12 +635,22 @@ export default function App() {
             />
           )}
 
-          {/* Fallback for other sidebar views */}
-          {(currentView === 'projects' ||
-            currentView === 'settings') && (
+          {currentView === 'projects' && (
+            <ProjectsView
+              projects={projects}
+              currentProject={currentProject}
+              onSelectProject={handleSelectProject}
+              onOpenCreateWizard={handleOpenCreateWizard}
+              onOpenPackageModal={() => setIsPackageModalOpen(true)}
+              onNavigateToView={(view) => setCurrentView(view as NavView)}
+            />
+          )}
+
+          {/* Fallback for settings view */}
+          {currentView === 'settings' && (
             <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-4 max-w-2xl mx-auto shadow-2xs">
               <h2 className="text-base font-bold text-slate-900 capitalize">
-                {currentView} Control Workspace
+                Settings Control Workspace
               </h2>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Governed by active project profiles ({currentProject.profiles.join(', ')}). All baseline state items are accessible across Requirements, Risk, Work, Standards, and Evidence modules.
