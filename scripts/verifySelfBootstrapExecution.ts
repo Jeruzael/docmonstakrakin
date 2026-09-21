@@ -72,22 +72,11 @@ export const EXPECTED_ENTITY_COUNTS = {
  * intentionally inspects nested string values rather than depending on one
  * UI-specific field layout.
  */
-function containsGate7Reference(value: unknown): boolean {
-  if (typeof value === 'string') {
-    return /\bgate[\s_-]*7\b/i.test(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.some(item => containsGate7Reference(item));
-  }
-
-  if (value !== null && typeof value === 'object') {
-    return Object.values(value as Record<string, unknown>).some(item =>
-      containsGate7Reference(item)
-    );
-  }
-
-  return false;
+function isGate7Reference(value: unknown): boolean {
+  return (
+    typeof value === 'string' &&
+    /\bgate[\s_-]*7\b/i.test(value.trim())
+  );
 }
 
 export interface VerifyExecutionOptions {
@@ -464,15 +453,39 @@ export function verifySelfBootstrapExecution(
   // hardcoded. The bootstrap contract requires approvals to be empty, but the
   // explicit Gate 7 check keeps the reported invariant independently truthful.
   const gate7ExecutionEvidence = approvals.some((approval: any) => {
-    const status = String(approval?.status ?? '').toUpperCase();
+  if (approval?.status !== 'APPROVED') {
+    return false;
+  }
 
-    const explicitlyApproved =
-      status === 'APPROVED' ||
-      approval?.approved === true ||
-      approval?.passed === true;
+  if (
+    approval?.type !== 'GATE_TRANSITION' ||
+    approval?.targetEntityType !== 'GATE'
+  ) {
+    return false;
+  }
 
-    return explicitlyApproved && containsGate7Reference(approval);
-  });
+  const targetIsGate7 = isGate7Reference(
+    approval?.targetEntityId
+  );
+
+  const passedGate7Policy =
+    Array.isArray(approval?.policyGates) &&
+    approval.policyGates.some(
+      (gate: any) =>
+        gate?.passed === true &&
+        isGate7Reference(gate?.gateName)
+    );
+
+  return targetIsGate7 || passedGate7Policy;
+});
+
+report.gate7Executed = gate7ExecutionEvidence;
+
+if (gate7ExecutionEvidence) {
+  errors.push(
+    'Governance violation: approved Gate 7 execution evidence was found in the bootstrapped project'
+  );
+}
 
   report.gate7Executed = gate7ExecutionEvidence;
 

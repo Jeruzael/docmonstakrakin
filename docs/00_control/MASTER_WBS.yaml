@@ -148,8 +148,7 @@ items:
       - "Execute trusted bootstrap and verify canonical project state"
       - "Verify unrelated project state preservation, manifest entity mapping, and single genesis audit event"
     verification_method: "scripts/verifySelfBootstrapExecution.ts; scripts/testSelfBootstrapExecutionVerifier.ts; npm run verify:bootstrap:execution; npm run test:bootstrap:execution-verifier"
-    evidence:
-      - "docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md"
+    evidence: []
 
   - id: "DMK-194"
     wbs_path: "13.06.08"
