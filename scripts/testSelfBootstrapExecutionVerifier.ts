@@ -720,8 +720,6 @@ async function runVerifierTests(): Promise<void> {
     pass('Test S: Target project already present in baseline fails');
   }
 
-  console.log('================================================================');
-  console.log(`TOTAL TESTS: ${testCount} | ALL POST-EXECUTION VERIFIER TESTS PASSED`);
     // TEST T: Approved Gate 7 execution evidence is explicitly detected and fails
   {
     const { tempDir, baselinePath, currentPath } = setupBootstrapPair();
@@ -758,7 +756,11 @@ async function runVerifierTests(): Promise<void> {
     fs.rmSync(tempDir, { recursive: true, force: true });
     pass('Test T: Approved Gate 7 execution evidence is explicitly detected and fails');
   }
+
   console.log('================================================================');
+  console.log(`TOTAL TESTS: ${testCount} | ALL POST-EXECUTION VERIFIER TESTS PASSED`);
+  console.log('================================================================');
+
 }
 
 runVerifierTests().catch(err => {
