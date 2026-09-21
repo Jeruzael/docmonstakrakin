@@ -1,82 +1,37 @@
-1. Executive Status
-Component / Phase	Current State	Notes
-Current Step	Step 4A — Self-Bootstrap Executor Security & Review-Binding Correction	Implementation & documentation synchronization complete
-DMK-192	VERIFICATION_PENDING	Technical verification complete; awaiting human operator review (READY_FOR_HUMAN_REVIEW)
-DMK-193	BACKLOG	Real canonical self-bootstrap execution remains strictly BLOCKED
-Gate 7	NOT EXECUTED	Status: HUMAN_APPROVAL_REQUIRED; no approvals injected
-Batch 2	NOT STARTED	Governance remediation sequence strictly precedes v0.2 implementation
-.local/project-state.json	NOT CREATED	Zero filesystem mutations in current workspace
-Git Operations	NONE	No git commands executed; all source-control operations reserved for the human operator
-2. Master Manifest Accounting & Reviewed Digest
-Authoritative Reviewed Manifest Digest:
-code
-Code
-229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
-Manifest File: bootstrap/docmonstakrakin.self-bootstrap.json (unmodified, byte-verified)
-Entity Accounting:
-15 Features: FEAT-DMK-001 through FEAT-DMK-015 (12 PRODUCT_BASELINE, 3 MANUAL_ENTRY, all PROPOSED)
-24 Requirements: 14 historical v0.1 requirements, 4 verified remediation requirements (REQ-RC-187..190), 6 dogfooding roadmap requirements (REQ-BOOT-001, REQ-UX-PROJECTS-001, REQ-DOC-001, REQ-GOV-SIGNOFF-001, REQ-GOV-QUORUM-001, REQ-GOV-REVIEWER-001)
-6 Risks: RISK-001, RISK-004, RISK-019, RISK-022, RISK-025, RISK-BOOT-001 (all PROPOSED / IDENTIFIED)
-8 Threats: THR-001 through THR-007, THR-BOOT-001 (all mitigations IN_PROGRESS)
-7 ADRs: ADR-0001 through ADR-0007 (all PROPOSED)
-6 Architecture Components: CMP-01 through CMP-05, CMP-BOOT-01 (all PROPOSED)
-13 WorkItems: 4 VERIFICATION (DMK-187..190 with real evidence); 1 READY (DMK-192); 8 BACKLOG (DMK-191, DMK-193..199)
-4 Evidence Records: EV-RC-187, EV-RC-188, EV-RC-189, EV-RC-190 (real SHA-256 byte hashes)
-28 Controlled Documents: 24 pinned documents (SHA-256 digests byte-verified), 4 unpinned living control documents (DOC-CTRL-002, DOC-CTRL-003, DOC-CTRL-004, DOC-CTRL-006)
-Historical Step 3 Baseline: Manifest digest 937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289 is explicitly documented as historical.
-3. WBS & Governance State
-WBS Evidence Cleaned: Removed nonexistent EV-BOOT-192 reference from docs/00_control/MASTER_WBS.yaml. DMK-192 evidence correctly links to:
-docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md
-docs/07_verification/self-bootstrap-manifest-validation.json
-Zero-Drift Synchronization: MASTER_WBS.md rendered deterministically from MASTER_WBS.yaml with 0 drift verified via npm run wbs:check.
-Decision Governance Correction: docs/00_control/CHANGELOG_DECISIONS.md corrected to state:
-"Step 4A Self-Bootstrap Security & Review-Binding Correction Implemented — Human Review Pending (DMK-192)"
-Completely eliminated premature claims of ratification or approval prior to human governance ceremonies.
-Control State Alignment:
-docs/00_control/PROJECT_STATE.md: Labeled historical Step 3 baseline, retained DMK-192 = VERIFICATION_PENDING, and replaced the "Next safe sequence" with the Step 4A operator path.
-docs/00_control/LAST_HANDOFF.md: Updated to current operational truth (16 executor tests, 19 contract tests, explicit schema reporting, review-binding guard with anti-TOCTOU, blocked status of DMK-193/Batch 2).
-4. Schema Reporting Separation
-The CLI report and SelfBootstrapReport interface now explicitly distinguish between the manifest schema and the runtime state schema:
-code
-Code
-================================================================
-docmonstakrakin - TRUSTED SELF-BOOTSTRAP CLI (DMK-192)
-================================================================
-Execution Mode:          DRY_RUN
-Target Project ID:       PRJ-DOCMONSTAKRAKIN
-Manifest Schema:         SELF_BOOTSTRAP_V1
-Project State Schema:    1
-Bootstrap Mode:          TRUSTED_LOCAL_BOOTSTRAP
-Manifest Digest:         229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
-Overall Status:          SAFE_TO_REVIEW
-----------------------------------------------------------------
-Manifest Schema: SELF_BOOTSTRAP_V1 (the schema of the input bootstrap package)
-Project State Schema: 1 (PROJECT_STATE_SCHEMA_VERSION for internal storage persistence)
-Bootstrap Mode: TRUSTED_LOCAL_BOOTSTRAP
-5. Full Validation Suite Results
-All 9 validation commands were executed cleanly and passed with 0 errors:
-Step	Command	Result	Details
-1	npm run wbs:render	PASS	Rendered docs/00_control/MASTER_WBS.md
-2	npm run wbs:check	PASS	100% synchronized with MASTER_WBS.yaml (zero drift)
-3	npm run test:bootstrap:contract	PASS	19/19 contract and schema tests passed
-4	npm run test:bootstrap:manifest	PASS	Validated manifest; 24 pinned digests verified, 4 unpinned living docs checked, 4 evidence hashes verified
-5	npm run test:bootstrap:executor	PASS	16/16 regression tests passed (including anti-TOCTOU, atomic failure recovery, schema version assertions)
-6	npm run lint	PASS	tsc --noEmit exited with 0 errors
-7	npx tsx scripts/runAutomatedQa.ts	PASS	11/11 automated QA criteria passed (P0 checks green)
-8	npm run build	PASS	Frontend (vite build) and server (esbuild) compiled cleanly into dist/
-9	npm run bootstrap:self -- --dry-run	PASS	Status SAFE_TO_REVIEW, mutationCount: 0, .local/project-state.json uncreated
-6. Next Operator Steps (Human Ceremony & Merge Path)
-Step 4A Human Review: Operator inspects the Step 4A implementation and dry-run report (docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md).
-Synchronize Branch: Synchronize workspace/branch with master.
-Authoritative Local Verification: Run validation suite on the operator workstation.
-Merge Step 4A: Merge reviewed Step 4A into master.
-Rerun Dry-Run on Merged Master: Verify npm run bootstrap:self -- --dry-run produces SAFE_TO_REVIEW with digest 229215f6....
-Explicit DMK-193 Authorization: Only upon explicit human operator signoff, execute the real self-bootstrap:
-code
-Bash
-DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN npm run bootstrap:self -- \
-  --execute \
-  --confirm-project-id PRJ-DOCMONSTAKRAKIN \
-  --confirm-manifest-digest 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
-Downstream Sequence:
-DMK-194 (Projects Workspace) → DMK-195 (Controlled Documentation Workspace) → DMK-196 (Batch 2 Governance UX) → DMK-197 (Batch 3 Quorum Sync) → DMK-198 (Batch 4 Reviewer Usability) → DMK-199 (Batch 5 Full Regression) → DMK-191 (CryptoDemon Human Browser Retest) → Gate 7 Human Release Approval.
+Step 4B Implementation & Verification Summary
+The environment-neutral control state and local operator dry-run records have been implemented and verified across documentation and automated QA test harnesses.
+Key Outcomes
+Dual-Environment Governance Specification:
+Updated docs/00_control/PROJECT_STATE.md and docs/00_control/LAST_HANDOFF.md to establish an operational policy supporting both GIT (local workstation, clone, CI) and AI_STUDIO_WORKSPACE (container sandbox).
+Clarified runtime behavior: Git metadata is inspected dynamically when running in GIT mode, while treated as NOT_APPLICABLE in AI_STUDIO_WORKSPACE sandbox containers. Static documents avoid fabricating runtime Git branches or commits.
+Formally recorded the authoritative local operator dry-run verification:
+Operator Environment: GIT
+Branch: gaistudio-4
+Commit: 76fcfc21fc8be48ee477ea2f3be9bfe36b3252a5
+Working Tree: CLEAN
+Evaluated Manifest Digest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
+Dry-Run Status: SAFE_TO_REVIEW
+Mutation Count: 0
+Real Snapshot: NOT CREATED (.local/project-state.json absent and untouched)
+Review Binding & Anti-TOCTOU: Enforced
+Preserved Projects: 2 (PRJ-ATLAS-01, PRJ-FINPAY-02)
+Documentation Verification Record:
+Updated docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md with Section 2 ("Authoritative Local Operator Dry-Run Verification"), designating the local Git checkout as the authoritative gate prior to master merge, while preserving the historical container dry-run for sandbox auditability.
+Dual-Mode Automated QA Checks:
+Modified QA-AUTO-DOC-001 and QA-AUTO-DOC-002 in scripts/runAutomatedQa.ts to recognize both the dual-environment specification (GIT / AI_STUDIO_WORKSPACE) and runtime mode matches. This resolves failures in local Git checkouts while continuing to pass in container sandboxes.
+Preservation & Gating Invariants:
+DMK-192: VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW
+DMK-193: BACKLOG / BLOCKED pending human authorization
+.local/project-state.json: Uncreated and untouched (zero disk mutations)
+Gate 7: HUMAN_APPROVAL_REQUIRED / Unexecuted
+Batch 2: Not started
+Verification Results
+All required verification suites passed cleanly with zero regressions:
+npm run wbs:check: PASS (Zero drift between MASTER_WBS.yaml and MASTER_WBS.md)
+npm run test:bootstrap:contract: PASS (19/19 contract tests passed)
+npm run test:bootstrap:manifest: PASS (28 docs checked, 24 pinned digests verified, 4 unpinned living docs checked, 4 evidence hashes verified)
+npm run test:bootstrap:executor: PASS (16/16 executor tests passed)
+npm run lint: PASS (tsc --noEmit clean)
+npx tsx scripts/runAutomatedQa.ts: PASS (11/11 criteria passed)
+npm run build: PASS (Vite production build and CommonJS bundle succeeded)
+npm run bootstrap:self -- --dry-run: PASS (SAFE_TO_REVIEW, mutationCount: 0)

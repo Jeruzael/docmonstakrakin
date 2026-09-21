@@ -1,16 +1,41 @@
 # docmonstakrakin current project state
 
-Updated 2026-09-19. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
+Updated 2026-09-20. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
-- Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Supported Source-Control Environments:
+  - GIT (local clone / developer workstation / CI)
+  - AI_STUDIO_WORKSPACE (cloud container / sandbox)
+- Runtime Behavior:
+  - In GIT mode: runtime inspection reads branch, commit, and working-tree status directly from the local repository.
+  - In AI_STUDIO_WORKSPACE mode: git metadata is NOT_APPLICABLE and write access to parent repository git metadata is disabled by design.
+  - Static repository documentation must not fabricate runtime-specific git metadata.
+- Authoritative Local Operator Dry-Run Verification:
+  - Operator Execution Environment: `GIT`
+  - Branch at verification: `gaistudio-4`
+  - Evaluated Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+  - Dry-Run Status: `SAFE_TO_REVIEW`
+  - Mutation Count: `0`
+  - Snapshot Existed Before Dry-Run: `YES`
+  - Snapshot Written by Dry-Run: `NO`
+  - Projected Snapshot Action: `REPLACE`
+  - Review Binding Enforced: `YES`
+  - Anti-TOCTOU Protection Enforced: `YES`
+  - Preserved Projects: `3`
+    - `PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`
+    - `PRJ-ATLAS-01`
+    - `PRJ-FINPAY-02`
+  - Unrelated State Before Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - Unrelated State Candidate Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - Unrelated State Equivalence: `VERIFIED`
+- Environment Note: AI Studio dry-run is valid for sandbox inspection, while local Git checkout is the authoritative merge/execute environment.
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Git Metadata: NOT AVAILABLE (AI Studio container sandbox; branch/commit/working-tree are NOT_APPLICABLE)
 - Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 4 / Step 4A — Trusted Self-Bootstrap Executor Security & Review-Binding Correction (DMK-192 VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW)
+- Current Work Item: Step 4B — Environment-Neutral Control State & Local Dry-Run Record (DMK-192 VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW)
+- Next Work Item: DMK-193 BACKLOG / BLOCKED
+- Master Manifest Digest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
@@ -22,8 +47,8 @@ Step 4 / Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review-Bin
 - Pure Integrity Verification: `server/bootstrap/selfBootstrapIntegrity.ts` performs non-mutating schema, referential, document digest, and evidence hash verification. Code-level bypass heuristics completely removed in favor of manifest-declared unpinned living control documents (`DOC-CTRL-002`, `003`, `004`, `006`).
 - Review-Binding & Anti-TOCTOU Guard: Execution strictly requires `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`), `--confirm-project-id PRJ-DOCMONSTAKRAKIN`, and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Manifest changes after review trigger fail-closed abort.
 - CLI Entrypoint & Clean Schema Reporting: `scripts/bootstrapSelf.ts` exposed via `npm run bootstrap:self -- --dry-run` (supports human and `--json` outputs). Arbitrary `--manifest` CLI selection removed. Separates Manifest Schema (`SELF_BOOTSTRAP_V1`), Project State Schema (`1`), and Bootstrap Mode (`TRUSTED_LOCAL_BOOTSTRAP`).
-- Zero Mutations in Dry-Run: Performs 100% candidate state projection, verifies existing project preservation (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state equivalence hash (`124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`), constructs deterministic candidate audit event, verifies chained genesis audit, and produces `mutationCount: 0`. Leaves `.local/` uncreated and untouched.
-- Accurate Snapshot Action Semantics: Projected snapshot status distinguishes create vs replace: `wouldWriteSnapshot: true`, `wouldCreateSnapshot: true` (since `.local/project-state.json` is uncreated), `wouldReplaceSnapshot: false`.
+- Zero Mutations in Dry-Run: Performs 100% candidate state projection and produces `mutationCount: 0`. In the authoritative local Git verification, an existing `.local/project-state.json` snapshot was present and remained unwritten by the dry-run. Three existing projects (`PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`, `PRJ-ATLAS-01`, `PRJ-FINPAY-02`) were preserved with matching unrelated-state hashes (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`).
+- Accurate Snapshot Action Semantics: Projected snapshot status distinguishes create vs replace: `wouldWriteSnapshot: true`, `wouldCreateSnapshot: false`, `wouldReplaceSnapshot: true`, because an existing `.local/project-state.json` snapshot was present in the authoritative local operator environment.
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are guaranteed cleaned up.
 - Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 16 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, validation report non-interference, TOCTOU defense, and pinned vs unpinned document handling (16/16 passing).
 - Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).

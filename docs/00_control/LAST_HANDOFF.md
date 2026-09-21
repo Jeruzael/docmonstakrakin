@@ -1,16 +1,37 @@
 # Current session handoff
 
-Updated 2026-09-19.
+Updated 2026-09-20.
 
-- Execution Environment: Google AI Studio workspace container
-- Source-Control Mode: AI_STUDIO_WORKSPACE
+- Supported Source-Control Environments:
+  - GIT (local clone / developer workstation / CI)
+  - AI_STUDIO_WORKSPACE (cloud container / sandbox)
+- Runtime Behavior:
+  - In GIT mode: runtime inspection reads branch, commit, and working-tree status directly from the local repository.
+  - In AI_STUDIO_WORKSPACE mode: git metadata is NOT_APPLICABLE and write access to parent repository git metadata is disabled by design.
+  - Static repository documentation must not fabricate runtime-specific git metadata.
+- Authoritative Local Operator Dry-Run Verification:
+  - Environment: `GIT`
+  - Branch: `gaistudio-4`
+  - Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+  - Result: `SAFE_TO_REVIEW`
+  - Snapshot Existed Before Dry-Run: `YES`
+  - Snapshot Written: `NO`
+  - Projected Snapshot Action: `REPLACE`
+  - Preserved Projects: `3`
+    - `PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`
+    - `PRJ-ATLAS-01`
+    - `PRJ-FINPAY-02`
+  - Unrelated State Before Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - Unrelated State Candidate Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+  - State Equivalence: `VERIFIED`
+  - Mutation Count: `0`
+- Environment Note: AI Studio dry-run is valid for sandbox inspection, while local Git checkout is the authoritative merge/execute environment.
 - Source Repository: GitHub (Jeruzael/docmonstakrakin)
-- Git Metadata: NOT AVAILABLE (AI Studio container sandbox; branch/commit/working-tree are NOT_APPLICABLE)
 - Authoritative Starting Checkpoint: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 4A — Trusted Self-Bootstrap Executor Security & Review Binding
+- Current Step: Step 4B — Environment-Neutral Control State & Local Dry-Run Record
 - DMK-192: VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW
 - DMK-193: BACKLOG / BLOCKED pending human authorization
 - Reviewed Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
@@ -26,8 +47,8 @@ Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review Binding) is 
 - Review-Binding & Anti-TOCTOU Guard: Execution strictly requires `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`), `--confirm-project-id PRJ-DOCMONSTAKRAKIN`, and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Manifest changes after review trigger fail-closed abort.
 - Reusable Validator CLI: `scripts/validateSelfBootstrapManifestFile.ts` verifies pure manifest integrity (`npm run test:bootstrap:manifest`).
 - Dedicated CLI: `scripts/bootstrapSelf.ts` supports `npm run bootstrap:self -- --dry-run` (human-readable and `--json` outputs) with explicit separation of Manifest Schema (`SELF_BOOTSTRAP_V1`), Project State Schema (`1`), and Bootstrap Mode (`TRUSTED_LOCAL_BOOTSTRAP`). Arbitrary `--manifest` CLI selection removed.
-- Zero Mutations in Dry-Run: Successfully projects candidate state, verifies 100% preservation of pre-existing baseline state (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`), verifies state hash equivalence (`124d3fd3995806aae14378d5edd3c48074e7dd4ce0998e7733cf450312f0a76a`), checks candidate audit ledger chained from genesis, and produces `mutationCount: 0`. `.local/` remains uncreated and untouched.
-- Accurate Snapshot Action Semantics: Projected snapshot status distinguishes create vs replace (`wouldWriteSnapshot: true`, `wouldCreateSnapshot: true`, `wouldReplaceSnapshot: false`).
+- Zero Mutations in Dry-Run: The authoritative local Git dry-run projected the candidate state with `mutationCount: 0`. An existing `.local/project-state.json` snapshot was present and remained unwritten. Three projects (`PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`, `PRJ-ATLAS-01`, `PRJ-FINPAY-02`) were preserved with identical unrelated-state hashes (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`).
+- Accurate Snapshot Action Semantics: The authoritative local projection reports `wouldWriteSnapshot: true`, `wouldCreateSnapshot: false`, and `wouldReplaceSnapshot: true`. The dry-run itself wrote nothing.
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are cleaned up.
 - Regression Suite: 16 tests in `scripts/testSelfBootstrapExecutor.ts` pass cleanly (`npm run test:bootstrap:executor`).
 - Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).
@@ -62,11 +83,10 @@ The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39d
 ### Prior Batch Remediations (Historical Baseline)
 Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement state synchronization, `activeDrawerReqId` architecture, SecretStore standardized to `.secrets/`, legacy machine-token migration, fail-closed secret resolution, and reverse-chronological audit hashing. Gate 7 status is HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; Batch 2 is NOT started.
 
-## Next safe action
+## Next safe action (Human Operator Actions)
 
-1. Human review Step 4A (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md` and dry-run report).
-2. Synchronize gaistudio-4 with master.
-3. Run authoritative local verification.
-4. Merge Step 4A into master.
-5. Rerun dry-run from merged master.
-6. Only then consider explicit DMK-193 authorization.
+1. Review Step 4A / Step 4B changes (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md` and dry-run report).
+2. Verify on local Git checkout (`gaistudio-4`).
+3. Merge reviewed Step 4A / Step 4B into `master`.
+4. Rerun dry-run on `master` (`npm run bootstrap:self -- --dry-run`).
+5. Explicitly authorize DMK-193 before real bootstrap execution.
