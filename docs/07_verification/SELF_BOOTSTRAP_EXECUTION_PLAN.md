@@ -62,22 +62,29 @@ Before running the real bootstrap, preserve an exact byte-for-byte baseline snap
 In the repository root:
 
 ```bash
-# If .local/project-state.json exists:
-mkdir -p .local
-cp .local/project-state.json .local/project-state.baseline-backup.json
-
-# If .local/project-state.json does not yet exist (using built-in default baseline):
-# Generate a pristine baseline snapshot from the current in-memory baseline store:
+# If .local/project-state.json does not yet exist:
+# Generate the baseline snapshot from a fresh ProjectStore using the same
+# canonical snapshot projection used by runtime persistence.
 npx tsx -e "
 import fs from 'node:fs';
-import path from 'node:path';
-import { initialStore } from './server/projectStore.ts';
-import { PROJECT_STATE_SCHEMA_VERSION } from './server/projectPersistence.ts';
+import { ProjectStore } from './server/projectStore.ts';
+import {
+  snapshotProjectStore,
+  PROJECT_STATE_SCHEMA_VERSION
+} from './server/projectPersistence.ts';
+
+const store = new ProjectStore();
+
 fs.mkdirSync('.local', { recursive: true });
-fs.writeFileSync('.local/project-state.baseline-backup.json', JSON.stringify({
-  schemaVersion: PROJECT_STATE_SCHEMA_VERSION,
-  state: initialStore
-}, null, 2));
+
+fs.writeFileSync(
+  '.local/project-state.baseline-backup.json',
+  JSON.stringify({
+    schemaVersion: PROJECT_STATE_SCHEMA_VERSION,
+    state: snapshotProjectStore(store)
+  }, null, 2)
+);
+
 console.log('Baseline snapshot created at .local/project-state.baseline-backup.json');
 "
 ```
