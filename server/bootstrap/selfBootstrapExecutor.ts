@@ -126,7 +126,7 @@ export const EMPTY_INITIALIZED_COLLECTIONS = [
   'importSessions',
 ];
 
-function hashProjectsState(store: ProjectStore, projectIds: string[]): string {
+export function hashProjectsState(store: ProjectStore | any, projectIds: string[]): string {
   const payload: Record<string, any> = {};
   const sortedIds = [...projectIds].sort();
   for (const pid of sortedIds) {
