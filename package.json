@@ -23,6 +23,8 @@
     "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts",
     "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts",
     "test:bootstrap:executor": "tsx scripts/testSelfBootstrapExecutor.ts",
+    "test:bootstrap:execution-verifier": "tsx scripts/testSelfBootstrapExecutionVerifier.ts",
+    "verify:bootstrap:execution": "tsx scripts/verifySelfBootstrapExecution.ts",
     "bootstrap:self": "tsx scripts/bootstrapSelf.ts"
   },
   "dependencies": {

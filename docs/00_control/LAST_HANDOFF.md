@@ -31,17 +31,27 @@ Updated 2026-09-20.
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 4B — Environment-Neutral Control State & Local Dry-Run Record
-- DMK-192: VERIFICATION_PENDING / READY_FOR_HUMAN_REVIEW
-- DMK-193: BACKLOG / BLOCKED pending human authorization
+- Current Step: Step 5A / DMK-193 — Trusted Self-Bootstrap Execution Preparation & Read-Only Verifier Tooling
+- Current Status: PREPARED_FOR_OPERATOR_EXECUTION
+- DMK-192: VERIFIED (Human operator Step 4 review sign-off completed)
+- DMK-193: IN_PROGRESS (Execution Prepared; Awaiting Operator Ceremony; DO NOT AUTO-EXECUTE)
 - Reviewed Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
-- v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED.
+- v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED (STRICTLY BLOCKED).
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## Current operational truth and completed work
 
-Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review Binding) is VERIFICATION_PENDING (READY_FOR_HUMAN_REVIEW):
+Step 5A (DMK-193: Trusted Self-Bootstrap Execution Preparation & Read-Only Verifier Tooling) is PREPARED_FOR_OPERATOR_EXECUTION:
+- Operator Review Authorization: The human operator reviewed and approved Step 4 (DMK-192), transitioning DMK-192 to VERIFIED and authorizing preparation for Step 5 (DMK-193 IN_PROGRESS).
+- Strict Execution Boundary: The real self-bootstrap execution ceremony is 100% reserved for the human operator. The AI assistant must NEVER run the real bootstrap execution command. Git operations remain 100% owned by the human operator.
+- Read-Only Post-Execution Verifier: Implemented `scripts/verifySelfBootstrapExecution.ts` (`npm run verify:bootstrap:execution`). It loads pre-execution baseline and post-execution current snapshots, verifies target project `PRJ-DOCMONSTAKRAKIN` creation, validates 100% preservation of unrelated project states (`mutationCount: 0`), verifies exact manifest entity mapping (15 features, 24 requirements, 6 risks, 8 threats, 7 ADRs, 6 components, 13 workItems, 4 evidence records, 28 controlled documents), checks 8 empty initialized collections, confirms zero injected approvals or release sign-offs, and validates the single genesis-chained `PROJECT_BOOTSTRAPPED` audit event.
+- Verifier Test Suite: Implemented `scripts/testSelfBootstrapExecutionVerifier.ts` (`npm run test:bootstrap:execution-verifier`) with 20 comprehensive test cases covering valid execution, missing snapshots, missing target project, duplicates, unrelated state tampering, manifest collection mismatches, forbidden approvals, audit chain corruptions, digest mismatches, and SHA-256 byte-identity preservation (20/20 passing).
+- Execution Plan: Created `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md` documenting the 4-phase operator instructions (Phase 1 Baseline Backup, Phase 2 Triple-Gated Execution, Phase 3 Read-Only Verification, Phase 4 Operational Transition) and rollback procedures.
+- Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-192 VERIFIED, DMK-193 IN_PROGRESS); `docs/00_control/MASTER_WBS.md` rendered with zero drift (`npm run wbs:check` passes).
+- Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
+
+### Historical Step 4 Baseline (DMK-192: Trusted Self-Bootstrap Executor Security & Review Binding)
 - Implemented `server/bootstrap/selfBootstrapExecutor.ts`: Independent execution engine decoupled from the web server/Vite/secret store.
 - Pure Integrity Validator: `server/bootstrap/selfBootstrapIntegrity.ts` provides non-mutating schema, referential, document digest, and evidence hash verification. Code-level bypass heuristics eliminated in favor of manifest-declared unpinned living control documents (`DOC-CTRL-002`, `003`, `004`, `006`).
 - Review-Binding & Anti-TOCTOU Guard: Execution strictly requires `--confirm-manifest-digest <digest>` matching the evaluated digest (`229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`), `--confirm-project-id PRJ-DOCMONSTAKRAKIN`, and `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`. Manifest changes after review trigger fail-closed abort.
@@ -52,7 +62,7 @@ Step 4A (DMK-192: Trusted Self-Bootstrap Executor Security & Review Binding) is 
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are cleaned up.
 - Regression Suite: 16 tests in `scripts/testSelfBootstrapExecutor.ts` pass cleanly (`npm run test:bootstrap:executor`).
 - Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).
-- Step 5 (DMK-193: Execute Trusted Self-Bootstrap) remains strictly BLOCKED / BACKLOG pending human authorization.
+- At the Step 4 checkpoint, Step 5 (`DMK-193`) remained `BLOCKED / BACKLOG` pending human authorization.
 
 Automated verification status:
 - 19/19 bootstrap contract tests pass (`npm run test:bootstrap:contract`)

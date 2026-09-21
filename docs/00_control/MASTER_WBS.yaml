@@ -114,7 +114,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "VERIFICATION_PENDING"
+    status: "VERIFIED"
     dependencies: []
     requirements: ["REQ-BOOT-001"]
     architecture_links: ["CMP-BOOT-01"]
@@ -127,7 +127,7 @@ items:
       - "docs/07_verification/self-bootstrap-manifest-validation.json"
     planned_by: "SELF_BOOTSTRAP_CONTRACT.md"
     implemented_by: "AI Studio /applet"
-    verified_by: "npm run test:bootstrap:executor; npm run bootstrap:self -- --dry-run"
+    verified_by: "npm run test:bootstrap:executor; npm run bootstrap:self -- --dry-run; Human operator Step 4 review sign-off"
 
   - id: "DMK-193"
     wbs_path: "13.06.07"
@@ -139,14 +139,15 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "CRITICAL"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-192"]
     requirements: ["REQ-BOOT-001"]
     architecture_links: ["CMP-BOOT-01"]
     security_controls: ["SEC-CTRL-020"]
     acceptance_criteria:
       - "Execute trusted bootstrap and verify canonical project state"
-    verification_method: "npm run test:bootstrap:manifest"
+      - "Verify unrelated project state preservation, manifest entity mapping, and single genesis audit event"
+    verification_method: "scripts/verifySelfBootstrapExecution.ts; scripts/testSelfBootstrapExecutionVerifier.ts; npm run verify:bootstrap:execution; npm run test:bootstrap:execution-verifier"
     evidence: []
 
   - id: "DMK-194"

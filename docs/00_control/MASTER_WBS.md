@@ -76,7 +76,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-192` — Trusted Self-Bootstrap Executor & Read-Only Dry-Run
 - **WBS Path:** `13.06.06`
 - **Type:** `FEATURE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md, docs/07_verification/self-bootstrap-manifest-validation.json`)
+- **Status:** `VERIFIED` (Evidence: `docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md, docs/07_verification/self-bootstrap-manifest-validation.json`)
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1.
 - **Acceptance Criteria:**
@@ -86,13 +86,14 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
 - **WBS Path:** `13.06.07`
 - **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `CRITICAL`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-192`
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.
 - **Acceptance Criteria:**
   - "Execute trusted bootstrap and verify canonical project state"
-- **Verification Method:** npm run test:bootstrap:manifest
+  - "Verify unrelated project state preservation, manifest entity mapping, and single genesis audit event"
+- **Verification Method:** scripts/verifySelfBootstrapExecution.ts; scripts/testSelfBootstrapExecutionVerifier.ts; npm run verify:bootstrap:execution; npm run test:bootstrap:execution-verifier
 
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
