@@ -22,6 +22,7 @@
  * Q. Missing baseline snapshot fails.
  * R. Invalid snapshot schema version fails.
  * S. Target project already present in baseline fails.
+ * T. Approved Gate 7 execution evidence is explicitly detected and fails.
  *
  * ZERO LEAKAGE:
  * All test cases execute against isolated temporary directories and never mutate
@@ -721,6 +722,42 @@ async function runVerifierTests(): Promise<void> {
 
   console.log('================================================================');
   console.log(`TOTAL TESTS: ${testCount} | ALL POST-EXECUTION VERIFIER TESTS PASSED`);
+    // TEST T: Approved Gate 7 execution evidence is explicitly detected and fails
+  {
+    const { tempDir, baselinePath, currentPath } = setupBootstrapPair();
+    const currentData = JSON.parse(fs.readFileSync(currentPath, 'utf8'));
+
+    currentData.state.approvals[TARGET_PROJECT_ID] = [
+      {
+        id: 'APP-GATE-7-TEST',
+        type: 'GATE_TRANSITION',
+        targetEntityType: 'GATE',
+        targetEntityId: 'GATE-7',
+        title: 'Gate 7 Human Release Approval',
+        status: 'APPROVED',
+      },
+    ];
+
+    fs.writeFileSync(currentPath, JSON.stringify(currentData));
+
+    const result = verifySelfBootstrapExecution({
+      baselineSnapshotPath: baselinePath,
+      currentSnapshotPath: currentPath,
+      workspaceRoot: process.cwd(),
+    });
+
+    assert.equal(result.status, 'BOOTSTRAP_VERIFICATION_FAILED');
+    assert.equal(result.gate7Executed, true);
+    assert.equal(result.approvalsInjected, 1);
+    assert(
+      result.errors.some(e =>
+        e.includes('approved Gate 7 execution evidence')
+      )
+    );
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    pass('Test T: Approved Gate 7 execution evidence is explicitly detected and fails');
+  }
   console.log('================================================================');
 }
 

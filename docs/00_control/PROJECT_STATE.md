@@ -63,7 +63,7 @@ Step 5A (DMK-193: Trusted Self-Bootstrap Execution Preparation & Read-Only Verif
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are guaranteed cleaned up.
 - Regression Suite: `scripts/testSelfBootstrapExecutor.ts` validates 16 test cases covering dry-run, existing snapshots, CREATE_ONLY conflict, invalid manifests, tamper detection, temp workspace atomic execution, duplicate execution prevention, failure cleanup, validation report non-interference, TOCTOU defense, and pinned vs unpinned document handling (16/16 passing).
 - Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).
-- Step 5 (DMK-193: Real Canonical Self-Bootstrap Execution) remains strictly BLOCKED / BACKLOG until human operator review and explicit authorization.
+- At the Step 4 checkpoint, Step 5 (`DMK-193`) remained strictly `BLOCKED / BACKLOG` pending human operator review and explicit authorization.
 
 ### Historical Step 3 Baseline (Construct Real PRJ-DOCMONSTAKRAKIN Bootstrap Manifest)
 Note: The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289` is historical. The current authoritative reviewed manifest digest for execution is `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`.

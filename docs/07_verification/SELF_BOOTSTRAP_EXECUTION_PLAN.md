@@ -61,8 +61,6 @@ Before running the real bootstrap, preserve an exact byte-for-byte baseline snap
 
 In the repository root:
 
-In the repository root:
-
 ```bash
 # Preferred path: preserve the real existing canonical snapshot.
 if [ -f ".local/project-state.json" ]; then
@@ -109,6 +107,24 @@ test -s .local/project-state.baseline-backup.json \
   && echo "PASS: baseline snapshot exists and is non-empty" \
   || { echo "STOP: baseline snapshot missing or empty"; exit 1; }
 ```
+If `.local/project-state.json` existed before baseline capture, verify that the backup is byte-identical to the canonical pre-execution snapshot:
+
+```bash
+if [ -f ".local/project-state.json" ]; then
+  STATE_SHA="$(sha256sum .local/project-state.json | awk '{print $1}')"
+  BACKUP_SHA="$(sha256sum .local/project-state.baseline-backup.json | awk '{print $1}')"
+
+  echo "Canonical State SHA-256: $STATE_SHA"
+  echo "Baseline Backup SHA-256: $BACKUP_SHA"
+
+  test "$STATE_SHA" = "$BACKUP_SHA" \
+    && echo "PASS: baseline backup is byte-identical" \
+    || { echo "STOP: baseline backup does not match canonical state"; exit 1; }
+fi
+```
+
+The operator must not proceed to Phase 2 if baseline capture or byte-identity verification fails.
+
 ---
 
 ### Phase 2: Authoritative Self-Bootstrap Execution

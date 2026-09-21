@@ -65,6 +65,31 @@ export const EXPECTED_ENTITY_COUNTS = {
   documents: 28,
 } as const;
 
+/**
+ * Returns true when a value contains an explicit Gate 7 reference.
+ *
+ * Approval records are persisted JSON and may evolve structurally, so this
+ * intentionally inspects nested string values rather than depending on one
+ * UI-specific field layout.
+ */
+function containsGate7Reference(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return /\bgate[\s_-]*7\b/i.test(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(item => containsGate7Reference(item));
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(item =>
+      containsGate7Reference(item)
+    );
+  }
+
+  return false;
+}
+
 export interface VerifyExecutionOptions {
   baselineSnapshotPath: string;
   currentSnapshotPath?: string;
@@ -434,8 +459,28 @@ export function verifySelfBootstrapExecution(
     errors.push('Governance violation: RELEASE_SIGNOFF approval was injected');
   }
 
-  // Gate 7 execution check
-  report.gate7Executed = false;
+  // Gate 7 execution check.
+  // This must be derived from persisted canonical governance state rather than
+  // hardcoded. The bootstrap contract requires approvals to be empty, but the
+  // explicit Gate 7 check keeps the reported invariant independently truthful.
+  const gate7ExecutionEvidence = approvals.some((approval: any) => {
+    const status = String(approval?.status ?? '').toUpperCase();
+
+    const explicitlyApproved =
+      status === 'APPROVED' ||
+      approval?.approved === true ||
+      approval?.passed === true;
+
+    return explicitlyApproved && containsGate7Reference(approval);
+  });
+
+  report.gate7Executed = gate7ExecutionEvidence;
+
+  if (gate7ExecutionEvidence) {
+    errors.push(
+      'Governance violation: approved Gate 7 execution evidence was found in the bootstrapped project'
+    );
+  }
 
   // CHECK I: Audit ledger verification
   const auditLogs: any[] = currentStore.auditLogs?.[TARGET_PROJECT_ID] || [];
