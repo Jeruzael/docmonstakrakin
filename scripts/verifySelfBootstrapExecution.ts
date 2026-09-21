@@ -487,14 +487,6 @@ if (gate7ExecutionEvidence) {
   );
 }
 
-  report.gate7Executed = gate7ExecutionEvidence;
-
-  if (gate7ExecutionEvidence) {
-    errors.push(
-      'Governance violation: approved Gate 7 execution evidence was found in the bootstrapped project'
-    );
-  }
-
   // CHECK I: Audit ledger verification
   const auditLogs: any[] = currentStore.auditLogs?.[TARGET_PROJECT_ID] || [];
   report.bootstrapAuditEvents = auditLogs.length;

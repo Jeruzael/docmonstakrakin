@@ -51,7 +51,7 @@ Step 5A (DMK-193: Trusted Self-Bootstrap Execution Preparation & Read-Only Verif
 - Verifier Test Suite: Implemented `scripts/testSelfBootstrapExecutionVerifier.ts` (`npm run test:bootstrap:execution-verifier`) with 20 comprehensive test cases covering valid execution, missing snapshots, missing target project, duplicates, unrelated state tampering, manifest collection mismatches, forbidden approvals, explicit Gate 7 execution detection, audit chain corruptions, digest mismatches, and SHA-256 byte-identity preservation (20/20 passing).
 - Execution Plan: Created `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md` documenting the 4-phase operator instructions (Phase 1 Baseline Backup, Phase 2 Triple-Gated Execution, Phase 3 Read-Only Verification, Phase 4 Operational Transition) and rollback procedures.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-192 VERIFIED, DMK-193 IN_PROGRESS); `docs/00_control/MASTER_WBS.md` rendered with zero drift (`npm run wbs:check` passes).
-- Gate 7 & Batch 2: Remain strictly BLOCKED until post-execution verification is completed by the operator.
+- Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
 
 ### Historical Step 4 Baseline (DMK-192: Trusted Self-Bootstrap Executor & Dry-Run)
 - Self-Bootstrap Executor: `server/bootstrap/selfBootstrapExecutor.ts` implements `executeSelfBootstrap` independently of the web server, without Vite or live secret store initialization.

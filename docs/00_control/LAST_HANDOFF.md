@@ -62,7 +62,7 @@ Step 5A (DMK-193: Trusted Self-Bootstrap Execution Preparation & Read-Only Verif
 - Atomic Persistence Failure Recovery: Validated via injected `beforeRename` hooks in `writeProjectSnapshotAtomic`; pre-existing state files remain byte-identical and all temporary files (`.tmp.*`) are cleaned up.
 - Regression Suite: 16 tests in `scripts/testSelfBootstrapExecutor.ts` pass cleanly (`npm run test:bootstrap:executor`).
 - Evidence References: Cleaned up in `docs/00_control/MASTER_WBS.yaml` to reference only real retained evidence (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md`, `docs/07_verification/self-bootstrap-manifest-validation.json`).
-- Step 5 (DMK-193: Execute Trusted Self-Bootstrap) remains strictly BLOCKED / BACKLOG pending human authorization.
+- At the Step 4 checkpoint, Step 5 (`DMK-193`) remained `BLOCKED / BACKLOG` pending human authorization.
 
 Automated verification status:
 - 19/19 bootstrap contract tests pass (`npm run test:bootstrap:contract`)
