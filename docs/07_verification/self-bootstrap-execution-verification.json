@@ -1,0 +1,38 @@
+
+> docmonstakrakin@0.0.0 verify:bootstrap:execution
+> tsx scripts/verifySelfBootstrapExecution.ts --baseline-snapshot .local/project-state.baseline-backup.json --json
+
+{
+  "status": "BOOTSTRAP_VERIFIED",
+  "targetProject": "PRJ-DOCMONSTAKRAKIN",
+  "baselineSnapshotPath": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\.local\\project-state.baseline-backup.json",
+  "currentSnapshotPath": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\.local\\project-state.json",
+  "baselineProjectCount": 3,
+  "currentProjectCount": 4,
+  "newProjectIds": [
+    "PRJ-DOCMONSTAKRAKIN"
+  ],
+  "unrelatedStateEquivalent": true,
+  "baselineUnrelatedStateHash": "79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527",
+  "currentUnrelatedStateHash": "79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527",
+  "manifestDigest": "229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36",
+  "entityCounts": {
+    "features": 15,
+    "requirements": 24,
+    "risks": 6,
+    "threats": 8,
+    "adrs": 7,
+    "components": 6,
+    "workItems": 13,
+    "evidence": 4,
+    "documents": 28
+  },
+  "emptyCollectionsVerified": true,
+  "bootstrapAuditEvents": 1,
+  "auditLedgerValid": true,
+  "approvalsInjected": 0,
+  "releaseSignoffInjected": false,
+  "gate7Executed": false,
+  "mutationCount": 0,
+  "errors": []
+}
