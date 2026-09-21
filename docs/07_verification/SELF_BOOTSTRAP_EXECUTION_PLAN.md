@@ -182,21 +182,135 @@ Once Phase 3 passes with `BOOTSTRAP_VERIFIED`:
    - In `docs/00_control/PROJECT_STATE.md` and `docs/00_control/LAST_HANDOFF.md`, record Step 5 completion and canonical state activation.
 3. **Save Post-Execution Verification Evidence**:
    - Capture the output of `npm run verify:bootstrap:execution -- --baseline-snapshot ... --json > docs/07_verification/self-bootstrap-execution-verification.json`.
-4. **Subsequent Milestones**:
-   - Gate 7 review and Batch 2 implementation become unblocked only after these operational steps are complete.
+4. **Subsequent Controlled Sequence**:
+
+   Completion of `DMK-193` does not directly authorize Batch 2 or Gate 7.
+
+   The next controlled work items remain:
+
+   1. `DMK-194` — Projects Workspace & Reliable Project Switching
+   2. `DMK-195` — Controlled Documentation Workspace
+   3. `DMK-196` — Batch 2 Formal Requirement Sign-Off UX
+   4. `DMK-197` — Batch 3 Approval Inbox & Canonical Quorum Synchronization
+   5. `DMK-198` — Batch 4 Reviewer Provisioning / Governance Setup Usability
+   6. `DMK-199` — Batch 5 Full Regression & Evidence Cleanup
+   7. `DMK-191` — Human Browser Retest
+   8. Gate 7 Human Release Approval
+
+   Gate 7 remains `NOT EXECUTED`.
+
+   Batch 2 remains blocked until its prerequisite work items are reached through the controlled sequence above.
 
 ---
 
-## 4. Rollback & Fail-Safe Recovery
+## 4. Failure Preservation & Controlled Recovery
 
-If any failure occurs during execution or verification:
+If the self-bootstrap execution or post-execution verification fails, the operator MUST fail closed.
 
-1. **Restore Baseline Snapshot**:
-   ```bash
-   cp .local/project-state.baseline-backup.json .local/project-state.json
-   ```
-2. **Investigate Discrepancy**:
-   - Check CLI error output for specific validation or integrity failures.
-   - Run `npm run test:bootstrap:contract`, `npm run test:bootstrap:manifest`, and `npm run test:bootstrap:executor` to confirm baseline tooling integrity.
-3. **Preserve Audit Trail**:
-   - Never force-overwrite snapshots without diagnosing the root cause.
+### 4.1 Immediate Failure Response
+
+Do **not** rerun the bootstrap.
+
+Do **not** immediately restore the baseline over the current snapshot.
+
+The potentially failed post-bootstrap snapshot is evidence and must be preserved before any rollback decision is made.
+
+Immediately:
+
+1. Stop further bootstrap execution.
+2. Preserve the current post-execution snapshot.
+3. Preserve the pre-execution baseline snapshot.
+4. Record SHA-256 hashes of both files.
+5. Preserve terminal output and verifier errors.
+6. Diagnose the discrepancy before deciding whether rollback is appropriate.
+
+### 4.2 Preserve Failure Evidence
+
+Create a recovery directory:
+
+```bash
+mkdir -p .local/recovery
+```
+
+Preserve the current post-bootstrap snapshot:
+
+```bash
+cp .local/project-state.json \
+  .local/recovery/step5-failed-postbootstrap-project-state.json
+```
+
+Preserve the original baseline:
+
+```bash
+cp .local/project-state.baseline-backup.json \
+  .local/recovery/step5-baseline-project-state.json
+```
+
+Record SHA-256 hashes:
+
+```bash
+FAILED_SHA="$(sha256sum .local/recovery/step5-failed-postbootstrap-project-state.json | awk '{print $1}')"
+BASELINE_SHA="$(sha256sum .local/recovery/step5-baseline-project-state.json | awk '{print $1}')"
+
+echo "Failed/Post-Bootstrap Snapshot SHA-256: $FAILED_SHA"
+echo "Baseline Snapshot SHA-256:              $BASELINE_SHA"
+```
+
+Do not delete or overwrite either preserved file while the discrepancy is under investigation.
+
+### 4.3 Diagnostic Verification
+
+Before rollback, inspect the failure using the read-only verification and existing bootstrap tests:
+
+```bash
+npm run verify:bootstrap:execution -- \
+  --baseline-snapshot .local/project-state.baseline-backup.json
+```
+
+Then, where appropriate:
+
+```bash
+npm run test:bootstrap:contract
+npm run test:bootstrap:manifest
+npm run test:bootstrap:executor
+npm run test:bootstrap:execution-verifier
+```
+
+Record all failure output before modifying canonical state.
+
+### 4.4 Deliberate Rollback
+
+Rollback is an explicit operator recovery action, not the automatic response to a failed verification.
+
+Only after the failed/current snapshot has been preserved and the operator deliberately chooses rollback:
+
+```bash
+cp .local/project-state.baseline-backup.json \
+  .local/project-state.json
+```
+
+Then verify that the restored snapshot matches the preserved baseline:
+
+```bash
+RESTORED_SHA="$(sha256sum .local/project-state.json | awk '{print $1}')"
+BASELINE_SHA="$(sha256sum .local/project-state.baseline-backup.json | awk '{print $1}')"
+
+echo "Restored SHA-256: $RESTORED_SHA"
+echo "Baseline SHA-256: $BASELINE_SHA"
+
+test "$RESTORED_SHA" = "$BASELINE_SHA" \
+  && echo "PASS: baseline snapshot restored byte-identically" \
+  || { echo "FAIL: restored snapshot does not match baseline"; exit 1; }
+```
+
+### 4.5 No Automatic Retry
+
+After any partial, failed, or suspicious execution:
+
+- do not rerun `bootstrap:self -- --execute`;
+- do not use a force or overwrite mechanism;
+- do not modify the manifest to bypass the failure;
+- do not delete the failed snapshot evidence;
+- do not advance `DMK-193` to `VERIFIED`.
+
+A new execution attempt requires root-cause analysis and a fresh explicit operator decision.
