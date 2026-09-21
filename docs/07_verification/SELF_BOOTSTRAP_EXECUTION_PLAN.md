@@ -61,11 +61,23 @@ Before running the real bootstrap, preserve an exact byte-for-byte baseline snap
 
 In the repository root:
 
+In the repository root:
+
 ```bash
-# If .local/project-state.json does not yet exist:
-# Generate the baseline snapshot from a fresh ProjectStore using the same
-# canonical snapshot projection used by runtime persistence.
-npx tsx -e "
+# Preferred path: preserve the real existing canonical snapshot.
+if [ -f ".local/project-state.json" ]; then
+  mkdir -p .local
+  cp .local/project-state.json \
+    .local/project-state.baseline-backup.json
+
+  echo "Existing canonical snapshot copied to baseline backup."
+
+# Fallback only when no persisted canonical snapshot exists.
+else
+  echo "No .local/project-state.json found."
+  echo "Generating baseline from a fresh ProjectStore."
+
+  npx tsx -e "
 import fs from 'node:fs';
 import { ProjectStore } from './server/projectStore.ts';
 import {
@@ -87,10 +99,16 @@ fs.writeFileSync(
 
 console.log('Baseline snapshot created at .local/project-state.baseline-backup.json');
 "
+fi
 ```
 
-Verify that `.local/project-state.baseline-backup.json` exists and is non-empty.
+Verify that the baseline snapshot exists:
 
+```bash
+test -s .local/project-state.baseline-backup.json \
+  && echo "PASS: baseline snapshot exists and is non-empty" \
+  || { echo "STOP: baseline snapshot missing or empty"; exit 1; }
+```
 ---
 
 ### Phase 2: Authoritative Self-Bootstrap Execution
