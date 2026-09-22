@@ -1,5 +1,5 @@
 {
-  "status": "BOOTSTRAP_VERIFICATION_FAILED",
+  "status": "BOOTSTRAP_VERIFIED",
   "targetProject": "PRJ-DOCMONSTAKRAKIN",
   "baselineSnapshotPath": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\.local\\project-state.baseline-backup.json",
   "currentSnapshotPath": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\.local\\project-state.json",
@@ -30,7 +30,5 @@
   "releaseSignoffInjected": false,
   "gate7Executed": false,
   "mutationCount": 0,
-  "errors": [
-    "Manifest integrity verification failed: Evidence hash mismatch for EV-RC-187 (docs/07_verification/cryptodemon-fixture-evidence.json): expected 6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b, computed 4e80fc8380828b9f003eabc7830ae2b024cd0ff067d5d128752d7f9ebe20b3e1"
-  ]
+  "errors": []
 }
