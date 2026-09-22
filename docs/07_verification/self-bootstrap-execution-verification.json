@@ -1,7 +1,3 @@
-
-> docmonstakrakin@0.0.0 verify:bootstrap:execution
-> tsx scripts/verifySelfBootstrapExecution.ts --baseline-snapshot .local/project-state.baseline-backup.json --json
-
 {
   "status": "BOOTSTRAP_VERIFIED",
   "targetProject": "PRJ-DOCMONSTAKRAKIN",

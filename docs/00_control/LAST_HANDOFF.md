@@ -1,6 +1,6 @@
 # Current session handoff
 
-Updated 2026-09-20.
+Updated 2026-09-22.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
@@ -31,25 +31,39 @@ Updated 2026-09-20.
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 5A / DMK-193 — Trusted Self-Bootstrap Execution Preparation & Read-Only Verifier Tooling
-- Current Status: PREPARED_FOR_OPERATOR_EXECUTION
+- Current Step: Step 5 Complete / DMK-193 Closed
+- Current Status: STEP_5_CLOSED_VERIFIED
 - DMK-192: VERIFIED (Human operator Step 4 review sign-off completed)
-- DMK-193: IN_PROGRESS (Execution Prepared; Awaiting Operator Ceremony; DO NOT AUTO-EXECUTE)
+- DMK-193: VERIFIED (Human operator ceremony executed; read-only verification passes; evidence recorded)
+- Next Work Item: DMK-194 — Projects Workspace & Reliable Project Switching (BACKLOG; NOT STARTED)
+- Target Project ID: `PRJ-DOCMONSTAKRAKIN`
+- Project Count Transition: `3 -> 4`
+- Unrelated-State Baseline Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
+- Unrelated-State Current Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
 - Reviewed Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
+- Machine Evidence File: `docs/07_verification/self-bootstrap-execution-verification.json`
+- Machine Evidence SHA-256: `066c07a79c2e9588fb162e82a4560b23b9c098e5564064ea44c180cbcdad95c0`
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED (STRICTLY BLOCKED).
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## Current operational truth and completed work
 
-Step 5A (DMK-193: Trusted Self-Bootstrap Execution Preparation & Read-Only Verifier Tooling) is PREPARED_FOR_OPERATOR_EXECUTION:
-- Operator Review Authorization: The human operator reviewed and approved Step 4 (DMK-192), transitioning DMK-192 to VERIFIED and authorizing preparation for Step 5 (DMK-193 IN_PROGRESS).
-- Strict Execution Boundary: The real self-bootstrap execution ceremony is 100% reserved for the human operator. The AI assistant must NEVER run the real bootstrap execution command. Git operations remain 100% owned by the human operator.
-- Read-Only Post-Execution Verifier: Implemented `scripts/verifySelfBootstrapExecution.ts` (`npm run verify:bootstrap:execution`). It loads pre-execution baseline and post-execution current snapshots, verifies target project `PRJ-DOCMONSTAKRAKIN` creation, validates 100% preservation of unrelated project states (`mutationCount: 0`), verifies exact manifest entity mapping (15 features, 24 requirements, 6 risks, 8 threats, 7 ADRs, 6 components, 13 workItems, 4 evidence records, 28 controlled documents), checks 8 empty initialized collections, confirms zero injected approvals or release sign-offs, and validates the single genesis-chained `PROJECT_BOOTSTRAPPED` audit event.
-- Verifier Test Suite: Implemented `scripts/testSelfBootstrapExecutionVerifier.ts` (`npm run test:bootstrap:execution-verifier`) with 20 comprehensive test cases covering valid execution, missing snapshots, missing target project, duplicates, unrelated state tampering, manifest collection mismatches, forbidden approvals, audit chain corruptions, digest mismatches, and SHA-256 byte-identity preservation (20/20 passing).
-- Execution Plan: Created `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md` documenting the 4-phase operator instructions (Phase 1 Baseline Backup, Phase 2 Triple-Gated Execution, Phase 3 Read-Only Verification, Phase 4 Operational Transition) and rollback procedures.
-- Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-192 VERIFIED, DMK-193 IN_PROGRESS); `docs/00_control/MASTER_WBS.md` rendered with zero drift (`npm run wbs:check` passes).
+Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is COMPLETED and VERIFIED:
+- Operator Execution Ceremony: The authorized human operator manually executed the live trusted bootstrap ceremony (`npm run bootstrap:self -- --execute ...`) on the authoritative local system.
+- Read-Only Post-Execution Verification: The operator executed `npx tsx scripts/verifySelfBootstrapExecution.ts --baseline-snapshot .local/project-state.baseline-backup.json --json > docs/07_verification/self-bootstrap-execution-verification.json`, confirming status `BOOTSTRAP_VERIFIED` with `mutationCount: 0` and zero errors.
+- Machine Evidence: Persisted at `docs/07_verification/self-bootstrap-execution-verification.json` (SHA-256: `066c07a79c2e9588fb162e82a4560b23b9c098e5564064ea44c180cbcdad95c0`).
+- Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
+- Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
+- Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
+- Scope Discipline Maintained: DMK-194 remains in `BACKLOG`; no application or UI code was modified.
 - Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
+
+### Historical Step 5A Preparation Baseline
+- Operator Review Authorization: The human operator reviewed and approved Step 4 (DMK-192), transitioning DMK-192 to VERIFIED and authorizing preparation for Step 5.
+- Read-Only Post-Execution Verifier: Implemented `scripts/verifySelfBootstrapExecution.ts` (`npm run verify:bootstrap:execution`).
+- Verifier Test Suite: Implemented `scripts/testSelfBootstrapExecutionVerifier.ts` (`npm run test:bootstrap:execution-verifier`).
+- Execution Plan: Created `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md` documenting the 4-phase operator instructions.
 
 ### Historical Step 4 Baseline (DMK-192: Trusted Self-Bootstrap Executor Security & Review Binding)
 - Implemented `server/bootstrap/selfBootstrapExecutor.ts`: Independent execution engine decoupled from the web server/Vite/secret store.
@@ -76,16 +90,25 @@ Automated verification status:
 - Dry-run: SAFE_TO_REVIEW (`npm run bootstrap:self -- --dry-run`)
 - mutationCount = 0
 
-Execution authorization requires:
-- `--execute`
-- `--confirm-project-id PRJ-DOCMONSTAKRAKIN`
-- `--confirm-manifest-digest 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
-- `DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN`
+Post-Execution Verification Status:
+- Status: BOOTSTRAP_VERIFIED
+- Verified Target Project: PRJ-DOCMONSTAKRAKIN
+- Project Count: 3 -> 4
+- Baseline Unrelated State Hash: 79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527
+- Current Unrelated State Hash: 79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527
+- Unrelated State Drift: 0 (State Equivalence VERIFIED)
+- Manifest Entities Verified: 111/111 (15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents)
+- Discovery Collections Empty: 8/8 verified
+- Genesis Audit Events: 1 (action: PROJECT_BOOTSTRAPPED, manifestDigest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36)
+- Approvals Injected: 0
+- Release Signoff Injected: false
+- Gate 7 Executed: false
+- Mutation Count: 0
 
 Blocked:
-- Actual DMK-193 bootstrap execution
 - Batch 2
-- Gate 7
+- Gate 7 (strictly HUMAN_APPROVAL_REQUIRED)
+- v0.2 product implementation (strictly blocked until v0.2 Entry Gate)
 
 ### Historical Step 3 Baseline
 The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39dba435edf60edb2c144289` is historical. Canonical manifest accounting: 15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 WorkItems, 4 Evidence Records, 28 Controlled Documents.
@@ -93,10 +116,10 @@ The original Step 3 manifest digest `937dee0038edea309f61a6eab459756cb8128dfc39d
 ### Prior Batch Remediations (Historical Baseline)
 Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement state synchronization, `activeDrawerReqId` architecture, SecretStore standardized to `.secrets/`, legacy machine-token migration, fail-closed secret resolution, and reverse-chronological audit hashing. Gate 7 status is HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; Batch 2 is NOT started.
 
-## Next safe action (Human Operator Actions)
+## Next safe sequence
 
-1. Review Step 4A / Step 4B changes (`docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md` and dry-run report).
-2. Verify on local Git checkout (`gaistudio-4`).
-3. Merge reviewed Step 4A / Step 4B into `master`.
-4. Rerun dry-run on `master` (`npm run bootstrap:self -- --dry-run`).
-5. Explicitly authorize DMK-193 before real bootstrap execution.
+1. DMK-194 (Projects Workspace & Reliable Project Switching, BACKLOG)
+2. DMK-195 (Controlled Documentation Workspace, BACKLOG)
+3. DMK-196 (Batch 2 Sign-off UX)
+4. Downstream remediation sequence (DMK-197, 198, 199, 191)
+5. Gate 7 human release approval (remains strictly HUMAN_APPROVAL_REQUIRED)
