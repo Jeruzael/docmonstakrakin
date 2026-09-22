@@ -65,6 +65,8 @@ function computePhaseStatus(phaseId: string, items: WbsItem[]): string {
     return '`PROPOSED` (Planning Milestone)';
   }
   if (phaseId === 'PHASE-12') {
+    if(statuses.includes('IN_PROGRESS'))return '`IN_PROGRESS` (Scoped implementation; Gate 7 pending)';
+    if(statuses.includes('VERIFICATION_PENDING'))return '`VERIFICATION_PENDING` (Human review pending; Gate 7 pending)';
     return statuses.includes('READY') ? '`VERIFIED` (Automated remediation); human retest `READY`; Gate 7 pending' : '`VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate)';
   }
   if (statuses.includes('READY')) {

@@ -31,11 +31,11 @@ Updated 2026-09-22.
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 5 Complete / DMK-193 Closed
-- Current Status: STEP_5_CLOSED_VERIFIED
+- Current Work Item: DMK-194 — Projects Workspace & Reliable Project Switching
+- Current Status: VERIFICATION_PENDING
 - DMK-192: VERIFIED (Human operator Step 4 review sign-off completed)
 - DMK-193: VERIFIED (Human operator ceremony executed; read-only verification passes; evidence recorded)
-- Next Work Item: DMK-194 — Projects Workspace & Reliable Project Switching (BACKLOG; NOT STARTED)
+- Next Safe Action: Human review of DMK-194 Projects Workspace and project-switching behavior; do not advance to DMK-195.
 - Target Project ID: `PRJ-DOCMONSTAKRAKIN`
 - Project Count Transition: `3 -> 4`
 - Unrelated-State Baseline Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
@@ -47,6 +47,14 @@ Updated 2026-09-22.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
+## DMK-194 implementation checkpoint
+
+DMK-194 implementation exists and is VERIFICATION_PENDING, not VERIFIED. The Projects workspace reuses App's sole selection path and canonical APIs. Automated checks cover scoped payload loading, latest-request wins, stale refresh rejection, failure/retry, zero-project rendering and shared selection wiring. Human UI checks remain pending in ../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md. No human approval is recorded for DMK-194.
+
+DMK-193 remains VERIFIED. DMK-195 through DMK-199 remain BACKLOG; Batch 2 is NOT STARTED. Gate 7 remains NOT EXECUTED / HUMAN_APPROVAL_REQUIRED. DMK-191 human CryptoDemon retest was not performed. No live self-bootstrap, canonical snapshot mutation or protected bootstrap/evidence changes were performed.
+
+Operator-supplied branch: dmk-194-projects-workspace; operator-supplied starting master commit: 99d935064f70c790f77db160c018b56098863289. These are supplied context, not a fresh Git verification. The initial attachment-read command mistakenly included three read-only Git commands before the no-Git restriction was read. No subsequent Git command or Git mutation occurred. Control-plane QA runs against copied control files in a workspace without .git so its environment detector does not invoke Git.
+
 ## Current operational truth and completed work
 
 Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is COMPLETED and VERIFIED:
@@ -56,7 +64,7 @@ Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is CO
 - Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
 - Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
-- Scope Discipline Maintained: DMK-194 remains in `BACKLOG`; no application or UI code was modified.
+- Historical Step 5B scope: DMK-194 was BACKLOG at that checkpoint; no application or UI code was modified during Step 5B. DMK-194 implementation is now VERIFICATION_PENDING as recorded above.
 - Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
 
 ### Historical Step 5A Preparation Baseline
@@ -118,7 +126,7 @@ Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement sta
 
 ## Next safe sequence
 
-1. DMK-194 (Projects Workspace & Reliable Project Switching, BACKLOG)
+1. Human review of DMK-194 (Projects Workspace & Reliable Project Switching, VERIFICATION_PENDING). Do not begin DMK-195 in this task.
 2. DMK-195 (Controlled Documentation Workspace, BACKLOG)
 3. DMK-196 (Batch 2 Sign-off UX)
 4. Downstream remediation sequence (DMK-197, 198, 199, 191)

@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -98,13 +98,18 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `BACKLOG`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
 - **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.
 - **Acceptance Criteria:**
-  - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
-- **Verification Method:** UI project switching test
+  - "Projects workspace lists canonical projects, metadata/lifecycle, and the active project"
+  - "Projects workspace and TopBar share App selection; all scoped collections replace together"
+  - "Scoped selections and dialogs reset; latest selection wins over stale responses and refresh callbacks"
+  - "Loading and failures hide stale content and support retry or another selection"
+  - "Zero projects offers explicit creation; successful creation updates the list without reload"
+  - "A-to-B-to-A selection is read-only and preserves canonical state"
+- **Verification Method:** npm run test:projects-workspace; lint/build; control-plane QA; bootstrap regression; pending human UI checklist
 
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`

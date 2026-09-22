@@ -18,6 +18,8 @@ interface TopBarProps {
   onOpenCreateWizard: () => void;
   onOpenSearch: () => void;
   onOpenPackageModal?: () => void;
+  selectionStatus?: string;
+  searchDisabled?: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -27,6 +29,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenCreateWizard,
   onOpenSearch,
   onOpenPackageModal,
+  selectionStatus,
+  searchDisabled=false,
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
@@ -51,6 +55,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             )}
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform" />
           </button>
+          {selectionStatus && <span role="status" className="text-[10px] text-slate-500 block mt-0.5">{selectionStatus}</span>}
 
           {dropdownOpen && (
             <>
@@ -147,6 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Middle: Global Search */}
       <div className="flex-1 max-w-md mx-4 hidden md:block">
         <button
+          disabled={searchDisabled}
           onClick={onOpenSearch}
           className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-white hover:border-slate-300 text-xs text-slate-400 transition-all shadow-2xs group"
         >
@@ -163,6 +169,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Right: Mode & User Info */}
       <div className="flex items-center gap-3">
         <button
+          disabled={searchDisabled}
           onClick={onOpenSearch}
           className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
         >

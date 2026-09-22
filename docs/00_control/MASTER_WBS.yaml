@@ -166,15 +166,24 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "BACKLOG"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-193"]
     requirements: ["REQ-UX-PROJECTS-001"]
     architecture_links: ["CMP-01"]
     security_controls: ["SEC-CTRL-004"]
     acceptance_criteria:
-      - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
-    verification_method: "UI project switching test"
-    evidence: []
+      - "Projects workspace lists canonical projects, metadata/lifecycle, and the active project"
+      - "Projects workspace and TopBar share App selection; all scoped collections replace together"
+      - "Scoped selections and dialogs reset; latest selection wins over stale responses and refresh callbacks"
+      - "Loading and failures hide stale content and support retry or another selection"
+      - "Zero projects offers explicit creation; successful creation updates the list without reload"
+      - "A-to-B-to-A selection is read-only and preserves canonical state"
+    verification_method: "npm run test:projects-workspace; lint/build; control-plane QA; bootstrap regression; pending human UI checklist"
+    evidence:
+      - "docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md"
+      - "scripts/testProjectsWorkspace.ts"
+    implemented_by: "Codex"
+    verification_status: "Automated checks passed; human UI verification pending"
 
   - id: "DMK-195"
     wbs_path: "13.06.09"

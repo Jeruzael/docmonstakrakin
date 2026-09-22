@@ -2,6 +2,8 @@ import { ReviewerSession } from './components/ReviewerSession';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
+import { ProjectsView } from './components/ProjectsView';
+import { createProjectLoader, readProjectList, projectContentReady } from './data/projectWorkspace';
 import { DashboardView } from './components/DashboardView';
 import { ProjectWizard } from './components/ProjectWizard';
 import { QuestionnaireView } from './components/QuestionnaireView';
@@ -42,21 +44,7 @@ import {
   RequirementStatus,
 } from './types';
 
-import {
-  INITIAL_PROJECTS,
-  INITIAL_QUESTIONS,
-  INITIAL_REQUIREMENTS,
-  INITIAL_RISKS,
-  INITIAL_THREATS,
-  INITIAL_STANDARDS,
-  INITIAL_WORK_ITEMS,
-  INITIAL_EVIDENCE,
-  INITIAL_AUDIT_EVENTS,
-  INITIAL_NEXT_ACTION,
-  INITIAL_ADRS,
-  INITIAL_COMPONENTS,
-  INITIAL_APPROVALS,
-} from './data/initialData';
+
 
 export default function App() {
   // Navigation & Shell State
@@ -79,8 +67,8 @@ export default function App() {
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | undefined>(undefined);
 
   // Projects State
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState<string>('PRJ-ATLAS-01');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string>('');
 
   // Synchronize URL search params with drawer state
   const handleOpenCreateWizard = () => {
@@ -117,77 +105,90 @@ export default function App() {
   }, []);
 
   // Active Project Data
-  const [currentProject, setCurrentProject] = useState<Project>(INITIAL_PROJECTS[0]);
-  const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTIONS);
-  const [requirements, setRequirements] = useState<Requirement[]>(INITIAL_REQUIREMENTS);
-  const [risks, setRisks] = useState<Risk[]>(INITIAL_RISKS);
-  const [threats, setThreats] = useState<Threat[]>(INITIAL_THREATS);
-  const [standards, setStandards] = useState<StandardControl[]>(INITIAL_STANDARDS);
-  const [workItems, setWorkItems] = useState<WorkItem[]>(INITIAL_WORK_ITEMS);
-  const [evidenceList, setEvidenceList] = useState<Evidence[]>(INITIAL_EVIDENCE);
-  const [auditLogs, setAuditLogs] = useState<AuditEvent[]>(INITIAL_AUDIT_EVENTS);
-  const [nextAction, setNextAction] = useState<RecommendedNextAction>(INITIAL_NEXT_ACTION);
-  const [adrs, setAdrs] = useState<ADR[]>(INITIAL_ADRS);
-  const [components, setComponents] = useState<ArchitectureComponent[]>(INITIAL_COMPONENTS);
-  const [approvals, setApprovals] = useState<ApprovalItem[]>(INITIAL_APPROVALS);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [risks, setRisks] = useState<Risk[]>([]);
+  const [threats, setThreats] = useState<Threat[]>([]);
+  const [standards, setStandards] = useState<StandardControl[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
+  const [nextAction, setNextAction] = useState<RecommendedNextAction | null>(null);
+  const [adrs, setAdrs] = useState<ADR[]>([]);
+  const [components, setComponents] = useState<ArchitectureComponent[]>([]);
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [requirementsSubTab, setRequirementsSubTab] = useState<'canonical' | 'features' | 'discovery'>('canonical');
 
-  // Fetch projects list
-  const fetchProjects = useCallback(async () => {
-    try {
-      const res = await fetch('/api/projects');
-      if (res.ok) {
-        const data = await res.json();
-        setProjects(data);
-      }
-    } catch (err) {
-      console.warn('Backend unavailable, using initial projects state', err);
-    }
-  }, []);
-
-  const loadSequence = useRef(0);
+  // Selection stays in App. Refs only guard async callbacks and request ordering.
+  const selectedProjectRef = useRef('');
+  const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
+  if (!loader.current) loader.current = createProjectLoader();
+  const listSequence = useRef(0);
+  const [projectsLoading,setProjectsLoading] = useState(true);
+  const [projectsError,setProjectsError] = useState('');
+  const [projectLoading,setProjectLoading] = useState(false);
   const [loadError,setLoadError] = useState('');
-  // Fetch full project payload
-  const fetchProjectData = useCallback(async (projectId: string) => {
-    const sequence = ++loadSequence.current;
-    setLoadError('');
+  const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
+
+  const fetchProjectData = useCallback(async (projectId:string) => {
+    await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
+      onStart:()=>{setProjectLoading(true);setLoadError('');},
+      onCommit:data=>{
+        setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
+        setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);setAuditLogs(data.audit);
+        setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
+        setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
+        setProjects(previous=>previous.map(p=>p.id===data.project.id?data.project:p));
+      },
+      onError:message=>{setLoadError(message);setProjectLoading(false);},
+    });
+  },[]);
+
+  const handleSelectProject = useCallback((id:string) => {
+    loader.current!.invalidate();
+    selectedProjectRef.current=id;
+    setSelectedReqId(undefined);setSelectedQuestionId(undefined);setSelectedWorkItemId(undefined);
+    setRequirementsSubTab('canonical');setIsSearchOpen(false);setOverrideGate(null);setIsPackageModalOpen(false);
+    setCurrentView(view=>view==='projects'?'overview':view);
+    setActiveProjectId(id);setLoadError('');setProjectLoading(Boolean(id));
+    if(id)void fetchProjectData(id);
+    else {setCurrentProject(null);setProjectLoading(false);}
+  },[fetchProjectData]);
+
+  // Fetch projects list without falling back to seeded/demo identities.
+  const fetchProjects = useCallback(async () => {
+    const sequence=++listSequence.current;
+    setProjectsLoading(true);setProjectsError('');
     try {
-      const paths = ['', '/questions','/requirements','/risks','/work-items','/evidence','/audit','/next-action','/adrs','/components','/approvals','/features','/standards','/threats'];
-      const data = await Promise.all(paths.map(async path => { const r=await fetch('/api/projects/'+projectId+path); if(!r.ok) throw new Error('Cannot load project '+path); return r.json(); }));
-      if(sequence !== loadSequence.current) return;
-      const [p,q,r,rk,w,ev,aud,na,adr,comp,apv,feat,std,threat] = data;
-      setCurrentProject(p);setQuestions(q);setRequirements(r);setRisks(rk);setWorkItems(w);setEvidenceList(ev);setAuditLogs(aud);setNextAction(na);setAdrs(adr);setComponents(comp);setApprovals(apv);setFeatures(feat);setStandards(std);setThreats(threat);
-    } catch(e) {if(sequence===loadSequence.current) setLoadError((e as Error).message);}
-  }, []);
+      const data=await readProjectList();
+      if(sequence!==listSequence.current)return;
+      setProjects(data);
+      if(!data.some(p=>p.id===selectedProjectRef.current))handleSelectProject(data[0]?.id || '');
+    } catch(error) {
+      if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
+    } finally {if(sequence===listSequence.current)setProjectsLoading(false);}
+  },[handleSelectProject]);
 
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
-  useEffect(() => {
-    fetchProjectData(activeProjectId);
-  }, [activeProjectId, fetchProjectData]);
+  useEffect(()=>{
+    void fetchProjects();
+    return ()=>{listSequence.current++;loader.current!.invalidate();};
+  },[fetchProjects]);
 
   // Keyboard shortcut Ctrl+K for Global Search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      if (projectReady && (e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [projectReady]);
 
-  // Handlers
-  const handleSelectProject = (id: string) => {
-    loadSequence.current++;
-    setSelectedReqId(undefined); setSelectedQuestionId(undefined); setSelectedWorkItemId(undefined);
-    setActiveProjectId(id);
-  };
-
+  // Project-scoped mutations retain their originating project ID.
   const handleCreateProject = async (newProjDraft: any) => {
     try {
       const res = await fetch('/api/projects', {
@@ -197,11 +198,11 @@ export default function App() {
       });
       if (res.ok) {
         const created: Project = await res.json();
-        setProjects((prev) => [created, ...prev]);
-        setActiveProjectId(created.id);
+        listSequence.current++;setProjectsLoading(false);setProjectsError('');
+        setProjects((prev) => [created, ...prev.filter(p=>p.id!==created.id)]);
+        handleSelectProject(created.id);
         setCurrentView('overview');
         handleCloseCreateWizard();
-        await fetchProjectData(created.id);
         return created;
       } else {
         throw new Error('Server returned non-ok status');
@@ -403,26 +404,28 @@ export default function App() {
         }}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        unresolvedBlockersCount={unresolvedBlockersCount}
+        unresolvedBlockersCount={projectReady ? unresolvedBlockersCount : 0}
       />
 
       {/* Main Control Plane Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Control Bar */}
         <TopBar
-          currentProject={currentProject}
+          currentProject={projectReady ? currentProject : projects.find(p=>p.id===activeProjectId) || null}
+          selectionStatus={loadError ? 'Unavailable' : projectLoading ? 'Loading…' : projectsLoading ? 'Loading projects…' : ''}
+          searchDisabled={!projectReady}
           projects={projects}
           onSelectProject={handleSelectProject}
           onOpenCreateWizard={handleOpenCreateWizard}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onOpenPackageModal={() => setIsPackageModalOpen(true)}
+          onOpenSearch={() => {if(projectReady)setIsSearchOpen(true);}}
+          onOpenPackageModal={projectReady ? () => setIsPackageModalOpen(true) : undefined}
         />
 
         <ReviewerSession />
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          {loadError && <p role="alert" className="text-red-700">{loadError}</p>}
-          {currentProject.id !== activeProjectId ? <p>Loading selected project…</p> : projects.length === 0 ? (
+          {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>handleSelectProject(activeProjectId)}>Retry selected project</button></div>}
+          {currentView === 'projects' ? <ProjectsView projects={projects} activeProjectId={projectReady ? activeProjectId : ''} loading={projectsLoading} error={projectsError} onSelectProject={handleSelectProject} onCreateProject={handleOpenCreateWizard} onRetry={()=>void fetchProjects()}/> : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
             <div className="h-full min-h-[480px] flex items-center justify-center p-6">
               <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-2xs space-y-6">
@@ -451,7 +454,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : !projectReady ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
             <React.Fragment key={currentProject.id}>
               {currentView === 'overview' && (
             <DashboardView
@@ -629,8 +632,7 @@ export default function App() {
           )}
 
           {/* Fallback for other sidebar views */}
-          {(currentView === 'projects' ||
-            currentView === 'settings') && (
+          {currentView === 'settings' && (
             <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-4 max-w-2xl mx-auto shadow-2xs">
               <h2 className="text-base font-bold text-slate-900 capitalize">
                 {currentView} Control Workspace
@@ -661,7 +663,13 @@ export default function App() {
         triggerButtonId="topbar-new-project-btn"
       />
 
+      {projectReady && <React.Fragment key={activeProjectId}>
       <GlobalSearchModal
+        project={currentProject}
+        requirements={requirements}
+        workItems={workItems}
+        risks={risks}
+        standards={standards}
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onNavigate={handleGlobalSearchNavigate}
@@ -679,11 +687,11 @@ export default function App() {
         onClose={() => setIsPackageModalOpen(false)}
         currentProject={currentProject}
         onProjectImported={(importedProjectId) => {
-          fetchProjects();
-          setActiveProjectId(importedProjectId);
-          fetchProjectData(importedProjectId);
+          handleSelectProject(importedProjectId);
+          void fetchProjects();
         }}
       />
+      </React.Fragment>}
     </div>
   );
 }

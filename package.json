@@ -25,7 +25,8 @@
     "test:bootstrap:executor": "tsx scripts/testSelfBootstrapExecutor.ts",
     "test:bootstrap:execution-verifier": "tsx scripts/testSelfBootstrapExecutionVerifier.ts",
     "verify:bootstrap:execution": "tsx scripts/verifySelfBootstrapExecution.ts",
-    "bootstrap:self": "tsx scripts/bootstrapSelf.ts"
+    "bootstrap:self": "tsx scripts/bootstrapSelf.ts",
+    "test:projects-workspace": "tsx scripts/testProjectsWorkspace.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

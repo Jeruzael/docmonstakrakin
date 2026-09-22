@@ -95,6 +95,7 @@ import {
   executeReleaseSignoff,
 } from './server/release/releaseGateEvaluator.ts';
 import { ProjectStore } from './server/projectStore.ts';
+import { projectQuestionCatalog } from './server/projectQueries.ts';
 
 const store = new ProjectStore();
 
@@ -472,8 +473,7 @@ async function startServer() {
     const project = store.projects.find(p => p.id === req.params.id);
     if (!project) return res.status(404).json({error: 'Project not found'});
     const saved = store.questions[project.id] || [];
-    const all = structuredClone(DISCOVERY_QUESTION_CATALOG).map(q => saved.find(x => x.id === q.id) || q);
-    store.questions[project.id] = all;
+    const all = projectQuestionCatalog(saved);
     res.json(filterQuestionsForProject(all, project));
   });
 
@@ -483,7 +483,7 @@ async function startServer() {
     const {questionId, answer, state = 'ANSWERED', justification} = req.body;
     if (!['ANSWERED', 'DEFERRED', 'NOT_APPLICABLE', 'UNRESOLVED'].includes(state)) return res.status(422).json({error: 'Invalid answer state'});
     if (['DEFERRED', 'NOT_APPLICABLE'].includes(state) && !justification?.trim()) return res.status(422).json({error: 'Disposition requires rationale'});
-    const questions = structuredClone(store.questions[project.id] || []);
+    const questions = projectQuestionCatalog(store.questions[project.id] || []);
     const target = filterQuestionsForProject(questions, project).find(q => q.id === questionId);
     if (!target) return res.status(422).json({error: 'Question is not currently applicable'});
     Object.assign(target, {answer, state, justification, updatedAt: new Date().toISOString()});
@@ -508,7 +508,7 @@ async function startServer() {
   app.get('/api/projects/:id/discovery/coverage', (req, res) => {
     const project = store.projects.find(p => p.id === req.params.id);
     if (!project) return res.status(404).json({error: 'Project not found'});
-    res.json(calculateDiscoveryCoverage(filterQuestionsForProject(store.questions[project.id] || [], project), project));
+    res.json(calculateDiscoveryCoverage(filterQuestionsForProject(projectQuestionCatalog(store.questions[project.id] || []), project), project));
   });
 
   // Derivations
@@ -822,7 +822,7 @@ async function startServer() {
   app.get('/api/projects/:id/next-action', (req, res) => {
     const project = store.projects.find(p=>p.id===req.params.id);
     if (!project) return res.status(404).json({error:'Project not found'});
-    const questions = filterQuestionsForProject(store.questions[project.id] || [], project);
+    const questions = filterQuestionsForProject(projectQuestionCatalog(store.questions[project.id] || []), project);
     const covered = wizardQuestionCoverage(project);
     const blockers = questions.filter((q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED' && !covered[q.id]);
 
