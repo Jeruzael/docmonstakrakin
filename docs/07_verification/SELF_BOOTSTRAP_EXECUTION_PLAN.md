@@ -174,7 +174,9 @@ npm run verify:bootstrap:execution -- --baseline-snapshot .local/project-state.b
 Or for machine-readable JSON output:
 
 ```bash
-npm run verify:bootstrap:execution -- --baseline-snapshot .local/project-state.baseline-backup.json --json
+npx tsx scripts/verifySelfBootstrapExecution.ts \
+  --baseline-snapshot .local/project-state.baseline-backup.json \
+  --json > docs/07_verification/self-bootstrap-execution-verification.json
 ```
 
 #### Expected Verification Output:
@@ -227,7 +229,7 @@ Once Phase 3 passes with `BOOTSTRAP_VERIFIED`:
 2. **Project State Update**:
    - In `docs/00_control/PROJECT_STATE.md` and `docs/00_control/LAST_HANDOFF.md`, record Step 5 completion and canonical state activation.
 3. **Save Post-Execution Verification Evidence**:
-   - Capture the output of `npm run verify:bootstrap:execution -- --baseline-snapshot ... --json > docs/07_verification/self-bootstrap-execution-verification.json`.
+   - Capture the output of `npx tsx scripts/verifySelfBootstrapExecution.ts --baseline-snapshot .local/project-state.baseline-backup.json --json > docs/07_verification/self-bootstrap-execution-verification.json`.
 4. **Subsequent Controlled Sequence**:
 
    Completion of `DMK-193` does not directly authorize Batch 2 or Gate 7.
@@ -365,16 +367,16 @@ A new execution attempt requires root-cause analysis and a fresh explicit operat
 
 ## 5. Execution Outcome & Post-Execution Verification
 
-The trusted operator ceremony was successfully executed and verified on 2026-09-20 in accordance with this plan.
+The trusted operator ceremony was successfully executed and verified on 2026-09-21 in accordance with this plan.
 
-- **Operator Execution Date**: `2026-09-20`
+- **Operator Execution Date**: `2026-09-21`
 - **Execution Mode**: `EXECUTE` ceremony performed by authorized human operator
 - **Target Project Verified**: `PRJ-DOCMONSTAKRAKIN`
 - **Project Count Transition**: `3 -> 4`
 - **Unrelated State Hash (Baseline)**: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
 - **Unrelated State Hash (Current)**: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
 - **Unrelated State Preservation**: `VERIFIED` (zero drift across all 3 baseline projects)
-- **Manifest Entity Reflection**: 119/119 entities verified (15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents)
+- **Manifest Entity Reflection**: 111/111 entities verified (15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents)
 - **Dynamic Discovery Collections**: 8/8 collections verified empty (`[]`)
 - **Audit Ledger**: 1 verified genesis-chained `PROJECT_BOOTSTRAPPED` event recording manifest digest `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
 - **Approvals Injected**: `0`

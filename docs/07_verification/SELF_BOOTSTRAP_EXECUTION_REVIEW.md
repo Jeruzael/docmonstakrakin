@@ -3,7 +3,7 @@
 **Project**: `docmonstakrakin`  
 **Task**: `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State  
 **Step**: `5B` (Post-Execution Evidence & Control-Plane Closure)  
-**Date**: 2026-09-20  
+**Execution Date**: 2026-09-21  
 **Execution Authority**: Human Operator  
 **Execution Mode**: `EXECUTE` ceremony (trusted)  
 **Target Project ID**: `PRJ-DOCMONSTAKRAKIN`  
@@ -13,6 +13,7 @@
 **Machine Verification Evidence SHA-256**: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`  
 **Verification Status**: `BOOTSTRAP_VERIFIED`  
 **Step 5 Status**: `VERIFIED`  
+**Step 5B Review / Closure Date**: 2026-09-22
 
 ---
 
@@ -25,7 +26,7 @@ Following the formal approval of the dry-run review (`docs/07_verification/SELF_
 The read-only verifier validated all cryptographic and architectural invariants against the machine-readable evidence:
 1. **Target Project Established**: `PRJ-DOCMONSTAKRAKIN` was cleanly initialized as the 4th project in the canonical store (transitioning project count from 3 to 4).
 2. **Zero Unrelated-State Drift**: All 3 pre-existing projects (`PRJ-d7443d21-ade5-40cc-8e4b-fa9c5ec7bc43`, `PRJ-ATLAS-01`, and `PRJ-FINPAY-02`) were preserved with identical state hashes (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`).
-3. **Exact Manifest Entity Reflection**: All 119 manifest-declared entities across 9 collections mapped 1:1 without alteration.
+3. **Exact Manifest Entity Reflection**: All 111 manifest-declared entities across 9 collections mapped 1:1 without alteration.
 4. **Clean Discovery Invariants**: All 8 dynamic discovery/governance collections remain strictly empty (`[]`).
 5. **Single Genesis Audit Event**: Exactly one `PROJECT_BOOTSTRAPPED` audit event was chained to the genesis hash (`0000000000000000000000000000000000000000000000000000000000000000`), recording the reviewed manifest digest.
 6. **Zero Governance Injection**: 0 approvals injected, release signoff uncreated (`false`), and Release Gate 7 unexecuted (`false`).
@@ -94,7 +95,7 @@ Every entity declared in `bootstrap/docmonstakrakin.self-bootstrap.json` was ver
 | **Work Items** | 13 | 13 | VERIFIED (4 `VERIFICATION`, 1 `READY`, 8 `BACKLOG`) |
 | **Evidence Records** | 4 | 4 | VERIFIED (`EV-RC-187` through `EV-RC-190`) |
 | **Controlled Documents** | 28 | 28 | VERIFIED (24 pinned with SHA-256, 4 unpinned living control docs) |
-| **Total Entities** | **119** | **119** | **100% 1:1 Mapping Verified** |
+| **Total Entities** | **111** | **111** | **100% 1:1 Mapping Verified** |
 
 ### 3.4 Clean Discovery & Governance Invariants
 All 8 dynamic collections were verified to remain strictly empty arrays (`[]`), confirming that no artificial wizard completions or synthetic artifacts were populated:
@@ -133,7 +134,7 @@ All 8 dynamic collections were verified to remain strictly empty arrays (`[]`), 
 | **Manifest SHA-256 Digest** | `229215f6847f1a...` | `229215f6847f1a...` | IDENTICAL |
 | **Project Count Transition** | `3 -> 4` (projected) | `3 -> 4` (actual) | IDENTICAL |
 | **Unrelated State Hash** | `79cc3b30b24942...` | `79cc3b30b24942...` | IDENTICAL |
-| **Entity Counts (9 categories)**| Exactly 119 entities | Exactly 119 entities | IDENTICAL |
+| **Entity Counts (9 categories)**| Exactly 111 entities | Exactly 111 entities | IDENTICAL |
 | **Clean Discovery Invariants** | 8 collections empty | 8 collections empty | IDENTICAL |
 | **Audit Events Generated** | 1 (simulated) | 1 (genesis chained) | IDENTICAL |
 | **Approvals Injected** | `0` | `0` | IDENTICAL |

@@ -1,6 +1,6 @@
 # docmonstakrakin current project state
 
-Updated 2026-09-20. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
+Updated 2026-09-22. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
@@ -60,7 +60,7 @@ Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is CO
 - Read-Only Post-Execution Verification: The operator executed `npm run verify:bootstrap:execution -- --baseline-snapshot .local/project-state.baseline-backup.json --json > docs/07_verification/self-bootstrap-execution-verification.json`, confirming status `BOOTSTRAP_VERIFIED` with `mutationCount: 0` and zero errors.
 - Machine Evidence: Persisted at `docs/07_verification/self-bootstrap-execution-verification.json` (SHA-256: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`).
 - Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
-- Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 119 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
+- Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
 - Scope Discipline Maintained: DMK-194 remains in `BACKLOG`; no application or UI code was modified.
 - Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.

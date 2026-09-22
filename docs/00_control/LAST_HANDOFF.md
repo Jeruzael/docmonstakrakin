@@ -1,6 +1,6 @@
 # Current session handoff
 
-Updated 2026-09-20.
+Updated 2026-09-22.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
@@ -54,7 +54,7 @@ Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is CO
 - Read-Only Post-Execution Verification: The operator executed `npm run verify:bootstrap:execution -- --baseline-snapshot .local/project-state.baseline-backup.json --json > docs/07_verification/self-bootstrap-execution-verification.json`, confirming status `BOOTSTRAP_VERIFIED` with `mutationCount: 0` and zero errors.
 - Machine Evidence: Persisted at `docs/07_verification/self-bootstrap-execution-verification.json` (SHA-256: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`).
 - Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
-- Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 119 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
+- Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
 - Scope Discipline Maintained: DMK-194 remains in `BACKLOG`; no application or UI code was modified.
 - Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
@@ -97,7 +97,7 @@ Post-Execution Verification Status:
 - Baseline Unrelated State Hash: 79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527
 - Current Unrelated State Hash: 79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527
 - Unrelated State Drift: 0 (State Equivalence VERIFIED)
-- Manifest Entities Verified: 119/119 (15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents)
+- Manifest Entities Verified: 111/111 (15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents)
 - Discovery Collections Empty: 8/8 verified
 - Genesis Audit Events: 1 (action: PROJECT_BOOTSTRAPPED, manifestDigest: 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36)
 - Approvals Injected: 0

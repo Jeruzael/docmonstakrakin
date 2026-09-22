@@ -4,7 +4,7 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-09-19"
+last_updated: "2026-09-22"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
 remediation_status: "READY_FOR_RETEST"
