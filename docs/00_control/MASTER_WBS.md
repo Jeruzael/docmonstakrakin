@@ -86,7 +86,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
 - **WBS Path:** `13.06.07`
 - **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `CRITICAL`
-- **Status:** `IN_PROGRESS`
+- **Status:** `VERIFIED` (Evidence: `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md, docs/07_verification/self-bootstrap-execution-verification.json`)
 - **Dependencies:** `DMK-192`
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.
