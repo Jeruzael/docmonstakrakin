@@ -10,7 +10,7 @@
 **Manifest File**: `bootstrap/docmonstakrakin.self-bootstrap.json`  
 **Canonical Manifest SHA-256 Digest**: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`  
 **Machine Verification Evidence File**: `docs/07_verification/self-bootstrap-execution-verification.json`  
-**Machine Verification Evidence SHA-256**: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`  
+**Machine Verification Evidence SHA-256**: `066c07a79c2e9588fb162e82a4560b23b9c098e5564064ea44c180cbcdad95c0`  
 **Verification Status**: `BOOTSTRAP_VERIFIED`  
 **Step 5 Status**: `VERIFIED`  
 **Step 5B Review / Closure Date**: 2026-09-22
@@ -53,7 +53,7 @@ npm run bootstrap:self -- \
 ### 2.2 Read-Only Post-Execution Verifier Command
 
 ```bash
-npm run verify:bootstrap:execution -- \
+npx tsx scripts/verifySelfBootstrapExecution.ts \
   --baseline-snapshot .local/project-state.baseline-backup.json \
   --json > docs/07_verification/self-bootstrap-execution-verification.json
 ```

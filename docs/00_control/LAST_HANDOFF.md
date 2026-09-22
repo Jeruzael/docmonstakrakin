@@ -42,7 +42,7 @@ Updated 2026-09-22.
 - Unrelated-State Current Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
 - Reviewed Manifest Digest: `229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36`
 - Machine Evidence File: `docs/07_verification/self-bootstrap-execution-verification.json`
-- Machine Evidence SHA-256: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`
+- Machine Evidence SHA-256: `066c07a79c2e9588fb162e82a4560b23b9c098e5564064ea44c180cbcdad95c0`
 - v0.1.0-rc1: RELEASE_CANDIDATE; Gate 7: HUMAN_APPROVAL_REQUIRED (STRICTLY BLOCKED).
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
@@ -52,7 +52,7 @@ Updated 2026-09-22.
 Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is COMPLETED and VERIFIED:
 - Operator Execution Ceremony: The authorized human operator manually executed the live trusted bootstrap ceremony (`npm run bootstrap:self -- --execute ...`) on the authoritative local system.
 - Read-Only Post-Execution Verification: The operator executed `npx tsx scripts/verifySelfBootstrapExecution.ts --baseline-snapshot .local/project-state.baseline-backup.json --json > docs/07_verification/self-bootstrap-execution-verification.json`, confirming status `BOOTSTRAP_VERIFIED` with `mutationCount: 0` and zero errors.
-- Machine Evidence: Persisted at `docs/07_verification/self-bootstrap-execution-verification.json` (SHA-256: `0ff31ea3f69f1cd56574e557aa120c7d3c47d2ff75e82f7697565d7d10b3d117`).
+- Machine Evidence: Persisted at `docs/07_verification/self-bootstrap-execution-verification.json` (SHA-256: `066c07a79c2e9588fb162e82a4560b23b9c098e5564064ea44c180cbcdad95c0`).
 - Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
 - Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
