@@ -86,7 +86,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-193` — Execute Trusted Self-Bootstrap & Verify Canonical State
 - **WBS Path:** `13.06.07`
 - **Type:** `QUALITY` | **Priority:** `P0` | **Risk:** `CRITICAL`
-- **Status:** `VERIFIED` (Evidence: `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md, docs/07_verification/self-bootstrap-execution-verification.json`)
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-192`
 - **Requirements:** `REQ-BOOT-001` | **Architecture:** `CMP-BOOT-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged.
@@ -98,14 +98,13 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `VERIFIED` (Evidence: `scripts/testProjectsWorkspace.ts, src/components/ProjectsView.tsx`)
+- **Status:** `BACKLOG`
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
 - **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.
 - **Acceptance Criteria:**
   - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
-  - "Multi-project catalog navigation, deep lifecycle and technical baseline inspection, and zero cross-project contamination"
-- **Verification Method:** scripts/testProjectsWorkspace.ts; npm run test:projects; src/components/ProjectsView.tsx
+- **Verification Method:** UI project switching test
 
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`

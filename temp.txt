@@ -1,26 +1,62 @@
-Implementation Summary: DMK-194 (Projects Workspace & Reliable Project Switching)
-Status: COMPLETE / VERIFIED
-WBS Task: DMK-194 (WBS Path: 13.06.08, Epic: EPIC-13, Phase: PHASE-12)
-Requirement Mapping: REQ-UX-PROJECTS-001
-Architecture & Security: CMP-01 | SEC-CTRL-004 (Strict State & Project Isolation)
-1. Projects Workspace User Interface
-Portfolio Catalog & Analytics: Implemented src/components/ProjectsView.tsx, providing an executive portfolio overview with aggregate KPIs (total projects, active discovery/elaboration/construction pipelines, high-risk items, and portfolio average health score).
-Search & Multi-Attribute Filtering: Supported live search by project name, ID, or description, alongside filtering by A-SSDLC lifecycle phases (DISCOVERY, ELABORATION, CONSTRUCTION, STABILIZATION, DECOMMISSIONED) and project maturity levels (GREENFIELD, MAINTENANCE, REMEDIATION).
-Context-Switching & Onboarding: Embedded responsive quick-switch action cards, a direct trigger for the slide-out new project wizard, and package migration actions.
-Deep Inspection Drawer: Built an slide-out inspection drawer displaying full project profile governance, delivery method, risk metrics, technical baseline domain choices (with status badges), lifecycle readiness progress bars, and assurance inputs (PII, regulated data, secrets exposure).
-2. Clean State Integration in Main Application
-Unified Navigation: Wired src/App.tsx to mount <ProjectsView /> when selecting the projects view from the navigation sidebar or top bar.
-Zero Cross-Project Contamination: Enhanced handleSelectProject to immediately transition active project state and trigger a complete, isolated re-fetch of all canonical collections (/requirements, /features, /risks, /threats, /standards, /work-items, /evidence, /adrs, /components, /approvals), preventing cross-project state pollution.
-3. Verification & Governance
-Automated Regression Suite: Created scripts/testProjectsWorkspace.ts (registered under npm run test:projects and integrated into npm test), verifying:
-Multi-project catalog retrieval (GET /api/projects) with full REQ-UX-PROJECTS-001 metadata.
-Complete metadata, lifecycle, and baseline inspection.
-100% strict cross-project entity isolation across all collections with zero cross-contamination.
-Rapid sequential switching idempotency and deterministic state preservation.
-Fail-closed behavior on non-existent project queries.
-Dynamic creation and isolated onboarding of newly created project workspaces.
-WBS & Control Plane Synchronization:
-Transitioned DMK-194 to VERIFIED in docs/00_control/MASTER_WBS.yaml.
-Re-rendered docs/00_control/MASTER_WBS.md with zero drift (npm run wbs:check passed).
-Updated docs/00_control/LAST_HANDOFF.md preserving seeded baseline continuity and queuing DMK-195 as the next controlled task.
-All automated QA checks (npm run qa) and production builds (compile_applet) passed with zero errors.
+Step 5A / DMK-193: Trusted Self-Bootstrap Execution Preparation Complete
+The implementation and verification tooling for Step 5A / DMK-193 is prepared. In strict compliance with governance rules, the real self-bootstrap execution ceremony was not performed by the AI agent and remains exclusively reserved for the human operator. No Git operations were performed.
+Summary of Accomplishments
+Read-Only Post-Execution Verifier Tooling (scripts/verifySelfBootstrapExecution.ts):
+Implemented verifySelfBootstrapExecution and exposed it via the npm run verify:bootstrap:execution CLI command.
+Guaranteed Read-Only: Enforces zero mutations (mutationCount: 0) and never writes snapshots, audit events, or temporary files.
+Target Project Verification: Asserts that PRJ-DOCMONSTAKRAKIN was created exactly once with valid baseline project count increment (
+).
+Unrelated State Preservation: Computes canonical unrelated-state hashes before and after execution to guarantee zero drift or tampering across existing projects.
+Manifest Entity Verification: Verifies exact 1:1 mapping of all manifest collections:
+15 Features, 24 Requirements, 6 Risks, 8 Threats, 7 ADRs, 6 Architecture Components, 13 Work Items, 4 Evidence Records, 28 Controlled Documents.
+Clean Discovery Invariant: Verifies that 8 collections remain empty ([]): questions, standards, overrides, approvals, agentRoles, agentRuns, derivations, importSessions.
+Zero Governance Injection: Verifies 0 injected approvals, no release sign-off, and Gate 7 unexecuted.
+Cryptographic Audit Ledger Chain: Validates the single genesis-chained PROJECT_BOOTSTRAPPED audit event bound to the canonical reviewed manifest digest (229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36).
+Verifier Regression Suite (scripts/testSelfBootstrapExecutionVerifier.ts):
+Implemented 19 isolated test cases covering both positive paths and fail-closed security defenses:
+Test A: Valid baseline + bootstrapped candidate passes verification.
+Test B: Missing current snapshot fails closed.
+Test C: Missing target project fails closed.
+Test D: Duplicate target project entries fail closed.
+Test E: Mutation of unrelated project entity fails closed.
+Test F: Tampering with unrelated project audit log fails closed.
+Test G: Self-project entity count discrepancy fails closed.
+Test H: Injected approvals fail closed.
+Test I: Non-empty discovery/governance collections fail closed.
+Test J: Missing PROJECT_BOOTSTRAPPED audit event fails closed.
+Test K: Duplicate bootstrap audit events fail closed.
+Test L: Broken or corrupted audit chain fails closed.
+Test M: Wrong manifest digest in audit event details fails closed.
+Test N: Manifest digest drift against reviewed digest fails closed.
+Test O: Unexpected additional project ID fails closed.
+Test P: Verification preserves byte-for-byte SHA-256 identity of snapshot files.
+Test Q: Missing baseline snapshot argument fails closed.
+Test R: Unsupported snapshot schema version fails closed.
+Test S: Target project already existing in baseline snapshot fails closed.
+Result: 19/19 tests passing via npm run test:bootstrap:execution-verifier.
+Step-by-Step Operator Execution Plan (docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md):
+Recorded full operational procedure with explicit status PREPARED_FOR_OPERATOR_EXECUTION.
+Outlines Phase 1 (Baseline Backup), Phase 2 (Triple-Gated Execution Command), Phase 3 (Post-Execution Read-Only Verification), and Phase 4 (Post-Verification Operational Transition and Rollback).
+WBS & Operational State Synchronization:
+docs/00_control/MASTER_WBS.yaml: Transitioned DMK-192 to VERIFIED (operator Step 4 review sign-off completed) and DMK-193 to IN_PROGRESS (Prepared for operator execution).
+docs/00_control/MASTER_WBS.md: Re-rendered with zero drift (npm run wbs:check passes).
+docs/00_control/PROJECT_STATE.md and docs/00_control/LAST_HANDOFF.md: Updated to record Step 5A preparation status.
+Gate 7, Batch 2, and v0.2 Implementation: Remain strictly blocked.
+Operator Next Steps (Ready for Human Execution)
+Refer to docs/07_verification/SELF_BOOTSTRAP_EXECUTION_PLAN.md for full details:
+Capture Pre-Execution Baseline:
+code
+Bash
+cp .local/project-state.json .local/project-state.baseline-backup.json
+Execute Trusted Self-Bootstrap Ceremony:
+code
+Bash
+DMK_SELF_BOOTSTRAP_EXECUTE=PRJ-DOCMONSTAKRAKIN \
+npm run bootstrap:self -- \
+  --execute \
+  --confirm-project-id PRJ-DOCMONSTAKRAKIN \
+  --confirm-manifest-digest 229215f6847f1a2e3748d057a2a159d415626d481209870a83dd7d74074d7b36
+Run Post-Execution Verification:
+code
+Bash
+npm run verify:bootstrap:execution -- --baseline-snapshot .local/project-state.baseline-backup.json

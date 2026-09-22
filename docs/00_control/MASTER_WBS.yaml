@@ -4,7 +4,7 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-09-21"
+last_updated: "2026-09-19"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
 remediation_status: "READY_FOR_RETEST"
@@ -139,7 +139,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "CRITICAL"
-    status: "VERIFIED"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-192"]
     requirements: ["REQ-BOOT-001"]
     architecture_links: ["CMP-BOOT-01"]
@@ -148,10 +148,7 @@ items:
       - "Execute trusted bootstrap and verify canonical project state"
       - "Verify unrelated project state preservation, manifest entity mapping, and single genesis audit event"
     verification_method: "scripts/verifySelfBootstrapExecution.ts; scripts/testSelfBootstrapExecutionVerifier.ts; npm run verify:bootstrap:execution; npm run test:bootstrap:execution-verifier"
-    evidence:
-      - "docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md"
-      - "docs/07_verification/self-bootstrap-execution-verification.json"
-    verified_by: "Human operator execution; npm run verify:bootstrap:execution"
+    evidence: []
 
   - id: "DMK-194"
     wbs_path: "13.06.08"
@@ -163,19 +160,15 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "VERIFIED"
+    status: "BACKLOG"
     dependencies: ["DMK-193"]
     requirements: ["REQ-UX-PROJECTS-001"]
     architecture_links: ["CMP-01"]
     security_controls: ["SEC-CTRL-004"]
     acceptance_criteria:
       - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
-      - "Multi-project catalog navigation, deep lifecycle and technical baseline inspection, and zero cross-project contamination"
-    verification_method: "scripts/testProjectsWorkspace.ts; npm run test:projects; src/components/ProjectsView.tsx"
-    evidence:
-      - "scripts/testProjectsWorkspace.ts"
-      - "src/components/ProjectsView.tsx"
-    verified_by: "npm run test:projects; tsc --noEmit; npm run qa"
+    verification_method: "UI project switching test"
+    evidence: []
 
   - id: "DMK-195"
     wbs_path: "13.06.09"
