@@ -588,30 +588,58 @@ console.log('================================================================');
 // Test K: Dry-run never writes the existing manifest validation report
 {
   const tempDir = createTestWorkspace();
+
   try {
-    const reportRelPath = 'docs/07_verification/self-bootstrap-manifest-validation.json';
-    const reportAbsPath = path.resolve(realWorkspaceRoot, reportRelPath);
-    let originalReportHash = '';
-    if (fs.existsSync(reportAbsPath)) {
-      originalReportHash = sha256File(reportAbsPath);
-    }
+    const reportRelPath =
+      'docs/07_verification/self-bootstrap-manifest-validation.json';
 
-    const dryRunReport = executeSelfBootstrap({
-      workspaceRoot: realWorkspaceRoot,
-      mode: 'DRY_RUN',
-    });
-    assert.equal(dryRunReport.status, 'SAFE_TO_REVIEW');
+    const reportAbsPath = path.resolve(tempDir, reportRelPath);
 
-    if (fs.existsSync(reportAbsPath)) {
-      const currentReportHash = sha256File(reportAbsPath);
-      assert.equal(
-        originalReportHash,
-        currentReportHash,
-        'docs/07_verification/self-bootstrap-manifest-validation.json must NOT be modified by dry-run'
+    fs.mkdirSync(path.dirname(reportAbsPath), { recursive: true });
+
+    // Ensure the test has a deterministic pre-existing report artifact.
+    if (!fs.existsSync(reportAbsPath)) {
+      fs.writeFileSync(
+        reportAbsPath,
+        JSON.stringify(
+          {
+            testFixture: true,
+            purpose: 'Verify bootstrap dry-run does not mutate validation report',
+          },
+          null,
+          2
+        ),
+        'utf-8'
       );
     }
 
-    pass('Test K: Dry-run execution uses pure integrity check and never touches validation report file');
+    const originalReportHash = sha256File(reportAbsPath);
+
+    const dryRunReport = executeSelfBootstrap({
+      workspaceRoot: tempDir,
+      mode: 'DRY_RUN',
+    });
+
+    assert.equal(dryRunReport.status, 'SAFE_TO_REVIEW');
+    assert.equal(dryRunReport.mutationCount, 0);
+
+    assert.equal(
+      fs.existsSync(reportAbsPath),
+      true,
+      'Validation report fixture must still exist after dry-run'
+    );
+
+    const currentReportHash = sha256File(reportAbsPath);
+
+    assert.equal(
+      originalReportHash,
+      currentReportHash,
+      'docs/07_verification/self-bootstrap-manifest-validation.json must NOT be modified by dry-run'
+    );
+
+    pass(
+      'Test K: Dry-run execution uses pure integrity check and never touches validation report file'
+    );
   } finally {
     cleanupDir(tempDir);
   }
