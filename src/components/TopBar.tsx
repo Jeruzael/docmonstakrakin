@@ -8,6 +8,7 @@ import {
   FolderOpen,
   CheckCircle2,
   Package,
+  Upload,
 } from 'lucide-react';
 import { Project } from '../types';
 
@@ -18,6 +19,7 @@ interface TopBarProps {
   onOpenCreateWizard: () => void;
   onOpenSearch: () => void;
   onOpenPackageModal?: () => void;
+  onImportPackage?: () => void;
   selectionStatus?: string;
   searchDisabled?: boolean;
 }
@@ -29,6 +31,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenCreateWizard,
   onOpenSearch,
   onOpenPackageModal,
+  onImportPackage,
   selectionStatus,
   searchDisabled=false,
 }) => {
@@ -136,6 +139,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Portable Package Button */}
+        {onImportPackage && <button onClick={onImportPackage} aria-label="Import package" title="Import a project package" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs"><Upload className="w-3.5 h-3.5 text-emerald-600"/><span className="hidden sm:inline">Import</span></button>}
         {onOpenPackageModal && (
           <button
             id="topbar-package-btn"

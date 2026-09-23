@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Package,
   Download,
@@ -18,7 +18,9 @@ import { Project } from '../types';
 interface PackageTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentProject: Project;
+  // App supplies only a fully loaded, matching, ready project for export.
+  currentProject: Project | null;
+  initialTab?: 'export' | 'import';
   onProjectImported: (importedProjectId: string) => void;
 }
 
@@ -26,9 +28,11 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
   isOpen,
   onClose,
   currentProject,
+  initialTab='export',
   onProjectImported,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(currentProject ? initialTab : 'import');
+  useEffect(()=>{if(!currentProject)setActiveTab('import');},[currentProject]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -49,6 +53,7 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
 
   // Handle Package Export
   const handleExport = async () => {
+    if (!currentProject || isExporting) return;
     setIsExporting(true);
     setExportError(null);
     try {
@@ -183,10 +188,8 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
 
       setImportStatus('SUCCESS');
       if (data.project && data.project.id) {
-        setTimeout(() => {
-          onProjectImported(data.project.id);
-          onClose();
-        }, 1200);
+        onProjectImported(data.project.id);
+        onClose();
       }
     } catch (err: any) {
       setImportError(err.message || 'Import error');
@@ -199,6 +202,9 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
   return (
     <div
       id="portable-package-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Portable project package"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -232,6 +238,7 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
         {/* Tab Navigation */}
         <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-4 text-xs font-bold">
           <button
+            disabled={!currentProject}
             onClick={() => setActiveTab('export')}
             className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'export'
@@ -257,7 +264,7 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
 
         {/* Body Content */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5 text-slate-700 text-xs">
-          {activeTab === 'export' ? (
+          {activeTab === 'export' && currentProject ? (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                 <div className="flex items-start justify-between">
@@ -317,7 +324,7 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={handleExport}
-                  disabled={isExporting}
+                  disabled={!currentProject || isExporting}
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isExporting ? (
@@ -338,6 +345,10 @@ export const PackageTransferModal: React.FC<PackageTransferModalProps> = ({
             <div className="space-y-4">
               {/* File Upload Zone (Drag and drop + click) */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Choose package file"
+                onKeyDown={e=>{if(e.key==='Enter' || e.key===' '){e.preventDefault();fileInputRef.current?.click();}}}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}

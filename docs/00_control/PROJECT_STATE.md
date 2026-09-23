@@ -1,6 +1,6 @@
 # docmonstakrakin current project state
 
-Updated 2026-09-22. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
+Updated 2026-09-23. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
@@ -54,6 +54,8 @@ Updated 2026-09-22. This supersedes the 2026-09-16 operational snapshot, preserv
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
 ## DMK-194 implementation checkpoint
+
+2026-09-23 pre-merge remediation: same-project save refreshes preserve mounted UI context while scoped actions are inert; failed refreshes hide stale views/overlays and retry only the read. Actual project changes and explicit package overwrites reset the baseline. Global import is available without a ready project; export is bound to the ready selected project. Real-browser regression: 9 grouped checks covering A1–A5 and B1–B5, including isolated package persistence and overwrite. `npm test` passes in a disposable no-Git copy (146 named checks); standalone bootstrap checks pass. Broader isolated regression retains two reproduced baseline failures caused by earlier regeneration of pinned CryptoDemon evidence; the Git-invoking environment suite is BLOCKED under the active restriction. Full details and pending human checks are appended to `../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md`. Branch/commit remain UNVERIFIED; no Git command was run in this remediation session. DMK-194 remains VERIFICATION_PENDING.
 
 DMK-194 implementation exists and is VERIFICATION_PENDING, not VERIFIED. The Projects workspace reuses App's sole selection path and canonical APIs. Automated checks cover scoped payload loading, latest-request wins, stale refresh rejection, failure/retry, zero-project rendering and shared selection wiring. Human UI checks remain pending in ../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md. No human approval is recorded for DMK-194.
 

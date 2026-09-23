@@ -59,6 +59,7 @@ export default function App() {
   });
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState<boolean>(false);
+  const [packageMode, setPackageMode] = useState<'export' | 'import'>('export');
   const [overrideGate, setOverrideGate] = useState<string | null>(null);
 
   // Selected sub-items for deep linking from dashboard or search
@@ -131,6 +132,8 @@ export default function App() {
   const [projectLoading,setProjectLoading] = useState(false);
   const [loadError,setLoadError] = useState('');
   const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
+  // A refresh keeps the last complete matching tree mounted, but never ready.
+  const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
 
   const fetchProjectData = useCallback(async (projectId:string) => {
     await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
@@ -146,9 +149,15 @@ export default function App() {
     });
   },[]);
 
-  const handleSelectProject = useCallback((id:string) => {
+  const handleSelectProject = useCallback((id:string, replaceBaseline=false) => {
+    if(id && id===selectedProjectRef.current && !replaceBaseline) {
+      setCurrentView(view=>view==='projects'?'overview':view);
+      void fetchProjectData(id);
+      return;
+    }
     loader.current!.invalidate();
     selectedProjectRef.current=id;
+    setCurrentProject(null);
     setSelectedReqId(undefined);setSelectedQuestionId(undefined);setSelectedWorkItemId(undefined);
     setRequirementsSubTab('canonical');setIsSearchOpen(false);setOverrideGate(null);setIsPackageModalOpen(false);
     setCurrentView(view=>view==='projects'?'overview':view);
@@ -412,19 +421,21 @@ export default function App() {
         {/* Top Control Bar */}
         <TopBar
           currentProject={projectReady ? currentProject : projects.find(p=>p.id===activeProjectId) || null}
-          selectionStatus={loadError ? 'Unavailable' : projectLoading ? 'Loading…' : projectsLoading ? 'Loading projects…' : ''}
+          selectionStatus={loadError ? 'Unavailable' : projectLoading ? projectMounted ? 'Refreshing…' : 'Loading…' : projectsLoading ? 'Loading projects…' : ''}
           searchDisabled={!projectReady}
           projects={projects}
           onSelectProject={handleSelectProject}
           onOpenCreateWizard={handleOpenCreateWizard}
           onOpenSearch={() => {if(projectReady)setIsSearchOpen(true);}}
-          onOpenPackageModal={projectReady ? () => setIsPackageModalOpen(true) : undefined}
+          onOpenPackageModal={projectReady ? () => {setPackageMode('export');setIsPackageModalOpen(true);} : undefined}
+          onImportPackage={() => {setPackageMode('import');setIsPackageModalOpen(true);}}
         />
 
         <ReviewerSession />
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>handleSelectProject(activeProjectId)}>Retry selected project</button></div>}
+          {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>void fetchProjectData(activeProjectId)}>Retry selected project</button></div>}
+          {projectMounted && projectLoading && <p role="status" className="mb-4 text-sm text-slate-600">Refreshing selected project…</p>}
           {currentView === 'projects' ? <ProjectsView projects={projects} activeProjectId={projectReady ? activeProjectId : ''} loading={projectsLoading} error={projectsError} onSelectProject={handleSelectProject} onCreateProject={handleOpenCreateWizard} onRetry={()=>void fetchProjects()}/> : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
             <div className="h-full min-h-[480px] flex items-center justify-center p-6">
@@ -454,8 +465,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : !projectReady ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
-            <React.Fragment key={currentProject.id}>
+          ) : !projectMounted ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
+            <div key={currentProject.id} inert={!projectReady} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
               {currentView === 'overview' && (
             <DashboardView
               project={currentProject}
@@ -594,7 +605,7 @@ export default function App() {
               adrs={adrs}
               components={components}
               approvals={approvals}
-              onOpenPackageModal={() => setIsPackageModalOpen(true)}
+              onOpenPackageModal={() => {setPackageMode('export');setIsPackageModalOpen(true);}}
               onSignoffSuccess={() => fetchProjectData(currentProject.id)}
             />
           )}
@@ -650,7 +661,7 @@ export default function App() {
               </div>
             </div>
           )}
-            </React.Fragment>
+            </div>
           )}
         </main>
       </div>
@@ -663,7 +674,7 @@ export default function App() {
         triggerButtonId="topbar-new-project-btn"
       />
 
-      {projectReady && <React.Fragment key={activeProjectId}>
+      {projectMounted && <div key={activeProjectId} inert={!projectReady} hidden={!projectReady}>
       <GlobalSearchModal
         project={currentProject}
         requirements={requirements}
@@ -682,16 +693,19 @@ export default function App() {
         onSubmitOverride={handleCreateOverride}
       />
 
-      <PackageTransferModal
+      </div>}
+
+      {isPackageModalOpen && <PackageTransferModal
+        key={activeProjectId}
         isOpen={isPackageModalOpen}
+        initialTab={packageMode}
         onClose={() => setIsPackageModalOpen(false)}
-        currentProject={currentProject}
+        currentProject={projectReady ? currentProject : null}
         onProjectImported={(importedProjectId) => {
-          handleSelectProject(importedProjectId);
+          handleSelectProject(importedProjectId, true);
           void fetchProjects();
         }}
-      />
-      </React.Fragment>}
+      />}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 # Current session handoff
 
-Updated 2026-09-22.
+Updated 2026-09-23.
+
+Current checkpoint: DMK-194 pre-merge regressions remediated, still VERIFICATION_PENDING. App now preserves local state during a same-project refresh while gating actions and hiding failed stale content; retry reloads without resetting selection. Global package import works for empty/failed workspaces, while export requires a ready matching project. Nine grouped real-browser checks pass, including isolated import persistence, conflict rejection and explicit overwrite reset. `npm test` passes in a disposable no-Git copy (146 checks). Standalone bootstrap contract/manifest/executor/verifier pass. Broader isolated regression has the same two baseline evidence-order failures; `testEnvironmentFixtures.ts` is BLOCKED because it invokes Git. See the dated remediation appendix in `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md` for exact commands, results, scope and pending human checks. No Git commands ran during this remediation; supplied branch/head are unverified. Next safe action remains human review of DMK-194; do not advance downstream work.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
