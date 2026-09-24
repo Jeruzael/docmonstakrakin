@@ -166,6 +166,25 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
   - "Full automated regression passes cleanly across all test suites"
 - **Verification Method:** Full automated regression run
 
+#### `DMK-201` — Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity
+- **WBS Path:** `13.06.14`
+- **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/00_control/BATCH_A_RECONCILIATION_IMPLEMENTATION.md, docs/07_verification/BATCH_A_RECONCILIATION_REVIEW.md, docs/07_verification/batch-a-reconciliation-dry-run.json, docs/07_verification/batch-a-reconciliation-verification.json, docs/07_verification/STAGE_A5_RECONCILIATION_HUMAN_REVIEW.md, docs/07_verification/stage-a5-reconciliation-review-validation.json, scripts/testCanonicalReconciliation.ts, scripts/testWorkItemUpdates.ts, scripts/testProjectsWorkspaceUi.ts`)
+- **Dependencies:** `DMK-192`, `DMK-193`
+- **Requirements:** `REQ-DATA-001`, `REQ-DATA-002`, `REQ-BOOT-001` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04`, `CMP-BOOT-01` | **Controls:** `SEC-CTRL-004`, `SEC-CTRL-013`, `SEC-CTRL-020`
+- **Description:** Own only Batch A's bounded WBS/runtime projection, explicit status mapping, retained-evidence validation, read-only dry-run, stale-state/TOCTOU guards, atomic/idempotent apply and audit, separate post-bootstrap verifier, and rejected WorkItem update integrity. Excludes DMK-194 feature implementation, DMK-195, DMK-196/197, Batches B/C/D/E and Gate 7.
+- **Acceptance Criteria:**
+  - "Preserve repository WBS authority separately from operational ProjectStore state; never regenerate the full WBS from the smaller runtime subset."
+  - "Maintain the explicit 13-item WBS/runtime mapping; historical apply changes only DMK-192, DMK-193 and DMK-194, with older drift observe-only and DMK-195+ untouched."
+  - "Validate retained DMK-192/193 evidence before proposing VERIFIED; map DMK-194 VERIFICATION_PENDING to runtime VERIFICATION and fail closed on unmapped states."
+  - "Produce a mutation-free exact proposal bound to current snapshot digest/stateVersion, approved WBS inputs, mutation set, actor, fixed reviewed timestamps, audit event, plan digest and candidate digest."
+  - "Require explicit authorization of the exact live candidate; reject changed state, inputs or candidate; atomically persist changes plus audit under exclusive writer protection with idempotent retries."
+  - "Verify evolved state through the separate post-bootstrap verifier while preserving historical bootstrap artifacts and strict pristine verification, unrelated projects/items, approvals, requirements, ADRs and Gate 7."
+  - "Rejected WorkItem updates report errors and retain canonical UI/server/persisted values; successful updates persist, audit, refresh canonical values and survive restart."
+  - "Retain disposable test evidence and an exact human-reviewable mutation inventory; report complete-regression failures and prohibited Git fixtures honestly without weakening expectations."
+  - "Keep historical apply and human acceptance pending until separately authorized and verified with new evidence; never imply DMK-194 acceptance, bootstrap re-execution or release approval."
+- **Verification Method:** Read-only candidate/evidence/inventory checks; npm run test:reconciliation; npm run test:projects-workspace:ui; npm run test:projects-workspace; npm test; npm run lint; npm run build; npm run wbs:check; standalone bootstrap suites; separate post-bootstrap reconciliation verifier. Run state/evidence-writing suites only in disposable copies and retain the no-Git restriction.
+
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`

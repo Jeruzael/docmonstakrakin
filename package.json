@@ -27,7 +27,10 @@
     "verify:bootstrap:execution": "tsx scripts/verifySelfBootstrapExecution.ts",
     "bootstrap:self": "tsx scripts/bootstrapSelf.ts",
     "test:projects-workspace": "tsx scripts/testProjectsWorkspace.ts",
-    "test:projects-workspace:ui": "tsx scripts/testProjectsWorkspaceUi.ts"
+    "test:projects-workspace:ui": "tsx scripts/testProjectsWorkspaceUi.ts",
+    "test:reconciliation": "tsx scripts/testCanonicalReconciliation.ts && tsx scripts/testWorkItemUpdates.ts",
+    "reconcile:canonical": "tsx scripts/reconcileCanonicalState.ts",
+    "verify:reconciliation": "tsx scripts/verifyCanonicalReconciliation.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

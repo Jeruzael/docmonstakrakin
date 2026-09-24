@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {chromium, type Page, type Route} from 'playwright';
 import {createServer} from 'vite';
-import {INITIAL_PROJECTS} from '../src/data/initialData.ts';
+import {INITIAL_PROJECTS, INITIAL_WORK_ITEMS} from '../src/data/initialData.ts';
 import {createPortablePackage} from '../server/package/portablePackage.ts';
 import {startPackageFixture} from './fixtures/projectsWorkspaceUiServer.ts';
 
@@ -27,12 +27,19 @@ async function setup(empty=false) {
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const state={projects:empty?[]:structuredClone(projects),requirements:{A:[req('A')],B:[req('B')],C:[req('C')]} as Record<string,any[]>,questions:structuredClone(questions),posts:[] as string[],held:new Map<string,ReturnType<typeof deferred>>(),fail:new Set<string>(),reject:false,reads:[] as string[]};
   // Simulate a transport that ignores aborts so late results really reach the loader.
+  const workItems = structuredClone(INITIAL_WORK_ITEMS.slice(0,1));
   await page.addInitScript(()=>{const original=window.fetch;window.fetch=(url,options)=>original(url,options?{...options,signal:undefined}:options);});
   await page.route('**/api/**',async(route:Route)=>{
     const url=new URL(route.request().url()).pathname;const method=route.request().method();
     const send=async(body:unknown,status=200)=>{await route.fulfill({status,json:body}).catch(()=>{});};
     if(method==='POST') {
       state.posts.push(url);const body=route.request().postDataJSON();
+      if(url.endsWith('/work-items')) {
+        if(state.reject)return send({error:'Fixture rejected work update'},403);
+        if(body.status)workItems[0].status=body.status;
+        if(body.checklistIndex!==undefined)workItems[0].checklist[body.checklistIndex].done=body.checklistDone;
+        return send(workItems[0]);
+      }
       if(url.endsWith('/status')) {if(state.reject)return send({error:'Fixture rejected transition'},403);state.requirements.A[0].status='UNDER_REVIEW';return send({requirement:state.requirements.A[0]});}
       if(url.endsWith('/answers')) {const q=state.questions.find(q=>q.id===body.questionId)!;Object.assign(q,{answer:body.answer,state:'ANSWERED'});return send({ok:true});}
       return send({error:'Unexpected mutation'},400);
@@ -47,6 +54,7 @@ async function setup(empty=false) {
     if(!suffix)return send(state.projects.find(p=>p.id===id));
     if(suffix==='/requirements')return send(state.requirements[id]||[]);
     if(suffix==='/questions')return send(state.questions);
+    if(suffix==='/work-items')return send(workItems);
     if(suffix==='/next-action')return send({id:'NEXT',title:'Fixture next action',reason:'Fixture',steps:[],blocks:[],blockingItems:[]});
     return send([]);
   });
@@ -69,6 +77,21 @@ async function preserved(page:Page) {
 async function select(page:Page,id:string){await page.getByRole('button',{name:'Select project',exact:true}).click();await page.getByRole('button',{name:new RegExp(`Fixture ${id}`)}).click();}
 async function test(name:string,run:()=>Promise<void>){if(process.env.DMK_UI_CASE && !name.startsWith(process.env.DMK_UI_CASE))return;try{await run();console.log(`PASS ${name}`);results.push({name,status:'PASS'});passed++;}catch(e){console.error(`FAIL ${name}:`,e);results.push({name,status:'FAIL',error:String(e)});failed++;for(const p of browser.contexts().flatMap(c=>c.pages()))await p.screenshot({path:path.join(output,`${name.slice(0,2)}-failure.png`)}).catch(()=>{});}}
 try {
+  await test('W1 rejected WorkItem status and checklist retain canonical drawer values',async()=>{
+    const f=await setup();try{await f.start();await f.page.getByRole('button',{name:/^Work Management/}).click();
+      await f.page.getByText(INITIAL_WORK_ITEMS[0].title,{exact:true}).first().click();
+      const select=f.page.locator('select').last();const before=await select.inputValue();
+      f.state.reject=true;await select.selectOption('VERIFIED');
+      await f.page.getByRole('alert').filter({hasText:'Fixture rejected work update'}).waitFor();assert.equal(await select.inputValue(),before);
+      const check=f.page.getByRole('checkbox').first();const checked=await check.isChecked();await check.click();
+      await f.page.getByRole('alert').filter({hasText:'Fixture rejected work update'}).waitFor();assert.equal(await check.isChecked(),checked);
+      f.state.reject=false;await select.selectOption('IN_PROGRESS');
+      await f.page.waitForFunction(()=>document.querySelector('select')?.value==='IN_PROGRESS');
+      assert.equal(await f.page.locator('h2').filter({hasText:INITIAL_WORK_ITEMS[0].title}).count(),1);
+      await check.click();await f.page.waitForFunction(expected=>(document.querySelector('input[type=checkbox]') as HTMLInputElement)?.checked===expected,!checked);
+      assert.equal(await check.isChecked(),!checked);
+    }finally{await f.close();}
+  });
   await test('A1 row-opened drawer, filter and governance tab survive delayed canonical refresh',async()=>{
     const f=await setup();try{await f.start();await drawer(f.page);const gate=deferred();f.state.held.set('A',gate);
       await f.page.getByRole('button',{name:'Mark Under Review',exact:true}).click();

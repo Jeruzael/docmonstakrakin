@@ -70,3 +70,11 @@ $$\text{Requirement (REQ)} \longrightarrow \text{Architecture (CMP/ARC)} \longri
 | REQ-BOOT-001 | DMK-192 | testSelfBootstrapContract; testSelfBootstrapExecutor; validateSelfBootstrapManifestFile; bootstrapSelf --dry-run | EV-BOOT-192; self-bootstrap-manifest-validation.json | VERIFIED (automation and dry-run) |
 
 Evidence paths resolve under docs/07_verification. All four EV-RC records are defined in CRYPTODEMON_REMEDIATION_REPORT.md. EV-BOOT-192 records executor and read-only dry-run verification. No Gate 7 authority was exercised.
+
+## 2026-09-24 — Batch A ownership application
+
+Gio approved DMK-201 ownership application only; acceptance and live reconciliation remain pending. Historical rows above retain their recorded scope.
+
+| Requirements | WBS ownership | Architecture / controls | Verification and evidence | Status |
+|---|---|---|---|---|
+| REQ-DATA-001, REQ-DATA-002, REQ-BOOT-001 | DMK-201 / 13.06.14 / EPIC-13 | CMP-01, CMP-02, CMP-04, CMP-BOOT-01; SEC-CTRL-004, SEC-CTRL-013, SEC-CTRL-020 | testCanonicalReconciliation.ts; testWorkItemUpdates.ts; testProjectsWorkspaceUi.ts; [ownership and fresh dry-run review](../07_verification/STAGE_A6_OWNERSHIP_APPLICATION_AND_REBOUND_REVIEW.md); existing Stage A/A.5 evidence linked by the canonical WBS record | VERIFICATION_PENDING — ownership applied; no live reconciliation or release authority |

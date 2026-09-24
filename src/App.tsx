@@ -313,18 +313,18 @@ export default function App() {
     checklistIdx?: number,
     done?: boolean
   ) => {
-    try {
-      const res = await fetch(`/api/projects/${currentProject.id}/work-items`, {
+    if (!projectReady || !currentProject) throw new Error('Select a ready project before updating work items');
+    const projectId = currentProject.id;
+      const res = await fetch(`/api/projects/${projectId}/work-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, status, checklistIndex: checklistIdx, checklistDone: done }),
       });
-      if (res.ok) {
-        await fetchProjectData(currentProject.id);
-      }
-    } catch (err) {
-      console.error('Failed to update work item:', err);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Work item update failed (${res.status})`);
     }
+    await fetchProjectData(projectId);
   };
 
   const handleAddADR = async (adrData: Partial<ADR>) => {

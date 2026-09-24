@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-09-23T16:06:36.510Z",
+  "status": "PASS",
+  "proposedId": "DMK-201",
+  "proposedWbsPath": "13.06.14",
+  "parent": "EPIC-13",
+  "candidateFile": "docs/00_control/BATCH_A_WBS_OWNERSHIP_CANDIDATE.yaml",
+  "candidateFileDigest": "802072d03f11ac494b25192c4bba93275037a5039160f1ab9c5b0e44621c3a78",
+  "canonicalWbsDigest": "4a069a5411ad43aa0fd3438e91c2ef088185d647cbfd8bc70fd16d930d4bba95",
+  "canonicalTopLevelItems": 61,
+  "canonicalItemsIncludingChildren": 66,
+  "canonicalMaxIntegerId": 199,
+  "collisionCheck": "PASS — canonical IDs/paths including children and all runtime WorkItems",
+  "fixtureNote": "DMK-200 appears in existing synthetic bootstrap contract fixtures; DMK-201 avoids that overlap. No fixture or canonical ID renamed.",
+  "requiredFieldsChecked": 22,
+  "protectedExistingFilesUnchanged": 220,
+  "originalStageAProtectedFilesUnchanged": 107,
+  "changedExistingFiles": [],
+  "newReviewArtifacts": [
+    "docs/00_control/BATCH_A_WBS_OWNERSHIP_CANDIDATE.yaml",
+    "docs/07_verification/STAGE_A6_WBS_OWNERSHIP_REVIEW.md"
+  ],
+  "observedRuntime": {
+    "project": "PRJ-DOCMONSTAKRAKIN",
+    "stateVersion": 19,
+    "baselineStateDigest": "2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9",
+    "statuses": [
+      {
+        "id": "DMK-192",
+        "status": "READY"
+      },
+      {
+        "id": "DMK-193",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "DMK-194",
+        "status": "BACKLOG"
+      }
+    ]
+  },
+  "ownershipApplication": "NOT AUTHORIZED / NOT RUN",
+  "reboundReconciliation": "NOT RUN — requires exact ownership authorization and application first",
+  "liveApply": "NOT AUTHORIZED / NOT RUN"
+}

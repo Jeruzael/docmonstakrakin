@@ -664,14 +664,22 @@ async function startServer() {
   });
 
   app.post('/api/projects/:id/work-items', (req, res) => {
-    const { itemId, status, checklistIndex, checklistDone } = req.body;
+    const { itemId, status, checklistIndex, checklistDone } = req.body || {};
+    const project = store.projects.find(p => p.id === req.params.id);
+    if (!project) return res.status(404).json({error:'Project not found'});
+    if (typeof itemId !== 'string' || (status === undefined && checklistIndex === undefined) ||
+      (checklistDone !== undefined && checklistIndex === undefined)) return res.status(422).json({error:'Invalid work item update'});
     let verifiedBy;
     if (['VERIFIED','APPROVED','RELEASED'].includes(status)) {verifiedBy=reviewerAuth.requireHuman(req,res);if(!verifiedBy)return;}
-    if (status && !['PROPOSED','BACKLOG','READY','IN_PROGRESS','VERIFICATION','VERIFIED','APPROVED','RELEASED','DEFERRED'].includes(status))return res.status(422).json({error:'Invalid work item status'});
+    if (status !== undefined && !['PROPOSED','BACKLOG','READY','IN_PROGRESS','VERIFICATION','VERIFIED','APPROVED','RELEASED','DEFERRED'].includes(status))return res.status(422).json({error:'Invalid work item status'});
     const items = store.workItems[req.params.id] || [];
     const target = items.find((i) => i.id === itemId);
     if (!target) {
       return res.status(404).json({ error: 'Work item not found' });
+    }
+    if (checklistIndex !== undefined && (!Number.isInteger(checklistIndex) || checklistIndex < 0 ||
+      !target.checklist[checklistIndex] || typeof checklistDone !== 'boolean')) {
+      return res.status(422).json({error:'Invalid checklist update'});
     }
 
     if (status) {
@@ -681,6 +689,7 @@ async function startServer() {
       target.checklist[checklistIndex].done = !!checklistDone;
     }
     target.updatedAt = new Date().toISOString();
+    project.stateVersion = (project.stateVersion ?? 0) + 1;
 
     store.addAuditEvent(req.params.id, verifiedBy?.name || 'Developer', 'WORK_ITEM_UPDATED', itemId, `Status updated to ${target.status}`,verifiedBy ? {authenticatedIdentity:verifiedBy.id,roleSource:verifiedBy.roleSource} : undefined);
     res.json(target);

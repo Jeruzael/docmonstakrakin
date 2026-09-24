@@ -1,5 +1,16 @@
 # docmonstakrakin current project state
 
+## 2026-09-24 — approved Batch A ownership
+
+Gio explicitly approved WBS ownership application for DMK-201, **Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity**, at 13.06.14 under EPIC-13. The canonical record is applied at **VERIFICATION_PENDING**. This owns the existing Batch A mechanism and WorkItem rejected-update integrity fix; it does not add a runtime WorkItem or expand the bounded 13-item reconciliation map.
+
+Next action: human review of the [fresh reconciliation candidate and verification inventory](../07_verification/STAGE_A6_OWNERSHIP_APPLICATION_AND_REBOUND_REVIEW.md), generated after these ownership/control updates. Previous Stage A/A.5 plan digests are superseded for execution by the changed input bindings and remain historical evidence. Live reconciliation is **NOT AUTHORIZED / NOT APPLIED**. DMK-194 remains VERIFICATION_PENDING; DMK-195–199 remain unchanged, Batch B is not started, and Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. No release approval is granted.
+
+The retained complete regression is **FAIL (26/28 suites)** with the two pre-existing evidence-order failures. The Git fixture remains **BLOCKED** under the no-Git restriction. Product test/build results below are historical unless identified as freshly rerun in the linked report. Historical source-control references below were not re-verified.
+
+## Historical checkpoint — 2026-09-23
+
+
 Updated 2026-09-23. This supersedes the 2026-09-16 operational snapshot, preserved in verification/history.
 
 - Supported Source-Control Environments:

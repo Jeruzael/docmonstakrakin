@@ -79,13 +79,20 @@ export function snapshotProjectStore(store: ProjectStore | any): ProjectStateSna
  */
 export interface WriteSnapshotAtomicOptions {
   beforeRename?: (tempPath: string, targetPath: string) => void;
+  /** Exact on-disk bytes reviewed by the writer; null means no snapshot existed. */
+  expectedDigest?: string | null;
+}
+
+export function projectSnapshotDigest(workspaceRoot = process.cwd()): string | null {
+  const filename = resolveProjectStatePath(workspaceRoot);
+  return fs.existsSync(filename) ? crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex') : null;
 }
 
 export function writeProjectSnapshotAtomic(
   snapshot: ProjectStateSnapshot,
   workspaceRoot: string = process.cwd(),
   options?: WriteSnapshotAtomicOptions
-): void {
+): string {
   if (!snapshot || snapshot.schemaVersion !== PROJECT_STATE_SCHEMA_VERSION || !Array.isArray(snapshot.state?.projects)) {
     throw new Error('Cannot write malformed project state snapshot');
   }
@@ -97,12 +104,26 @@ export function writeProjectSnapshotAtomic(
   fs.mkdirSync(targetDir, { recursive: true });
 
   const tempFile = path.join(targetDir, `project-state.json.tmp.${crypto.randomUUID()}`);
+  // All application snapshot writers share this exclusive lock. Never steal a
+  // stale lock automatically: recovery requires confirming the owner is stopped.
+  const lockFile = path.join(targetDir, 'project-state.write.lock');
+  let lock: number;
+  try { lock = fs.openSync(lockFile, 'wx'); }
+  catch { throw new Error('STATE_WRITER_BUSY: another writer owns the snapshot lock'); }
+  const checkExpected = () => {
+    if (options && Object.hasOwn(options, 'expectedDigest') && projectSnapshotDigest(workspaceRoot) !== options.expectedDigest) {
+      throw new Error('STALE_STATE: snapshot changed; reload and review again');
+    }
+  };
   try {
+    checkExpected();
     fs.writeFileSync(tempFile, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
     if (options?.beforeRename) {
       options.beforeRename(tempFile, targetFile);
     }
+    checkExpected();
     fs.renameSync(tempFile, targetFile);
+    return crypto.createHash('sha256').update(JSON.stringify(snapshot, null, 2) + '\n').digest('hex');
   } catch (err: unknown) {
     try {
       if (fs.existsSync(tempFile)) {
@@ -112,6 +133,11 @@ export function writeProjectSnapshotAtomic(
       // Best-effort cleanup
     }
     throw err;
+  } finally {
+    // A cleanup failure after rename must not report a rollback of a committed
+    // snapshot. A remaining lock fails closed and requires operator recovery.
+    try { fs.closeSync(lock); } catch { /* already closed */ }
+    try { fs.unlinkSync(lockFile); } catch { /* fail closed on the next write */ }
   }
 }
 
@@ -120,7 +146,10 @@ export function writeProjectSnapshotAtomic(
  * Retains exact transactional rollback semantics.
  */
 export function installProjectPersistence(app: Express, store: any, workspaceRoot: string = process.cwd()) {
+  let persistedDigest = projectSnapshotDigest(workspaceRoot);
+  let transactionInFlight = false;
   const existingSnapshot = readProjectSnapshot(workspaceRoot);
+  if (projectSnapshotDigest(workspaceRoot) !== persistedDigest) throw new Error('STALE_STATE during server startup');
   if (existingSnapshot) {
     hydrateProjectStoreFromSnapshot(store, existingSnapshot);
   }
@@ -129,22 +158,31 @@ export function installProjectPersistence(app: Express, store: any, workspaceRoo
     if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) && !(req.method === 'GET' && req.path.endsWith('/package/export'))) {
       return next();
     }
+    if (projectSnapshotDigest(workspaceRoot) !== persistedDigest) {
+      return res.status(409).json({error: 'Persisted state changed outside this server; restart before updating projects'});
+    }
+    if (transactionInFlight) return res.status(409).json({error:'Another project transaction is in progress; retry after it completes'});
+    transactionInFlight = true;
+    let released = false;
+    const release = () => { if (!released) { released = true; transactionInFlight = false; } };
+    res.once('finish', release);
     const before = structuredClone({ ...store });
     const send = res.json.bind(res);
+    const respond = (body: any) => { const result = send(body); release(); return result; };
     res.json = (body: any) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         try {
           const snapshot = snapshotProjectStore(store);
-          writeProjectSnapshotAtomic(snapshot, workspaceRoot);
+          persistedDigest = writeProjectSnapshotAtomic(snapshot, workspaceRoot, {expectedDigest: persistedDigest});
         } catch (error) {
           Object.assign(store, before);
           res.status(500);
-          return send({ error: 'Failed to persist project transaction; changes rolled back' });
+          return respond({ error: 'Failed to persist project transaction; changes rolled back' });
         }
       } else {
         Object.assign(store, before);
       }
-      return send(body);
+      return respond(body);
     };
     next();
   });

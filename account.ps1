@@ -31,6 +31,15 @@ $roster = @{
     }
 }
 
+$securityVerifier = New-DmkVerifier "SecurityTest"
+
+$roster["SecurityTest"] = @{
+    id = "security-test-reviewer"
+    kind = "HUMAN"
+    roles = @("Security Officer")
+    credentialVerifier = $securityVerifier
+}
+
 $env:DMK_HUMAN_REVIEWERS = $roster | ConvertTo-Json -Compress -Depth 5
 
 npm run dev
