@@ -1,6 +1,62 @@
 # Current session handoff
 
-Updated 2026-09-22.
+## 2026-09-24 — Pre-merge hardening committed and pushed
+
+Current source-control checkpoint:
+
+- Repository: `Jeruzael/docmonstakrakin`
+- Branch: `dmk-194-projects-workspace`
+- Reviewed branch HEAD: `af2cd643f0bf9eb9c77ae3fcbe3d52d4ddc39045`
+- Reviewed master baseline: `99d935064f70c790f77db160c018b56098863289`
+
+The 2026-09-24 pre-merge hardening is committed on the branch.
+
+Fresh retained verification for that hardening records:
+
+- Complete regression: PASS — 30/30 suites
+- Named checks: 413/413 passed
+- Failed: 0
+- Skipped: 0
+- Blocked: 0
+- `testEnvironmentFixtures.ts`: PASS — 17 checks
+- reviewer provisioning regression: PASS — 6 groups
+- `npm test`: PASS — 148 named checks
+- Projects workspace browser regression: PASS — 10 groups
+- reconciliation / WorkItem regression: PASS — 17 checks
+- standalone bootstrap contract/executor/verifier checks: PASS
+- lint/build/WBS consistency: PASS
+
+The earlier 26/28 complete-regression result and Git-fixture BLOCKED status are historical and superseded for current pre-merge verification by:
+
+- `docs/07_verification/premerge-hardening-verification.json`
+- `docs/07_verification/premerge-hardening-complete-results.json`
+
+Governance state remains unchanged:
+
+- DMK-194: `VERIFICATION_PENDING`
+- DMK-201: `VERIFICATION_PENDING`
+- DMK-195–199: unchanged
+- Live reconciliation: `NOT AUTHORIZED / NOT APPLIED`
+- Gate 7: `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`
+- Batch B: not started
+- No release approval granted
+
+Next action: final human review of the exact merge candidate. Do not advance DMK-194 or DMK-201 to VERIFIED merely because automated verification passed.
+
+## 2026-09-24 — approved Batch A ownership
+
+Gio explicitly approved WBS ownership application for DMK-201, **Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity**, at 13.06.14 under EPIC-13. The canonical record is applied at **VERIFICATION_PENDING**. This owns the existing Batch A mechanism and WorkItem rejected-update integrity fix; it does not add a runtime WorkItem or expand the bounded 13-item reconciliation map.
+
+Next action: human review of the [fresh reconciliation candidate and verification inventory](../07_verification/STAGE_A6_OWNERSHIP_APPLICATION_AND_REBOUND_REVIEW.md), generated after these ownership/control updates. Previous Stage A/A.5 plan digests are superseded for execution by the changed input bindings and remain historical evidence. Live reconciliation is **NOT AUTHORIZED / NOT APPLIED**. DMK-194 remains VERIFICATION_PENDING; DMK-195–199 remain unchanged, Batch B is not started, and Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. No release approval is granted.
+
+The retained complete regression is **FAIL (26/28 suites)** with the two pre-existing evidence-order failures. The Git fixture remains **BLOCKED** under the no-Git restriction. Product test/build results below are historical unless identified as freshly rerun in the linked report. Historical source-control references below were not re-verified.
+
+## Historical checkpoint — 2026-09-23
+
+
+Updated 2026-09-23.
+
+Current checkpoint: DMK-194 pre-merge regressions remediated, still VERIFICATION_PENDING. App now preserves local state during a same-project refresh while gating actions and hiding failed stale content; retry reloads without resetting selection. Global package import works for empty/failed workspaces, while export requires a ready matching project. Nine grouped real-browser checks pass, including isolated import persistence, conflict rejection and explicit overwrite reset. `npm test` passes in a disposable no-Git copy (146 checks). Standalone bootstrap contract/manifest/executor/verifier pass. Broader isolated regression has the same two baseline evidence-order failures; `testEnvironmentFixtures.ts` is BLOCKED because it invokes Git. See the dated remediation appendix in `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md` for exact commands, results, scope and pending human checks. No Git commands ran during this remediation; supplied branch/head are unverified. Next safe action remains human review of DMK-194; do not advance downstream work.
 
 - Supported Source-Control Environments:
   - GIT (local clone / developer workstation / CI)
@@ -31,11 +87,11 @@ Updated 2026-09-22.
 - Parent Checkpoint Hash: 31dd4afd9f992d76a99104a4ea88ef7f232de53de75ec63a9c3243fc21ed6d7f
 - Canonical State Hash: 63d08305e50b68e7f49397f58cde586204a83b363bfabbad8751a58d73b4c70b
 - State Continuity: VERIFIED
-- Current Step: Step 5 Complete / DMK-193 Closed
-- Current Status: STEP_5_CLOSED_VERIFIED
+- Current Work Item: DMK-194 — Projects Workspace & Reliable Project Switching
+- Current Status: VERIFICATION_PENDING
 - DMK-192: VERIFIED (Human operator Step 4 review sign-off completed)
 - DMK-193: VERIFIED (Human operator ceremony executed; read-only verification passes; evidence recorded)
-- Next Work Item: DMK-194 — Projects Workspace & Reliable Project Switching (BACKLOG; NOT STARTED)
+- Next Safe Action: Human review of DMK-194 Projects Workspace and project-switching behavior; do not advance to DMK-195.
 - Target Project ID: `PRJ-DOCMONSTAKRAKIN`
 - Project Count Transition: `3 -> 4`
 - Unrelated-State Baseline Hash: `79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`
@@ -47,6 +103,14 @@ Updated 2026-09-22.
 - v0.2: PLANNING / NOT READY. Implementation strictly blocked until v0.2 Entry Gate passes.
 - Manual QA: NOT_READY_FOR_SIGNOFF. Automated remediation readiness: READY_FOR_RETEST.
 
+## DMK-194 implementation checkpoint
+
+DMK-194 implementation exists and is VERIFICATION_PENDING, not VERIFIED. The Projects workspace reuses App's sole selection path and canonical APIs. Automated checks cover scoped payload loading, latest-request wins, stale refresh rejection, failure/retry, zero-project rendering and shared selection wiring. Human UI checks remain pending in ../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md. No human approval is recorded for DMK-194.
+
+DMK-193 remains VERIFIED. DMK-195 through DMK-199 remain BACKLOG; Batch 2 is NOT STARTED. Gate 7 remains NOT EXECUTED / HUMAN_APPROVAL_REQUIRED. DMK-191 human CryptoDemon retest was not performed. No live self-bootstrap, canonical snapshot mutation or protected bootstrap/evidence changes were performed.
+
+Operator-supplied branch: dmk-194-projects-workspace; operator-supplied starting master commit: 99d935064f70c790f77db160c018b56098863289. These are supplied context, not a fresh Git verification. The initial attachment-read command mistakenly included three read-only Git commands before the no-Git restriction was read. No subsequent Git command or Git mutation occurred. Control-plane QA runs against copied control files in a workspace without .git so its environment detector does not invoke Git.
+
 ## Current operational truth and completed work
 
 Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is COMPLETED and VERIFIED:
@@ -56,7 +120,7 @@ Step 5B (DMK-193: Execute Trusted Self-Bootstrap & Verify Canonical State) is CO
 - Post-Execution Review: Documented at `docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md`.
 - Target Project & Invariants Verified: `PRJ-DOCMONSTAKRAKIN` established; project count incremented 3 -> 4; 3 baseline projects preserved with identical unrelated-state hash (`79cc3b30b24942d2038f564a77c225fba2896565199a26e1df4478a87117f527`); all 111 manifest entities mapped 1:1; 8 dynamic discovery collections verified empty (`[]`); single genesis-chained `PROJECT_BOOTSTRAPPED` audit event validated; 0 approvals injected; release signoff false; Gate 7 unexecuted.
 - Live WBS Synchronization: `docs/00_control/MASTER_WBS.yaml` updated (DMK-193 VERIFIED); `docs/00_control/MASTER_WBS.md` re-rendered with zero drift (`npm run wbs:check` passes).
-- Scope Discipline Maintained: DMK-194 remains in `BACKLOG`; no application or UI code was modified.
+- Historical Step 5B scope: DMK-194 was BACKLOG at that checkpoint; no application or UI code was modified during Step 5B. DMK-194 implementation is now VERIFICATION_PENDING as recorded above.
 - Gate 7 & Batch 2: Remain strictly BLOCKED. Completion of `DMK-193` advances the controlled sequence to `DMK-194`; Batch 2 and Gate 7 remain subject to their downstream prerequisite work items and human-review gates.
 
 ### Historical Step 5A Preparation Baseline
@@ -118,8 +182,14 @@ Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement sta
 
 ## Next safe sequence
 
-1. DMK-194 (Projects Workspace & Reliable Project Switching, BACKLOG)
+1. Human review of DMK-194 (Projects Workspace & Reliable Project Switching, VERIFICATION_PENDING). Do not begin DMK-195 in this task.
 2. DMK-195 (Controlled Documentation Workspace, BACKLOG)
 3. DMK-196 (Batch 2 Sign-off UX)
 4. Downstream remediation sequence (DMK-197, 198, 199, 191)
 5. Gate 7 human release approval (remains strictly HUMAN_APPROVAL_REQUIRED)
+
+## 2026-09-24 — Pre-merge hardening checkpoint
+
+Branch dmk-194-projects-workspace remains at b2e8b514016f56d9c51e90237225ba6cc2222c9b; starting tree was clean and the scoped hardening is uncommitted. Normal account.ps1 no longer provisions SecurityTest; explicit development/test opt-in is required. CryptoDemon-generated evidence and complete-regression reports no longer overwrite historical evidence. Fresh verification passed all required routes: complete regression **30/30 suites, 413 checks, 0 failed/skipped/blocked**, npm test **148 checks**, browser **10 groups**, persistence/reconciliation **17 checks**, reviewer **6 groups**, Git fixture **17 checks**, standalone bootstrap, lint/build and WBS consistency. Earlier retained 26/28 and Git-blocked results remain historical.
+
+See [dated hardening report](../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md#2026-09-24--pre-merge-hardening-dmk-194--dmk-201) and [fresh command/protection inventory](../07_verification/premerge-hardening-verification.json). All live/protected state and the 34 reviewed plan bindings are unchanged. DMK-194 and DMK-201 remain VERIFICATION_PENDING; no live reconciliation, Gate 7, Batch B, DMK-195+ or release approval. Git permission was limited to read-only checkout audit and disposable fixture repositories. Recommendation: **COMBINED MERGE REVIEW**, with human DMK-194 UI review next and security-sensitive DMK-201 review pending. The pre-existing temp.txt branch change needs operator scope review. No commit, push, merge or history rewrite was performed.

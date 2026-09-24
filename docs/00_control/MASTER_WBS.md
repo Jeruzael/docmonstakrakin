@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -98,13 +98,18 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `BACKLOG`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
 - **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.
 - **Acceptance Criteria:**
-  - "Projects workspace allows browsing projects and inspecting metadata/lifecycle"
-- **Verification Method:** UI project switching test
+  - "Projects workspace lists canonical projects, metadata/lifecycle, and the active project"
+  - "Projects workspace and TopBar share App selection; all scoped collections replace together"
+  - "Scoped selections and dialogs reset; latest selection wins over stale responses and refresh callbacks"
+  - "Loading and failures hide stale content and support retry or another selection"
+  - "Zero projects offers explicit creation; successful creation updates the list without reload"
+  - "A-to-B-to-A selection is read-only and preserves canonical state"
+- **Verification Method:** npm run test:projects-workspace; lint/build; control-plane QA; bootstrap regression; pending human UI checklist
 
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`
@@ -160,6 +165,25 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 - **Acceptance Criteria:**
   - "Full automated regression passes cleanly across all test suites"
 - **Verification Method:** Full automated regression run
+
+#### `DMK-201` — Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity
+- **WBS Path:** `13.06.14`
+- **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/00_control/BATCH_A_RECONCILIATION_IMPLEMENTATION.md, docs/07_verification/BATCH_A_RECONCILIATION_REVIEW.md, docs/07_verification/batch-a-reconciliation-dry-run.json, docs/07_verification/batch-a-reconciliation-verification.json, docs/07_verification/STAGE_A5_RECONCILIATION_HUMAN_REVIEW.md, docs/07_verification/stage-a5-reconciliation-review-validation.json, scripts/testCanonicalReconciliation.ts, scripts/testWorkItemUpdates.ts, scripts/testProjectsWorkspaceUi.ts`)
+- **Dependencies:** `DMK-192`, `DMK-193`
+- **Requirements:** `REQ-DATA-001`, `REQ-DATA-002`, `REQ-BOOT-001` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04`, `CMP-BOOT-01` | **Controls:** `SEC-CTRL-004`, `SEC-CTRL-013`, `SEC-CTRL-020`
+- **Description:** Own only Batch A's bounded WBS/runtime projection, explicit status mapping, retained-evidence validation, read-only dry-run, stale-state/TOCTOU guards, atomic/idempotent apply and audit, separate post-bootstrap verifier, and rejected WorkItem update integrity. Excludes DMK-194 feature implementation, DMK-195, DMK-196/197, Batches B/C/D/E and Gate 7.
+- **Acceptance Criteria:**
+  - "Preserve repository WBS authority separately from operational ProjectStore state; never regenerate the full WBS from the smaller runtime subset."
+  - "Maintain the explicit 13-item WBS/runtime mapping; historical apply changes only DMK-192, DMK-193 and DMK-194, with older drift observe-only and DMK-195+ untouched."
+  - "Validate retained DMK-192/193 evidence before proposing VERIFIED; map DMK-194 VERIFICATION_PENDING to runtime VERIFICATION and fail closed on unmapped states."
+  - "Produce a mutation-free exact proposal bound to current snapshot digest/stateVersion, approved WBS inputs, mutation set, actor, fixed reviewed timestamps, audit event, plan digest and candidate digest."
+  - "Require explicit authorization of the exact live candidate; reject changed state, inputs or candidate; atomically persist changes plus audit under exclusive writer protection with idempotent retries."
+  - "Verify evolved state through the separate post-bootstrap verifier while preserving historical bootstrap artifacts and strict pristine verification, unrelated projects/items, approvals, requirements, ADRs and Gate 7."
+  - "Rejected WorkItem updates report errors and retain canonical UI/server/persisted values; successful updates persist, audit, refresh canonical values and survive restart."
+  - "Retain disposable test evidence and an exact human-reviewable mutation inventory; report complete-regression failures and prohibited Git fixtures honestly without weakening expectations."
+  - "Keep historical apply and human acceptance pending until separately authorized and verified with new evidence; never imply DMK-194 acceptance, bootstrap re-execution or release approval."
+- **Verification Method:** Read-only candidate/evidence/inventory checks; npm run test:reconciliation; npm run test:projects-workspace:ui; npm run test:projects-workspace; npm test; npm run lint; npm run build; npm run wbs:check; standalone bootstrap suites; separate post-bootstrap reconciliation verifier. Run state/evidence-writing suites only in disposable copies and retain the no-Git restriction.
 
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`

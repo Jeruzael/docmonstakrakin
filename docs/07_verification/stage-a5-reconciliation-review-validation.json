@@ -1,0 +1,156 @@
+{
+  "stage": "A.5",
+  "checkedAt": "2026-09-23T15:51:40.570Z",
+  "status": "PASS",
+  "project": "PRJ-DOCMONSTAKRAKIN",
+  "currentStateVersion": 19,
+  "proposedStateVersion": 20,
+  "baselineDigest": "2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9",
+  "planDigest": "49de18c785aadb58793188fd0a379cc7baa72096ed931e439bb24e1c78f0056a",
+  "candidateDigest": "fec8c4462fab48b75276e36e6b9fe81c73b93d47d55ef073f279ec8c36f23519",
+  "planFile": "docs/07_verification/batch-a-reconciliation-dry-run.json",
+  "timestampModel": "A — exact reviewed candidate",
+  "fixedTimestamp": "2026-09-23T15:32:56.586Z",
+  "actor": "human-review-pending",
+  "semanticMutations": [
+    {
+      "path": "/state/projects/3/stateVersion",
+      "before": 19,
+      "after": 20
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/5/status",
+      "before": "READY",
+      "after": "VERIFIED"
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/5/updatedAt",
+      "before": "2026-09-19T00:00:00.000Z",
+      "after": "2026-09-23T15:32:56.586Z"
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/6/status",
+      "before": "IN_PROGRESS",
+      "after": "VERIFIED"
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/6/updatedAt",
+      "before": "2026-09-23T09:39:46.474Z",
+      "after": "2026-09-23T15:32:56.586Z"
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/7/status",
+      "before": "BACKLOG",
+      "after": "VERIFICATION"
+    },
+    {
+      "path": "/state/workItems/PRJ-DOCMONSTAKRAKIN/7/updatedAt",
+      "before": "2026-09-19T00:00:00.000Z",
+      "after": "2026-09-23T15:32:56.586Z"
+    },
+    {
+      "path": "/state/auditLogs/PRJ-DOCMONSTAKRAKIN/0",
+      "operation": "prepend",
+      "before": "ABSENT",
+      "after": {
+        "id": "AUD-RECON-0cb122c01e8d49ceb57bcbb68ea6d52d8d8a703bc7f88748cf0e6ee32d0bdb9a",
+        "actor": "human-review-pending",
+        "timestamp": "2026-09-23T15:32:56.586Z",
+        "action": "WORK_ITEMS_RECONCILED",
+        "target": "PRJ-DOCMONSTAKRAKIN",
+        "reason": "Explicitly reviewed Batch A WBS projection; no release or Gate 7 authority",
+        "previousHash": "5596d0d61f82d1d3c2889db0a4a3b71fb7d0acec09e2f187eeed6d37001024db",
+        "stateHash": "a7d585c8f913cb5e1411495f080b1dbc3cb5b750c6e4a53d77f3c8c04136cfde",
+        "details": {
+          "operationId": "0cb122c01e8d49ceb57bcbb68ea6d52d8d8a703bc7f88748cf0e6ee32d0bdb9a",
+          "beforeDigest": "2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9",
+          "inputDigest": "fc982c3dcfb245489a57876ff812cd40e1a6e694e1985de2cf894220aa295ad6",
+          "changes": [
+            {
+              "workItemId": "DMK-192",
+              "from": "READY",
+              "to": "VERIFIED",
+              "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+            },
+            {
+              "workItemId": "DMK-193",
+              "from": "IN_PROGRESS",
+              "to": "VERIFIED",
+              "previousUpdatedAt": "2026-09-23T09:39:46.474Z"
+            },
+            {
+              "workItemId": "DMK-194",
+              "from": "BACKLOG",
+              "to": "VERIFICATION",
+              "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "unexpectedSemanticMutations": 0,
+  "unrelatedWorkItemsChanged": 0,
+  "unrelatedProjectsChanged": 0,
+  "approvalsChanged": 0,
+  "requirementsChanged": 0,
+  "adrsChanged": 0,
+  "evidenceChanged": 0,
+  "gate7Changed": 0,
+  "historicalBootstrapArtifactsChanged": 0,
+  "evidence": {
+    "DMK-192": "PASS",
+    "DMK-193": "PASS"
+  },
+  "verification": {
+    "status": "RECONCILIATION_VERIFIED",
+    "planDigest": "49de18c785aadb58793188fd0a379cc7baa72096ed931e439bb24e1c78f0056a",
+    "changes": [
+      {
+        "workItemId": "DMK-192",
+        "from": "READY",
+        "to": "VERIFIED",
+        "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+      },
+      {
+        "workItemId": "DMK-193",
+        "from": "IN_PROGRESS",
+        "to": "VERIFIED",
+        "previousUpdatedAt": "2026-09-23T09:39:46.474Z"
+      },
+      {
+        "workItemId": "DMK-194",
+        "from": "BACKLOG",
+        "to": "VERIFICATION",
+        "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+      }
+    ],
+    "unrelatedStatePreserved": true,
+    "gate7Preserved": true,
+    "bootstrapEvidencePreserved": true,
+    "mutationCount": 0
+  },
+  "originalProtectedFilesUnchanged": 107,
+  "implementationFilesIdenticalToTestedCopy": 108,
+  "wbsItemCount": 61,
+  "wbsOwnership": "PROPOSAL_REQUIRED — identifier unassigned",
+  "completeRegression": {
+    "status": "FAIL",
+    "suites": {
+      "total": 28,
+      "passed": 26,
+      "failed": 2,
+      "skipped": 0
+    },
+    "failures": [
+      "scripts/testSelfBootstrapExecutionVerifier.ts",
+      "scripts/testSelfBootstrapExecutor.ts"
+    ],
+    "sameFailuresBeforeStageA": true,
+    "followUpRequired": true
+  },
+  "gitFixture": "BLOCKED",
+  "liveApply": "NOT AUTHORIZED / NOT APPLIED",
+  "humanAuthorization": "PENDING",
+  "verificationFreshness": "Read-only candidate, evidence, exact diff and protection checks rerun in Stage A.5; test/build results retained from Stage A, unchanged implementation bytes."
+}

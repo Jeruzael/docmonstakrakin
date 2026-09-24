@@ -8,6 +8,7 @@ import {
   FolderOpen,
   CheckCircle2,
   Package,
+  Upload,
 } from 'lucide-react';
 import { Project } from '../types';
 
@@ -18,6 +19,9 @@ interface TopBarProps {
   onOpenCreateWizard: () => void;
   onOpenSearch: () => void;
   onOpenPackageModal?: () => void;
+  onImportPackage?: () => void;
+  selectionStatus?: string;
+  searchDisabled?: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -27,6 +31,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenCreateWizard,
   onOpenSearch,
   onOpenPackageModal,
+  onImportPackage,
+  selectionStatus,
+  searchDisabled=false,
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
@@ -51,6 +58,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             )}
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform" />
           </button>
+          {selectionStatus && <span role="status" className="text-[10px] text-slate-500 block mt-0.5">{selectionStatus}</span>}
 
           {dropdownOpen && (
             <>
@@ -131,6 +139,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Portable Package Button */}
+        {onImportPackage && <button onClick={onImportPackage} aria-label="Import package" title="Import a project package" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs"><Upload className="w-3.5 h-3.5 text-emerald-600"/><span className="hidden sm:inline">Import</span></button>}
         {onOpenPackageModal && (
           <button
             id="topbar-package-btn"
@@ -147,6 +156,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Middle: Global Search */}
       <div className="flex-1 max-w-md mx-4 hidden md:block">
         <button
+          disabled={searchDisabled}
           onClick={onOpenSearch}
           className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-white hover:border-slate-300 text-xs text-slate-400 transition-all shadow-2xs group"
         >
@@ -163,6 +173,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Right: Mode & User Info */}
       <div className="flex items-center gap-3">
         <button
+          disabled={searchDisabled}
           onClick={onOpenSearch}
           className="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
         >

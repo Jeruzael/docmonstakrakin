@@ -1,0 +1,163 @@
+{
+  "stage": "A only; historical apply NOT RUN",
+  "timestamp": "2026-09-23T15:32:56.586Z",
+  "planDigest": "49de18c785aadb58793188fd0a379cc7baa72096ed931e439bb24e1c78f0056a",
+  "protectedResult": {
+    "status": "PASS",
+    "filesChecked": 107,
+    "liveFilesChecked": 4,
+    "changedProtected": [],
+    "newLiveFiles": [],
+    "liveSnapshotDigest": "2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9"
+  },
+  "projectionVerification": {
+    "status": "RECONCILIATION_VERIFIED",
+    "planDigest": "49de18c785aadb58793188fd0a379cc7baa72096ed931e439bb24e1c78f0056a",
+    "changes": [
+      {
+        "workItemId": "DMK-192",
+        "from": "READY",
+        "to": "VERIFIED",
+        "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+      },
+      {
+        "workItemId": "DMK-193",
+        "from": "IN_PROGRESS",
+        "to": "VERIFIED",
+        "previousUpdatedAt": "2026-09-23T09:39:46.474Z"
+      },
+      {
+        "workItemId": "DMK-194",
+        "from": "BACKLOG",
+        "to": "VERIFICATION",
+        "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+      }
+    ],
+    "unrelatedStatePreserved": true,
+    "gate7Preserved": true,
+    "bootstrapEvidencePreserved": true,
+    "mutationCount": 0
+  },
+  "routes": [
+    {
+      "route": "reconciliation",
+      "command": "npm.cmd run test:reconciliation",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "test",
+      "command": "npm.cmd test",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "contract",
+      "command": "npm.cmd run test:bootstrap:contract",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "manifest",
+      "command": "npm.cmd run test:bootstrap:manifest",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "executor",
+      "command": "npm.cmd run test:bootstrap:executor",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "verifier",
+      "command": "npm.cmd run test:bootstrap:execution-verifier",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "projects",
+      "command": "npm.cmd run test:projects-workspace",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "qa",
+      "command": "npm.cmd run qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "lint",
+      "command": "npm.cmd run lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "build",
+      "command": "npm.cmd run build",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "wbs",
+      "command": "npm.cmd run wbs:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "blocked": []
+    },
+    {
+      "route": "complete",
+      "command": "npm.cmd run test:complete",
+      "status": "FAIL",
+      "exitCode": 1,
+      "blocked": [
+        "scripts/testEnvironmentFixtures.ts"
+      ]
+    }
+  ],
+  "complete": {
+    "suites": {
+      "total": 28,
+      "passed": 26,
+      "failed": 2,
+      "skipped": 0
+    },
+    "assertions": {
+      "total": 355,
+      "passed": 353,
+      "failed": 2,
+      "skipped": 0
+    },
+    "failures": [
+      {
+        "suite": "scripts/testSelfBootstrapExecutionVerifier.ts",
+        "log": "scripts_testSelfBootstrapExecutionVerifier.log"
+      },
+      {
+        "suite": "scripts/testSelfBootstrapExecutor.ts",
+        "log": "scripts_testSelfBootstrapExecutor.log"
+      }
+    ]
+  },
+  "notRun": [
+    "Live reconciliation apply",
+    "Live post-apply verifier",
+    "Human UI/reconciliation review"
+  ],
+  "blocked": [
+    "Git-creating environment fixture",
+    "Git status/branch/diff/commit operations"
+  ],
+  "ownership": "User-authorized Batch A Stage A; stable WBS ID allocation pending human review"
+}

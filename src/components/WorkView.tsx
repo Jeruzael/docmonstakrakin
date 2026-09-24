@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Kanban,
   ListOrdered,
@@ -27,12 +27,13 @@ export const WorkView: React.FC<WorkViewProps> = ({
   selectedItemId,
 }) => {
   const [viewMode, setViewMode] = useState<'BOARD' | 'WBS' | 'BACKLOG' | 'SPRINT' | 'CHECKLIST'>('BOARD');
-  const [activeItem, setActiveItem] = useState<WorkItem | null>(() => {
-    if (selectedItemId) {
-      return (workItems || []).find((w) => w.id === selectedItemId) || null;
-    }
-    return null;
-  });
+  const [activeItemId, setActiveItemId] = useState<string | null>(selectedItemId || null);
+  const activeItem = workItems.find(w => w.id === activeItemId) || null;
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const pending = useRef(false);
+  const setActiveItem = (item: WorkItem | null) => { setActiveItemId(item?.id || null); setUpdateError(null); };
+  useEffect(() => { if (selectedItemId) setActiveItemId(selectedItemId); }, [selectedItemId]);
 
   const [activeSprint, setActiveSprint] = useState<number>(0);
 
@@ -45,24 +46,19 @@ export const WorkView: React.FC<WorkViewProps> = ({
     { id: 'VERIFIED', label: 'Verified & Approved' },
   ];
 
-  const handleStatusChange = async (itemId: string, newStatus: WorkItemStatus) => {
-    await onUpdateWorkItem(itemId, newStatus);
-    if (activeItem && activeItem.id === itemId) {
-      setActiveItem({ ...activeItem, status: newStatus });
-    }
+  const update = async (itemId: string, status?: WorkItemStatus, idx?: number, done?: boolean) => {
+    if (pending.current) return;
+    pending.current = true; setUpdating(true); setUpdateError(null);
+    try { await onUpdateWorkItem(itemId, status, idx, done); }
+    catch (error) { setUpdateError(error instanceof Error ? error.message : 'Work item update failed'); }
+    finally { pending.current = false; setUpdating(false); }
   };
-
-  const handleChecklistToggle = async (itemId: string, idx: number, currentDone: boolean) => {
-    await onUpdateWorkItem(itemId, undefined, idx, !currentDone);
-    if (activeItem && activeItem.id === itemId) {
-      const updatedChecklist = [...activeItem.checklist];
-      updatedChecklist[idx].done = !currentDone;
-      setActiveItem({ ...activeItem, checklist: updatedChecklist });
-    }
-  };
+  const handleStatusChange = (itemId: string, status: WorkItemStatus) => update(itemId, status);
+  const handleChecklistToggle = (itemId: string, idx: number, done: boolean) => update(itemId, undefined, idx, !done);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
+      {updateError && !activeItem && <p role="alert" className="text-sm text-red-700">{updateError}</p>}
       {/* Work Header & View Mode Switcher */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -378,6 +374,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
                     >
                       <input
                         type="checkbox"
+                        disabled={updating}
                         checked={c.done}
                         onChange={() => handleChecklistToggle(item.id, idx, c.done)}
                         className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
@@ -418,10 +415,12 @@ export const WorkView: React.FC<WorkViewProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+            {updateError && <p role="alert" className="text-sm text-red-700">{updateError}</p>}
             {/* Status Control */}
             <div>
               <label className="text-slate-500 font-semibold block mb-1">Update Execution Status:</label>
               <select
+                disabled={updating}
                 value={activeItem.status}
                 onChange={(e) => handleStatusChange(activeItem.id, e.target.value as WorkItemStatus)}
                 className="w-full p-2.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-900"
@@ -466,6 +465,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   >
                     <input
                       type="checkbox"
+                      disabled={updating}
                       checked={c.done}
                       onChange={() => handleChecklistToggle(activeItem.id, idx, c.done)}
                       className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
