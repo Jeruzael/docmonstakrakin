@@ -2,6 +2,37 @@
 
 ## 2026-09-24 — approved Batch A ownership
 
+### Current pre-merge verification status
+
+The 2026-09-24 pre-merge hardening supersedes the earlier Stage A regression disposition for current merge review.
+
+Fresh retained verification records:
+
+- Complete regression: PASS — 30/30 suites
+- Named checks: 413/413 passed
+- Failed / skipped / blocked: 0 / 0 / 0
+- Git environment fixture: PASS — 17 checks in an isolated temporary repository
+- Reviewer provisioning hardening: PASS — 6 grouped checks
+- `npm test`: PASS — 148 named checks
+- Projects workspace browser regression: PASS — 10 grouped checks
+- Reconciliation / WorkItem regression: PASS — 17 checks
+
+Evidence:
+
+- `docs/07_verification/premerge-hardening-verification.json`
+- `docs/07_verification/premerge-hardening-complete-results.json`
+- `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md`
+
+The prior 26/28 complete-regression result and Git-fixture BLOCKED result remain historical evidence but no longer describe the latest verified test state.
+
+This technical verification does not constitute human acceptance.
+
+- DMK-194 remains `VERIFICATION_PENDING`.
+- DMK-201 remains `VERIFICATION_PENDING`.
+- Live reconciliation remains `NOT AUTHORIZED / NOT APPLIED`.
+- Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
+- DMK-195+ and Batch B remain outside the current authorization.
+
 Gio explicitly approved WBS ownership application for DMK-201, **Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity**, at 13.06.14 under EPIC-13. The canonical record is applied at **VERIFICATION_PENDING**. This owns the existing Batch A mechanism and WorkItem rejected-update integrity fix; it does not add a runtime WorkItem or expand the bounded 13-item reconciliation map.
 
 Next action: human review of the [fresh reconciliation candidate and verification inventory](../07_verification/STAGE_A6_OWNERSHIP_APPLICATION_AND_REBOUND_REVIEW.md), generated after these ownership/control updates. Previous Stage A/A.5 plan digests are superseded for execution by the changed input bindings and remain historical evidence. Live reconciliation is **NOT AUTHORIZED / NOT APPLIED**. DMK-194 remains VERIFICATION_PENDING; DMK-195–199 remain unchanged, Batch B is not started, and Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED. No release approval is granted.

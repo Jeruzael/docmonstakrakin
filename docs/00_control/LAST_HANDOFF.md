@@ -1,5 +1,48 @@
 # Current session handoff
 
+## 2026-09-24 — Pre-merge hardening committed and pushed
+
+Current source-control checkpoint:
+
+- Repository: `Jeruzael/docmonstakrakin`
+- Branch: `dmk-194-projects-workspace`
+- Reviewed branch HEAD: `af2cd643f0bf9eb9c77ae3fcbe3d52d4ddc39045`
+- Reviewed master baseline: `99d935064f70c790f77db160c018b56098863289`
+
+The 2026-09-24 pre-merge hardening is committed on the branch.
+
+Fresh retained verification for that hardening records:
+
+- Complete regression: PASS — 30/30 suites
+- Named checks: 413/413 passed
+- Failed: 0
+- Skipped: 0
+- Blocked: 0
+- `testEnvironmentFixtures.ts`: PASS — 17 checks
+- reviewer provisioning regression: PASS — 6 groups
+- `npm test`: PASS — 148 named checks
+- Projects workspace browser regression: PASS — 10 groups
+- reconciliation / WorkItem regression: PASS — 17 checks
+- standalone bootstrap contract/executor/verifier checks: PASS
+- lint/build/WBS consistency: PASS
+
+The earlier 26/28 complete-regression result and Git-fixture BLOCKED status are historical and superseded for current pre-merge verification by:
+
+- `docs/07_verification/premerge-hardening-verification.json`
+- `docs/07_verification/premerge-hardening-complete-results.json`
+
+Governance state remains unchanged:
+
+- DMK-194: `VERIFICATION_PENDING`
+- DMK-201: `VERIFICATION_PENDING`
+- DMK-195–199: unchanged
+- Live reconciliation: `NOT AUTHORIZED / NOT APPLIED`
+- Gate 7: `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`
+- Batch B: not started
+- No release approval granted
+
+Next action: final human review of the exact merge candidate. Do not advance DMK-194 or DMK-201 to VERIFIED merely because automated verification passed.
+
 ## 2026-09-24 — approved Batch A ownership
 
 Gio explicitly approved WBS ownership application for DMK-201, **Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity**, at 13.06.14 under EPIC-13. The canonical record is applied at **VERIFICATION_PENDING**. This owns the existing Batch A mechanism and WorkItem rejected-update integrity fix; it does not add a runtime WorkItem or expand the bounded 13-item reconciliation map.
