@@ -191,3 +191,84 @@ Human checks remain pending; automated Chrome interaction and screenshot inspect
 - [ ] Human responsive/accessibility review beyond the automated desktop keyboard smoke.
 
 Governance remains unchanged: DMK-193 VERIFIED; DMK-194 VERIFICATION_PENDING; DMK-195–199 BACKLOG; DMK-191 human retest not performed; Batch 2 NOT STARTED; Gate 7 HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; v0.1.0-rc1 RELEASE_CANDIDATE; v0.2 PLANNING / NOT READY. Next action is human DMK-194 review. Stop after this handoff.
+
+## 2026-09-24 — Pre-merge hardening (DMK-194 / DMK-201)
+
+**Fresh technical result: PASS. Complete regression: 30/30 suites, 413 named checks, 0 failures, 0 skipped, 0 blocked. Human merge/acceptance review remains pending.** This dated appendix supersedes earlier failure/block dispositions for the newly run routes; prior evidence above remains historical.
+
+### A. Environment
+
+- Repository: Jeruzael/docmonstakrakin; root C:/Users/HomePC/dev/docmonstakrakin.
+- Remote: git@github.com:Jeruzael/docmonstakrakin.git; branch: dmk-194-projects-workspace.
+- Starting and ending HEAD: b2e8b514016f56d9c51e90237225ba6cc2222c9b; exactly the supplied reviewed head. Reviewed master reference: 99d935064f70c790f77db160c018b56098863289.
+- Starting working tree: CLEAN. Ending tree: modified and uncommitted, limited to the files listed below. No commit, push, merge, rebase, reset, cleanup or history rewrite was performed.
+- The operator explicitly lifted the earlier no-Git restriction for read-only checkout inspection and strictly isolated Git fixtures. This did not authorize any checkout Git mutation.
+
+### B. Fixes and red-green evidence
+
+1. **Test reviewer governance isolation.** account.ps1 previously always provisioned SecurityTest as a HUMAN Security Officer. Normal startup now prompts for/provisions Gio as Lead Architect only. SecurityTest requires the exact case-sensitive DMK_ENABLE_TEST_REVIEWER=1 value and NODE_ENV unset (local npm run dev), development or test. Production and unknown modes fail closed. The enabled path warns that it is for disposable test governance. Passwords remain interactive SecureStrings, verifiers use random 16-byte salts and scrypt, and the temporary password environment is cleared. Authentication and quorum code are unchanged; no identity receives both roles. There are no new hardcoded credentials.
+
+   The new scripts/testAccountProvisioning.ts executes the real helper with only Read-Host and npm server launch replaced. Passwords are generated randomly per run. Real session/sign-off endpoints verify bad-password rejection, legitimate Gio access, missing Security Officer failure, duplicate signer rejection, distinct-role opt-in quorum, fresh salts and credential cleanup. Before the fix it failed with “Normal startup must not provision SecurityTest”; after the fix all 6 groups pass. Normal .\account.ps1 is unchanged as a command; only disposable development/test use should set $env:DMK_ENABLE_TEST_REVIEWER = "1" first. Configure a legitimate separate Security Officer through the existing operator roster for real quorum. This scoped hardening does not implement DMK-198 onboarding.
+
+2. **Complete-regression contamination.** The original CryptoDemon test wrote generated UUID/timestamp-bearing evidence into a pinned historical repository file. The reproduced sequence ran CryptoDemon successfully (47 checks), changed its SHA-256 from **6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b** to **50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68**, then both bootstrap suites exited 1 with INVALID_MANIFEST. This matches the pre-existing failure, not a weakened expectation.
+
+   scripts/testCryptoDemonIntegration.ts now writes generated evidence and its server log under its unique temporary workspace's test-evidence directory and asserts that retained evidence bytes remain identical, including on the finally path. scripts/runCompleteRegression.ts writes new results under runtime/rc-regression instead of overwriting the separately pinned historical results.json. It additionally checks manifest, controlled document and evidence bytes after every suite; contamination becomes an explicit failure even if the suite exits 0. scripts/runBatchAVerification.mjs now copies reports from the new output path; the actual collection statement was exercised against the fresh complete run and the copied report hash matched.
+
+   After fixing, executor → CryptoDemon → verifier → executor passed **16 / 48 / 20 / 16** checks in one disposable copy, with the original evidence hash unchanged at every boundary. The complete discovery runner then passed all 30 suites, including both bootstrap suites, with zero changedEvidence entries. No pinned digest, bootstrap source or historical artifact was regenerated. [Complete results](premerge-hardening-complete-results.json) and [command/protection inventory](premerge-hardening-verification.json) record fresh outputs.
+
+3. **Environment/Git fixture disposition: PASS.** The unchanged fixture creates its own mkdtemp Git repository; init/config/add/commit operate with cwd set to that directory, and cleanup targets that same owned temporary directory. Other scenarios use separate non-Git temporary roots. The outer verification runner copies no .git, .local or .secrets, uses an environment allowlist excluding inherited GIT_DIR/GIT_WORK_TREE/index variables, and disables global/system Git configuration. All 17 named checks passed, including rejection of inherited parent Git metadata. The fixture was included in the complete run; no assertions were removed or suites quarantined.
+
+Modified code: account.ps1; scripts/testCryptoDemonIntegration.ts; scripts/runCompleteRegression.ts; scripts/runBatchAVerification.mjs. New regression: scripts/testAccountProvisioning.ts. Documentation: this appended section, the dated LAST_HANDOFF.md addendum, and two new JSON verification records. No frontend, persistence, reconciliation, authentication/session or quorum implementation was changed. No dependency or package changes.
+
+### C. Fresh verification commands
+
+All commands below ran in fresh disposable copies through runtime/premerge/run.mjs. Counts are observed named checks/groups; commands without named checks use their exit result. No old Stage A result is substituted.
+
+| Command | Exit | Pass count | Fail | Blocked | Notes |
+|---|---:|---|---:|---:|---|
+| npm.cmd run test:projects-workspace | 0 | 14 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:projects-workspace:ui | 0 | 10 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:reconciliation | 0 | 17 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd test | 0 | 148 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:bootstrap:contract | 0 | 19 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:bootstrap:manifest | 0 | 28 refs; 24 pinned + 4 living; 4 evidence | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:bootstrap:executor | 0 | 16 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:bootstrap:execution-verifier | 0 | 20 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run lint | 0 | N/A (command success) | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run build | 0 | N/A (command success) | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run wbs:check | 0 | 1 | 0 | 0 | PASS; fresh disposable copy |
+| npm.cmd run test:complete | 0 | 30 suites / 413 checks | 0 | 0 | PASS; fresh disposable copy |
+| node_modules/.bin/tsx.cmd scripts/testEnvironmentFixtures.ts | 0 | 17 | 0 | 0 | PASS; fresh disposable copy |
+| node_modules/.bin/tsx.cmd scripts/testAccountProvisioning.ts | 0 | 6 | 0 | 0 | PASS; fresh disposable copy |
+
+The complete runner discovered **30** suites (the previously allowed 28, the formerly blocked Git fixture and the new reviewer provisioning suite). All intended suites ran. The 413 checks are not a count of every nested Node assertion. Manifest validation verified 28 document references, 24 pinned hashes, 4 unpinned living references and 4 evidence hashes. TypeScript, build and WBS consistency passed; build retains the existing 748.27 kB large-chunk warning.
+
+The browser suite's 10 groups cover mounted drawer/filter/tab/questionnaire context, disabled/inert refresh, hidden stale content after failure, read-only retry without repeating a successful mutation, stale A/B rejection during switching, scope reset, zero/failed-project import, invalid/conflicting import preservation, overwrite reset, and exact ready-project export. The projects suite adds 14 loader/HTTP checks, including A → B → C ordering. Reconciliation/WorkItem tests add 13 + 4 checks for locks, compare-and-swap, rollback, atomic failure, restart, retryable stale-server conflict, wrong authorization/seals, evidence/WBS/snapshot tampering, pre-rename TOCTOU, idempotence, exact audit append and whole-state/Gate 7 preservation. Mutation tests use disposable state only.
+
+**Failures encountered and resolved:**
+
+| Command / attempt | Exit | Failing check / cause | Pre-existing? | Disposition |
+|---|---:|---|---|---|
+| tsx scripts/testSelfBootstrapExecutionVerifier.ts, before fix after CryptoDemon | 1 | Setup rejected changed EV-RC-187 hash as INVALID_MANIFEST | Yes | Fresh after-fix 20 checks PASS |
+| tsx scripts/testSelfBootstrapExecutor.ts, same before-fix copy | 1 | Expected SAFE_TO_REVIEW, received INVALID_MANIFEST | Yes | Fresh after-fix 16 checks PASS |
+| tsx scripts/testAccountProvisioning.ts, red run | 1 | Normal startup unexpectedly includes SecurityTest | Yes | Fresh after-fix 6 groups PASS |
+| node runtime/premerge/run.mjs reviewer-red, initial test-wrapper attempt | 1 | Local PowerShell execution policy blocked generated wrapper before assertions | Environment/test harness | Child process only uses -ExecutionPolicy Bypass; no machine/user policy changed |
+| node runtime/premerge/run.mjs reviewer, first green attempt | 1 | Warning text before JSON confused the new test capture parser | No; new test harness | Capture parses the JSON result line; all cases rerun PASS |
+| node runtime/premerge/run.mjs red / reviewer-red, sandbox attempts | 1 | Process spawning denied with EPERM before tests | Sandbox limitation | Rerun with explicitly approved process execution, PASS/expected-red results recorded |
+
+Raw current-turn logs, red hashes, disposable paths and commands are retained under runtime/premerge; complete suite logs are under runtime/premerge/complete-evidence. The new machine-readable inventory links exact paths. New tests use PowerShell (powershell.exe on Windows, pwsh elsewhere); no packages were installed.
+
+### D. Protected state and remaining limitations
+
+- Live PRJ-DOCMONSTAKRAKIN remains stateVersion **19**; snapshot SHA-256 **2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9**. No live apply, restart, bootstrap ceremony, reviewer provisioning or runtime mutation was performed.
+- All 34 reviewed reconciliation input bindings and the saved plan remain byte-identical. The reviewed plan **716e253ec63f0df1b9b050affe17451f06bea11ea7e9749d8f8a9756438832d2** remains **review-only / not authorized**; no replacement candidate was generated. Bound WBS/project-state/control documents remain unchanged; this dated verification and handoff addendum record the new results without rebinding that candidate.
+- All pre-existing protected/bootstrap evidence, expected hashes, pristine verifier source, unrelated projects, approvals, requirements, ADRs, Gate 7 and secret files remain unchanged. Final inventory checks cover 227 existing files; only four scoped code files and the two append-only documentation files changed. The original prefixes of both appended documents were retained exactly.
+- DMK-194: **VERIFICATION_PENDING**, human UI acceptance NOT RUN. DMK-201: **VERIFICATION_PENDING**, no acceptance promotion. Gate 7: **HUMAN_APPROVAL_REQUIRED / NOT RUN**. Live reconciliation and post-apply verification: **NOT RUN / NOT AUTHORIZED**. Batch B and DMK-195+ work: **NOT RUN**. Release approval: **NOT RUN**.
+- No blocked automated tests remain; the fresh full regression is completely green. Same-agent code review found no remaining blocker in this hardening diff; independent human merge/security review has not been performed and is not implied by test results.
+- The existing branch also changes temp.txt relative to the supplied master reference. It was not changed or reverted here; the operator should review its inclusion before merging. Existing crash-lock recovery and trusted-local-operator reconciliation limits remain documented in the Batch A review.
+
+### E. Branch-scope recommendation
+
+**COMBINED MERGE REVIEW.** DMK-194 and DMK-201 have explicit separate WBS ownership but share App/WorkView refresh behavior, the WorkItem endpoint, persistence and browser fixtures. Splitting these interdependent hunks now would require new integration verification; reviewing the existing branch together retains the freshly tested combination. DMK-201 adds an explicitly authorized CLI ceremony, with no automatic startup migration or live apply path, so merging infrastructure does not grant runtime reconciliation authority.
+
+Review in three groups: (1) DMK-194 selection/refresh/import UI and browser coverage; (2) DMK-201 persistence, WorkItem integrity, CLI/evidence guards and separate verifier; (3) this reviewer-default and test-isolation hardening. Require human review of the security-sensitive persistence/identity boundaries and the pre-existing temp.txt change. No split, replacement branch, history rewrite, push or merge was performed. Stop here for the operator's merge review; recommend DMK-194 human UI review next, with DMK-201 remaining pending.

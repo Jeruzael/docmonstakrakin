@@ -31,13 +31,18 @@ $roster = @{
     }
 }
 
-$securityVerifier = New-DmkVerifier "SecurityTest"
-
-$roster["SecurityTest"] = @{
-    id = "security-test-reviewer"
-    kind = "HUMAN"
-    roles = @("Security Officer")
-    credentialVerifier = $securityVerifier
+# Synthetic governance identities are only for an explicitly enabled local test.
+# Unset NODE_ENV is npm run dev's normal environment; unknown/production modes
+# fail closed. Never enable this flag when using real governance state.
+if ($env:DMK_ENABLE_TEST_REVIEWER -ceq "1" -and @("", "development", "test") -ccontains ([string]$env:NODE_ENV)) {
+    Write-Warning "SecurityTest is enabled for disposable development/test governance only."
+    $securityVerifier = New-DmkVerifier "SecurityTest"
+    $roster["SecurityTest"] = @{
+        id = "security-test-reviewer"
+        kind = "HUMAN"
+        roles = @("Security Officer")
+        credentialVerifier = $securityVerifier
+    }
 }
 
 $env:DMK_HUMAN_REVIEWERS = $roster | ConvertTo-Json -Compress -Depth 5

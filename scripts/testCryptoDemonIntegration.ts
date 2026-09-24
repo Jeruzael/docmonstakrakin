@@ -12,6 +12,10 @@ import {verifyProposalRoundtrip} from './fixtures/proposalContractScenarios.js';
 
 const root = process.cwd();
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-crypto-'));
+const evidenceDir = path.join(dir, 'test-evidence');
+fs.mkdirSync(evidenceDir);
+const retainedEvidencePath = path.join(root, 'docs/07_verification/cryptodemon-fixture-evidence.json');
+const retainedEvidenceBefore = fs.readFileSync(retainedEvidencePath);
 const port = 31987;
 const base = `http://127.0.0.1:${port}`;
 const fixtureCredential = 'isolated-test-only-private-reviewer-proof';
@@ -114,7 +118,7 @@ try {
   await api(url+`/import-sessions/${redacted.id}/changes/0/review`,{disposition:'MODIFIED',humanConfirmed:true,modified:{details:'Example password="dummy-test-password" is only fixture text.'}}); passed('metadata validation and redacted review event');
   const audit = await api(url+'/audit/verify'); assert(audit.valid ?? audit.verified ?? audit.isValid,JSON.stringify(audit)); passed('audit chain intact');
   assert(!JSON.stringify(await api(url+'/audit')).includes(fixtureCredential));
-  fs.writeFileSync(path.join(root,'docs/07_verification/cryptodemon-fixture-evidence.json'),JSON.stringify({project:p,features:feats,coverage:await api(url+'/discovery/coverage'),importSession:history,taskContext:ctx,approval:approved,auditVerification:audit},null,2));
+  fs.writeFileSync(path.join(evidenceDir,'cryptodemon-fixture-evidence.json'),JSON.stringify({project:p,features:feats,coverage:await api(url+'/discovery/coverage'),importSession:history,taskContext:ctx,approval:approved,auditVerification:audit},null,2));
   await verifyProposalRoundtrip(api,url,feats[0].id,passed);
   const pkg = await api(url+'/package/export');
   const envelope = pkg.package || pkg;
@@ -145,4 +149,10 @@ try {
   assert.equal((await api(url+'/features')).length,8);assert.equal((await api(url+`/import-sessions/${session.id}`)).originalJson,original);assert.equal((await api(bUrl+'/requirements')).length,0);passed('A to B to A reads preserve all project collection boundaries');
   await stop(); fs.writeFileSync(path.join(dir,'.local/project-state.json.tmp'),'{interrupted write');await start(); assert.equal((await api(url+`/import-sessions/${session.id}`)).digest,history.digest); assert.equal((await api(url+'/features')).length,8);assert.equal((await api('/api/governance/session')).identity,null);passed('restart ignores interrupted snapshot and preserves review data while revoking sessions');
   console.log(`CryptoDemon integration: ${count} checks passed`);
-} finally { await stop(); fs.writeFileSync(path.join(root,'docs/07_verification/cryptodemon-server-test.log'), output); }
+} finally {
+  await stop();
+  fs.writeFileSync(path.join(evidenceDir,'cryptodemon-server-test.log'), output);
+  assert.deepEqual(fs.readFileSync(retainedEvidencePath),retainedEvidenceBefore,'Integration must preserve retained bootstrap evidence bytes');
+  passed('retained fixture evidence is unchanged; generated artifacts stay in disposable test state');
+  console.log(`Disposable integration artifacts: ${evidenceDir}`);
+}

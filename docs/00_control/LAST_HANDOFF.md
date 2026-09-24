@@ -144,3 +144,9 @@ Batch 1 and Batch 1.5 final corrections remain intact: canonical Requirement sta
 3. DMK-196 (Batch 2 Sign-off UX)
 4. Downstream remediation sequence (DMK-197, 198, 199, 191)
 5. Gate 7 human release approval (remains strictly HUMAN_APPROVAL_REQUIRED)
+
+## 2026-09-24 — Pre-merge hardening checkpoint
+
+Branch dmk-194-projects-workspace remains at b2e8b514016f56d9c51e90237225ba6cc2222c9b; starting tree was clean and the scoped hardening is uncommitted. Normal account.ps1 no longer provisions SecurityTest; explicit development/test opt-in is required. CryptoDemon-generated evidence and complete-regression reports no longer overwrite historical evidence. Fresh verification passed all required routes: complete regression **30/30 suites, 413 checks, 0 failed/skipped/blocked**, npm test **148 checks**, browser **10 groups**, persistence/reconciliation **17 checks**, reviewer **6 groups**, Git fixture **17 checks**, standalone bootstrap, lint/build and WBS consistency. Earlier retained 26/28 and Git-blocked results remain historical.
+
+See [dated hardening report](../07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md#2026-09-24--pre-merge-hardening-dmk-194--dmk-201) and [fresh command/protection inventory](../07_verification/premerge-hardening-verification.json). All live/protected state and the 34 reviewed plan bindings are unchanged. DMK-194 and DMK-201 remain VERIFICATION_PENDING; no live reconciliation, Gate 7, Batch B, DMK-195+ or release approval. Git permission was limited to read-only checkout audit and disposable fixture repositories. Recommendation: **COMBINED MERGE REVIEW**, with human DMK-194 UI review next and security-sensitive DMK-201 review pending. The pre-existing temp.txt branch change needs operator scope review. No commit, push, merge or history rewrite was performed.

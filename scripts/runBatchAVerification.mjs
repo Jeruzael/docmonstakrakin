@@ -29,6 +29,6 @@ child.stdout.on('data',b=>log.write(b));child.stderr.on('data',b=>log.write(b));
 const exitCode=await new Promise(resolve=>{child.on('error',e=>{log.write(String(e));resolve(-1);});child.on('exit',resolve);});
 await new Promise(resolve=>log.end(resolve));
 const report={route,command:commands[route],status:exitCode===0?'PASS':'FAIL',exitCode,blocked,copy:dir,log:logPath};
-if(route==='complete')fs.cpSync(path.join(dir,'docs/07_verification/rc-regression'),path.join(out,'complete-evidence'),{recursive:true});
+if(route==='complete')fs.cpSync(path.join(dir,'runtime/rc-regression'),path.join(out,'complete-evidence'),{recursive:true});
 fs.writeFileSync(path.join(out,route+'.json'),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report));process.exitCode=Number(exitCode)||0;

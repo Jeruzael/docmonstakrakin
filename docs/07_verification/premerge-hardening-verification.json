@@ -1,0 +1,372 @@
+{
+  "checkedAt": "2026-09-24T03:03:28.158Z",
+  "status": "PASS",
+  "environment": {
+    "root": "C:\\Users\\HomePC\\dev\\docmonstakrakin",
+    "remote": "git@github.com:Jeruzael/docmonstakrakin.git",
+    "branch": "dmk-194-projects-workspace",
+    "startingHead": "b2e8b514016f56d9c51e90237225ba6cc2222c9b",
+    "endingHead": "b2e8b514016f56d9c51e90237225ba6cc2222c9b",
+    "startingWorkingTree": "CLEAN",
+    "endingWorkingTree": "MODIFIED / UNCOMMITTED",
+    "commitCreated": false,
+    "reviewedMaster": "99d935064f70c790f77db160c018b56098863289",
+    "gitAuthorization": "User explicitly permitted read-only checkout audit and Git commands strictly inside disposable fixture repositories"
+  },
+  "changes": {
+    "modifiedExisting": [
+      "account.ps1",
+      "scripts/runBatchAVerification.mjs",
+      "scripts/runCompleteRegression.ts",
+      "scripts/testCryptoDemonIntegration.ts",
+      "docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md",
+      "docs/00_control/LAST_HANDOFF.md"
+    ],
+    "newFiles": [
+      "scripts/testAccountProvisioning.ts",
+      "docs/07_verification/premerge-hardening-verification.json",
+      "docs/07_verification/premerge-hardening-complete-results.json"
+    ]
+  },
+  "commands": [
+    {
+      "route": "projects",
+      "command": "npm.cmd run test:projects-workspace",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 14,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-Fmektv",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\projects.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "ui",
+      "command": "npm.cmd run test:projects-workspace:ui",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 10,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-NxNKjG",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\ui.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "reconciliation",
+      "command": "npm.cmd run test:reconciliation",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 17,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-i3lCee",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\reconciliation.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "test",
+      "command": "npm.cmd test",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 148,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-JsQEr7",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\test.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "contract",
+      "command": "npm.cmd run test:bootstrap:contract",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 19,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-a0k32B",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\contract.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "manifest",
+      "command": "npm.cmd run test:bootstrap:manifest",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 0,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-qcFUdb",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\manifest.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "executor",
+      "command": "npm.cmd run test:bootstrap:executor",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 16,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-NyAcUN",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\executor.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "verifier",
+      "command": "npm.cmd run test:bootstrap:execution-verifier",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 20,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-6EKtIF",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\verifier.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "lint",
+      "command": "npm.cmd run lint",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 0,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-EX18Ri",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\lint.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "build",
+      "command": "npm.cmd run build",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 0,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-CR69ww",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\build.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "wbs",
+      "command": "npm.cmd run wbs:check",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 1,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-OJ1pt5",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\wbs.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "complete",
+      "command": "npm.cmd run test:complete",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 0,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-kxdFPQ",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\complete.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "environment",
+      "command": "node_modules\\.bin\\tsx.cmd scripts/testEnvironmentFixtures.ts",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 17,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-52ow8S",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\environment.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    {
+      "route": "reviewer",
+      "command": "node_modules\\.bin\\tsx.cmd scripts/testAccountProvisioning.ts",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 6,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-PXp2f5",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\reviewer.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    }
+  ],
+  "completeRegression": {
+    "status": "PASS",
+    "total": 30,
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0,
+    "assertions": {
+      "total": 413,
+      "passed": 413,
+      "failed": 0,
+      "skipped": 0
+    },
+    "blocked": 0,
+    "report": "docs/07_verification/premerge-hardening-complete-results.json"
+  },
+  "redGreen": {
+    "before": [
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testCryptoDemonIntegration.ts",
+        "exitCode": 0,
+        "status": "PASS",
+        "passed": 47,
+        "failed": 0,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-YtxNwe",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\red-0-CryptoDemonIntegration.log",
+        "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+        "evidenceAfter": "50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68"
+      },
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testSelfBootstrapExecutionVerifier.ts",
+        "exitCode": 1,
+        "status": "FAIL",
+        "passed": 0,
+        "failed": 1,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-YtxNwe",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\red-1-SelfBootstrapExecutionVerifier.log",
+        "evidenceBefore": "50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68",
+        "evidenceAfter": "50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68"
+      },
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testSelfBootstrapExecutor.ts",
+        "exitCode": 1,
+        "status": "FAIL",
+        "passed": 0,
+        "failed": 1,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-YtxNwe",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\red-2-SelfBootstrapExecutor.log",
+        "evidenceBefore": "50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68",
+        "evidenceAfter": "50c585a3c197715af1fade770765417ad0ee9d328a1179c147492e34766a1e68"
+      }
+    ],
+    "reviewerBefore": {
+      "command": "node_modules\\.bin\\tsx.cmd scripts/testAccountProvisioning.ts",
+      "exitCode": 1,
+      "status": "FAIL",
+      "passed": 0,
+      "failed": 1,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-uEov7c",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\reviewer-red.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    "after": [
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testSelfBootstrapExecutor.ts",
+        "exitCode": 0,
+        "status": "PASS",
+        "passed": 16,
+        "failed": 0,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-XZeqF4",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\green-order-0-SelfBootstrapExecutor.log",
+        "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+        "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+      },
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testCryptoDemonIntegration.ts",
+        "exitCode": 0,
+        "status": "PASS",
+        "passed": 48,
+        "failed": 0,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-XZeqF4",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\green-order-1-CryptoDemonIntegration.log",
+        "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+        "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+      },
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testSelfBootstrapExecutionVerifier.ts",
+        "exitCode": 0,
+        "status": "PASS",
+        "passed": 20,
+        "failed": 0,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-XZeqF4",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\green-order-2-SelfBootstrapExecutionVerifier.log",
+        "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+        "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+      },
+      {
+        "command": "node_modules\\.bin\\tsx.cmd scripts/testSelfBootstrapExecutor.ts",
+        "exitCode": 0,
+        "status": "PASS",
+        "passed": 16,
+        "failed": 0,
+        "blocked": 0,
+        "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-XZeqF4",
+        "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\green-order-3-SelfBootstrapExecutor.log",
+        "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+        "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+      }
+    ],
+    "reviewerAfter": {
+      "route": "reviewer",
+      "command": "node_modules\\.bin\\tsx.cmd scripts/testAccountProvisioning.ts",
+      "exitCode": 0,
+      "status": "PASS",
+      "passed": 6,
+      "failed": 0,
+      "blocked": 0,
+      "copy": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-premerge-PXp2f5",
+      "log": "C:\\Users\\HomePC\\dev\\docmonstakrakin\\runtime\\premerge\\reviewer.log",
+      "evidenceBefore": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+      "evidenceAfter": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b"
+    },
+    "collectorPathCheck": "PASS"
+  },
+  "protection": {
+    "baselineFiles": 227,
+    "unchangedExistingFiles": 221,
+    "liveStateDigest": "2f19134a0a5fd5ccc5aea7d4d9592174c3864a1e7dc4b02c76709c13b4b942c9",
+    "liveStateVersion": 19,
+    "liveWrites": 0,
+    "inputBindingsUnchanged": 34,
+    "reviewedPlanDigest": "716e253ec63f0df1b9b050affe17451f06bea11ea7e9749d8f8a9756438832d2",
+    "reviewedCandidateFileUnchanged": true,
+    "bootstrapFilesUnchanged": true,
+    "pinnedHashesUnchanged": true,
+    "pristineVerifierUnchanged": true,
+    "gate7Unchanged": true,
+    "unrelatedProjectsUnchanged": true
+  },
+  "limitations": {
+    "dmk194": "VERIFICATION_PENDING — human UI review not performed",
+    "dmk201": "VERIFICATION_PENDING — no acceptance promotion",
+    "liveReconciliation": "NOT RUN — NOT AUTHORIZED",
+    "gate7": "NOT RUN — HUMAN_APPROVAL_REQUIRED",
+    "blockedTests": 0,
+    "buildWarning": "Existing 748.27 kB frontend chunk warning",
+    "independentHumanReview": "NOT RUN",
+    "existingBranchScope": "temp.txt has pre-existing changes relative to reviewed master; not modified by this remediation"
+  },
+  "branchRecommendation": "COMBINED MERGE REVIEW"
+}
