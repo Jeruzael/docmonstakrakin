@@ -42,10 +42,6 @@ export function readReconciliationInputs(root: string) {
   const manifestBytes = read(MANIFEST);
   const manifest = JSON.parse(manifestBytes.toString('utf8'));
   ensure(hash(manifest) === MANIFEST_DIGEST, 'EVIDENCE_INVALID: historical manifest digest');
-  const paths = [MANIFEST,WBS,...Object.keys(RETAINED).map(p=>PREFIX+p),
-    ...manifest.documents.map((d:any)=>d.path),...Object.values(KNOWN_EVIDENCE_PATHS)];
-  const fingerprint = () => Object.fromEntries([...new Set<string>(paths)].sort().map(p=>[p,digest(read(p))]));
-  const bindings = fingerprint();
   const wbs = parse(read(WBS).toString('utf8'));
   ensure(Array.isArray(wbs.items), 'Invalid WBS items');
   const items = wbs.items as any[];
@@ -80,12 +76,19 @@ export function readReconciliationInputs(root: string) {
     'EVIDENCE_INVALID: historical human review provenance');
   const dmk194 = items.find(i=>i.id==='DMK-194');
   let dmk194Evidence: string | undefined = undefined;
+  const paths = [MANIFEST,WBS,...Object.keys(RETAINED).map(p=>PREFIX+p),
+    ...manifest.documents.map((d:any)=>d.path),...Object.values(KNOWN_EVIDENCE_PATHS)];
   if (dmk194?.status === 'VERIFIED') {
     ensure(dmk194.evidence?.includes(PREFIX+'DMK_194_PROJECTS_WORKSPACE_REVIEW.md'), 'EVIDENCE_INVALID: DMK-194 WBS evidence links');
     ensure(typeof dmk194.verified_by === 'string' && dmk194.verified_by.length > 0, 'EVIDENCE_INVALID: DMK-194 verification provenance');
     ensure(typeof dmk194.human_approved_by === 'string' && dmk194.human_approved_by.includes('Human operator'), 'EVIDENCE_INVALID: DMK-194 human review provenance');
+    const dmk194File = PREFIX+'DMK_194_PROJECTS_WORKSPACE_REVIEW.md';
+    ensure(fs.existsSync(path.join(root, dmk194File)), 'EVIDENCE_INVALID: DMK-194 review file missing');
+    paths.push(dmk194File);
     dmk194Evidence = 'VALIDATED';
   }
+  const fingerprint = () => Object.fromEntries([...new Set<string>(paths)].sort().map(p=>[p,digest(read(p))]));
+  const bindings = fingerprint();
   ensure(hash(bindings) === hash(fingerprint()), 'STALE_INPUTS during evidence validation');
   return {items,bindings,evidence:{'DMK-192':'VALIDATED','DMK-193':'VALIDATED',
     ...(dmk194Evidence ? {'DMK-194': dmk194Evidence} : {}),

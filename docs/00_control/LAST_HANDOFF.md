@@ -30,14 +30,14 @@ Known non-blocking observations:
 Governance state:
 
 - DMK-194: `VERIFIED` (Technical implementation & Human UI verification complete)
-- DMK-201: `VERIFICATION_PENDING` (Human review of reconciliation & WorkItem integrity pending)
+- DMK-201: `VERIFICATION_PENDING` (Stage A.6 & Stage A.7 candidates SUPERSEDED FOR EXECUTION / HISTORICAL ONLY; runtime package-overwrite confirmed from Test 10, recovery pending)
 - DMK-195–199: `BACKLOG` (Unchanged)
 - Live reconciliation: `NOT AUTHORIZED / NOT APPLIED`
 - Gate 7: `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`
 - Batch B: `NOT STARTED`
 - Release status: `v0.1.0-rc1` (Release candidate; no release approval granted)
 
-Next action: Human review and next steps for DMK-201, or authorization to proceed with downstream Phase 12 backlog items (DMK-195, DMK-196).
+Next action: Human review of DMK-201 forensic state investigation, evidence-binding hardening, and recovery candidate options.
 
 ## 2026-09-24 — Pre-merge hardening committed and pushed
 

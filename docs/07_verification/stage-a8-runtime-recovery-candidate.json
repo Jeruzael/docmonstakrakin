@@ -1,0 +1,1060 @@
+{
+  "format": "DOCMONSTAKRAKIN_RUNTIME_RECOVERY_CANDIDATE_V1",
+  "projectId": "PRJ-DOCMONSTAKRAKIN",
+  "generatedAt": "2026-09-25T11:11:48.376Z",
+  "disposition": "READ-ONLY CANDIDATE / RECOVERY-PENDING / NOT AUTHORIZED / NOT APPLIED",
+  "forensicIncident": {
+    "action": "PACKAGE_IMPORTED",
+    "id": "AUD-MUGMI1Y0-AEVN",
+    "timestamp": "2026-09-25T07:12:12.888Z",
+    "actor": "docmonstakrakin Package Restore UI",
+    "reason": "Restored project from cryptographically verified .docmonstakrakin package",
+    "canonicalStateHash": "28f3c9af692b43ba5cbe7b7ae5e210971154cb4d9790fe40358ea06f451f66bd",
+    "envelopeHash": "ef59f3c934e5a72e371ae3ccd484ff4c8fe3a45b0338a0d10dd7a9cceaf2eaba",
+    "rootCause": "CONFIRMED PACKAGE OVERWRITE during manual Test 10 via Package Restore UI with overwrite: true"
+  },
+  "collections": {
+    "workItems": [
+      {
+        "id": "DMK-187",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFICATION",
+        "recoverableStatus": "VERIFICATION",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-188",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFICATION",
+        "recoverableStatus": "VERIFICATION",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-189",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFICATION",
+        "recoverableStatus": "VERIFICATION",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-190",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFICATION",
+        "recoverableStatus": "VERIFICATION",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-191",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-192",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "READY",
+        "recoverableStatus": "READY",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-193",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFICATION",
+        "recoverableStatus": "VERIFICATION",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-194",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "IN_PROGRESS",
+        "recoverableStatus": "IN_PROGRESS",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-195",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-196",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-197",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-198",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      },
+      {
+        "id": "DMK-199",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "BACKLOG",
+        "recoverableStatus": "BACKLOG",
+        "statusRecoverable": true,
+        "recoverySource": "workItem.importedGovernanceStatus"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "REQ-DATA-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-DATA-002",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-DATA-003",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-DATA-004",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-REQ-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-GOV-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-GOV-002",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-SEC-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-SEC-014",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-SEC-019",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-AI-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "UNDER_REVIEW",
+        "historyStatus": "UNDER_REVIEW",
+        "recoverableStatus": "UNDER_REVIEW",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-AI-007",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-OPS-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-REL-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-RC-187",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-RC-188",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-RC-189",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-RC-190",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "VERIFIED",
+        "historyStatus": "VERIFIED",
+        "recoverableStatus": "VERIFIED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-BOOT-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-UX-PROJECTS-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-DOC-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-GOV-SIGNOFF-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-GOV-QUORUM-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "REQ-GOV-REVIEWER-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "requirement.importedGovernanceStatus + importedGovernanceHistory"
+      }
+    ],
+    "adrs": [
+      {
+        "id": "ADR-0001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0002",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0003",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "historyStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0004",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "ACCEPTED",
+        "historyStatus": "ACCEPTED",
+        "recoverableStatus": "ACCEPTED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0005",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "ACCEPTED",
+        "historyStatus": "ACCEPTED",
+        "recoverableStatus": "ACCEPTED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0006",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "ACCEPTED",
+        "historyStatus": "ACCEPTED",
+        "recoverableStatus": "ACCEPTED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      },
+      {
+        "id": "ADR-0007",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "ACCEPTED",
+        "historyStatus": "ACCEPTED",
+        "recoverableStatus": "ACCEPTED",
+        "statusRecoverable": true,
+        "recoverySource": "adr.importedGovernanceStatus + importedGovernanceHistory"
+      }
+    ],
+    "risks": [
+      {
+        "id": "RISK-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      },
+      {
+        "id": "RISK-004",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      },
+      {
+        "id": "RISK-019",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      },
+      {
+        "id": "RISK-022",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      },
+      {
+        "id": "RISK-025",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      },
+      {
+        "id": "RISK-BOOT-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": null,
+        "historyStatus": null,
+        "recoverableStatus": null,
+        "statusRecoverable": true,
+        "recoverySource": "risk.importedGovernanceStatus + importedGovernanceHistory (null)"
+      }
+    ],
+    "features": [
+      {
+        "id": "FEAT-DMK-001",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-002",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-003",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-004",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-005",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-006",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-007",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-008",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-009",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-010",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-011",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-012",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-013",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-014",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      },
+      {
+        "id": "FEAT-DMK-015",
+        "currentStatus": "PROPOSED",
+        "importedGovernanceStatus": "PROPOSED",
+        "recoverableStatus": "PROPOSED",
+        "statusRecoverable": true,
+        "recoverySource": "feature.importedGovernanceStatus"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "EV-RC-187",
+        "currentResult": "UNTRUSTED",
+        "importedResult": "PASSED",
+        "recoverableResult": "PASSED",
+        "statusRecoverable": false,
+        "disposition": "RECOVERY_BLOCKED_FOR_FIELD",
+        "policyReason": "SEC-CTRL-018: Imported evidence is UNTRUSTED; requires explicit operator sign-off or fresh automated re-verification before active promotion"
+      },
+      {
+        "id": "EV-RC-188",
+        "currentResult": "UNTRUSTED",
+        "importedResult": "PASSED",
+        "recoverableResult": "PASSED",
+        "statusRecoverable": false,
+        "disposition": "RECOVERY_BLOCKED_FOR_FIELD",
+        "policyReason": "SEC-CTRL-018: Imported evidence is UNTRUSTED; requires explicit operator sign-off or fresh automated re-verification before active promotion"
+      },
+      {
+        "id": "EV-RC-189",
+        "currentResult": "UNTRUSTED",
+        "importedResult": "PASSED",
+        "recoverableResult": "PASSED",
+        "statusRecoverable": false,
+        "disposition": "RECOVERY_BLOCKED_FOR_FIELD",
+        "policyReason": "SEC-CTRL-018: Imported evidence is UNTRUSTED; requires explicit operator sign-off or fresh automated re-verification before active promotion"
+      },
+      {
+        "id": "EV-RC-190",
+        "currentResult": "UNTRUSTED",
+        "importedResult": "PASSED",
+        "recoverableResult": "PASSED",
+        "statusRecoverable": false,
+        "disposition": "RECOVERY_BLOCKED_FOR_FIELD",
+        "policyReason": "SEC-CTRL-018: Imported evidence is UNTRUSTED; requires explicit operator sign-off or fresh automated re-verification before active promotion"
+      }
+    ],
+    "approvals": {
+      "currentCount": 0,
+      "historicalCount": 7,
+      "historicalRecords": [
+        {
+          "id": "APV-9f99a04e-60f4-484c-9f55-a31bb4597fdc",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Deterministic Self-Bootstrap Ingestion Contract",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0007",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:27.682Z",
+          "status": "APPROVED",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Adopting the SELF_BOOTSTRAP_V1 specification to populate the authoritative project state for PRJ-DOCMONSTAKRAKIN without executing runtime mutation during contract verification, eliminating circular dependencies between dogfooding control and project creation.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:00:48.958Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            },
+            {
+              "role": "Security Officer",
+              "approver": "SecurityTest",
+              "identityId": "security-test-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:06:03.272Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "0e6738bed41da9f491515c7939eb3e19494fe148705098e3fe0ff2003f0a0b1d",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1",
+          "resolvedAt": "2026-09-23T09:06:03.272Z",
+          "resolvedBy": "SecurityTest"
+        },
+        {
+          "id": "APV-0c9aa160-f3c0-446c-8c5a-baade2137cd6",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Multi-Agent Peer Identity and Trust Boundary Model",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0006",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:27.112Z",
+          "status": "APPROVED",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Distinguishing autonomous AI agents from human project owners is critical to prevent automated bypass of human-in-the-loop governance.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:06.615Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            },
+            {
+              "role": "Security Officer",
+              "approver": "SecurityTest",
+              "identityId": "security-test-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:06:17.413Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "342177dfa207af331548d77ede6e971c83d2e97ee8991629aa061eaa34b89f1c",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1",
+          "resolvedAt": "2026-09-23T09:06:17.413Z",
+          "resolvedBy": "SecurityTest"
+        },
+        {
+          "id": "APV-47afc772-97bd-4608-b627-d6b333f7ff06",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Synchronization Protocol and Conflict Resolution Model",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0005",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:26.685Z",
+          "status": "APPROVED",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Supporting multi-workstation collaboration in future milestones requires robust offline synchronization without losing human governance authority.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:12.033Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            },
+            {
+              "role": "Security Officer",
+              "approver": "SecurityTest",
+              "identityId": "security-test-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:08:11.049Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "74b94bf144220185873ccc315347bea06c90a417e429df595a85bf7c3961f2e1",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1",
+          "resolvedAt": "2026-09-23T09:08:11.049Z",
+          "resolvedBy": "SecurityTest"
+        },
+        {
+          "id": "APV-b24d4312-1bd2-4a58-b880-41975c04c43f",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Cryptographic Hash-Chained Audit Ledger",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0004",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:26.247Z",
+          "status": "APPROVED",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Standard log files can be edited or truncated by malicious scripts or compromised agents to hide unvetted actions or gate bypasses.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:16.236Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            },
+            {
+              "role": "Security Officer",
+              "approver": "SecurityTest",
+              "identityId": "security-test-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:08:21.336Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "59a434303ceb9889fe19f2cf67b3462c565b50bfeda67568979039aa9c9d944c",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1",
+          "resolvedAt": "2026-09-23T09:08:21.336Z",
+          "resolvedBy": "SecurityTest"
+        },
+        {
+          "id": "APV-9eda5e3b-f034-4fd4-8a2e-88b090c6baaf",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Sandboxed Server-Side AI Inference Adapter & Egress Boundary",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0003",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:24.361Z",
+          "status": "PENDING",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Calling AI models directly from browser code exposes API keys, allows untrusted payload execution, and induces sycophantic self-review bias.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:19.476Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "824941e811a73a1db61d122cef363f13e64a5c268430026bee1ab199b2dd6ea2",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1"
+        },
+        {
+          "id": "APV-42b37a3b-1068-45fc-b97a-28b114c2a191",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Single Canonical WorkItem Aggregate Model",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0002",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:23.835Z",
+          "status": "PENDING",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "Task tracking is frequently fractured across Kanban boards, WBS sheets, and PR checklists, causing synchronization drift and phantom completion claims.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:23.042Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "b46caefd223c455b6db2d38c9fd8a63ab340feb1d7b19bca94315926c3626b36",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1"
+        },
+        {
+          "id": "APV-f93501f9-5060-49bc-a658-489ddd69cff7",
+          "projectId": "PRJ-DOCMONSTAKRAKIN",
+          "title": "Local-First In-Memory & Storage Architecture",
+          "type": "ADR_SIGN_OFF",
+          "targetEntityId": "ADR-0001",
+          "targetEntityType": "ADR",
+          "requestedBy": "Gio",
+          "requestedAt": "2026-09-23T08:00:16.778Z",
+          "status": "PENDING",
+          "urgency": "HIGH",
+          "riskLevel": "MEDIUM",
+          "description": "docmonstakrakin is designed as an offline-first engineering cockpit for local developers and autonomous coding agents. Relying on external cloud databases introduces latency, cloud failure modes, and credential exposure risks.",
+          "impactAnalysis": "Human sign-off of canonical proposed artifact",
+          "requiredRoles": [
+            "Security Officer",
+            "Lead Architect"
+          ],
+          "approvalsCollected": [
+            {
+              "role": "Lead Architect",
+              "approver": "Gio",
+              "identityId": "gio-local-reviewer",
+              "roleSource": "LOCAL_SERVER_ROSTER",
+              "decision": "APPROVED",
+              "timestamp": "2026-09-23T09:01:25.235Z",
+              "comment": "Verified against zero-trust architectural boundaries and regulatory security profile."
+            }
+          ],
+          "targetDigest": "e0bdf75903c7138725600afdaab4d4fabf7743ae93cc0afe2f7a446d4e7574a0",
+          "policyGates": [
+            {
+              "gateName": "Canonical target exists",
+              "passed": true,
+              "details": "Target resolved within this project; distinct authorized humans required"
+            }
+          ],
+          "policyVersion": "LOCAL_SESSION_V1"
+        }
+      ],
+      "statusRecoverable": false,
+      "disposition": "RECOVERY_BLOCKED_FOR_FIELD",
+      "policyReason": "SEC-CTRL-020: Imported signatures are historical evidence; automatic injection into active quorum is forbidden without fresh local sign-off"
+    },
+    "technicalBaseline": {
+      "currentState": {
+        "frontend": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "backend": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "database": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "authentication": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "storage": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "apiApproach": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "deployment": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "sourceControl": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "testing": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        },
+        "aiProvider": {
+          "type": "UNKNOWN",
+          "decision_mode": "UNKNOWN",
+          "userValue": null,
+          "recommendation": null,
+          "finalSelection": null,
+          "final_selection": null,
+          "value": null,
+          "status": "NOT_RATIFIED"
+        }
+      },
+      "statusRecoverable": true,
+      "recoverableState": null,
+      "disposition": "RESET_TO_PRE_IMPORT_BASELINE"
+    },
+    "auditHistory": {
+      "preservation": "EVENT_AUD_MUGMI1Y0_AEVN_PRESERVED",
+      "rule": "Historical fact of import cannot be deleted; future recovery appends a new RECOVERY audit event"
+    }
+  }
+}

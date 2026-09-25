@@ -59,6 +59,7 @@ try {
     assert.equal(plan.evidence['DMK-193'],'VALIDATED');
     assert.equal(plan.evidence['DMK-194'],'VALIDATED');
     assert.equal(plan.mapping.filter(m=>m.apply).length,3);
+    assert.ok('docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md' in plan.inputBindings);
   });
   test('historical status mapping: VERIFICATION_PENDING maps to runtime VERIFICATION',()=>{
     const inputs=readReconciliationInputs(fixture);
@@ -98,6 +99,57 @@ try {
       assert.deepEqual(fs.readFileSync(filename),before);
     }
   });
+  test('anti-TOCTOU: modifying DMK-194 review file invalidates plan apply with zero snapshot mutation',()=>{
+    const reviewFile=path.join(fixture,'docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md');
+    const origReview=fs.readFileSync(reviewFile);
+    try {
+      fs.appendFileSync(reviewFile,'\n# modified after planning\n');
+      assert.throws(()=>applyReconciliation(fixture,fixture,plan,auth),/STALE_INPUTS/);
+    } finally { fs.writeFileSync(reviewFile,origReview); }
+    assert.deepEqual(fs.readFileSync(filename),before);
+  });
+  test('missing DMK-194 review file or malformed provenance fails closed when WBS DMK-194 is VERIFIED',()=>{
+    const reviewFile=path.join(fixture,'docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md');
+    const origReview=fs.readFileSync(reviewFile);
+    const wbsFile=path.join(fixture,'docs/00_control/MASTER_WBS.yaml');
+    const origWbs=fs.readFileSync(wbsFile);
+    try {
+      fs.unlinkSync(reviewFile);
+      assert.throws(()=>readReconciliationInputs(fixture),/EVIDENCE_INVALID/);
+    } finally { fs.writeFileSync(reviewFile,origReview); }
+    try {
+      fs.writeFileSync(wbsFile,origWbs.toString().replace(/human_approved_by: "Human operator[^"]*"/,'human_approved_by: "AI Agent"'));
+      assert.throws(()=>readReconciliationInputs(fixture),/EVIDENCE_INVALID/);
+    } finally { fs.writeFileSync(wbsFile,origWbs); }
+    try {
+      fs.writeFileSync(wbsFile,origWbs.toString().replace(/verified_by: "npm run test:projects-workspace[^"]*"/,'verified_by: ""'));
+      assert.throws(()=>readReconciliationInputs(fixture),/EVIDENCE_INVALID/);
+    } finally { fs.writeFileSync(wbsFile,origWbs); }
+    try {
+      fs.writeFileSync(wbsFile,origWbs.toString().replace(/- "docs\/07_verification\/DMK_194_PROJECTS_WORKSPACE_REVIEW\.md"/,''));
+      assert.throws(()=>readReconciliationInputs(fixture),/EVIDENCE_INVALID/);
+    } finally { fs.writeFileSync(wbsFile,origWbs); }
+    assert.deepEqual(fs.readFileSync(filename),before);
+  });
+  test('VERIFICATION_PENDING does not falsely require VERIFIED evidence',()=>{
+    const reviewFile=path.join(fixture,'docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md');
+    const origReview=fs.readFileSync(reviewFile);
+    const wbsFile=path.join(fixture,'docs/00_control/MASTER_WBS.yaml');
+    const origWbs=fs.readFileSync(wbsFile);
+    try {
+      fs.unlinkSync(reviewFile);
+      fs.writeFileSync(wbsFile,origWbs.toString().replace(/(-\s+id:\s+"DMK-194"[\s\S]*?status:\s+)"VERIFIED"/,'$1"VERIFICATION_PENDING"'));
+      const pendingInputs=readReconciliationInputs(fixture);
+      assert.equal(pendingInputs.evidence['DMK-194'],undefined);
+      assert.equal('docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md' in pendingInputs.bindings,false);
+      const proj=projectReconciliation(before,pendingInputs,'Synthetic operator',timestamp);
+      assert.equal(proj.plan.changes.find(c=>c.workItemId==='DMK-194')?.to,'VERIFICATION');
+    } finally {
+      fs.writeFileSync(reviewFile,origReview);
+      fs.writeFileSync(wbsFile,origWbs);
+    }
+    assert.deepEqual(fs.readFileSync(filename),before);
+  });
   test('changed WBS after review is rejected even when mapped statuses match',()=>{
     const file=path.join(fixture,'docs/00_control/MASTER_WBS.yaml'), original=fs.readFileSync(file);
     try {fs.appendFileSync(file,'\n# changed after review\n');assert.throws(()=>applyReconciliation(fixture,fixture,plan,auth),/STALE_INPUTS/);}
@@ -110,6 +162,9 @@ try {
     const file=path.join(fixture,'docs/00_control/MASTER_WBS.yaml'), original=fs.readFileSync(file);
     try {assert.throws(()=>applyReconciliation(fixture,fixture,plan,auth,{beforeRename:()=>fs.appendFileSync(file,'\n# race\n')}),/STALE_INPUTS/);}
     finally {fs.writeFileSync(file,original);}
+    const reviewFile=path.join(fixture,'docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md'), origReview=fs.readFileSync(reviewFile);
+    try {assert.throws(()=>applyReconciliation(fixture,fixture,plan,auth,{beforeRename:()=>fs.appendFileSync(reviewFile,'\n# race\n')}),/STALE_INPUTS/);}
+    finally {fs.writeFileSync(reviewFile,origReview);}
     assert.deepEqual(fs.readFileSync(filename),before);
     assert.deepEqual(fs.readdirSync(path.dirname(filename)),['project-state.json']);
   });

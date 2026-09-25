@@ -141,3 +141,16 @@ The proposed audit record prepended at `/state/auditLogs/PRJ-DOCMONSTAKRAKIN/0` 
 - **Downstream backlog:** DMK-195 through DMK-199 remain `BACKLOG`; Batch B is `NOT STARTED`.
 
 **Next action:** Human operator review of this exact fresh Stage A.7 read-only candidate.
+
+---
+
+## 8. Supersession status addendum (2026-09-25)
+
+> [!WARNING]
+> **STAGE A.7 CANDIDATE IS SUPERSEDED FOR EXECUTION / HISTORICAL ONLY**
+> Following forensic investigation and evidence-binding hardening, reconciliation input bindings now hash-bind `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md` (35 input bindings total).
+> Consequently:
+> - Stage A.7 Plan Digest (`968c0b481b3072e262cfde6befea6fc0ed33eba0af7f73773c10171cf30d754a`) is **SUPERSEDED FOR EXECUTION**.
+> - Stage A.7 Candidate Digest (`e4a9528cab41d066fa8976b1c766a40a67039d844bee495cf5a6725150ca22f6`) is **SUPERSEDED FOR EXECUTION**.
+> - Machine evidence files `docs/07_verification/stage-a7-post-dmk194-reconciliation-dry-run.json` and `docs/07_verification/stage-a7-post-dmk194-reconciliation-validation.json` remain preserved strictly as **HISTORICAL ONLY / NOT CANDIDATE FOR APPLY**.
+> Furthermore, forensic investigation proved runtime state experienced a package import overwrite during human Test 10, resetting collections to `PROPOSED`/`UNTRUSTED` before any recovery. No reconciliation candidate is authorized for apply until runtime state recovery is addressed.

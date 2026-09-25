@@ -25,12 +25,12 @@ The human operator conducted the DMK-194 Human UI Review with final outcome: **P
 ### Current governance and task status
 
 - **DMK-194:** `VERIFIED` (Automated 14 workspace + 10 browser checks passed; human UI review completed).
-- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; historical Stage A.6 candidate is SUPERSEDED FOR EXECUTION, NOT AUTHORIZED, NOT APPLIED).
+- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; Stage A.6 & Stage A.7 candidates are SUPERSEDED FOR EXECUTION / HISTORICAL ONLY; forensic investigation confirmed runtime package-overwrite in Test 10, recovery pending; NOT AUTHORIZED, NOT APPLIED).
 - **Gate 7:** `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED` (Strictly held).
 - **Live reconciliation:** `NOT AUTHORIZED / NOT APPLIED`.
 - **Downstream work:** DMK-195 through DMK-199 remain `BACKLOG`; Batch B is `NOT STARTED`.
 - **Release status:** `v0.1.0-rc1` (Release Candidate; Gate 7 human sign-off pending).
-- **Next safe action:** Human operator review of DMK-201 security/reconciliation boundaries or preparation for downstream backlog items.
+- **Next safe action:** Human operator review of DMK-201 forensic report, evidence-binding hardening, and recovery candidate options.
 
 ## 2026-09-24 — approved Batch A ownership
 
