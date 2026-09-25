@@ -50,12 +50,25 @@ try {
   const review=()=>dryRunReconciliation(fixture,fixture,'Synthetic operator',timestamp);
   const plan=review();
   const auth={authorized:true,confirmProjectId:TARGET,confirmPlanDigest:plan.planDigest};
-  test('bounded mapping, DMK-192/193 validated, DMK-194 status translation; dry-run has zero writes',()=>{
+  test('bounded mapping, DMK-192/193/194 validated, current DMK-194 VERIFIED projection; dry-run has zero writes',()=>{
     const files=fs.readdirSync(path.dirname(filename));
     assert.deepEqual(review(),plan);assert.deepEqual(fs.readFileSync(filename),before);assert.deepEqual(fs.readdirSync(path.dirname(filename)),files);
-    assert.equal(plan.mapping.length,13);assert.deepEqual(plan.changes.map(c=>[c.workItemId,c.to]),[['DMK-192','VERIFIED'],['DMK-193','VERIFIED'],['DMK-194','VERIFICATION']]);
-    assert.equal(plan.evidence['DMK-192'],'VALIDATED');assert.equal(plan.evidence['DMK-193'],'VALIDATED');
+    assert.equal(plan.mapping.length,13);
+    assert.deepEqual(plan.changes.map(c=>[c.workItemId,c.to]),[['DMK-192','VERIFIED'],['DMK-193','VERIFIED'],['DMK-194','VERIFIED']]);
+    assert.equal(plan.evidence['DMK-192'],'VALIDATED');
+    assert.equal(plan.evidence['DMK-193'],'VALIDATED');
+    assert.equal(plan.evidence['DMK-194'],'VALIDATED');
     assert.equal(plan.mapping.filter(m=>m.apply).length,3);
+  });
+  test('historical status mapping: VERIFICATION_PENDING maps to runtime VERIFICATION',()=>{
+    const inputs=readReconciliationInputs(fixture);
+    inputs.items.find(i=>i.id==='DMK-194').status='VERIFICATION_PENDING';
+    const proj=projectReconciliation(before,inputs,'Synthetic operator',timestamp);
+    const change=proj.plan.changes.find(c=>c.workItemId==='DMK-194');
+    assert.equal(change?.to,'VERIFICATION');
+    const mapping=proj.plan.mapping.find(m=>m.wbsId==='DMK-194');
+    assert.equal(mapping?.wbsStatus,'VERIFICATION_PENDING');
+    assert.equal(mapping?.mappedStatus,'VERIFICATION');
   });
   test('unknown WBS status, missing mapping and duplicate runtime IDs fail closed',()=>{
     const inputs=readReconciliationInputs(fixture);

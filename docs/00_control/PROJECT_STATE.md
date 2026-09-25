@@ -25,7 +25,7 @@ The human operator conducted the DMK-194 Human UI Review with final outcome: **P
 ### Current governance and task status
 
 - **DMK-194:** `VERIFIED` (Automated 14 workspace + 10 browser checks passed; human UI review completed).
-- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity).
+- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; historical Stage A.6 candidate is SUPERSEDED FOR EXECUTION, NOT AUTHORIZED, NOT APPLIED).
 - **Gate 7:** `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED` (Strictly held).
 - **Live reconciliation:** `NOT AUTHORIZED / NOT APPLIED`.
 - **Downstream work:** DMK-195 through DMK-199 remain `BACKLOG`; Batch B is `NOT STARTED`.

@@ -6,8 +6,9 @@ Current source-control checkpoint:
 
 - Repository: `Jeruzael/docmonstakrakin`
 - Branch: `master`
-- Current HEAD: `1457ab419c5d2c0e217ef4df4073c1169415b3b0`
+- Human-review implementation baseline: `1457ab419c5d2c0e217ef4df4073c1169415b3b0`
 - PR merged: #16 (`dmk-194-projects-workspace`)
+- Human-review/control-state updates were recorded in later master commits.
 
 Human operator conducted the DMK-194 Human UI Review:
 

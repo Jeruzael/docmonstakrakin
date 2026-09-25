@@ -78,8 +78,17 @@ export function readReconciliationInputs(root: string) {
   ensure(items.find(i=>i.id==='DMK-192').verified_by.includes('Human operator Step 4 review sign-off') &&
     items.find(i=>i.id==='DMK-193').human_approved_by === 'Human operator (self-bootstrap execution ceremony and read-only verification)',
     'EVIDENCE_INVALID: historical human review provenance');
+  const dmk194 = items.find(i=>i.id==='DMK-194');
+  let dmk194Evidence: string | undefined = undefined;
+  if (dmk194?.status === 'VERIFIED') {
+    ensure(dmk194.evidence?.includes(PREFIX+'DMK_194_PROJECTS_WORKSPACE_REVIEW.md'), 'EVIDENCE_INVALID: DMK-194 WBS evidence links');
+    ensure(typeof dmk194.verified_by === 'string' && dmk194.verified_by.length > 0, 'EVIDENCE_INVALID: DMK-194 verification provenance');
+    ensure(typeof dmk194.human_approved_by === 'string' && dmk194.human_approved_by.includes('Human operator'), 'EVIDENCE_INVALID: DMK-194 human review provenance');
+    dmk194Evidence = 'VALIDATED';
+  }
   ensure(hash(bindings) === hash(fingerprint()), 'STALE_INPUTS during evidence validation');
   return {items,bindings,evidence:{'DMK-192':'VALIDATED','DMK-193':'VALIDATED',
+    ...(dmk194Evidence ? {'DMK-194': dmk194Evidence} : {}),
     executionReportDigestMode:'published LF-text digest plus exact raw-byte review binding'},manifestDigest:MANIFEST_DIGEST};
 }
 
@@ -114,7 +123,7 @@ export function projectReconciliation(beforeBytes: Buffer, inputs: ReturnType<ty
     return {wbsId,workItemId,wbsStatus:item.status,runtimeStatus:runtime.status,mappedStatus:STATUS_MAP[item.status as keyof typeof STATUS_MAP],apply};
   });
   const changes=mapping.filter(m=>m.apply && m.runtimeStatus!==m.mappedStatus).map(m=>{
-    ensure(m.mappedStatus!=='VERIFIED' || inputs.evidence[m.wbsId as 'DMK-192'|'DMK-193']==='VALIDATED', 'VERIFIED requires retained evidence');
+    ensure(m.mappedStatus!=='VERIFIED' || (inputs.evidence as any)[m.wbsId]==='VALIDATED', 'VERIFIED requires retained evidence');
     return {workItemId:m.workItemId,from:m.runtimeStatus,to:m.mappedStatus,previousUpdatedAt:work.find((i:any)=>i.id===m.workItemId).updatedAt};
   });
   const logs=before.state.auditLogs?.[TARGET];

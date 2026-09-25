@@ -1,0 +1,228 @@
+{
+  "stage": "A.7 post-DMK-194 reconciliation candidate review",
+  "checkedAt": "2026-09-25T10:07:24.908Z",
+  "status": "PASS",
+  "authorizationStatus": "READ-ONLY CANDIDATE / NOT AUTHORIZED / NOT APPLIED",
+  "project": "PRJ-DOCMONSTAKRAKIN",
+  "currentStateVersion": 28,
+  "proposedStateVersion": 29,
+  "actor": "Gio",
+  "timestampModel": "A — exact reviewed candidate; fixed timestamp, no apply-time refresh",
+  "fixedTimestamp": "2026-09-25T18:06:00.000Z",
+  "planFile": "docs/07_verification/stage-a7-post-dmk194-reconciliation-dry-run.json",
+  "planDigest": "968c0b481b3072e262cfde6befea6fc0ed33eba0af7f73773c10171cf30d754a",
+  "candidateDigest": "e4a9528cab41d066fa8976b1c766a40a67039d844bee495cf5a6725150ca22f6",
+  "baselineDigest": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+  "canonicalWbsDigest": "9ac67c28dad62c0f227ec644897eedcab0cc6a190be17f85dee2875e3da59058",
+  "inputBindingCount": 34,
+  "supersededPlanDigest": "716e253ec63f0df1b9b050affe17451f06bea11ea7e9749d8f8a9756438832d2",
+  "evidence": {
+    "DMK-192": "VALIDATED",
+    "DMK-193": "VALIDATED",
+    "DMK-194": "VALIDATED",
+    "executionReportDigestMode": "published LF-text digest plus exact raw-byte review binding"
+  },
+  "mapping": [
+    {
+      "wbsId": "DMK-187",
+      "workItemId": "DMK-187",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-188",
+      "workItemId": "DMK-188",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-189",
+      "workItemId": "DMK-189",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-190",
+      "workItemId": "DMK-190",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-191",
+      "workItemId": "DMK-191",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-192",
+      "workItemId": "DMK-192",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-193",
+      "workItemId": "DMK-193",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-194",
+      "workItemId": "DMK-194",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-195",
+      "workItemId": "DMK-195",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-196",
+      "workItemId": "DMK-196",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-197",
+      "workItemId": "DMK-197",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-198",
+      "workItemId": "DMK-198",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-199",
+      "workItemId": "DMK-199",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    }
+  ],
+  "changes": [
+    {
+      "workItemId": "DMK-192",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "workItemId": "DMK-193",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-24T08:21:11.495Z"
+    },
+    {
+      "workItemId": "DMK-194",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-24T09:56:31.237Z"
+    }
+  ],
+  "candidateDiff": {
+    "stateVersion": {
+      "before": 28,
+      "after": 29
+    },
+    "workItems": [
+      {
+        "workItemId": "DMK-192",
+        "field": "status",
+        "before": "PROPOSED",
+        "proposed": "VERIFIED",
+        "previousUpdatedAt": "2026-09-19T00:00:00.000Z",
+        "proposedUpdatedAt": "2026-09-25T18:06:00.000Z"
+      },
+      {
+        "workItemId": "DMK-193",
+        "field": "status",
+        "before": "PROPOSED",
+        "proposed": "VERIFIED",
+        "previousUpdatedAt": "2026-09-24T08:21:11.495Z",
+        "proposedUpdatedAt": "2026-09-25T18:06:00.000Z"
+      },
+      {
+        "workItemId": "DMK-194",
+        "field": "status",
+        "before": "PROPOSED",
+        "proposed": "VERIFIED",
+        "previousUpdatedAt": "2026-09-24T09:56:31.237Z",
+        "proposedUpdatedAt": "2026-09-25T18:06:00.000Z"
+      }
+    ],
+    "auditEvent": {
+      "id": "AUD-RECON-e4fb6ffbaf15bb8195deb252c417574afde19b6b47603dad4faf7fd49dcbb92e",
+      "actor": "Gio",
+      "timestamp": "2026-09-25T18:06:00.000Z",
+      "action": "WORK_ITEMS_RECONCILED",
+      "target": "PRJ-DOCMONSTAKRAKIN",
+      "reason": "Explicitly reviewed Batch A WBS projection; no release or Gate 7 authority",
+      "previousHash": "449f02b4dc7ed78de6043cea60a102741c6a2002687379b22c6fc5825bdc440f",
+      "stateHash": "9183a3db1ea4707d6c8339b1622e2d458a31d8129829ce8d6ca9142c71bb2269",
+      "details": {
+        "operationId": "e4fb6ffbaf15bb8195deb252c417574afde19b6b47603dad4faf7fd49dcbb92e",
+        "beforeDigest": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+        "inputDigest": "c1eb0f128105b8c422c560e2f9e224bc01d75744349817e2f18dd6c8147ffdd5",
+        "changes": [
+          {
+            "workItemId": "DMK-192",
+            "from": "PROPOSED",
+            "to": "VERIFIED",
+            "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+          },
+          {
+            "workItemId": "DMK-193",
+            "from": "PROPOSED",
+            "to": "VERIFIED",
+            "previousUpdatedAt": "2026-09-24T08:21:11.495Z"
+          },
+          {
+            "workItemId": "DMK-194",
+            "from": "PROPOSED",
+            "to": "VERIFIED",
+            "previousUpdatedAt": "2026-09-24T09:56:31.237Z"
+          }
+        ]
+      }
+    }
+  },
+  "liveStatePreservationChecks": {
+    "unrelatedProjectsPreserved": true,
+    "unrelatedProjectsCount": 3,
+    "requirementsPreserved": true,
+    "adrsPreserved": true,
+    "approvalsPreserved": true,
+    "gate7Status": "HUMAN_APPROVAL_REQUIRED (Preserved unchanged)",
+    "liveDiskSnapshotUnchanged": true,
+    "mutationCount": 0
+  }
+}

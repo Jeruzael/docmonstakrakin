@@ -1,0 +1,215 @@
+{
+  "format": "DMK_BATCH_A_V1",
+  "projectId": "PRJ-DOCMONSTAKRAKIN",
+  "actor": "Gio",
+  "timestamp": "2026-09-25T18:06:00.000Z",
+  "beforeDigest": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+  "stateVersion": 28,
+  "inputBindings": {
+    "bootstrap/docmonstakrakin.self-bootstrap.json": "4441cb647ba75a0b7cba1438281d2037fd4cf12507ceeaf6e4f4bcdc241f7d35",
+    "docs/00_control/MASTER_WBS.md": "4d672f4a22429b356ed288f76297c54bc3a84893c3906ec14fbb8b601ac4cfb4",
+    "docs/00_control/MASTER_WBS.yaml": "9ac67c28dad62c0f227ec644897eedcab0cc6a190be17f85dee2875e3da59058",
+    "docs/00_control/PROJECT_CHARTER.md": "61074ca8621dc61c8db7b64890b42955baf7944e3e513c82ae757ff941092c05",
+    "docs/00_control/PROJECT_STATE.md": "6e7ec1b3f5c4026155ae6474f4d472929548a6447af1f382464e4ea12240c462",
+    "docs/00_control/ROADMAP.md": "15001b7e42f1660b5048dbd4c1541979f164d05f7b55f3413cfca7b99221271f",
+    "docs/00_control/SELF_BOOTSTRAP_CONTRACT.md": "826fea3bdde6dda0797b6e0fc9124fd5177bef866a1b116469c28a80c3333751",
+    "docs/00_control/TRACEABILITY_MATRIX.md": "780729afefe9ac7230b8206dbba42cf50b13061abdef39ae867c6e2975b1370d",
+    "docs/01_product/PERSONAS_AND_USE_CASES.md": "a12e7d97935856d83d8e2f9e8a0293ce35ba6708d43d9f1be5a0e3521a6087e7",
+    "docs/01_product/PRODUCT_VISION.md": "e226ce573778a8b9bdcac386587622ba116e34d76939232a70485d15c017816f",
+    "docs/01_product/SCOPE.md": "b8416de42da22c2fc4d588fa0fbdf3dbd49ee5073a38af7c40a25ef4fbbfecf4",
+    "docs/02_requirements/REQUIREMENTS_REGISTER.md": "2c51e0c93127cc925eca2fb4f763f368b48acb5a128f1b1f3f883a69fc74fecd",
+    "docs/03_architecture/AGENT_ARCHITECTURE.md": "f6a423e6a1d28706d492cf0320029d2d04757cbf8a807cfb85b851577c4decca",
+    "docs/03_architecture/DATA_ARCHITECTURE.md": "f80b113abeec397c5ae1aeb80e0ad4ea8bf63994f99be5e33894566bbbafcec0",
+    "docs/03_architecture/SYSTEM_ARCHITECTURE.md": "9f8708011a6d0bd994193868c9db167e119f7a072179cd8c6934937817ff0ce7",
+    "docs/04_security/RISK_REGISTER.md": "595552fe31068b8cddff9d403f4a4072e14cedb8b73a948c5f5951ba6d3a10f5",
+    "docs/04_security/SECURITY_ARCHITECTURE.md": "41d5e2018769cb01c520da00f84575e3710e42e21a2f355a99b548a67f09aba6",
+    "docs/04_security/SECURITY_CONTROLS.md": "e72ecc0d7d266a80d0927453d151aa8b4c7587cee0e415892c6ad92d89d2ccb3",
+    "docs/04_security/THREAT_MODEL.md": "5ff876bd8ea8d358d5921513f87d508bf9a21872488ebb49442c03074fe28149",
+    "docs/05_decisions/ADR/ADR-0001-local-first-storage.md": "c6cdcc432de4af39006b4058efb3649cb304628bd7549533db2d71b4fafd2768",
+    "docs/05_decisions/ADR/ADR-0002-single-canonical-workitem-model.md": "a8638f5d64de9513330e7dd4ba871e6da56459d09b33891213884f94edfdc12d",
+    "docs/05_decisions/ADR/ADR-0003-sandboxed-ai-inference-adapter.md": "f8806b7c2aa2b0af176360d61be4ef706abee37e14c356a3e1f970110068bf2d",
+    "docs/05_decisions/ADR/ADR-0004-cryptographic-hash-chained-audit-ledger.md": "481aa5a36a3840cd83a52d69ac0b8fe51840e2a5fb3f8f7eb22376e6f4251440",
+    "docs/05_decisions/ADR/ADR-0005-sync-protocol-and-conflict-resolution.md": "0817cdea878e3e4c9f7e48fcef90b86bdeb342e178b22897ff1824b715661822",
+    "docs/05_decisions/ADR/ADR-0006-multi-agent-peer-identity-and-trust-boundary.md": "fe76c1c433379ed61102393b2b67ba9992bbda1941c714c81949c419841c9eda",
+    "docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md": "3b1b0b11c60d0c82c84197228f27611b9744aae70b2135ad10dc970962be0c7f",
+    "docs/07_verification/PROPOSAL_SCHEMA_1_1_REPORT.md": "a48d2bf8335202ff934673a04b4032b34e07b6065eff6f3278326a8a852b8ac0",
+    "docs/07_verification/RELEASE_GATES.md": "5f265408d19bc33a084d4af6578ba8758fc97e249ed0572b27ddd9a24dce37de",
+    "docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md": "b0ad8c68bbadef63d98d58ca2f8198f62395bfe65311f0da1a10234852925264",
+    "docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md": "e66095179eeb43bfde9680efd082301a587ad8b5cb1dda7f2f24d3a02c409f04",
+    "docs/07_verification/cryptodemon-fixture-evidence.json": "6c447d045a3e2e03706f6551c0e0573f56760cb26ddaaa9de677a3aa6697897b",
+    "docs/07_verification/rc-regression/results.json": "7683a53778267b9494980a74352df6cf82b767f04c5574d357e66b614f419b80",
+    "docs/07_verification/self-bootstrap-execution-verification.json": "b85dd36e118640ce2b5ffdc4926b035930ec88bb0df29dc2977bc4aee53ac3b7",
+    "docs/07_verification/self-bootstrap-manifest-validation.json": "c8d50cf1fd32aeaf9a6427e9401643ced49481e04adee2d4d11cde4da4a5081d"
+  },
+  "mapping": [
+    {
+      "wbsId": "DMK-187",
+      "workItemId": "DMK-187",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-188",
+      "workItemId": "DMK-188",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-189",
+      "workItemId": "DMK-189",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-190",
+      "workItemId": "DMK-190",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-191",
+      "workItemId": "DMK-191",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-192",
+      "workItemId": "DMK-192",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-193",
+      "workItemId": "DMK-193",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-194",
+      "workItemId": "DMK-194",
+      "wbsStatus": "VERIFIED",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "VERIFIED",
+      "apply": true
+    },
+    {
+      "wbsId": "DMK-195",
+      "workItemId": "DMK-195",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-196",
+      "workItemId": "DMK-196",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-197",
+      "workItemId": "DMK-197",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-198",
+      "workItemId": "DMK-198",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    },
+    {
+      "wbsId": "DMK-199",
+      "workItemId": "DMK-199",
+      "wbsStatus": "BACKLOG",
+      "runtimeStatus": "PROPOSED",
+      "mappedStatus": "BACKLOG",
+      "apply": false
+    }
+  ],
+  "evidence": {
+    "DMK-192": "VALIDATED",
+    "DMK-193": "VALIDATED",
+    "DMK-194": "VALIDATED",
+    "executionReportDigestMode": "published LF-text digest plus exact raw-byte review binding"
+  },
+  "changes": [
+    {
+      "workItemId": "DMK-192",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+    },
+    {
+      "workItemId": "DMK-193",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-24T08:21:11.495Z"
+    },
+    {
+      "workItemId": "DMK-194",
+      "from": "PROPOSED",
+      "to": "VERIFIED",
+      "previousUpdatedAt": "2026-09-24T09:56:31.237Z"
+    }
+  ],
+  "mutationCount": 0,
+  "operationId": "e4fb6ffbaf15bb8195deb252c417574afde19b6b47603dad4faf7fd49dcbb92e",
+  "auditEvent": {
+    "id": "AUD-RECON-e4fb6ffbaf15bb8195deb252c417574afde19b6b47603dad4faf7fd49dcbb92e",
+    "actor": "Gio",
+    "timestamp": "2026-09-25T18:06:00.000Z",
+    "action": "WORK_ITEMS_RECONCILED",
+    "target": "PRJ-DOCMONSTAKRAKIN",
+    "reason": "Explicitly reviewed Batch A WBS projection; no release or Gate 7 authority",
+    "previousHash": "449f02b4dc7ed78de6043cea60a102741c6a2002687379b22c6fc5825bdc440f",
+    "stateHash": "9183a3db1ea4707d6c8339b1622e2d458a31d8129829ce8d6ca9142c71bb2269",
+    "details": {
+      "operationId": "e4fb6ffbaf15bb8195deb252c417574afde19b6b47603dad4faf7fd49dcbb92e",
+      "beforeDigest": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+      "inputDigest": "c1eb0f128105b8c422c560e2f9e224bc01d75744349817e2f18dd6c8147ffdd5",
+      "changes": [
+        {
+          "workItemId": "DMK-192",
+          "from": "PROPOSED",
+          "to": "VERIFIED",
+          "previousUpdatedAt": "2026-09-19T00:00:00.000Z"
+        },
+        {
+          "workItemId": "DMK-193",
+          "from": "PROPOSED",
+          "to": "VERIFIED",
+          "previousUpdatedAt": "2026-09-24T08:21:11.495Z"
+        },
+        {
+          "workItemId": "DMK-194",
+          "from": "PROPOSED",
+          "to": "VERIFIED",
+          "previousUpdatedAt": "2026-09-24T09:56:31.237Z"
+        }
+      ]
+    }
+  },
+  "candidateDigest": "e4a9528cab41d066fa8976b1c766a40a67039d844bee495cf5a6725150ca22f6",
+  "planDigest": "968c0b481b3072e262cfde6befea6fc0ed33eba0af7f73773c10171cf30d754a"
+}

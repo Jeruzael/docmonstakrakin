@@ -146,3 +146,15 @@ The retained complete-regression failures are `scripts/testSelfBootstrapExecutio
 ## Human review stop
 
 Ownership application is complete at VERIFICATION_PENDING. **Stop here for review of the new exact plan, timestamp and mutation inventory.** A separate explicit authorization bound to this plan is required before any live reconciliation. Even after such authorization, all current state/input guards must pass. No acceptance, bootstrap re-execution, Gate 7 or release authority is implied.
+
+## Current status addendum — 2026-09-25
+
+The Stage A.6 reconciliation candidate above (plan digest `716e253ec63f0df1b9b050affe17451f06bea11ea7e9749d8f8a9756438832d2`, candidate snapshot digest `f5f6ef8b49251464da8f2a008f57d3565e73d7790cb2139d82dc49c510ddc7cc`) is **SUPERSEDED FOR EXECUTION**, **NOT AUTHORIZED**, and **MUST NOT BE APPLIED**.
+
+Reasons:
+1. **WBS status advance:** DMK-194 canonical WBS status has since advanced to `VERIFIED` following human UI review sign-off.
+2. **Runtime state drift:** Live runtime state in `.local/project-state.json` has progressed since the historical `stateVersion: 19` binding.
+3. **Input binding changes:** Living control documents have updated, invalidating the historical input fingerprints.
+4. **Fresh candidate required:** Any future reconciliation requires a newly generated plan from current runtime state and fresh human review.
+
+The historical artifacts (`stage-a6-rebound-reconciliation-dry-run.json` and `stage-a6-ownership-application-validation.json`) are preserved strictly as historical review evidence.
