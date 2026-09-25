@@ -98,7 +98,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `VERIFIED` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts, scripts/testProjectsWorkspaceUi.ts`)
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts, scripts/testProjectsWorkspaceUi.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
 - **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.

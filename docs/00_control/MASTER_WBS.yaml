@@ -166,7 +166,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "VERIFIED"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-193"]
     requirements: ["REQ-UX-PROJECTS-001"]
     architecture_links: ["CMP-01"]
