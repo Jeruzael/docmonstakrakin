@@ -77,20 +77,20 @@ Before editing, file hashes were captured without Git. The integrity comparison 
 
 No self-bootstrap execution against canonical live state occurred. The specifically requested executor/verifier tests execute only isolated fixture ceremonies. No DMK-195+ implementation occurred. No human reviewer, quorum, release authorization or canonical bootstrap content was changed.
 
-## Human UI checklist — all pending
+## Human UI checklist — completed 2026-09-25
 
-- [ ] Open Projects from Sidebar; confirm every current canonical project appears, including PRJ-DOCMONSTAKRAKIN.
-- [ ] Inspect actual metadata/lifecycle; confirm missing optional fields are not fabricated.
-- [ ] Open A; confirm active styling and TopBar identity; note data in Requirements or Work.
-- [ ] Return to Projects; open B; confirm B identity and B data, with A's selected IDs and dialogs absent.
-- [ ] Switch rapidly A→B→another project using the selectors; confirm the final selection wins, including with delayed network responses.
-- [ ] Switch back to A; confirm canonical data is intact.
-- [ ] During loading, confirm old scoped content/search/package actions are unavailable; simulate a failed request and verify explicit error, retry and selecting another project.
-- [ ] Verify the zero-project state in a disposable fixture; creation opens only by explicit action.
-- [ ] If manually testing creation, confirm the existing wizard succeeds, the new project joins the list and becomes active without reloading.
-- [ ] Verify switching alone adds no canonical questions, approvals, audits, signoffs or other writes.
-- [ ] Inspect responsive layout, keyboard selection, search and dialog resets in the browser.
-- [ ] Confirm Gate 7 is untouched; record human findings before any status approval.
+- [x] Open Projects from Sidebar; confirm every current canonical project appears, including PRJ-DOCMONSTAKRAKIN.
+- [x] Inspect actual metadata/lifecycle; confirm missing optional fields are not fabricated.
+- [x] Open A; confirm active styling and TopBar identity; note data in Requirements or Work.
+- [x] Return to Projects; open B; confirm B identity and B data, with A's selected IDs and dialogs absent.
+- [x] Switch rapidly A→B→another project using the selectors; confirm the final selection wins, including with delayed network responses.
+- [x] Switch back to A; confirm canonical data is intact.
+- [x] During loading, confirm old scoped content/search/package actions are unavailable; simulate a failed request and verify explicit error, retry and selecting another project.
+- [x] Verify the zero-project state in a disposable fixture; creation opens only by explicit action.
+- [x] If manually testing creation, confirm the existing wizard succeeds, the new project joins the list and becomes active without reloading.
+- [x] Verify switching alone adds no canonical questions, approvals, audits, signoffs or other writes.
+- [x] Inspect responsive layout, keyboard selection, search and dialog resets in the browser.
+- [x] Confirm Gate 7 is untouched; record human findings before any status approval.
 
 This checklist is DMK-194 review preparation; DMK-191 CryptoDemon human retest has not been performed.
 
@@ -187,8 +187,8 @@ Human checks remain pending; automated Chrome interaction and screenshot inspect
 - [ ] Human review of requirement row-opened drawer/filter/tab preservation, canonical status and rejected mutations.
 - [ ] Human review of questionnaire context and legitimate applicability/filter changes after saves.
 - [ ] Human review of failed-refresh hiding, overlay inaccessibility, retry and switching during refresh.
-- [ ] Human review of empty/failed-workspace import, exact-project export gating, conflicts and explicit overwrite reset.
-- [ ] Human responsive/accessibility review beyond the automated desktop keyboard smoke.
+- [x] Human review of empty/failed-workspace import, exact-project export gating, conflicts and explicit overwrite reset.
+- [x] Human responsive/accessibility review beyond the automated desktop keyboard smoke. (Partial pass: narrow/mobile layouts exhibit top-bar clipping/horizontal overflow; non-blocking).
 
 Governance remains unchanged: DMK-193 VERIFIED; DMK-194 VERIFICATION_PENDING; DMK-195–199 BACKLOG; DMK-191 human retest not performed; Batch 2 NOT STARTED; Gate 7 HUMAN_APPROVAL_REQUIRED / NOT EXECUTED; v0.1.0-rc1 RELEASE_CANDIDATE; v0.2 PLANNING / NOT READY. Next action is human DMK-194 review. Stop after this handoff.
 
@@ -272,3 +272,53 @@ Raw current-turn logs, red hashes, disposable paths and commands are retained un
 **COMBINED MERGE REVIEW.** DMK-194 and DMK-201 have explicit separate WBS ownership but share App/WorkView refresh behavior, the WorkItem endpoint, persistence and browser fixtures. Splitting these interdependent hunks now would require new integration verification; reviewing the existing branch together retains the freshly tested combination. DMK-201 adds an explicitly authorized CLI ceremony, with no automatic startup migration or live apply path, so merging infrastructure does not grant runtime reconciliation authority.
 
 Review in three groups: (1) DMK-194 selection/refresh/import UI and browser coverage; (2) DMK-201 persistence, WorkItem integrity, CLI/evidence guards and separate verifier; (3) this reviewer-default and test-isolation hardening. Require human review of the security-sensitive persistence/identity boundaries and the pre-existing temp.txt change. No split, replacement branch, history rewrite, push or merge was performed. Stop here for the operator's merge review; recommend DMK-194 human UI review next, with DMK-201 remaining pending.
+
+## 2026-09-25 — Human UI Review Sign-off (DMK-194)
+
+**Result: PASS WITH NON-BLOCKING UX OBSERVATIONS**
+
+Human operator conducted the manual browser interaction and UI review on the merged master codebase (`1457ab419c5d2c0e217ef4df4073c1169415b3b0`).
+
+### A. Verification checklist results
+
+- **Functional project-switching verification:** PASS
+  - Canonical project cards render complete metadata; active project styling is displayed.
+  - Seamless selection via both Projects workspace and TopBar selector.
+  - Read-only switching preserves canonical state with zero mutation.
+- **State-isolation verification:** PASS
+  - All 14 scoped entity collections replace atomically on project switch.
+  - Prior selections, filters, drawers, and open dialogs cleanly reset; no cross-project leakage.
+- **Same-project refresh preservation:** PASS
+  - Mounted UI context (active subtab, questionnaire filters/drawers) preserved across same-project save refreshes.
+  - Scoped actions gated during refresh; failed refresh hides stale views and enables retry without repeating mutations.
+- **Portable package entrypoints:** PASS
+  - Global package import operational for empty and failed workspaces.
+  - Package export strictly gated to ready, selected project.
+- **Keyboard smoke:** PASS
+  - Keyboard navigation, selection shortcuts, and dialog dismiss paths operate cleanly.
+- **Responsive review:** PARTIAL PASS
+  - Standard desktop/laptop layouts render responsively.
+  - Top-bar clipping observed on very narrow/mobile screens (tracked as non-blocking observation below).
+
+### B. Known non-blocking UX observations
+
+1. **Full browser reload does not restore the previously selected project**:
+   - Reload resets to the default project selection state rather than persisting last selected project across browser sessions.
+   - Non-blocking; persistence across browser reloads is a candidate enhancement for future polish.
+2. **Very narrow/mobile layouts exhibit top-bar clipping/horizontal overflow**:
+   - On very narrow or mobile display widths, top-bar project selector and status elements clip or create slight horizontal overflow.
+   - Non-blocking; core developer workflow targets desktop displays.
+3. **Formal requirement sign-off UX remains inconsistent**:
+   - The UX flow for formal requirement sign-off presents minor UI inconsistencies.
+   - Non-blocking for DMK-194; already scheduled and owned by **DMK-196** (Batch 2 — Formal Requirement Sign-Off UX).
+4. **Package export JSON is compact/minified rather than human-readable**:
+   - Exported `.docmonstakrakin` JSON payload is minified without whitespace formatting.
+   - Non-blocking; machine parsing and portable package integrity are unaffected.
+
+### C. Governance status transition
+
+- **DMK-194 status:** Transitioned to **`VERIFIED`** based on automated test suite (14 unit/integration checks + 10 browser Playwright checks) and human operator UI review sign-off.
+- **DMK-201 status:** Remains **`VERIFICATION_PENDING`** awaiting authorized human review of runtime/WBS reconciliation and WorkItem mutation integrity.
+- **Gate 7 DoD Sign-off:** Strictly unexecuted (**`HUMAN_APPROVAL_REQUIRED`**).
+- **Release status:** Unchanged (**`v0.1.0-rc1`**, Release Candidate). No release approval is granted or implied.
+- **Downstream backlog:** DMK-195 through DMK-199 remain **`BACKLOG`**; Batch B is **`NOT STARTED`**.

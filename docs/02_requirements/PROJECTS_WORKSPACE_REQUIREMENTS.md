@@ -1,6 +1,6 @@
 # REQ-UX-PROJECTS-001 — Projects Workspace & Reliable Project Switching
 
-Source: human DMK-194 implementation instruction, 2026-09-22. WBS DMK-194; architecture CMP-01; isolation control SEC-CTRL-004. Implementation authorized; human UI verification pending. This records the supplied requirement without changing the historical reviewed bootstrap manifest or granting governance approval.
+Source: human DMK-194 implementation instruction, 2026-09-22. WBS DMK-194; architecture CMP-01; isolation control SEC-CTRL-004. Implementation verified; human UI review completed 2026-09-25 (PASS WITH NON-BLOCKING UX OBSERVATIONS). This records the supplied requirement without changing the historical reviewed bootstrap manifest or granting governance approval.
 
 The operator can browse the canonical project list, inspect available metadata/lifecycle, identify the active project and open another project. Both the Projects workspace and TopBar use App's one selection path. ProjectsView does not own active-project state or fetch scoped collections.
 
@@ -14,4 +14,4 @@ Acceptance criteria:
 6. Empty lists expose explicit creation through the existing wizard; merely opening Projects never opens the wizard.
 7. Successfully created/imported projects use the same selection path and appear without a full reload.
 
-Automated evidence: scripts/testProjectsWorkspace.ts. Human interaction checklist: docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md. No project administration, governance changes, DMK-195+ work, live bootstrap or Gate 7 execution is included.
+Automated evidence: scripts/testProjectsWorkspace.ts, scripts/testProjectsWorkspaceUi.ts. Human interaction checklist & sign-off: docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md. No project administration, governance changes, DMK-195+ work, live bootstrap or Gate 7 execution is included.

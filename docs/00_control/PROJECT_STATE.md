@@ -1,5 +1,37 @@
 # docmonstakrakin current project state
 
+## 2026-09-25 — DMK-194 Human UI Review Complete & PR #16 Merged
+
+Pull request #16 (`dmk-194-projects-workspace`) was merged into `master` at commit `1457ab419c5d2c0e217ef4df4073c1169415b3b0`.
+
+The human operator conducted the DMK-194 Human UI Review with final outcome: **PASS WITH NON-BLOCKING UX OBSERVATIONS**.
+
+### Review evaluation breakdown
+
+- **Functional project-switching verification:** PASS
+- **State-isolation verification:** PASS
+- **Same-project refresh preservation:** PASS
+- **Portable package entrypoints:** PASS
+- **Keyboard smoke:** PASS
+- **Responsive review:** PARTIAL PASS
+
+### Known non-blocking observations
+
+1. **Full browser reload does not restore the previously selected project** (resets to default active project).
+2. **Very narrow/mobile layouts exhibit top-bar clipping/horizontal overflow**.
+3. **Formal requirement sign-off UX remains inconsistent** (already owned and scheduled under **DMK-196**).
+4. **Package export JSON is compact/minified rather than human-readable**.
+
+### Current governance and task status
+
+- **DMK-194:** `VERIFIED` (Automated 14 workspace + 10 browser checks passed; human UI review completed).
+- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity).
+- **Gate 7:** `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED` (Strictly held).
+- **Live reconciliation:** `NOT AUTHORIZED / NOT APPLIED`.
+- **Downstream work:** DMK-195 through DMK-199 remain `BACKLOG`; Batch B is `NOT STARTED`.
+- **Release status:** `v0.1.0-rc1` (Release Candidate; Gate 7 human sign-off pending).
+- **Next safe action:** Human operator review of DMK-201 security/reconciliation boundaries or preparation for downstream backlog items.
+
 ## 2026-09-24 — approved Batch A ownership
 
 ### Current pre-merge verification status

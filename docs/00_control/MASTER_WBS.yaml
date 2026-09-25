@@ -4,7 +4,7 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-09-24"
+last_updated: "2026-09-25"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
 remediation_status: "READY_FOR_RETEST"
@@ -166,7 +166,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "VERIFICATION_PENDING"
+    status: "VERIFIED"
     dependencies: ["DMK-193"]
     requirements: ["REQ-UX-PROJECTS-001"]
     architecture_links: ["CMP-01"]
@@ -178,12 +178,15 @@ items:
       - "Loading and failures hide stale content and support retry or another selection"
       - "Zero projects offers explicit creation; successful creation updates the list without reload"
       - "A-to-B-to-A selection is read-only and preserves canonical state"
-    verification_method: "npm run test:projects-workspace; lint/build; control-plane QA; bootstrap regression; pending human UI checklist"
+    verification_method: "npm run test:projects-workspace; npm run test:projects-workspace:ui; lint/build; control-plane QA; bootstrap regression; Human operator UI review (PASS WITH NON-BLOCKING UX OBSERVATIONS)"
     evidence:
       - "docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md"
       - "scripts/testProjectsWorkspace.ts"
+      - "scripts/testProjectsWorkspaceUi.ts"
     implemented_by: "Codex"
-    verification_status: "Automated checks passed; human UI verification pending"
+    verified_by: "npm run test:projects-workspace; npm run test:projects-workspace:ui; Human operator UI review"
+    human_approved_by: "Human operator (DMK-194 Human UI Review: PASS WITH NON-BLOCKING UX OBSERVATIONS)"
+    verification_status: "VERIFIED (Human UI review: PASS WITH NON-BLOCKING UX OBSERVATIONS)"
 
   - id: "DMK-195"
     wbs_path: "13.06.09"

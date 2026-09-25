@@ -1,5 +1,43 @@
 # Current session handoff
 
+## 2026-09-25 — DMK-194 Human UI Review Sign-off & PR #16 Merged
+
+Current source-control checkpoint:
+
+- Repository: `Jeruzael/docmonstakrakin`
+- Branch: `master`
+- Current HEAD: `1457ab419c5d2c0e217ef4df4073c1169415b3b0`
+- PR merged: #16 (`dmk-194-projects-workspace`)
+
+Human operator conducted the DMK-194 Human UI Review:
+
+**Result: PASS WITH NON-BLOCKING UX OBSERVATIONS**
+
+- Functional project-switching verification: PASS
+- State-isolation verification: PASS
+- Same-project refresh preservation: PASS
+- Portable package entrypoints: PASS
+- Keyboard smoke: PASS
+- Responsive review: PARTIAL PASS
+
+Known non-blocking observations:
+1. Full browser reload does not restore the previously selected project.
+2. Very narrow/mobile layouts exhibit top-bar clipping/horizontal overflow.
+3. Formal requirement sign-off UX remains inconsistent and is already owned by DMK-196.
+4. Package export JSON is compact/minified rather than human-readable.
+
+Governance state:
+
+- DMK-194: `VERIFIED` (Technical implementation & Human UI verification complete)
+- DMK-201: `VERIFICATION_PENDING` (Human review of reconciliation & WorkItem integrity pending)
+- DMK-195–199: `BACKLOG` (Unchanged)
+- Live reconciliation: `NOT AUTHORIZED / NOT APPLIED`
+- Gate 7: `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`
+- Batch B: `NOT STARTED`
+- Release status: `v0.1.0-rc1` (Release candidate; no release approval granted)
+
+Next action: Human review and next steps for DMK-201, or authorization to proceed with downstream Phase 12 backlog items (DMK-195, DMK-196).
+
 ## 2026-09-24 — Pre-merge hardening committed and pushed
 
 Current source-control checkpoint:

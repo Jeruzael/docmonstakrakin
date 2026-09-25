@@ -78,3 +78,9 @@ Gio approved DMK-201 ownership application only; acceptance and live reconciliat
 | Requirements | WBS ownership | Architecture / controls | Verification and evidence | Status |
 |---|---|---|---|---|
 | REQ-DATA-001, REQ-DATA-002, REQ-BOOT-001 | DMK-201 / 13.06.14 / EPIC-13 | CMP-01, CMP-02, CMP-04, CMP-BOOT-01; SEC-CTRL-004, SEC-CTRL-013, SEC-CTRL-020 | testCanonicalReconciliation.ts; testWorkItemUpdates.ts; testProjectsWorkspaceUi.ts; [ownership and fresh dry-run review](../07_verification/STAGE_A6_OWNERSHIP_APPLICATION_AND_REBOUND_REVIEW.md); existing Stage A/A.5 evidence linked by the canonical WBS record | VERIFICATION_PENDING — ownership applied; no live reconciliation or release authority |
+
+## 2026-09-25 — Projects workspace human verification
+
+| Requirement | WBS | Tests | Evidence | Status |
+| --- | --- | --- | --- | --- |
+| REQ-UX-PROJECTS-001 | DMK-194 | testProjectsWorkspace; testProjectsWorkspaceUi | DMK_194_PROJECTS_WORKSPACE_REVIEW.md | VERIFIED (Human UI review: PASS WITH NON-BLOCKING UX OBSERVATIONS) |

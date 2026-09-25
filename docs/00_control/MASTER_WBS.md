@@ -98,7 +98,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-194` — Projects Workspace & Reliable Project Switching
 - **WBS Path:** `13.06.08`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts`)
+- **Status:** `VERIFIED` (Evidence: `docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md, scripts/testProjectsWorkspace.ts, scripts/testProjectsWorkspaceUi.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-UX-PROJECTS-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-004`
 - **Description:** Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination.
@@ -109,7 +109,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
   - "Loading and failures hide stale content and support retry or another selection"
   - "Zero projects offers explicit creation; successful creation updates the list without reload"
   - "A-to-B-to-A selection is read-only and preserves canonical state"
-- **Verification Method:** npm run test:projects-workspace; lint/build; control-plane QA; bootstrap regression; pending human UI checklist
+- **Verification Method:** npm run test:projects-workspace; npm run test:projects-workspace:ui; lint/build; control-plane QA; bootstrap regression; Human operator UI review (PASS WITH NON-BLOCKING UX OBSERVATIONS)
 
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`
