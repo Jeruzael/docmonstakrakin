@@ -5,6 +5,11 @@ Repository: `Jeruzael/docmonstakrakin`
 Target branch: `master`  
 Starting HEAD: `88abf1423ec0f946875efaad4420776e7c422147`  
 
+> [!WARNING]
+> **SUPERSEDED FOR RECOVERY DECISION-MAKING BY STAGE A.10**
+> This document is preserved strictly as historical forensic evidence.
+> Sourced values and baseline normalizations are established in [`docs/07_verification/STAGE_A10_PACKAGE_EVIDENCE_NORMALIZATION.md`](./STAGE_A10_PACKAGE_EVIDENCE_NORMALIZATION.md).
+
 > [!CAUTION]
 > **READ-ONLY / FORENSIC / RECOVERY-PENDING / NOT AUTHORIZATION-READY / NOT APPLIED**  
 > This document establishes a corrected forensic assessment of runtime state following the confirmed Test 10 package overwrite.  
@@ -258,7 +263,8 @@ The live state file [`.local/project-state.json`](file:///c:/Users/HomePC/dev/do
 - **Stage A.7 Reconciliation:** `HISTORICAL / SUPERSEDED`
 - **Stage A.8 Reconciliation:** `FORENSIC / SUPERSEDED FOR AUTHORIZATION REVIEW`
 - **Stage A.8 Runtime Recovery Candidate:** `HISTORICAL FORENSIC ANALYSIS / NOT AUTHORIZATION-READY`
-- **Stage A.9 Runtime Recovery Assessment:** `READ-ONLY / FORENSIC / RECOVERY-PENDING / NOT AUTHORIZATION-READY`
+- **Stage A.9 Runtime Recovery Assessment:** `HISTORICAL FORENSIC EVIDENCE / SUPERSEDED FOR RECOVERY DECISION-MAKING BY STAGE A.10`
+- **Stage A.10 Package-Evidence Normalization:** `READ-ONLY / FORENSIC / NOT AUTHORIZATION-READY`
 - **DMK-194 Status:** `VERIFIED` (Human UI review completed: PASS WITH NON-BLOCKING UX OBSERVATIONS)
 - **DMK-201 Status:** `VERIFICATION_PENDING`
 - **Live Reconciliation:** `NOT AUTHORIZED / NOT APPLIED`

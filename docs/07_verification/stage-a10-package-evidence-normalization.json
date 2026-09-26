@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "stage": "Stage A.10",
+  "disposition": "READ-ONLY / FORENSIC / NOT AUTHORIZATION-READY",
+  "supersedesForDecisionMaking": "Stage A.9",
+  "generatedAt": "2026-09-26T10:15:00.000Z",
+  "targetProject": "PRJ-DOCMONSTAKRAKIN",
+  "liveSnapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+
+  "packageIdentity": {
+    "projectId": "PRJ-DOCMONSTAKRAKIN",
+    "exportedAt": null,
+    "sealedAt": null,
+    "canonicalStateHash": "28f3c9af692b43ba5cbe7b7ae5e210971154cb4d9790fe40358ea06f451f66bd",
+    "envelopeHash": "ef59f3c934e5a72e371ae3ccd484ff4c8fe3a45b0338a0d10dd7a9cceaf2eaba",
+    "auditEventsCount": 32,
+    "verificationStatus": "UNAVAILABLE_FROM_REPOSITORY_EVIDENCE",
+    "operatorSuppliedPackageEvidenceRequired": true,
+    "expectedPackageIdentity": {
+      "exportedAt": "2026-09-25T06:21:50.331Z",
+      "sealedAt": "2026-09-25T06:21:50.331Z",
+      "note": "Package file was not committed to repository; timestamp expected from operator manual Test 10 ceremony and requires operator-supplied package confirmation"
+    }
+  },
+
+  "timeline": {
+    "packageExportedAt": null,
+    "packageImportedAt": "2026-09-25T07:12:12.888Z",
+    "knownIntervalMilliseconds": null,
+    "knownIntervalHuman": "UNPROVEN (Pending operator package evidence)",
+    "conditionalIntervalIfConfirmed": {
+      "exportedAt": "2026-09-25T06:21:50.331Z",
+      "importedAt": "2026-09-25T07:12:12.888Z",
+      "intervalMilliseconds": 3022557,
+      "intervalFormatted": "00:50:22.557",
+      "intervalHuman": "50 minutes 22.557 seconds"
+    },
+    "t3LatentIntervalConclusion": "T0/T1/T2 export occurred approximately 50 minutes before T4-T7 import overwrite. This strengthens the forensic conclusion: POSSIBLE ADDITIONAL LOST LIVE EVENTS — COUNT UNKNOWN. No additional events are claimed unless proven by evidence."
+  },
+
+  "requirementPackageBaselineCounts": {
+    "VERIFIED": 11,
+    "UNDER_REVIEW": 7,
+    "PROPOSED": 6,
+    "total": 24,
+    "discrepancyNote": "Stage A.8/A.9 prose incorrectly stated 12 VERIFIED, 6 UNDER_REVIEW, 6 PROPOSED. Programmatic derivation from AUD-MUGMI1Y0-AEVN and package knowledge confirms exactly 11 VERIFIED, 7 UNDER_REVIEW, 6 PROPOSED.",
+    "distribution": [
+      { "id": "REQ-DATA-001", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-DATA-002", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-DATA-003", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-DATA-004", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-REQ-001", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-GOV-001", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-GOV-002", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-SEC-001", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-SEC-014", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-SEC-019", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-AI-001", "packageBaselineStatus": "UNDER_REVIEW" },
+      { "id": "REQ-AI-007", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-OPS-001", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-REL-001", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-RC-187", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-RC-188", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-RC-189", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-RC-190", "packageBaselineStatus": "VERIFIED" },
+      { "id": "REQ-BOOT-001", "packageBaselineStatus": "PROPOSED" },
+      { "id": "REQ-UX-PROJECTS-001", "packageBaselineStatus": "PROPOSED" },
+      { "id": "REQ-DOC-001", "packageBaselineStatus": "PROPOSED" },
+      { "id": "REQ-GOV-SIGNOFF-001", "packageBaselineStatus": "PROPOSED" },
+      { "id": "REQ-GOV-QUORUM-001", "packageBaselineStatus": "PROPOSED" },
+      { "id": "REQ-GOV-REVIEWER-001", "packageBaselineStatus": "PROPOSED" }
+    ]
+  },
+
+  "standards": {
+    "representedInPackageSchema": true,
+    "packageBaselineCount": 0,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_EMPTY / CURRENT_EMPTY / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Generic server import handler resets verifiedCount to 0 only when standards exist. In this incident, the Test 10 package contained zero standards, so no populated Standards entities were downgraded."
+  },
+
+  "documents": {
+    "representedInPackageSchema": false,
+    "packageBaselineState": "NOT_REPRESENTED_IN_PACKAGE_FORMAT",
+    "packageBaselineCount": null,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_4",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "classification": "CLEARED_BY_IMPORT_HANDLER / PRE_IMPORT_CONTENT_UNKNOWN",
+    "notes": "documents is not serialized in DocmonstakrakinPackageKnowledge. Package import explicitly executes store.documents[id] = []. Absence from package schema does not indicate pre-import live state was empty."
+  },
+
+  "overrides": {
+    "representedInPackageSchema": true,
+    "packageBaselineCount": 0,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_EMPTY / CURRENT_EMPTY / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Package baseline overrides array was empty. Generic handler would clear authorizations and downgrade to PROPOSED, but with 0 records in package, no populated overrides existed in package baseline."
+  },
+
+  "importSessions": {
+    "representedInPackageSchema": true,
+    "packageBaselineCount": 0,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_EMPTY / CURRENT_EMPTY / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Represented in package schema; Test 10 package baseline contained 0 sessions. Immediate pre-import state remains unknown."
+  },
+
+  "agentRoles": {
+    "representedInPackageSchema": true,
+    "packageBaselineCount": 0,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_EMPTY / CURRENT_EMPTY / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Represented in package schema; Test 10 package baseline contained 0 agent roles. Immediate pre-import state remains unknown."
+  },
+
+  "agentRuns": {
+    "representedInPackageSchema": true,
+    "packageBaselineCount": 0,
+    "postImportCount": 0,
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_EMPTY / CURRENT_EMPTY / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": false,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Represented in package schema; Test 10 package baseline contained 0 agent runs. Immediate pre-import state remains unknown."
+  },
+
+  "technicalBaseline": {
+    "representedInPackageSchema": true,
+    "packageBaselineValue": null,
+    "postImportStatus": "ALL_10_NOT_RATIFIED",
+    "immediatePreImportState": null,
+    "evidenceLevel": "LEVEL_2",
+    "classification": "PACKAGE_BASELINE_UNRATIFIED / CURRENT_NORMALIZED_NOT_RATIFIED / PRE_IMPORT_UNKNOWN",
+    "valueReconstructable": true,
+    "restorationAuthorized": false,
+    "safeAutomaticRecoveryAllowed": false,
+    "notes": "Package baseline technicalBaseline was null/unratified (confirmed by import audit event details). normalizeTechnicalBaseline transformed it into 10 NOT_RATIFIED dimensions. Does not prove pre-import live value."
+  },
+
+  "auditLedger": {
+    "packageAuditCount": 32,
+    "postExportLiveAuditCountLowerBound": 33,
+    "currentAuditCount": 33,
+    "cryptographicValidity": "CRYPTOGRAPHICALLY_VALID",
+    "historicalCompleteness": "NOT_ESTABLISHED",
+    "packageExportedStatus": "KNOWN EVENT EXISTENCE / EXACT EVENT PAYLOAD NOT RECOVERED",
+    "lostLiveEventsStatus": "POSSIBLE ADDITIONAL LOST LIVE EVENTS — COUNT UNKNOWN",
+    "notes": "Chain from genesis through AUD-MUGMI1Y0-AEVN verified valid (33 events). Severed live PACKAGE_EXPORTED cannot be reconstructed or forged."
+  },
+
+  "decisionMatrix": [
+    {
+      "collection": "Project entity (stateVersion)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "stateVersion: 28 (LEVEL 2)",
+      "postImportCurrentState": "stateVersion: 28",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "WorkItems (13 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "4 VERIFICATION, 6 BACKLOG, 1 READY, 1 VERIFICATION, 1 IN_PROGRESS (LEVEL 2)",
+      "postImportCurrentState": "13 PROPOSED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Requirements (24 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "11 VERIFIED, 7 UNDER_REVIEW, 6 PROPOSED (LEVEL 2)",
+      "postImportCurrentState": "24 PROPOSED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "ADRs (7 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "4 ACCEPTED, 3 PROPOSED (LEVEL 2)",
+      "postImportCurrentState": "7 PROPOSED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Risks (6 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "6 unratified / null (LEVEL 2)",
+      "postImportCurrentState": "6 PROPOSED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Features (15 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "15 PROPOSED (LEVEL 2)",
+      "postImportCurrentState": "15 PROPOSED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Evidence (4 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "4 PASSED (LEVEL 2)",
+      "postImportCurrentState": "4 UNTRUSTED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Approvals (7 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "4 APPROVED, 3 PENDING (preserved in audit history) (LEVEL 3)",
+      "postImportCurrentState": "[] (cleared)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_3",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Standards (0 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "0 items (LEVEL 2)",
+      "postImportCurrentState": "[] (0 items)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Documents",
+      "representedInPackage": false,
+      "packageBaselineEvidence": "NOT REPRESENTED IN PACKAGE SCHEMA (LEVEL 4)",
+      "postImportCurrentState": "[] (cleared by handler)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_4",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Overrides (0 items)",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "0 items (LEVEL 2)",
+      "postImportCurrentState": "[] (0 items)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Technical baseline",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "null / unratified (LEVEL 2)",
+      "postImportCurrentState": "10 dimensions NOT_RATIFIED",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": true,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "Audit ledger",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "32 events (LEVEL 2)",
+      "postImportCurrentState": "33 events (terminating in PACKAGE_IMPORTED)",
+      "immediatePreImportState": ">= 33 events (LEVEL 2 lower bound, LEVEL 4 payload)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "ImportSessions",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "0 items (LEVEL 2)",
+      "postImportCurrentState": "[] (0 items)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "AgentRoles",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "0 items (LEVEL 2)",
+      "postImportCurrentState": "[] (0 items)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    },
+    {
+      "collection": "AgentRuns",
+      "representedInPackage": true,
+      "packageBaselineEvidence": "0 items (LEVEL 2)",
+      "postImportCurrentState": "[] (0 items)",
+      "immediatePreImportState": "UNKNOWN (LEVEL 4)",
+      "evidenceLevel": "LEVEL_2",
+      "valueReconstructable": false,
+      "restorationAuthorized": false,
+      "safeAutomaticRecoveryAllowed": false
+    }
+  ]
+}
