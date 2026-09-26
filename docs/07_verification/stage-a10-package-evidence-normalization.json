@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "stage": "Stage A.10",
   "disposition": "READ-ONLY / FORENSIC / NOT AUTHORIZATION-READY",
   "supersedesForDecisionMaking": "Stage A.9",
@@ -29,13 +28,14 @@
     "knownIntervalMilliseconds": null,
     "knownIntervalHuman": "UNPROVEN (Pending operator package evidence)",
     "conditionalIntervalIfConfirmed": {
+      "description": "CONDITIONAL ON OPERATOR-SUPPLIED PACKAGE CONFIRMATION",
       "exportedAt": "2026-09-25T06:21:50.331Z",
       "importedAt": "2026-09-25T07:12:12.888Z",
       "intervalMilliseconds": 3022557,
       "intervalFormatted": "00:50:22.557",
       "intervalHuman": "50 minutes 22.557 seconds"
     },
-    "t3LatentIntervalConclusion": "T0/T1/T2 export occurred approximately 50 minutes before T4-T7 import overwrite. This strengthens the forensic conclusion: POSSIBLE ADDITIONAL LOST LIVE EVENTS — COUNT UNKNOWN. No additional events are claimed unless proven by evidence."
+    "t3LatentIntervalConclusion": "If the expected package timestamp is confirmed, T0/T1/T2 occurred approximately 50 minutes before the overwrite. The exact latent interval is otherwise unproven. Regardless of the exact interval duration, PACKAGE_EXPORTED is known to have existed after package sealing because server export ordering appends it after createPortablePackage() and persists it through the project persistence middleware. Retain: POSSIBLE ADDITIONAL LOST LIVE EVENTS — COUNT UNKNOWN. No additional events are claimed unless proven by evidence."
   },
 
   "requirementPackageBaselineCounts": {
@@ -69,6 +69,30 @@
       { "id": "REQ-GOV-SIGNOFF-001", "packageBaselineStatus": "PROPOSED" },
       { "id": "REQ-GOV-QUORUM-001", "packageBaselineStatus": "PROPOSED" },
       { "id": "REQ-GOV-REVIEWER-001", "packageBaselineStatus": "PROPOSED" }
+    ]
+  },
+
+  "workItemPackageBaselineCounts": {
+    "VERIFICATION": 5,
+    "BACKLOG": 6,
+    "READY": 1,
+    "IN_PROGRESS": 1,
+    "total": 13,
+    "note": "Corrected aggregate eliminates split VERIFICATION buckets (formerly 4 VERIFICATION and 1 VERIFICATION). Programmatically derived from Stage A.8/A.9 package-baseline WorkItem data.",
+    "distribution": [
+      { "id": "DMK-187", "packageBaselineStatus": "VERIFICATION" },
+      { "id": "DMK-188", "packageBaselineStatus": "VERIFICATION" },
+      { "id": "DMK-189", "packageBaselineStatus": "VERIFICATION" },
+      { "id": "DMK-190", "packageBaselineStatus": "VERIFICATION" },
+      { "id": "DMK-191", "packageBaselineStatus": "BACKLOG" },
+      { "id": "DMK-192", "packageBaselineStatus": "READY" },
+      { "id": "DMK-193", "packageBaselineStatus": "VERIFICATION" },
+      { "id": "DMK-194", "packageBaselineStatus": "IN_PROGRESS" },
+      { "id": "DMK-195", "packageBaselineStatus": "BACKLOG" },
+      { "id": "DMK-196", "packageBaselineStatus": "BACKLOG" },
+      { "id": "DMK-197", "packageBaselineStatus": "BACKLOG" },
+      { "id": "DMK-198", "packageBaselineStatus": "BACKLOG" },
+      { "id": "DMK-199", "packageBaselineStatus": "BACKLOG" }
     ]
   },
 
@@ -190,7 +214,7 @@
     {
       "collection": "WorkItems (13 items)",
       "representedInPackage": true,
-      "packageBaselineEvidence": "4 VERIFICATION, 6 BACKLOG, 1 READY, 1 VERIFICATION, 1 IN_PROGRESS (LEVEL 2)",
+      "packageBaselineEvidence": "5 VERIFICATION, 6 BACKLOG, 1 READY, 1 IN_PROGRESS (LEVEL 2)",
       "postImportCurrentState": "13 PROPOSED",
       "immediatePreImportState": "UNKNOWN (LEVEL 4)",
       "evidenceLevel": "LEVEL_2",

@@ -25,7 +25,7 @@ Stage A.9 correctly established key architectural boundaries regarding runtime s
 
 This Stage A.10 document normalizes four specific evidence and summary issues identified in Stage A.9:
 1. **Package `exportedAt` timestamp availability:** Distinguishes repository-available evidence from operator-supplied package metadata.
-2. **Requirement baseline summary distribution:** Corrects the prose summary discrepancy (12/6/6) to programmatically proven counts (**11 VERIFIED, 7 UNDER_REVIEW, 6 PROPOSED**).
+2. **Requirement and WorkItem baseline summary distributions:** Corrects the Requirement prose summary discrepancy (12/6/6) to programmatically proven counts (**11 VERIFIED, 7 UNDER_REVIEW, 6 PROPOSED**; Total: 24), and fixes the split VERIFICATION bucket discrepancy in WorkItems to programmatically proven counts (**5 VERIFICATION, 6 BACKLOG, 1 READY, 1 IN_PROGRESS**; Total: 13).
 3. **Standards classification:** Clarifies that the Test 10 package contained zero Standards records, meaning no populated Standards entities were downgraded during the incident.
 4. **Documents classification:** Confirms that `documents` is **NOT represented in the portable package schema**; corrects the package-baseline classification from "0" to `NOT_REPRESENTED_IN_PACKAGE_FORMAT`.
 
@@ -90,7 +90,7 @@ sequenceDiagram
     Server->>Disk: T2: res.json(pkg) -> persistence middleware writes snapshot (count >= 33)
     Server-->>Operator: 200 OK (downloads sealed package)
 
-    Note over Operator,Disk: T3: Latent Interval (00:50:22.557 / ~50 min)
+    Note over Operator,Disk: T3: Latent Interval (Conditional: 00:50:22.557 / ~50 min if confirmed)
     Operator-->>Operator: T3: Manual QA, project switching, potential unrecorded live mutations
 
     Note over Operator,Disk: T4-T7: Overwrite Phase (2026-09-25T07:12:12.888Z)
@@ -102,13 +102,21 @@ sequenceDiagram
 ```
 
 ### Forensic Finding on Latent Interval (T3)
-The ~50-minute interval between package export and import overwrite significantly strengthens the conclusion:
+If the operator-supplied Test 10 package confirms `exportedAt` = `2026-09-25T06:21:50.331Z`, then the latent interval between export and import was 50 minutes 22.557 seconds.
+
+Without the package artifact, the exact T3 duration remains unproven.
+
+Regardless of the exact interval duration, `PACKAGE_EXPORTED` is known to have existed after package sealing because server export ordering appends it after `createPortablePackage()` and persists it through the project persistence middleware.
+
+Therefore retain:
 > **POSSIBLE ADDITIONAL LOST LIVE EVENTS — COUNT UNKNOWN**  
-> While the exact existence or payload of intermediate live events between export and import cannot be proven without independent live backups, the 50-minute window was sufficient for manual user operations. No additional events are assumed or fabricated into evidence.
+> While the exact existence or payload of intermediate live events between export and import cannot be proven without independent live backups, a confirmed ~50-minute window would have been sufficient for manual user operations. No additional live events are claimed or assumed to have actually existed, nor are any fabricated into evidence.
 
 ---
 
-## 5. Programmatic Requirement Package-Baseline Counts Correction
+## 5. Programmatic Requirement & WorkItem Package-Baseline Counts Normalization
+
+### 5.1 Programmatic Requirement Package-Baseline Counts Correction
 
 In Stage A.8 and Stage A.9 prose summaries, Requirement distribution was reported as:
 $$\text{INCORRECT (Stage A.8/A.9 prose): } 12 \text{ VERIFIED} \quad / \quad 6 \text{ UNDER\_REVIEW} \quad / \quad 6 \text{ PROPOSED}$$
@@ -144,6 +152,34 @@ $$\mathbf{CORRECTED: } 11 \text{ VERIFIED} \quad / \quad 7 \text{ UNDER\_REVIEW}
 | `REQ-GOV-SIGNOFF-001` | `PROPOSED` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
 | `REQ-GOV-QUORUM-001` | `PROPOSED` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
 | `REQ-GOV-REVIEWER-001` | `PROPOSED` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+
+---
+
+### 5.2 Programmatic WorkItem Package-Baseline Counts Correction
+
+In previous draft aggregates, the WorkItem distribution split `VERIFICATION` into two duplicate buckets:
+$$\text{INCORRECT (split buckets): } 4 \text{ VERIFICATION} \quad / \quad 6 \text{ BACKLOG} \quad / \quad 1 \text{ READY} \quad / \quad 1 \text{ VERIFICATION} \quad / \quad 1 \text{ IN\_PROGRESS}$$
+
+Programmatic derivation directly from Stage A.8/A.9 package-baseline WorkItem data (`workItem.importedGovernanceStatus`) unifies the duplicate buckets into the authoritative distribution:
+$$\mathbf{CORRECTED: } 5 \text{ VERIFICATION} \quad / \quad 6 \text{ BACKLOG} \quad / \quad 1 \text{ READY} \quad / \quad 1 \text{ IN\_PROGRESS} \quad (\text{Total: } 13)$$
+
+### Detailed Individual WorkItem Baseline Statuses
+
+| WorkItem ID | Package-Baseline Status | Current Post-Import Status | Immediate Pre-Import State | Evidence Level |
+|---|---|---|---|---|
+| `DMK-187` | `VERIFICATION` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-188` | `VERIFICATION` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-189` | `VERIFICATION` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-190` | `VERIFICATION` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-191` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-192` | `READY` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-193` | `VERIFICATION` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-194` | `IN_PROGRESS` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-195` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-196` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-197` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-198` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
+| `DMK-199` | `BACKLOG` | `PROPOSED` | UNKNOWN | **LEVEL 2** |
 
 ---
 
@@ -249,7 +285,7 @@ Zero records in package baseline must not be converted into proof that pre-impor
 | Collection | Represented in Package? | Package-Baseline Evidence | Post-Import Current State | Immediate Pre-Import State | Evidence Level | Value Reconstructable | Restoration Authorized | Safe Auto-Recovery |
 |---|---|---|---|---|---|---|---|---|
 | **Project Entity (`stateVersion`)** | **YES** | `stateVersion: 28` | `stateVersion: 28` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
-| **WorkItems (13 items)** | **YES** | 4 VERIFICATION, 6 BACKLOG, 1 READY, 1 VERIFICATION, 1 IN_PROGRESS | 13 `PROPOSED` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
+| **WorkItems (13 items)** | **YES** | 5 VERIFICATION, 6 BACKLOG, 1 READY, 1 IN_PROGRESS | 13 `PROPOSED` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
 | **Requirements (24 items)** | **YES** | 11 VERIFIED, 7 UNDER_REVIEW, 6 PROPOSED | 24 `PROPOSED` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
 | **ADRs (7 items)** | **YES** | 4 ACCEPTED, 3 PROPOSED | 7 `PROPOSED` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
 | **Risks (6 items)** | **YES** | 6 unratified (`null`) | 6 `PROPOSED` | UNKNOWN | **LEVEL 2** | YES | NO | NO |
@@ -273,7 +309,7 @@ The conclusions established in Stage A.9 regarding the audit ledger remain stric
 1. **Restored Audit Ledger Chain:** **CRYPTOGRAPHICALLY VALID** (33 events from restored genesis through `AUD-MUGMI1Y0-AEVN`).
 2. **Historical Completeness:** **NOT ESTABLISHED** (Severed by package overwrite).
 3. **Known Lost Live Event:** `PACKAGE_EXPORTED` existence is proven by export route logic (`server.ts` line 953); exact payload, event ID, and state hash are not recovered.
-4. **Intermediate Live Events (T3):** Possible additional lost events during the ~50-minute interval remain **COUNT UNKNOWN**.
+4. **Intermediate Live Events (T3):** Possible additional lost events during the latent interval remain **COUNT UNKNOWN** (exact duration unproven pending operator package evidence).
 5. **No Ledger Fabrication:** No artificial audit events shall be injected or rewritten.
 
 ---
