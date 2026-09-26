@@ -25,12 +25,12 @@ The human operator conducted the DMK-194 Human UI Review with final outcome: **P
 ### Current governance and task status
 
 - **DMK-194:** `VERIFIED` (Automated 14 workspace + 10 browser checks passed; human UI review completed).
-- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; Stage A.6–A.8 candidates SUPERSEDED; Stage A.9 assessment superseded for decision-making by Stage A.10; Stage A.10 package-evidence normalization complete; recovery pending human review; NOT AUTHORIZED, NOT APPLIED).
+- **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; Stage A.6–A.8 candidates SUPERSEDED; Stage A.9 assessment superseded for decision-making by Stage A.10; Stage A.10 package-evidence normalization complete but historical runtime binding is STALE due to snapshot hash advance from 9c4ca9b5... to 68b8252e...; Stage A.11 post-A.10 state-drift review completed and confirmed drift is FULLY EXPLAINED by two audited human governance transactions; recovery pending human review; NOT AUTHORIZED, NOT APPLIED).
 - **Gate 7:** `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED` (Strictly held).
 - **Live reconciliation:** `NOT AUTHORIZED / NOT APPLIED`.
 - **Downstream work:** DMK-195 through DMK-199 remain `BACKLOG`; Batch B is `NOT STARTED`.
 - **Release status:** `v0.1.0-rc1` (Release Candidate; Gate 7 human sign-off pending).
-- **Next safe action:** Human operator review of Stage A.10 forensic evidence normalization. (Do NOT request recovery authorization; recovery strategy selection remains premature).
+- **Next safe action:** Human operator review of Stage A.11 state-drift investigation findings. (Do NOT request recovery authorization; recovery strategy selection remains premature).
 
 ## 2026-09-24 — approved Batch A ownership
 

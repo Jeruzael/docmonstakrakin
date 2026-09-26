@@ -1,0 +1,114 @@
+{
+  "stage": "Stage A.11",
+  "disposition": "READ-ONLY / FORENSIC / NOT AUTHORIZATION-READY",
+  "generatedAt": "2026-09-26T13:45:00.000Z",
+  "targetProject": "PRJ-DOCMONSTAKRAKIN",
+
+  "historicalBaseline": {
+    "snapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+    "stateVersion": 28,
+    "auditCount": 33,
+    "auditHeadId": "AUD-MUGMI1Y0-AEVN",
+    "auditHeadTimestamp": "2026-09-25T07:12:12.888Z",
+    "auditHeadAction": "PACKAGE_IMPORTED"
+  },
+
+  "currentSnapshot": {
+    "sha256": "68b8252e9b3a98194e670eac3bf06b4a8260a17ee22eaad1f409a7f4a577ee82",
+    "stateVersion": 30,
+    "auditCount": 35,
+    "auditHeadId": "AUD-MUIAC3RG-P5C6",
+    "auditHeadTimestamp": "2026-09-26T11:07:12.268Z",
+    "auditHeadAction": "GOVERNANCE_SIGNATURE",
+    "auditChainValid": true,
+    "verifiedAuditCount": 35
+  },
+
+  "exactHistoricalSnapshotRecovered": false,
+  "historicalSnapshotStatus": "EXACT_OLD_SNAPSHOT_NOT_AVAILABLE",
+
+  "stateVersionComparison": {
+    "historicalStateVersion": 28,
+    "currentStateVersion": 30,
+    "stateVersionChanged": true,
+    "explanation": "stateVersion incremented twice (+2): +1 upon APPROVAL_REQUESTED (signoff.ts line 26), and +1 upon GOVERNANCE_SIGNATURE (signoff.ts line 52)."
+  },
+
+  "postBaselineAuditEvents": [
+    {
+      "chronologicalOrder": 1,
+      "indexInReverseLog": 1,
+      "id": "AUD-MUIABTEQ-50ZA",
+      "timestamp": "2026-09-26T11:06:58.850Z",
+      "actor": "Gio",
+      "action": "APPROVAL_REQUESTED",
+      "target": "APV-42a9adda-de85-4222-8332-d4d793671a12",
+      "reason": "Explicit Request Sign-Off",
+      "previousHash": "449f02b4dc7ed78de6043cea60a102741c6a2002687379b22c6fc5825bdc440f",
+      "stateHash": "4c416b34879115ff8f6e6971105b7211e432dda1fa1f0f82640219568e4c6310",
+      "details": {
+        "targetEntityId": "REQ-DATA-001",
+        "authenticatedIdentity": "gio-local-reviewer",
+        "roleSource": "LOCAL_SERVER_ROSTER"
+      },
+      "classification": "EXPECTED_GOVERNANCE_ACTION",
+      "handler": "POST /api/projects/:id/approvals (server/proposals/signoff.ts:12-29)",
+      "stateImpact": "Created APV-42a9adda-de85-4222-8332-d4d793671a12 in store.approvals['PRJ-DOCMONSTAKRAKIN'], incremented stateVersion 28 -> 29"
+    },
+    {
+      "chronologicalOrder": 2,
+      "indexInReverseLog": 0,
+      "id": "AUD-MUIAC3RG-P5C6",
+      "timestamp": "2026-09-26T11:07:12.268Z",
+      "actor": "Gio",
+      "action": "GOVERNANCE_SIGNATURE",
+      "target": "APV-42a9adda-de85-4222-8332-d4d793671a12",
+      "reason": "APPROVED",
+      "previousHash": "4c416b34879115ff8f6e6971105b7211e432dda1fa1f0f82640219568e4c6310",
+      "stateHash": "344574b3ec8543ea1d5077aeb8e888dae8ae16f4ae73c3f0b3478aaf64c77c5a",
+      "details": {
+        "role": "Lead Architect",
+        "authenticatedIdentity": "gio-local-reviewer",
+        "roleSource": "LOCAL_SERVER_ROSTER",
+        "comment": "Verified against zero-trust architectural boundaries and regulatory security profile.",
+        "status": "PENDING"
+      },
+      "classification": "EXPECTED_GOVERNANCE_ACTION",
+      "handler": "POST /api/projects/:id/approvals/:apvId/decide (server/proposals/signoff.ts:30-55)",
+      "stateImpact": "Recorded Lead Architect approval signature on APV-42a9adda-de85-4222-8332-d4d793671a12 (status remains PENDING awaiting Security Officer), incremented stateVersion 29 -> 30"
+    }
+  ],
+
+  "structuralDriftAnalysis": {
+    "projects": "PROVEN_CHANGED (stateVersion 28 -> 30)",
+    "auditLogs": "PROVEN_CHANGED (33 -> 35 events, 2 new cryptographically chained governance events)",
+    "approvals": "PROVEN_CHANGED (0 -> 1 item: APV-42a9adda-de85-4222-8332-d4d793671a12)",
+    "workItems": "PROVEN_UNCHANGED (13 items, all PROPOSED)",
+    "requirements": "PROVEN_UNCHANGED (24 items, all PROPOSED; REQ-DATA-001 remains PROPOSED pending quorum)",
+    "adrs": "PROVEN_UNCHANGED (7 items, all PROPOSED)",
+    "risks": "PROVEN_UNCHANGED (6 items, all PROPOSED)",
+    "features": "PROVEN_UNCHANGED (15 items, all PROPOSED)",
+    "evidence": "PROVEN_UNCHANGED (4 items, all UNTRUSTED)",
+    "standards": "PROVEN_UNCHANGED (0 items)",
+    "documents": "PROVEN_UNCHANGED (0 items)",
+    "overrides": "PROVEN_UNCHANGED (0 items)",
+    "technicalBaseline": "PROVEN_UNCHANGED (10 dimensions NOT_RATIFIED)",
+    "importSessions": "PROVEN_UNCHANGED (0 items)",
+    "agentRoles": "PROVEN_UNCHANGED (0 items)",
+    "agentRuns": "PROVEN_UNCHANGED (0 items)",
+    "otherProjects": "PROVEN_UNCHANGED (PRJ-d7443d21..., PRJ-ATLAS-01, PRJ-FINPAY-02)",
+    "syntheticVerification": "In-memory rollback of the two governance events, the approval item, and stateVersion to 28 produces the exact historical snapshot SHA-256 (9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac) with zero residual bytes difference."
+  },
+
+  "rootCauseVerdict": "A. FULLY EXPLAINED AUDITED DRIFT",
+  "rootCauseDetails": "The hash drift between 9c4ca9b5... and 68b8252e... is 100% accounted for by two authorized, authenticated human governance transactions executed by Gio (gio-local-reviewer) on 2026-09-26T11:06:58.850Z and 2026-09-26T11:07:12.268Z via server signoff routes. Both transactions incremented stateVersion (+2 total) and were committed to disk by Express persistence middleware. Audit ledger remains cryptographically valid (35 events).",
+
+  "stageA10": {
+    "forensicConclusionsStillValid": "YES",
+    "currentRuntimeBinding": "STALE",
+    "historicalHashPreserved": true,
+    "notes": "Stage A.10 forensic findings (Package Baseline != Pre-Import State, unproven pre-import live state, Requirement 11/7/6 distribution, WorkItem 5/6/1/1 distribution) remain authoritative and unaltered. Its runtime snapshot binding to 9c4ca9b5... is historical and stale for live state execution. Any future reconciliation or recovery candidate must bind to current snapshot 68b8252e..."
+  },
+
+  "liveStateMutatedByInvestigation": false
+}

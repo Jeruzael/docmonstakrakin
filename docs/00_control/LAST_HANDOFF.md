@@ -30,14 +30,14 @@ Known non-blocking observations:
 Governance state:
 
 - DMK-194: `VERIFIED` (Technical implementation & Human UI verification complete)
-- DMK-201: `VERIFICATION_PENDING` (Stage A.6–A.8 candidates SUPERSEDED; Stage A.9 assessment superseded for decision-making by Stage A.10; Stage A.10 package-evidence normalization complete; recovery pending human review)
+- DMK-201: `VERIFICATION_PENDING` (Stage A.6–A.8 candidates SUPERSEDED; Stage A.9 assessment superseded for decision-making by Stage A.10; Stage A.10 package-evidence normalization complete but historical runtime binding is STALE due to snapshot hash advance from 9c4ca9b5... to 68b8252e...; Stage A.11 post-A.10 state-drift review completed and confirmed drift is FULLY EXPLAINED by two audited human governance transactions; recovery pending human review)
 - DMK-195–199: `BACKLOG` (Unchanged)
 - Live reconciliation: `NOT AUTHORIZED / NOT APPLIED`
 - Gate 7: `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`
 - Batch B: `NOT STARTED`
 - Release status: `v0.1.0-rc1` (Release candidate; no release approval granted)
 
-Next action: Human review of corrected Stage A.10 forensic evidence normalization. Do not request recovery authorization.
+Next action: Human review of Stage A.11 state-drift investigation findings. Do not request recovery authorization.
 
 ## 2026-09-24 — Pre-merge hardening committed and pushed
 
