@@ -19,7 +19,7 @@ Current Live Snapshot: `68b8252e9b3a98194e670eac3bf06b4a8260a17ee22eaad1f409a7f4
 
 ### Verdict: **A. FULLY EXPLAINED AUDITED DRIFT**
 
-The cryptographic hash difference between the historical Stage A.8–A.10 baseline (`9c4ca9b5...`) and the current live snapshot (`68b8252e...`) is **100% accounted for by two authorized, authenticated human governance transactions** executed on `PRJ-DOCMONSTAKRAKIN` between `2026-09-26T11:06:58.850Z` and `2026-09-26T11:07:12.268Z`.
+The drift is fully explained by two authenticated human governance transactions performed by Gio on `PRJ-DOCMONSTAKRAKIN` between `2026-09-26T11:06:58.850Z` and `2026-09-26T11:07:12.268Z`. The second transaction was additionally role-authorized as a Lead Architect governance decision.
 
 No unaudited mutations, corruptions, or background process leaks occurred.
 
@@ -92,7 +92,8 @@ Both transactions occurred between the initial Stage A.10 generation (`2026-09-2
 - **Actor:** `Gio`
 - **Target:** `APV-42a9adda-de85-4222-8332-d4d793671a12`
 - **Reason:** `Explicit Request Sign-Off`
-- **Classification:** `EXPECTED_GOVERNANCE_ACTION`
+- **Classification:** `EXPECTED_GOVERNANCE_ACTION` (`AUTHENTICATED HUMAN GOVERNANCE ACTION`)
+- **Authentication Class:** `AUTHENTICATED_HUMAN`
 - **Target Entity:** `REQ-DATA-001` (type: `REQUIREMENT_BASELINE`)
 - **Previous Hash:** `449f02b4dc7ed78de6043cea60a102741c6a2002687379b22c6fc5825bdc440f` (matches `AUD-MUGMI1Y0-AEVN.stateHash`)
 - **State Hash:** `4c416b34879115ff8f6e6971105b7211e432dda1fa1f0f82640219568e4c6310`
@@ -111,7 +112,9 @@ Both transactions occurred between the initial Stage A.10 generation (`2026-09-2
 - **Actor:** `Gio`
 - **Target:** `APV-42a9adda-de85-4222-8332-d4d793671a12`
 - **Reason:** `APPROVED`
-- **Classification:** `EXPECTED_GOVERNANCE_ACTION`
+- **Classification:** `EXPECTED_GOVERNANCE_ACTION` (`AUTHENTICATED, ROLE-AUTHORIZED GOVERNANCE DECISION`)
+- **Authentication Class:** `AUTHENTICATED_HUMAN`
+- **Authorization Class:** `ROLE_AUTHORIZED_LEAD_ARCHITECT`
 - **Role:** `Lead Architect`
 - **Previous Hash:** `4c416b34879115ff8f6e6971105b7211e432dda1fa1f0f82640219568e4c6310` (matches `AUD-MUIABTEQ-50ZA.stateHash`)
 - **State Hash:** `344574b3ec8543ea1d5077aeb8e888dae8ae16f4ae73c3f0b3478aaf64c77c5a`
@@ -150,9 +153,9 @@ The exact execution path for both events is defined in [`server/proposals/signof
 
 ---
 
-## 6. Structural State Invariant & Cryptographic Equivalence Proof
+## 6. Structural State Invariant & Machine-Readable Reconstruction Proof
 
-To prove beyond doubt that **no other mutations occurred**, a read-only in-memory test was conducted:
+To prove beyond doubt that **no other mutations occurred**, a read-only in-memory rollback proof was executed:
 1. Load `.local/project-state.json` (SHA-256: `68b8252e...`).
 2. Remove the two post-baseline audit events (`AUD-MUIAC3RG-P5C6` and `AUD-MUIABTEQ-50ZA`).
 3. Remove approval object `APV-42a9adda-de85-4222-8332-d4d793671a12` from `store.approvals['PRJ-DOCMONSTAKRAKIN']`.
@@ -165,6 +168,50 @@ $$\text{Reconstructed SHA-256} = \mathbf{9c4ca9b51ef11ca0c9b2257ca3a1541b1361263
 $$\text{Exact Match} = \mathbf{true}$$
 
 This proves cryptographic equivalence: **zero unrecorded or unaudited bytes changed**.
+
+### Structured Machine-Readable Proof Artifact
+
+This proof is formally committed in [`docs/07_verification/stage-a11-post-a10-state-drift.json`](file:///c:/Users/HomePC/dev/docmonstakrakin/docs/07_verification/stage-a11-post-a10-state-drift.json) under `historicalReconstructionProof`:
+
+```json
+{
+  "historicalReconstructionProof": {
+    "method": "READ_ONLY_IN_MEMORY_ROLLBACK",
+    "sourceSnapshotSha256": "68b8252e9b3a98194e670eac3bf06b4a8260a17ee22eaad1f409a7f4a577ee82",
+    "expectedHistoricalSnapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+    "sourceStateVersion": 30,
+    "reconstructedStateVersion": 28,
+    "sourceAuditCount": 35,
+    "reconstructedAuditCount": 33,
+    "removedAuditEvents": [
+      {
+        "id": "AUD-MUIAC3RG-P5C6",
+        "action": "GOVERNANCE_SIGNATURE",
+        "reverseChronologicalIndex": 0
+      },
+      {
+        "id": "AUD-MUIABTEQ-50ZA",
+        "action": "APPROVAL_REQUESTED",
+        "reverseChronologicalIndex": 1
+      }
+    ],
+    "removedApproval": {
+      "id": "APV-42a9adda-de85-4222-8332-d4d793671a12",
+      "countBefore": 1,
+      "countAfter": 0
+    },
+    "serialization": {
+      "method": "JSON.stringify(snapshot, null, 2) + '\\n'",
+      "encoding": "UTF-8"
+    },
+    "reconstructedSnapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+    "exactHashMatch": true,
+    "residualDifference": false,
+    "liveSnapshotWritten": false,
+    "mutationCount": 0
+  }
+}
+```
 
 ---
 

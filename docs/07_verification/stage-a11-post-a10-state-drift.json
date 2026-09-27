@@ -52,6 +52,7 @@
         "roleSource": "LOCAL_SERVER_ROSTER"
       },
       "classification": "EXPECTED_GOVERNANCE_ACTION",
+      "authenticationClass": "AUTHENTICATED_HUMAN",
       "handler": "POST /api/projects/:id/approvals (server/proposals/signoff.ts:12-29)",
       "stateImpact": "Created APV-42a9adda-de85-4222-8332-d4d793671a12 in store.approvals['PRJ-DOCMONSTAKRAKIN'], incremented stateVersion 28 -> 29"
     },
@@ -74,6 +75,8 @@
         "status": "PENDING"
       },
       "classification": "EXPECTED_GOVERNANCE_ACTION",
+      "authenticationClass": "AUTHENTICATED_HUMAN",
+      "authorizationClass": "ROLE_AUTHORIZED_LEAD_ARCHITECT",
       "handler": "POST /api/projects/:id/approvals/:apvId/decide (server/proposals/signoff.ts:30-55)",
       "stateImpact": "Recorded Lead Architect approval signature on APV-42a9adda-de85-4222-8332-d4d793671a12 (status remains PENDING awaiting Security Officer), incremented stateVersion 29 -> 30"
     }
@@ -97,11 +100,47 @@
     "agentRoles": "PROVEN_UNCHANGED (0 items)",
     "agentRuns": "PROVEN_UNCHANGED (0 items)",
     "otherProjects": "PROVEN_UNCHANGED (PRJ-d7443d21..., PRJ-ATLAS-01, PRJ-FINPAY-02)",
-    "syntheticVerification": "In-memory rollback of the two governance events, the approval item, and stateVersion to 28 produces the exact historical snapshot SHA-256 (9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac) with zero residual bytes difference."
+    "syntheticVerification": "In-memory rollback of the two governance events, the approval item, and stateVersion to 28 produces the exact historical snapshot SHA-256 (9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac) with zero residual bytes difference. Authoritative machine-readable proof is recorded in historicalReconstructionProof."
+  },
+
+  "historicalReconstructionProof": {
+    "method": "READ_ONLY_IN_MEMORY_ROLLBACK",
+    "sourceSnapshotSha256": "68b8252e9b3a98194e670eac3bf06b4a8260a17ee22eaad1f409a7f4a577ee82",
+    "expectedHistoricalSnapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+    "sourceStateVersion": 30,
+    "reconstructedStateVersion": 28,
+    "sourceAuditCount": 35,
+    "reconstructedAuditCount": 33,
+    "removedAuditEvents": [
+      {
+        "id": "AUD-MUIAC3RG-P5C6",
+        "action": "GOVERNANCE_SIGNATURE",
+        "reverseChronologicalIndex": 0
+      },
+      {
+        "id": "AUD-MUIABTEQ-50ZA",
+        "action": "APPROVAL_REQUESTED",
+        "reverseChronologicalIndex": 1
+      }
+    ],
+    "removedApproval": {
+      "id": "APV-42a9adda-de85-4222-8332-d4d793671a12",
+      "countBefore": 1,
+      "countAfter": 0
+    },
+    "serialization": {
+      "method": "JSON.stringify(snapshot, null, 2) + '\\n'",
+      "encoding": "UTF-8"
+    },
+    "reconstructedSnapshotSha256": "9c4ca9b51ef11ca0c9b2257ca3a1541b136126371a1e207f1a008eae6754f8ac",
+    "exactHashMatch": true,
+    "residualDifference": false,
+    "liveSnapshotWritten": false,
+    "mutationCount": 0
   },
 
   "rootCauseVerdict": "A. FULLY EXPLAINED AUDITED DRIFT",
-  "rootCauseDetails": "The hash drift between 9c4ca9b5... and 68b8252e... is 100% accounted for by two authorized, authenticated human governance transactions executed by Gio (gio-local-reviewer) on 2026-09-26T11:06:58.850Z and 2026-09-26T11:07:12.268Z via server signoff routes. Both transactions incremented stateVersion (+2 total) and were committed to disk by Express persistence middleware. Audit ledger remains cryptographically valid (35 events).",
+  "rootCauseDetails": "The drift is fully explained by two authenticated human governance transactions performed by Gio on PRJ-DOCMONSTAKRAKIN between 2026-09-26T11:06:58.850Z and 2026-09-26T11:07:12.268Z. The second transaction was additionally role-authorized as a Lead Architect governance decision. Both transactions incremented stateVersion (+2 total) and were committed to disk by Express persistence middleware. Audit ledger remains cryptographically valid (35 events). Zero residual difference exists.",
 
   "stageA10": {
     "forensicConclusionsStillValid": "YES",
