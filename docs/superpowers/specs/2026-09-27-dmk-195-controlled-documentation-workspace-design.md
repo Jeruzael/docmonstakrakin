@@ -24,10 +24,11 @@ Furthermore, critical living governance documents—specifically `docs/00_contro
 1. **Lack of Cryptographic Hash Verification:** No mechanism detects whether on-disk reference documents match reviewed baseline digests or have suffered unreviewed drift.
 2. **Absence of TOCTOU & Concurrency Protection:** Simultaneous edits or concurrent agent sessions can silently overwrite each other's updates without detecting stale base content.
 3. **Cross-Domain Partial Commit Risk:** A document save affects two distinct persistence domains: (a) the filesystem markdown document, and (b) `.local/project-state.json` (audit ledger and `project.stateVersion`). A naive save flow that replaces the document without an atomic, journaled transaction risks partial commits where the document is changed on disk but the audit record is lost.
-4. **Non-Mutating POST Persistence Interception:** The application's `installProjectPersistence()` middleware automatically intercepts all successful `POST`, `PATCH`, `PUT`, and `DELETE` requests under `/api/projects`, triggering snapshot rewrites. Because middleware executes before route handlers, read-only preview actions such as `/diff` and `/validate` would trigger unintended state snapshot updates and TOCTOU lock acquisition unless classified pre-persistence.
-5. **Missing Audit Traceability:** Edits performed outside the application bypass the cryptographically chained audit ledger (`server/security/auditImmutability.ts`), breaking the chain of custody.
-6. **Risk of Arbitrary Filesystem Traversal:** Naive document viewing or editing features expose the host environment to directory traversal attacks (`../`), symlink escapes, secret store disclosure (`.env`, `.git/credentials`, OS system files), and accidental corruption of canonical planning artifacts (`docs/00_control/MASTER_WBS.yaml`).
-7. **Conflation of Projections with Authorities:** Users may inadvertently attempt to edit generated projection files (e.g., `docs/00_control/MASTER_WBS.md`), leading to divergence from the canonical planning authority (`MASTER_WBS.yaml`).
+4. **Cross-Filesystem Rename Non-Atomicity:** Renaming temporary or backup files residing under `.local/` directly over target documents in `docs/` assumes a single shared filesystem. If `.local/` and `docs/` reside across filesystem mount boundaries, `fs.renameSync` fails or falls back to non-atomic copy-and-unlink. Atomicity requires target-sibling placement.
+5. **Non-Mutating POST Persistence Interception:** The application's `installProjectPersistence()` middleware automatically intercepts all successful `POST`, `PATCH`, `PUT`, and `DELETE` requests under `/api/projects`, triggering snapshot rewrites. Because middleware executes before route handlers, read-only preview actions such as `/diff` and `/validate` would trigger unintended state snapshot updates and TOCTOU lock acquisition unless classified pre-persistence using full routed paths.
+6. **Missing Audit Traceability:** Edits performed outside the application bypass the cryptographically chained audit ledger (`server/security/auditImmutability.ts`), breaking the chain of custody.
+7. **Risk of Arbitrary Filesystem Traversal:** Naive document viewing or editing features expose the host environment to directory traversal attacks (`../`), symlink escapes, secret store disclosure (`.env`, `.git/credentials`, OS system files), and accidental corruption of canonical planning artifacts (`docs/00_control/MASTER_WBS.yaml`).
+8. **Conflation of Projections with Authorities:** Users may inadvertently attempt to edit generated projection files (e.g., `docs/00_control/MASTER_WBS.md`), leading to divergence from the canonical planning authority (`MASTER_WBS.yaml`).
 
 DMK-195 addresses these issues by establishing a dedicated, fail-closed Controlled Documentation Workspace.
 
@@ -41,10 +42,10 @@ DMK-195 addresses these issues by establishing a dedicated, fail-closed Controll
 4. **Authority Classification:** Re-use the canonical document model from `bootstrap/docmonstakrakin.self-bootstrap.json` and `src/data/selfBootstrapContract.ts` to categorize every document as either `REFERENCE` or `GENERATED_PROJECTION`.
 5. **Strict Immutability for Projections & Baseline References:** Enforce that all `GENERATED_PROJECTION` documents and all hash-pinned `REFERENCE` documents are strictly read-only.
 6. **Controlled, Audited Editing:** Implement a rigorous, multi-step editing workflow (Edit Draft → Preview Diff → Validate → Confirm Save → Stale-Base Verification → Coordinated Atomic Transaction → Audit Logging) restricted exclusively to an approved allowlist of living reference documents.
-7. **Pre-Persistence Read-Only Classification:** Implement a server-internal request classifier in `installProjectPersistence` that classifies `/diff` and `/validate` as `READ_ONLY` before entering transaction handling, guaranteeing early exit with zero snapshot rewrites, zero stateVersion changes, zero audit side-effects, and zero lock acquisition.
-8. **Coordinated Cross-Domain Document Transaction:** Implement `server/docs/controlledDocsTransaction.ts` with a durable transaction journal under `.local/document-transactions/` to eliminate cross-domain partial commit risks between filesystem documents and `.local/project-state.json`.
+7. **Pre-Persistence Read-Only Classification (Full Routed Path):** Implement a server-internal request classifier in `installProjectPersistence` that uses the normalized full routed path (`${req.baseUrl}${req.path}`) to classify `/diff` and `/validate` as `READ_ONLY` before entering transaction handling, guaranteeing early exit with zero snapshot rewrites, zero stateVersion changes, zero audit side-effects, and zero lock acquisition.
+8. **Coordinated Cross-Domain Document Transaction & Same-Filesystem Atomicity:** Implement `server/docs/controlledDocsTransaction.ts` with a durable transaction journal under `.local/document-transactions/` and candidate/rollback artifacts placed strictly as target-directory siblings in `path.dirname(targetDocument)` to guarantee atomic `fs.renameSync` replacement and rollback.
 9. **Governed State Mutation Invariant:** A successful controlled save modifies the repository document, appends `DOCUMENT_UPDATED`, increments `project.stateVersion` exactly once ($N \to N+1$), and durably commits the project snapshot.
-10. **Strict Identity & Role Authorization:** Strictly reject any client-declared identity/authority claims (`actor`, `role`, `approver`, etc.); derive actor identity and governance roles exclusively from the authenticated server session via `requireHuman()` with explicit `humanConfirmed === true`.
+10. **Strict Identity & Role Authorization:** Strictly reject with HTTP 400 Bad Request any client-declared identity/authority claims (`actor`, `role`, `approver`, etc.); derive actor identity and governance roles exclusively from the authenticated server session via `requireHuman()` with explicit `humanConfirmed === true`.
 11. **Raw-Byte Cryptographic Integrity Verification:** Hash on-disk documents using exact raw-byte SHA-256 identical to `server/bootstrap/selfBootstrapIntegrity.ts` without CRLF normalization, reporting statuses: `MATCH`, `CHANGED`, `UNPINNED`, or `MISSING`.
 12. **Line Ending Preservation:** Detect source EOL (`LF`, `CRLF`, `MIXED`). Re-encode saves in the source convention, and reject editing of mixed-EOL documents fail-closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
 13. **Strict Project Isolation:** Isolate repository document access to `PRJ-DOCMONSTAKRAKIN`. Unrelated projects without a verified repository binding present an explicit empty/unavailable state.
@@ -155,8 +156,8 @@ The controlled documentation subsystem establishes a dedicated server-side bound
 4. **Registered Documents Only (No Auto-Discovery):** The repository contains 128 files in `docs/`, but only 28 are manifest-registered. Files that are not registered (e.g., `docs/00_control/LAST_HANDOFF.md`, planning records, unregistered verification reports, scratch specs) are **strictly invisible** and cannot be queried. The `docs/` boundary is necessary but NOT sufficient; visibility requires BOTH confinement within `docs/` AND active registry membership.
 5. **Boundary Clamp:** The server canonicalizes the target path and verifies that it resides strictly within `path.resolve(workspaceRoot, 'docs')`. Any attempt to access a path outside this directory or escape via symbolic links triggers an immediate `ERR_SECURITY_PATH_TRAVERSAL` error and HTTP 403 Forbidden.
 6. **Deny-Precedence Enforcement:** Integrates with `DENIED_PATTERNS` from `server/security/pathBoundary.ts`, ensuring secrets, `.env` files, Git internals, and system paths cannot be accessed.
-7. **Pre-Persistence Persistence Classification:** Non-mutating POST endpoints (`/diff`, `/validate`) are classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`, preventing snapshot rewrites or state version increments.
-8. **Authentication & Authorization (Strict Reject Rule):** Read access (list, get, diff, validate) requires local app session context. Write operations (`/save`) require `requireHuman()` verification with `humanConfirmed === true`. Any request body containing client-supplied identity claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) is **strictly rejected** with HTTP 400/422.
+7. **Pre-Persistence Routing Classification:** Non-mutating POST endpoints (`/diff`, `/validate`) are classified as `READ_ONLY` before entering persistence transaction handling using the normalized full routed path (`${req.baseUrl}${req.path}`), preventing snapshot rewrites or state version increments.
+8. **Authentication & Authorization (Strict Reject Rule):** Read access (list, get, diff, validate) requires local app session context. Write operations (`/save`) require `requireHuman()` verification with `humanConfirmed === true`. Any request body containing client-supplied identity claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) is **strictly rejected** with HTTP 400 Bad Request (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
 
 ---
 
@@ -253,7 +254,7 @@ The server boundary defines the following dedicated REST endpoints:
 
 ### 3. `POST /api/projects/:id/docs/:documentId/diff`
 - **Purpose:** Compute a structured, non-mutating line diff between on-disk content and candidate draft content.
-- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`.
+- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence` using routed path `${req.baseUrl}${req.path}`.
 - **Request Body:**
   ```json
   {
@@ -279,7 +280,7 @@ The server boundary defines the following dedicated REST endpoints:
 
 ### 4. `POST /api/projects/:id/docs/:documentId/validate`
 - **Purpose:** Run format-specific and structural invariant checks on candidate content without saving.
-- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`.
+- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence` using routed path `${req.baseUrl}${req.path}`.
 - **Request Body:**
   ```json
   {
@@ -439,11 +440,11 @@ For `CONTROLLED_EDIT` documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`), 
 - Collects:
   1. Mandatory confirmation checkbox: `[x] Confirm this governance document update` (`humanConfirmed: true`).
   2. Mandatory justification: Reason / change summary text.
-- Strictly rejects any client attempts to inject identity fields.
+- Strictly rejects any client attempts to inject identity fields with HTTP 400 Bad Request.
 
 ---
 
-## 13. Coordinated Cross-Domain Document Transaction
+## 13. Coordinated Cross-Domain Document Transaction & Same-Filesystem Atomicity
 
 ### The Cross-Domain Partial Commit Problem
 A document save affects two separate persistence domains:
@@ -452,8 +453,19 @@ A document save affects two separate persistence domains:
 
 If the document file is renamed on disk but the project snapshot persistence fails, the in-memory store rolls back while the on-disk document remains mutated, resulting in an unlogged, non-audited modification.
 
-### Solution: Durable Transaction Journal (`server/docs/controlledDocsTransaction.ts`)
-Transactions utilize a durable journal directory: `.local/document-transactions/`. This directory is strictly crash-recovery infrastructure and is NOT canonical project state.
+### Cross-Filesystem Atomicity & Target-Sibling Artifacts
+`fs.renameSync` is only guaranteed to be atomic across POSIX and Windows NTFS when source and target reside in the **same directory on the same filesystem**. Attempting to rename from `.local/document-transactions/` across to `docs/` can violate atomicity if directories reside on different mount points or volumes.
+
+Therefore, DMK-195 enforces **target-sibling artifact placement**:
+- The transaction **JOURNAL** remains centralized under `.local/document-transactions/<operationId>.json`.
+- The **CANDIDATE** and **ROLLBACK** artifacts are created strictly in `path.dirname(targetDocument)` as hidden sibling files:
+  - Candidate Sibling: `docs/00_control/.PROJECT_STATE.md.dmk-<operationId>.candidate`
+  - Rollback Sibling: `docs/00_control/.PROJECT_STATE.md.dmk-<operationId>.rollback`
+
+These sibling files are internal transaction files:
+- Never exposed through the Docs workspace registry.
+- Never treated as registered docs.
+- Automatically cleaned up after commit or rollback.
 
 ### Transaction Journal Record (`journal.json`):
 ```typescript
@@ -461,7 +473,9 @@ export interface DocumentTransactionJournal {
   operationId: string;
   projectId: string;
   documentId: string;
-  registeredPath: string;
+  targetPath: string;
+  candidateArtifactPath: string;
+  rollbackArtifactPath: string;
   previousSha256: string;
   candidateSha256: string;
   projectStateBeforeDigest: string | null;
@@ -476,28 +490,38 @@ export interface DocumentTransactionJournal {
 ### Save Execution Lifecycle:
 1. **PREPARE Phase:**
    - Require `requireHuman(req, res)` and `humanConfirmed === true`.
-   - Validate that the request body contains NO prohibited client identity claims (`actor`, `role`, `approver`, etc.). If present, immediately reject.
+   - Validate that the request body contains NO prohibited client identity claims (`actor`, `role`, `approver`, etc.). If present, immediately reject with HTTP 400 Bad Request (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
    - Validate document registration and `CONTROLLED_EDIT` permission.
    - Run format and structural validation on candidate content.
    - Verify `baseSha256 === liveRawFileSha256`.
    - Acquire document-level in-process write lock.
    - Capture current `projectSnapshotDigest()`.
-   - Create an exact byte-for-byte rollback backup of current document (`.local/document-transactions/[opId].bak`).
-   - Write candidate content to temporary file (`.local/document-transactions/[opId].tmp`).
-   - Create `journal.json` with `phase = 'PREPARED'` and `fs.fsyncSync`.
+   - Write rollback sibling file in target directory:
+     `${targetDir}/.${targetBase}.dmk-${operationId}.rollback`
+   - `fs.fsyncSync` rollback sibling file.
+   - Write candidate sibling file in target directory:
+     `${targetDir}/.${targetBase}.dmk-${operationId}.candidate`
+   - `fs.fsyncSync` candidate sibling file.
+   - Write journal under `.local/document-transactions/${operationId}.json` with `phase = 'PREPARED'`.
+   - `fs.fsyncSync` journal file.
 2. **DOCUMENT_REPLACED Phase:**
-   - Atomically rename candidate temp file over target document (`fs.renameSync`).
-   - Update `journal.json` to `phase = 'DOCUMENT_REPLACED'` and `fs.fsyncSync`.
-   - Rollback backup is preserved.
+   - Atomically rename candidate sibling over target document (`fs.renameSync(candidateArtifactPath, targetPath)`).
+   - Because both files reside in the same target directory, replacement is guaranteed same-filesystem atomic.
+   - Update journal to `phase = 'DOCUMENT_REPLACED'` and `fs.fsyncSync`.
+   - Rollback sibling is preserved.
 3. **PROJECT_COMMIT Phase:**
    - Server persistence hooks integrate with `installProjectPersistence`:
      ```typescript
      res.locals.projectPersistenceHooks = {
        onCommit: () => {
-         // Journal phase = 'COMMITTED', unlink backup, temp, journal; release lock
+         // Journal phase = 'COMMITTED', unlink candidate sibling, rollback sibling, journal; release lock
        },
        onRollback: () => {
-         // Atomically restore original document from backup, cleanup journal, release lock
+         // Atomically restore original document from rollback sibling:
+         // fs.renameSync(rollbackArtifactPath, targetPath)
+         // Verify: SHA256(target) === previousSha256
+         // If hash mismatch: report DOCUMENT_TRANSACTION_RECOVERY_REQUIRED
+         // Unlink candidate sibling and journal; release lock
        }
      };
      ```
@@ -506,17 +530,21 @@ export interface DocumentTransactionJournal {
    - Commit `.local/project-state.json` via standard atomic snapshot persistence.
 4. **COMMITTED & CLEANUP Phase:**
    - Snapshot persistence succeeds. `onCommit` triggers.
-   - Delete rollback backup.
+   - Delete candidate sibling file.
+   - Delete rollback sibling file.
    - Delete transaction journal.
    - Release lock.
    - Respond HTTP 200 OK.
+   - *(Note: If cleanup fails after durable commit, do not report that document rolled back; distinguish `COMMIT_FAILED` from `COMMITTED_CLEANUP_PENDING` and retain journal for startup cleanup).*
 
-### Crash Recovery on Startup
+### Startup Crash Recovery & Journal Path Validation
 Before allowing new document mutations, the server scans `.local/document-transactions/`:
-- **Case A (Completed):** Document hash matches `candidateSha256`, matching `DOCUMENT_UPDATED` audit event exists in snapshot, and `stateVersion` committed $\to$ Transaction completed. Clean up stale journal files.
-- **Case B (Uncommitted Replace):** Document hash matches `candidateSha256`, but committed audit event is absent $\to$ Atomically restore original document from `.bak`. Clean up journal.
-- **Case C (Uncommitted Prepare):** Document hash matches `previousSha256`, and audit event is absent $\to$ Operation never completed. Clean up journal.
-- **Case D (Ambiguous State):** Backup missing, hashes corrupt, or inconsistent state $\to$ **FAIL CLOSED**. Halt document operations and report `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
+- **Untrusted Path Protection:** Paths in the journal are NOT trusted blindly. The server re-derives the authoritative target path from `documentId` + manifest registry, and re-derives expected sibling artifact paths. Any mismatch causes recovery to FAIL CLOSED.
+- **Recovery Cases:**
+  - **Case A (Completed):** Document hash matches `candidateSha256`, matching `DOCUMENT_UPDATED` audit event exists in snapshot, and `stateVersion` committed $\to$ Transaction completed. Clean up sibling artifacts and stale journal.
+  - **Case B (Uncommitted Replace):** Document hash matches `candidateSha256`, but committed audit event is absent $\to$ Atomically restore target document from rollback sibling (`fs.renameSync(rollbackSibling, targetPath)`), verify `SHA256(target) === previousSha256`, and clean up journal.
+  - **Case C (Uncommitted Prepare):** Document hash matches `previousSha256`, and audit event is absent $\to$ Operation never committed. Clean up candidate/rollback sibling artifacts and journal.
+  - **Case D (Ambiguous State):** Rollback sibling missing, hashes corrupt, or inconsistent state $\to$ **FAIL CLOSED**. Halt document operations and report `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
 
 ---
 
@@ -542,9 +570,15 @@ Before allowing new document mutations, the server scans `.local/document-transa
 ## 15. Persistence Middleware Extensions
 
 ### Pre-Persistence Classification Model
-Because `installProjectPersistence(app, store, workspaceRoot)` is mounted before route handlers, it intercepts requests before route handlers execute. Setting persistence modes inside route handlers is architecturally too late.
+Because `installProjectPersistence(app, store, workspaceRoot)` is mounted under `app.use('/api/projects', ...)`, it intercepts requests before route handlers execute. Inside mounted middleware, `req.path` is relative to `/api/projects`.
 
-To resolve this cleanly and safely, `installProjectPersistence` is extended with a **server-controlled pre-persistence classifier**:
+To avoid mount-path discrepancies, the classifier computes the **normalized full routed path**:
+```typescript
+const routedPath = `${req.baseUrl}${req.path}`;
+// Example: "/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff"
+```
+
+`installProjectPersistence` is extended with a **server-controlled pre-persistence classifier**:
 
 ```typescript
 export type ProjectPersistenceMode = 'READ_ONLY' | 'MUTATING';
@@ -554,15 +588,16 @@ export interface ProjectPersistenceOptions {
 }
 ```
 
-The classifier is **SERVER-INTERNAL**. Clients must NEVER choose persistence mode via body, query, header, or cookie.
+The classifier is **SERVER-INTERNAL**. Clients must NEVER choose persistence mode via body, query, header, or cookie (no `X-Persistence-Mode` header allowed).
 
 ### Classification Logic:
 ```typescript
 function classifyProjectRequest(req: Request): ProjectPersistenceMode {
+  const routedPath = `${req.baseUrl}${req.path}`;
   // Explicitly classify DMK-195 read-only preview endpoints
   if (
     req.method === 'POST' &&
-    /^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(req.path)
+    /^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(routedPath)
   ) {
     return 'READ_ONLY';
   }
@@ -677,16 +712,17 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 | **THR-DOC-008** | Cross-Project Leakage | Selecting `PRJ-ATLAS-01` displays docmonstakrakin documents. | **Project-Scoped Registry:** External projects return empty registries; UI shows explicit empty state. |
 | **THR-DOC-009** | Unsafe Markdown / XSS | Malicious Markdown contains executable HTML scripts. | **Disabled Raw HTML:** `react-markdown` configured with raw HTML interpretation disabled; dangerous schemes (`javascript:`) neutralized. |
 | **THR-DOC-010** | Malformed Syntax / Corruption | Submitting malformed YAML or corrupted text. | **Pre-Save Syntax Validation:** Server runs parsers before committing files; malformed syntax rejected with HTTP 422. |
-| **THR-DOC-011** | Cross-Domain Partial Commit | Document replaced on disk, but project snapshot write fails, losing audit log. | **Coordinated Transaction Journal:** `.local/document-transactions/` journal with backup copy, persistence hooks, and startup recovery guarantees complete atomic rollback or commit. |
+| **THR-DOC-011** | Cross-Domain Partial Commit | Document replaced on disk, but project snapshot write fails, losing audit log. | **Coordinated Transaction Journal:** `.local/document-transactions/` journal with target-sibling rollback copy, persistence hooks, and startup recovery guarantees complete atomic rollback or commit. |
 | **THR-DOC-012** | Line Ending Integrity Confusion | Platform newline differences cause raw-byte mismatch against pinned digest. | **Raw-Byte Semantics & EOL Preservation:** Hashes computed over exact bytes; living docs preserve detected EOL; mixed EOL fails closed. |
 | **THR-DOC-013** | File Encoding / DoS | Submitting oversized files ($> 5$MB) or non-UTF-8 payloads. | **Size Limit & UTF-8 Clamp:** Enforces 5MB payload limit and UTF-8 validation. |
-| **THR-DOC-014** | Client Identity Injection | Attacker supplies fabricated `actor` or `role` in save payload. | **Strict Claim Rejection:** Any request containing client identity/role claims is rejected with HTTP 400/422. Actor details are derived exclusively from session. |
+| **THR-DOC-014** | Client Identity Injection | Attacker supplies fabricated `actor` or `role` in save payload. | **Strict Claim Rejection:** Any request containing client identity/role claims is rejected with HTTP 400 Bad Request (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`). Actor details are derived exclusively from session. |
+| **THR-DOC-015** | Cross-Filesystem Rename Assumption | Candidate/backup files placed under `.local` fail atomic rename across different filesystem mounts to `docs/`. | **Target-Sibling Placement:** Candidate and rollback artifacts are placed in `path.dirname(targetDocument)`; forward and rollback renames remain strictly same-filesystem atomic operations. |
 
 ---
 
 ## 20. Test Strategy
 
-### Comprehensive Test Matrix (Tests A through AH)
+### Comprehensive Test Matrix (Tests A through AN)
 - **Test A (Registry Listing):** `GET /api/projects/:id/docs` returns exactly the 28 manifest-registered documents for `PRJ-DOCMONSTAKRAKIN`.
 - **Test B (Authority Classification):** Verify every document correctly reports `authority: 'REFERENCE'` or `'GENERATED_PROJECTION'`.
 - **Test C (Hash-Pinned MATCH):** Pinned documents matching disk return `integrityStatus: 'MATCH'`.
@@ -702,7 +738,7 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 - **Test M (Diff Non-Mutating):** `POST .../diff` computes diff without altering target file or writing temporary files.
 - **Test N (Validation Failure Blocks Save):** Malformed content returns HTTP 422 and preserves on-disk content.
 - **Test O (Stale Base Hash Rejection):** Mismatched `baseSha256` returns HTTP 409 `DOCUMENT_STALE`.
-- **Test P (Atomic Persistence):** Writes to `.tmp` first, renames atomically, leaves zero leftover `.tmp` files.
+- **Test P (Atomic Persistence):** Writes to sibling `.candidate` first, renames atomically, leaves zero leftover sibling files.
 - **Test Q (Audit Event Correctness):** Successful save appends `DOCUMENT_UPDATED` event maintaining hash chain continuity.
 - **Test R (Persistence & Reload):** Updated content survives server restart.
 - **Test S (Project Switching State Reset):** Switching projects clears document selection and draft state.
@@ -710,9 +746,9 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 - **Test U (Diff Preserves Snapshot Bytes & Early Exit):** Executing `POST .../diff` leaves `.local/project-state.json` SHA-256 byte-for-byte identical, `stateVersion` unchanged, audit count unchanged, acquires zero writer locks, creates zero snapshot temp files, and enters zero mutation transactions.
 - **Test V (Validate Preserves Snapshot Bytes & Early Exit):** Executing `POST .../validate` leaves `.local/project-state.json` SHA-256 byte-for-byte identical, `stateVersion` unchanged, audit count unchanged, acquires zero writer locks, creates zero snapshot temp files, and enters zero mutation transactions.
 - **Test W (stateVersion Increment):** Successful save increments `project.stateVersion` exactly once ($N \to N+1$).
-- **Test X (Client Identity Claims Rejected):** Submitting any client identity/role claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) in `POST .../save` is rejected with an explicit `CLIENT_IDENTITY_CLAIMS_PROHIBITED` error, leaving document bytes, `stateVersion`, and audit ledger unchanged with zero transaction journals created.
-- **Test Y (Persistence Failure Restores Document):** Injected snapshot persistence failure triggers rollback hook, restoring original document from backup.
-- **Test Z (Startup Recovery Restores Unaudited Replace):** Startup recovery restores document from `.bak` when `DOCUMENT_REPLACED` exists without committed audit event.
+- **Test X (Client Identity Claims Rejected):** Submitting any client identity/role claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) in `POST .../save` is rejected with HTTP 400 Bad Request (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`), leaving document bytes, `stateVersion`, and audit ledger unchanged with zero transaction journals created.
+- **Test Y (Persistence Failure Restores Document):** Injected snapshot persistence failure triggers rollback hook, restoring original document from rollback sibling file.
+- **Test Z (Startup Recovery Restores Unaudited Replace):** Startup recovery restores document from rollback sibling when `DOCUMENT_REPLACED` exists without committed audit event.
 - **Test AA (Stale COMMITTED Journal Cleans Safely):** Startup recovery removes leftover transaction files when audit record is fully committed.
 - **Test AB (Ambiguous Journal Fails Closed):** Corrupted journal halts document mutations with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
 - **Test AC (Raw Markdown HTML Inert):** Embedded `<script>` or HTML tags render as inert text in Markdown viewer.
@@ -721,6 +757,12 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 - **Test AF (Raw-Byte Hashing Semantics):** Pinned hash verification matches `server/bootstrap/selfBootstrapIntegrity.ts` without CRLF normalization.
 - **Test AG (EOL Style Preservation):** Saving an LF file writes LF; saving a CRLF file writes CRLF.
 - **Test AH (Mixed-EOL Edit Fails Closed):** Attempting to save a mixed-EOL document is rejected with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
+- **Test AI (Mounted Path Classification):** In an actual Express app with `app.use('/api/projects', persistenceMiddleware)`, issuing `POST /api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff` is classified as `READ_ONLY`, `POST .../validate` is classified as `READ_ONLY`, and `POST .../save` is classified as `MUTATING`, proving routing classification uses `${req.baseUrl}${req.path}`.
+- **Test AJ (Candidate Sibling Placement):** Candidate artifact resides in `path.dirname(targetDocument)` as `.PROJECT_STATE.md.dmk-<opId>.candidate`.
+- **Test AK (Rollback Sibling Placement):** Rollback artifact resides in `path.dirname(targetDocument)` as `.PROJECT_STATE.md.dmk-<opId>.rollback`.
+- **Test AL (Forward Same-Directory Replacement):** Replacement uses candidate sibling -> target (`fs.renameSync`), never `.local` -> `docs` rename.
+- **Test AM (Atomic Rollback Same-Directory Replacement):** Rollback uses rollback sibling -> target and verifies restored raw-byte hash equals `previousSha256`.
+- **Test AN (Journal Path Tampering):** Altered candidate/rollback paths in journal fail closed and cannot redirect filesystem writes. Authoritative paths are always re-derived from manifest registry.
 
 ---
 
@@ -738,15 +780,16 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
    - Universal, Markdown, and structural validators.
 4. **`server/docs/controlledDocsTransaction.ts`:**
    - Transaction journal management under `.local/document-transactions/`.
-   - Backup creation, cross-domain coordination, persistence hook integration, and startup crash recovery.
+   - Target-sibling candidate and rollback artifact management.
+   - Cross-domain coordination, persistence hook integration, and startup crash recovery.
 5. **`server/docs/controlledDocsRouter.ts`:**
    - HTTP route definitions.
    - Authentication enforcement (`requireHuman`).
-   - Strict rejection of client identity claims.
+   - Strict rejection of client identity claims (HTTP 400).
 
 ### Existing Files to Modify (Phase 2)
 1. **`server/projectPersistence.ts`:**
-   - Support pre-persistence request classifier `classifyRequest(req): ProjectPersistenceMode`.
+   - Support pre-persistence request classifier `classifyRequest(req): ProjectPersistenceMode` using full routed path `${req.baseUrl}${req.path}`.
    - Implement `READ_ONLY` early-exit path.
    - Support `res.locals.projectPersistenceHooks`.
 2. **`server.ts`:**
@@ -764,7 +807,7 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 
 ## 22. Rollout / Verification
 
-1. **Unit & Boundary Tests:** `npx tsx scripts/testControlledDocs.ts` (covering Tests A through AH).
+1. **Unit & Boundary Tests:** `npx tsx scripts/testControlledDocs.ts` (covering Tests A through AN).
 2. **UI Smoke Tests:** `npx tsx scripts/testControlledDocsUi.ts`.
 3. **Full Regression Suite:** `npm run test:complete` (30/30 suites passing).
 4. **Automated QA Suite:** `npm run qa` (11/11 criteria passing).
@@ -787,8 +830,9 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 ## 24. Open Issues, if any
 
 None. All architectural questions identified during Phase 1 have been resolved:
-- Pre-persistence classification order and `READ_ONLY` early-exit semantics are formally defined in `installProjectPersistence`.
-- Client identity claims are strictly rejected.
+- Mounted path classification using `${req.baseUrl}${req.path}` and `READ_ONLY` early-exit semantics are formally defined.
+- Same-filesystem atomicity is guaranteed via target-sibling candidate and rollback placement.
+- Client identity claims are strictly rejected with HTTP 400 Bad Request.
 - Coexistence with `DocumentsView` is resolved via dual-tab layout (Repository Documents vs Dynamic Projections).
 - Cross-domain partial commit is resolved via journaled transaction in `controlledDocsTransaction.ts`.
 - Safe Markdown rendering is resolved via `react-markdown` with disabled raw HTML.
