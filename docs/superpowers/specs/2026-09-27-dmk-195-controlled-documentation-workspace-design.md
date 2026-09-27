@@ -24,7 +24,7 @@ Furthermore, critical living governance documents—specifically `docs/00_contro
 1. **Lack of Cryptographic Hash Verification:** No mechanism detects whether on-disk reference documents match reviewed baseline digests or have suffered unreviewed drift.
 2. **Absence of TOCTOU & Concurrency Protection:** Simultaneous edits or concurrent agent sessions can silently overwrite each other's updates without detecting stale base content.
 3. **Cross-Domain Partial Commit Risk:** A document save affects two distinct persistence domains: (a) the filesystem markdown document, and (b) `.local/project-state.json` (audit ledger and `project.stateVersion`). A naive save flow that replaces the document without an atomic, journaled transaction risks partial commits where the document is changed on disk but the audit record is lost.
-4. **Non-Mutating POST Persistence Side-Effects:** The application's `installProjectPersistence()` middleware automatically intercepts all successful `POST`, `PATCH`, `PUT`, and `DELETE` requests under `/api/projects`, triggering snapshot rewrites. Without explicit handling, read-only preview actions such as `/diff` and `/validate` would trigger unintended state snapshot updates and TOCTOU lock acquisition.
+4. **Non-Mutating POST Persistence Interception:** The application's `installProjectPersistence()` middleware automatically intercepts all successful `POST`, `PATCH`, `PUT`, and `DELETE` requests under `/api/projects`, triggering snapshot rewrites. Because middleware executes before route handlers, read-only preview actions such as `/diff` and `/validate` would trigger unintended state snapshot updates and TOCTOU lock acquisition unless classified pre-persistence.
 5. **Missing Audit Traceability:** Edits performed outside the application bypass the cryptographically chained audit ledger (`server/security/auditImmutability.ts`), breaking the chain of custody.
 6. **Risk of Arbitrary Filesystem Traversal:** Naive document viewing or editing features expose the host environment to directory traversal attacks (`../`), symlink escapes, secret store disclosure (`.env`, `.git/credentials`, OS system files), and accidental corruption of canonical planning artifacts (`docs/00_control/MASTER_WBS.yaml`).
 7. **Conflation of Projections with Authorities:** Users may inadvertently attempt to edit generated projection files (e.g., `docs/00_control/MASTER_WBS.md`), leading to divergence from the canonical planning authority (`MASTER_WBS.yaml`).
@@ -41,10 +41,10 @@ DMK-195 addresses these issues by establishing a dedicated, fail-closed Controll
 4. **Authority Classification:** Re-use the canonical document model from `bootstrap/docmonstakrakin.self-bootstrap.json` and `src/data/selfBootstrapContract.ts` to categorize every document as either `REFERENCE` or `GENERATED_PROJECTION`.
 5. **Strict Immutability for Projections & Baseline References:** Enforce that all `GENERATED_PROJECTION` documents and all hash-pinned `REFERENCE` documents are strictly read-only.
 6. **Controlled, Audited Editing:** Implement a rigorous, multi-step editing workflow (Edit Draft → Preview Diff → Validate → Confirm Save → Stale-Base Verification → Coordinated Atomic Transaction → Audit Logging) restricted exclusively to an approved allowlist of living reference documents.
-7. **Read-Only Persistence Mode:** Implement `res.locals.projectPersistenceMode = 'READ_ONLY'` so `/diff` and `/validate` POST endpoints execute with zero snapshot rewrites, zero stateVersion changes, and zero audit side-effects.
+7. **Pre-Persistence Read-Only Classification:** Implement a server-internal request classifier in `installProjectPersistence` that classifies `/diff` and `/validate` as `READ_ONLY` before entering transaction handling, guaranteeing early exit with zero snapshot rewrites, zero stateVersion changes, zero audit side-effects, and zero lock acquisition.
 8. **Coordinated Cross-Domain Document Transaction:** Implement `server/docs/controlledDocsTransaction.ts` with a durable transaction journal under `.local/document-transactions/` to eliminate cross-domain partial commit risks between filesystem documents and `.local/project-state.json`.
 9. **Governed State Mutation Invariant:** A successful controlled save modifies the repository document, appends `DOCUMENT_UPDATED`, increments `project.stateVersion` exactly once ($N \to N+1$), and durably commits the project snapshot.
-10. **Strict Identity & Role Authorization:** Disallow client-declared actor/role payloads; derive actor identity and governance roles strictly from the authenticated server session via `requireHuman()` with explicit `humanConfirmed === true`.
+10. **Strict Identity & Role Authorization:** Strictly reject any client-declared identity/authority claims (`actor`, `role`, `approver`, etc.); derive actor identity and governance roles exclusively from the authenticated server session via `requireHuman()` with explicit `humanConfirmed === true`.
 11. **Raw-Byte Cryptographic Integrity Verification:** Hash on-disk documents using exact raw-byte SHA-256 identical to `server/bootstrap/selfBootstrapIntegrity.ts` without CRLF normalization, reporting statuses: `MATCH`, `CHANGED`, `UNPINNED`, or `MISSING`.
 12. **Line Ending Preservation:** Detect source EOL (`LF`, `CRLF`, `MIXED`). Re-encode saves in the source convention, and reject editing of mixed-EOL documents fail-closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
 13. **Strict Project Isolation:** Isolate repository document access to `PRJ-DOCMONSTAKRAKIN`. Unrelated projects without a verified repository binding present an explicit empty/unavailable state.
@@ -155,8 +155,8 @@ The controlled documentation subsystem establishes a dedicated server-side bound
 4. **Registered Documents Only (No Auto-Discovery):** The repository contains 128 files in `docs/`, but only 28 are manifest-registered. Files that are not registered (e.g., `docs/00_control/LAST_HANDOFF.md`, planning records, unregistered verification reports, scratch specs) are **strictly invisible** and cannot be queried. The `docs/` boundary is necessary but NOT sufficient; visibility requires BOTH confinement within `docs/` AND active registry membership.
 5. **Boundary Clamp:** The server canonicalizes the target path and verifies that it resides strictly within `path.resolve(workspaceRoot, 'docs')`. Any attempt to access a path outside this directory or escape via symbolic links triggers an immediate `ERR_SECURITY_PATH_TRAVERSAL` error and HTTP 403 Forbidden.
 6. **Deny-Precedence Enforcement:** Integrates with `DENIED_PATTERNS` from `server/security/pathBoundary.ts`, ensuring secrets, `.env` files, Git internals, and system paths cannot be accessed.
-7. **Read-Only Persistence Mode:** Non-mutating POST endpoints (`/diff`, `/validate`) set `res.locals.projectPersistenceMode = 'READ_ONLY'`, preventing snapshot rewrites or state version increments.
-8. **Authentication & Authorization:** Read access (list, get, diff, validate) requires local app session context. Write operations (`/save`) require `requireHuman()` verification with `humanConfirmed === true`. Client-supplied identity fields (`actor`, `role`) are rejected.
+7. **Pre-Persistence Persistence Classification:** Non-mutating POST endpoints (`/diff`, `/validate`) are classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`, preventing snapshot rewrites or state version increments.
+8. **Authentication & Authorization (Strict Reject Rule):** Read access (list, get, diff, validate) requires local app session context. Write operations (`/save`) require `requireHuman()` verification with `humanConfirmed === true`. Any request body containing client-supplied identity claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) is **strictly rejected** with HTTP 400/422.
 
 ---
 
@@ -253,7 +253,7 @@ The server boundary defines the following dedicated REST endpoints:
 
 ### 3. `POST /api/projects/:id/docs/:documentId/diff`
 - **Purpose:** Compute a structured, non-mutating line diff between on-disk content and candidate draft content.
-- **Access:** Read-only. Enforces `res.locals.projectPersistenceMode = 'READ_ONLY'`.
+- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`.
 - **Request Body:**
   ```json
   {
@@ -275,11 +275,11 @@ The server boundary defines the following dedicated REST endpoints:
     "unifiedDiff": "--- a/docs/00_control/PROJECT_STATE.md\n+++ b/docs/00_control/PROJECT_STATE.md\n@@ -30,2 +30,5 @@\n..."
   }
   ```
-- **Guarantees:** Zero snapshot rewrites, zero stateVersion increments, zero audit events, zero temporary files.
+- **Guarantees:** Zero snapshot rewrites, zero stateVersion increments, zero audit events, zero temporary files, zero transaction locks.
 
 ### 4. `POST /api/projects/:id/docs/:documentId/validate`
 - **Purpose:** Run format-specific and structural invariant checks on candidate content without saving.
-- **Access:** Read-only. Enforces `res.locals.projectPersistenceMode = 'READ_ONLY'`.
+- **Access:** Read-only. Classified as `READ_ONLY` by the pre-persistence classifier in `installProjectPersistence`.
 - **Request Body:**
   ```json
   {
@@ -305,7 +305,7 @@ The server boundary defines the following dedicated REST endpoints:
 ### 5. `POST /api/projects/:id/docs/:documentId/save`
 - **Purpose:** Execute a governed, coordinated transaction that updates the document on disk, increments `project.stateVersion` exactly once, appends `DOCUMENT_UPDATED` to the audit log, and durably persists `.local/project-state.json`.
 - **Access:** Mutating; requires authenticated human operator (`requireHuman(req, res)` returning valid session) and `humanConfirmed === true`.
-- **Request Body (Client Identity Omitted):**
+- **Request Body (Client Identity Strictly Prohibited):**
   ```json
   {
     "candidateContent": "# Updated markdown content...",
@@ -314,7 +314,7 @@ The server boundary defines the following dedicated REST endpoints:
     "humanConfirmed": true
   }
   ```
-  *(Note: Any client-supplied `actor`, `role`, `approver`, or `reviewerName` fields are strictly ignored/rejected).*
+  *(CRITICAL: If the request body contains ANY client identity or role claim—such as `actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, or `actorType`—the server immediately REJECTS the request with HTTP 400 Bad Request: `CLIENT_IDENTITY_CLAIMS_PROHIBITED`).*
 - **Response (200 OK):**
   ```json
   {
@@ -439,6 +439,7 @@ For `CONTROLLED_EDIT` documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`), 
 - Collects:
   1. Mandatory confirmation checkbox: `[x] Confirm this governance document update` (`humanConfirmed: true`).
   2. Mandatory justification: Reason / change summary text.
+- Strictly rejects any client attempts to inject identity fields.
 
 ---
 
@@ -475,6 +476,7 @@ export interface DocumentTransactionJournal {
 ### Save Execution Lifecycle:
 1. **PREPARE Phase:**
    - Require `requireHuman(req, res)` and `humanConfirmed === true`.
+   - Validate that the request body contains NO prohibited client identity claims (`actor`, `role`, `approver`, etc.). If present, immediately reject.
    - Validate document registration and `CONTROLLED_EDIT` permission.
    - Run format and structural validation on candidate content.
    - Verify `baseSha256 === liveRawFileSha256`.
@@ -539,23 +541,57 @@ Before allowing new document mutations, the server scans `.local/document-transa
 
 ## 15. Persistence Middleware Extensions
 
-To support the controlled docs architecture without breaking existing routes, `server/projectPersistence.ts` receives two narrow, server-internal extensions:
+### Pre-Persistence Classification Model
+Because `installProjectPersistence(app, store, workspaceRoot)` is mounted before route handlers, it intercepts requests before route handlers execute. Setting persistence modes inside route handlers is architecturally too late.
 
-1. **Persistence Mode Selection (`res.locals.projectPersistenceMode`):**
-   ```typescript
-   // In route handlers:
-   // For /diff and /validate:
-   res.locals.projectPersistenceMode = 'READ_ONLY';
-   ```
-   When `projectPersistenceMode === 'READ_ONLY'`, the persistence middleware bypasses snapshot writes, lock acquisition, and store cloning entirely.
-2. **Persistence Transaction Hooks (`res.locals.projectPersistenceHooks`):**
-   ```typescript
-   res.locals.projectPersistenceHooks = {
-     onCommit?: () => void;
-     onRollback?: () => void;
-   };
-   ```
-   Invoked by the persistence middleware immediately after successful snapshot write (`onCommit`) or upon failure/error rollback (`onRollback`).
+To resolve this cleanly and safely, `installProjectPersistence` is extended with a **server-controlled pre-persistence classifier**:
+
+```typescript
+export type ProjectPersistenceMode = 'READ_ONLY' | 'MUTATING';
+
+export interface ProjectPersistenceOptions {
+  classifyRequest?: (req: Request) => ProjectPersistenceMode;
+}
+```
+
+The classifier is **SERVER-INTERNAL**. Clients must NEVER choose persistence mode via body, query, header, or cookie.
+
+### Classification Logic:
+```typescript
+function classifyProjectRequest(req: Request): ProjectPersistenceMode {
+  // Explicitly classify DMK-195 read-only preview endpoints
+  if (
+    req.method === 'POST' &&
+    /^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(req.path)
+  ) {
+    return 'READ_ONLY';
+  }
+  // All other POST, PATCH, PUT, DELETE, and export routes remain MUTATING
+  return 'MUTATING';
+}
+```
+If the classifier returns an unknown or invalid mode, the middleware **FAILS CLOSED** (throws an error / 500), rather than silently downgrading to `READ_ONLY`.
+
+### READ_ONLY Early-Exit Semantics
+When classification is `READ_ONLY`, `installProjectPersistence` immediately invokes `return next()` without entering mutation transaction state.
+This provides the following strict guarantees:
+- `transactionInFlight` is NOT acquired.
+- Project snapshot writer lock (`project-state.write.lock`) is NOT acquired.
+- `.local/project-state.json` is NOT rewritten.
+- `project.stateVersion` is unchanged.
+- Audit ledger is unchanged.
+- `persistedDigest` is unchanged.
+- No mutation rollback snapshot is cloned or held in memory.
+
+### Persistence Transaction Hooks
+For mutating operations (such as document save), `installProjectPersistence` supports server-internal hooks:
+```typescript
+res.locals.projectPersistenceHooks = {
+  onCommit?: () => void;
+  onRollback?: () => void;
+};
+```
+Invoked immediately after successful snapshot write (`onCommit`) or upon failure/error rollback (`onRollback`).
 
 ---
 
@@ -587,6 +623,8 @@ Every successful document modification generates a tamper-evident, cryptographic
   }
 }
 ```
+
+Identity details (`actor`, `authenticatedIdentity`, `roles`, `roleSource`) are populated strictly from the server-validated session, never from client input.
 
 ---
 
@@ -642,6 +680,7 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 | **THR-DOC-011** | Cross-Domain Partial Commit | Document replaced on disk, but project snapshot write fails, losing audit log. | **Coordinated Transaction Journal:** `.local/document-transactions/` journal with backup copy, persistence hooks, and startup recovery guarantees complete atomic rollback or commit. |
 | **THR-DOC-012** | Line Ending Integrity Confusion | Platform newline differences cause raw-byte mismatch against pinned digest. | **Raw-Byte Semantics & EOL Preservation:** Hashes computed over exact bytes; living docs preserve detected EOL; mixed EOL fails closed. |
 | **THR-DOC-013** | File Encoding / DoS | Submitting oversized files ($> 5$MB) or non-UTF-8 payloads. | **Size Limit & UTF-8 Clamp:** Enforces 5MB payload limit and UTF-8 validation. |
+| **THR-DOC-014** | Client Identity Injection | Attacker supplies fabricated `actor` or `role` in save payload. | **Strict Claim Rejection:** Any request containing client identity/role claims is rejected with HTTP 400/422. Actor details are derived exclusively from session. |
 
 ---
 
@@ -668,10 +707,10 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 - **Test R (Persistence & Reload):** Updated content survives server restart.
 - **Test S (Project Switching State Reset):** Switching projects clears document selection and draft state.
 - **Test T (UI Smoke & Accessibility):** React components render without console errors.
-- **Test U (Diff Preserves Snapshot Bytes):** Executing `POST .../diff` leaves `.local/project-state.json` SHA-256 byte-for-byte identical.
-- **Test V (Validate Preserves Snapshot Bytes):** Executing `POST .../validate` leaves `.local/project-state.json` SHA-256 byte-for-byte identical.
+- **Test U (Diff Preserves Snapshot Bytes & Early Exit):** Executing `POST .../diff` leaves `.local/project-state.json` SHA-256 byte-for-byte identical, `stateVersion` unchanged, audit count unchanged, acquires zero writer locks, creates zero snapshot temp files, and enters zero mutation transactions.
+- **Test V (Validate Preserves Snapshot Bytes & Early Exit):** Executing `POST .../validate` leaves `.local/project-state.json` SHA-256 byte-for-byte identical, `stateVersion` unchanged, audit count unchanged, acquires zero writer locks, creates zero snapshot temp files, and enters zero mutation transactions.
 - **Test W (stateVersion Increment):** Successful save increments `project.stateVersion` exactly once ($N \to N+1$).
-- **Test X (Client Identity Claims Ignored):** Client-provided `actor` or `role` fields are ignored; audit records session identity.
+- **Test X (Client Identity Claims Rejected):** Submitting any client identity/role claims (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) in `POST .../save` is rejected with an explicit `CLIENT_IDENTITY_CLAIMS_PROHIBITED` error, leaving document bytes, `stateVersion`, and audit ledger unchanged with zero transaction journals created.
 - **Test Y (Persistence Failure Restores Document):** Injected snapshot persistence failure triggers rollback hook, restoring original document from backup.
 - **Test Z (Startup Recovery Restores Unaudited Replace):** Startup recovery restores document from `.bak` when `DOCUMENT_REPLACED` exists without committed audit event.
 - **Test AA (Stale COMMITTED Journal Cleans Safely):** Startup recovery removes leftover transaction files when audit record is fully committed.
@@ -703,13 +742,15 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 5. **`server/docs/controlledDocsRouter.ts`:**
    - HTTP route definitions.
    - Authentication enforcement (`requireHuman`).
-   - Setting `res.locals.projectPersistenceMode = 'READ_ONLY'` for diff/validate.
+   - Strict rejection of client identity claims.
 
 ### Existing Files to Modify (Phase 2)
 1. **`server/projectPersistence.ts`:**
-   - Support `res.locals.projectPersistenceMode === 'READ_ONLY'`.
+   - Support pre-persistence request classifier `classifyRequest(req): ProjectPersistenceMode`.
+   - Implement `READ_ONLY` early-exit path.
    - Support `res.locals.projectPersistenceHooks`.
 2. **`server.ts`:**
+   - Pass `classifyRequest` to `installProjectPersistence`.
    - Mount controlled docs router under `/api/projects/:id/docs`.
    - Run transaction recovery check on startup.
 3. **`src/types.ts`:**
@@ -746,7 +787,8 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 ## 24. Open Issues, if any
 
 None. All architectural questions identified during Phase 1 have been resolved:
+- Pre-persistence classification order and `READ_ONLY` early-exit semantics are formally defined in `installProjectPersistence`.
+- Client identity claims are strictly rejected.
 - Coexistence with `DocumentsView` is resolved via dual-tab layout (Repository Documents vs Dynamic Projections).
-- Non-mutating POST persistence is resolved via `res.locals.projectPersistenceMode = 'READ_ONLY'`.
 - Cross-domain partial commit is resolved via journaled transaction in `controlledDocsTransaction.ts`.
 - Safe Markdown rendering is resolved via `react-markdown` with disabled raw HTML.
