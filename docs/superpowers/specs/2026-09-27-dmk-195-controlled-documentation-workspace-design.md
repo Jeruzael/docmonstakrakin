@@ -1,7 +1,16 @@
 # DMK-195 Controlled Documentation Workspace Design
 
 Status:
-READY FOR HUMAN APPROVAL
+APPROVED
+
+Approved By:
+Human Operator
+
+Approved Commit:
+5439dfbf6aacf4ffaf3c0ee1be25f3389e0b36ce
+
+Approval Date:
+2026-09-28
 
 Canonical Work Item:
 DMK-195
