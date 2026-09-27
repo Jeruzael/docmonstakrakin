@@ -1,7 +1,7 @@
 # DMK-195 Controlled Documentation Workspace Design
 
 Status:
-DRAFT / HUMAN REVIEW REQUIRED
+READY FOR HUMAN APPROVAL
 
 Canonical Work Item:
 DMK-195
@@ -20,12 +20,14 @@ The docmonstakrakin application is designed as a local-first Assurance & Softwar
 
 However, operators and autonomous AI engineering agents currently have no secure, repository-integrated mechanism within the console to browse, inspect, and verify the repository's authoritative, version-controlled documentation residing in the `docs/` hierarchy.
 
-Furthermore, critical living governance documents—specifically `docs/00_control/PROJECT_STATE.md` and `docs/00_control/TRACEABILITY_MATRIX.md`—must frequently be updated during iterative development. Currently, such edits must be performed either through external text editors or ad-hoc file mutations outside the application's security boundary. This out-of-band editing introduces significant operational hazards:
+Furthermore, critical living governance documents—specifically `docs/00_control/PROJECT_STATE.md` and `docs/00_control/TRACEABILITY_MATRIX.md`—must frequently be updated during iterative development. Currently, such edits must be performed either through external text editors or ad-hoc file mutations outside the application's security boundary. This introduces critical operational and architectural hazards:
 1. **Lack of Cryptographic Hash Verification:** No mechanism detects whether on-disk reference documents match reviewed baseline digests or have suffered unreviewed drift.
 2. **Absence of TOCTOU & Concurrency Protection:** Simultaneous edits or concurrent agent sessions can silently overwrite each other's updates without detecting stale base content.
-3. **Missing Audit Traceability:** Edits bypass the application's cryptographically chained audit ledger (`server/security/auditImmutability.ts`), breaking the chain of custody.
-4. **Risk of Arbitrary Filesystem Traversal:** Naive document viewing or editing features expose the host environment to directory traversal attacks (`../`), symlink escapes, secret store disclosure (`.env`, `.git/credentials`, OS system files), and accidental corruption of canonical planning artifacts (`docs/00_control/MASTER_WBS.yaml`).
-5. **Conflation of Projections with Authorities:** Users may inadvertently attempt to edit generated projection files (e.g., `docs/00_control/MASTER_WBS.md`), leading to divergence from the canonical planning authority (`MASTER_WBS.yaml`).
+3. **Cross-Domain Partial Commit Risk:** A document save affects two distinct persistence domains: (a) the filesystem markdown document, and (b) `.local/project-state.json` (audit ledger and `project.stateVersion`). A naive save flow that replaces the document without an atomic, journaled transaction risks partial commits where the document is changed on disk but the audit record is lost.
+4. **Non-Mutating POST Persistence Side-Effects:** The application's `installProjectPersistence()` middleware automatically intercepts all successful `POST`, `PATCH`, `PUT`, and `DELETE` requests under `/api/projects`, triggering snapshot rewrites. Without explicit handling, read-only preview actions such as `/diff` and `/validate` would trigger unintended state snapshot updates and TOCTOU lock acquisition.
+5. **Missing Audit Traceability:** Edits performed outside the application bypass the cryptographically chained audit ledger (`server/security/auditImmutability.ts`), breaking the chain of custody.
+6. **Risk of Arbitrary Filesystem Traversal:** Naive document viewing or editing features expose the host environment to directory traversal attacks (`../`), symlink escapes, secret store disclosure (`.env`, `.git/credentials`, OS system files), and accidental corruption of canonical planning artifacts (`docs/00_control/MASTER_WBS.yaml`).
+7. **Conflation of Projections with Authorities:** Users may inadvertently attempt to edit generated projection files (e.g., `docs/00_control/MASTER_WBS.md`), leading to divergence from the canonical planning authority (`MASTER_WBS.yaml`).
 
 DMK-195 addresses these issues by establishing a dedicated, fail-closed Controlled Documentation Workspace.
 
@@ -33,16 +35,21 @@ DMK-195 addresses these issues by establishing a dedicated, fail-closed Controll
 
 ## 2. Goals
 
-1. **In-Console Browsing & Viewing:** Provide a structured, categorized navigation experience to browse and read all repository-controlled Markdown, YAML, and text documentation strictly confined within the `docs/` tree.
-2. **Authority Classification:** Re-use the canonical document model from `bootstrap/docmonstakrakin.self-bootstrap.json` and `src/data/selfBootstrapContract.ts` to explicitly categorize every document as either `REFERENCE` or `GENERATED_PROJECTION`.
-3. **Strict Immutability for Projections & Baseline References:** Enforce that all `GENERATED_PROJECTION` documents and all hash-pinned `REFERENCE` documents are strictly read-only.
-4. **Controlled, Audited Editing:** Implement a rigorous, multi-step editing workflow (Edit Draft → Preview Diff → Validate → Confirm Save → Stale-Base Verification → Atomic Save → Audit Logging) restricted exclusively to an approved allowlist of living reference documents.
-5. **Cryptographic Integrity Verification:** Dynamically hash on-disk documents using SHA-256 and compare against pinned baseline digests, reporting statuses: `MATCH`, `CHANGED`, `UNPINNED`, or `MISSING`.
-6. **Optimistic Concurrency (Anti-TOCTOU):** Enforce base-hash binding on every save operation to prevent overwriting intermediate changes.
-7. **Atomic Persistence:** Prevent partial-write corruption through atomic write-to-temp and rename persistence patterns.
-8. **Chained Audit Trail:** Record every successful document update in the tamper-evident cryptographic audit ledger as a `DOCUMENT_UPDATED` event.
-9. **Strict Project Isolation:** Isolate repository document access to `PRJ-DOCMONSTAKRAKIN`. Unrelated projects (such as `PRJ-ATLAS-01` or `PRJ-FINPAY-02`) that lack a repository-controlled document registry must present an explicit empty/unavailable state without leaking host files.
-10. **Fail-Closed Path Confinement:** Enforce strict path resolution rules that reject directory traversal, absolute paths, UNC paths, URL-encoded tricks, and symlink escapes outside `docs/`.
+1. **In-Console Browsing & Viewing:** Provide a structured, categorized navigation experience to browse and read repository-controlled Markdown, YAML, and text documentation strictly confined within the `docs/` tree.
+2. **Lock Authoritative Document Registry:** Define `bootstrap/docmonstakrakin.self-bootstrap.json` (`documents[]`) as the sole authoritative registry for `PRJ-DOCMONSTAKRAKIN`. The server reads and validates this registry in a strictly read-only manner.
+3. **Strict Registry Filtering (No Auto-Discovery):** Expose ONLY manifest-registered documents (currently 28 controlled documents). Files physically residing in `docs/` that are not explicitly registered remain strictly invisible.
+4. **Authority Classification:** Re-use the canonical document model from `bootstrap/docmonstakrakin.self-bootstrap.json` and `src/data/selfBootstrapContract.ts` to categorize every document as either `REFERENCE` or `GENERATED_PROJECTION`.
+5. **Strict Immutability for Projections & Baseline References:** Enforce that all `GENERATED_PROJECTION` documents and all hash-pinned `REFERENCE` documents are strictly read-only.
+6. **Controlled, Audited Editing:** Implement a rigorous, multi-step editing workflow (Edit Draft → Preview Diff → Validate → Confirm Save → Stale-Base Verification → Coordinated Atomic Transaction → Audit Logging) restricted exclusively to an approved allowlist of living reference documents.
+7. **Read-Only Persistence Mode:** Implement `res.locals.projectPersistenceMode = 'READ_ONLY'` so `/diff` and `/validate` POST endpoints execute with zero snapshot rewrites, zero stateVersion changes, and zero audit side-effects.
+8. **Coordinated Cross-Domain Document Transaction:** Implement `server/docs/controlledDocsTransaction.ts` with a durable transaction journal under `.local/document-transactions/` to eliminate cross-domain partial commit risks between filesystem documents and `.local/project-state.json`.
+9. **Governed State Mutation Invariant:** A successful controlled save modifies the repository document, appends `DOCUMENT_UPDATED`, increments `project.stateVersion` exactly once ($N \to N+1$), and durably commits the project snapshot.
+10. **Strict Identity & Role Authorization:** Disallow client-declared actor/role payloads; derive actor identity and governance roles strictly from the authenticated server session via `requireHuman()` with explicit `humanConfirmed === true`.
+11. **Raw-Byte Cryptographic Integrity Verification:** Hash on-disk documents using exact raw-byte SHA-256 identical to `server/bootstrap/selfBootstrapIntegrity.ts` without CRLF normalization, reporting statuses: `MATCH`, `CHANGED`, `UNPINNED`, or `MISSING`.
+12. **Line Ending Preservation:** Detect source EOL (`LF`, `CRLF`, `MIXED`). Re-encode saves in the source convention, and reject editing of mixed-EOL documents fail-closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
+13. **Strict Project Isolation:** Isolate repository document access to `PRJ-DOCMONSTAKRAKIN`. Unrelated projects without a verified repository binding present an explicit empty/unavailable state.
+14. **Coexistence with Existing UI & Gate 7:** Preserve existing `DocumentsView.tsx` functionality intact under a "Dynamic Projections" tab while mounting the new workspace under a "Repository Documents" tab, strictly preserving Gate 7 sign-off and package controls.
+15. **Safe Markdown Rendering Without Custom Sanitizers:** Propose `react-markdown` with raw HTML disabled and safe external link handling, rejecting dangerous URI schemes (`javascript:`, `data:`).
 
 ---
 
@@ -50,15 +57,15 @@ DMK-195 addresses these issues by establishing a dedicated, fail-closed Controll
 
 DMK-195 explicitly does NOT:
 1. **Resolve DMK-201:** Does not perform runtime/WBS state reconciliation, does not change DMK-201 status (`VERIFICATION_PENDING`), and does not apply historical candidate patches.
-2. **Apply State Recovery or Reconciliation:** Does not mutate `.local/project-state.json` or alter live WorkItem statuses during this phase.
-3. **Provide Arbitrary Filesystem Browsing:** Does not expose a generic file manager, directory browser, or filesystem tree outside the registered documents within `docs/`.
-4. **Provide General-Purpose Source Code Editing:** Does not provide code editing or Git workspace management outside the specified allowlist (source code and Git operations remain governed by `RepositoryView`).
+2. **Apply State Recovery or Reconciliation:** Does not repair historical package-overwrite state or alter unrelated WorkItem statuses.
+3. **Scan or Auto-Discover `docs/`:** Does not scan the filesystem to expose unregistered documents; unregistered files remain strictly invisible.
+4. **Modify `.local/project-state.json` Merely to Expose Docs:** Does not seed or mutate `store.documents` to populate the document list.
 5. **Permit Editing of `MASTER_WBS.yaml`:** `MASTER_WBS.yaml` is the canonical planning authority and must never be edited through the Docs UI.
-6. **Permit Editing or Ad-Hoc Regeneration of `MASTER_WBS.md`:** `MASTER_WBS.md` is a `GENERATED_PROJECTION` and remains strictly read-only in the Docs UI; regeneration belongs to controlled CLI workflows (`npm run wbs:generate` / `npm run wbs:check`).
+6. **Permit Editing or Ad-Hoc Regeneration of `MASTER_WBS.md`:** `MASTER_WBS.md` is a `GENERATED_PROJECTION` and remains strictly read-only in the Docs UI; regeneration belongs to controlled CLI workflows (`npm run wbs:render` / `npm run wbs:check`).
 7. **Implement DMK-196 Sign-Off UX:** Does not implement the interactive requirement sign-off requesting workflow.
 8. **Implement DMK-197 Approval Inbox:** Does not implement the dual-signoff quorum inbox.
 9. **Provision Reviewer Accounts:** Does not create or manage cryptographic reviewer keys.
-10. **Execute or Touch Gate 7:** Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
+10. **Touch or Execute Gate 7:** Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
 11. **Promote Release Status:** Release status remains `v0.1.0-rc1` (Release Candidate).
 12. **Expose Secrets or Credentials:** Never accesses, displays, or modifies files in `.secrets/`, `.test_secret_store/`, `.env*`, or private keys.
 
@@ -66,28 +73,34 @@ DMK-195 explicitly does NOT:
 
 ## 4. Existing Repository Model
 
-The repository currently provides several foundational building blocks that DMK-195 will reuse rather than duplicate:
+The repository currently provides several foundational building blocks that DMK-195 builds upon:
 
-1. **Self-Bootstrap Manifest Registry (`bootstrap/docmonstakrakin.self-bootstrap.json`):**
-   Contains a comprehensive registry of 28 controlled documents under the `documents` array. Each entry defines:
+1. **Authoritative Self-Bootstrap Manifest (`bootstrap/docmonstakrakin.self-bootstrap.json`):**
+   Contains the authoritative registry of 28 controlled documents under `documents[]`. Each entry defines:
    - `id`: Stable identifier (e.g., `DOC-CTRL-001`, `DOC-PROD-001`, `DOC-ARC-001`).
    - `path`: Workspace-relative path (e.g., `docs/00_control/PROJECT_CHARTER.md`).
    - `kind`: Category enum (`CONTROL`, `PRODUCT`, `REQUIREMENTS`, `ARCHITECTURE`, `SECURITY`, `VERIFICATION`, `OPERATIONS`).
    - `authority`: Governance authority enum (`REFERENCE`, `GENERATED_PROJECTION`).
    - `title`: Human-readable document title.
    - `sha256Digest`: Optional 64-character hex SHA-256 digest pinning the baseline artifact.
-2. **Strongly Typed Schema Contract (`src/data/selfBootstrapContract.ts`):**
-   Defines the TypeScript types `ControlledDocumentReference`, `ControlledDocumentKind`, and `ControlledDocumentAuthority`.
-3. **Path Boundary & Traversal Defense (`server/security/pathBoundary.ts`):**
-   Implements `sanitizeAndResolvePath` and `assertWorkspacePath` enforcing `SEC-CTRL-011` / OWASP ASVS V12.3, checking for null-byte injections, double-URL encoding, workspace confinement, and deny-precedence rules.
-4. **Cryptographic Audit Hash Chaining (`server/security/auditImmutability.ts`):**
+2. **Runtime Document Collection (`server/projectStore.ts` & `.local/project-state.json`):**
+   `store.documents['PRJ-DOCMONSTAKRAKIN']` in `.local/project-state.json` is currently empty (`[]`) following the historical Test 10 package overwrite and is NOT included as portable-package authoritative state. **DMK-195 v1 locks `bootstrap/docmonstakrakin.self-bootstrap.json` as the sole authoritative registry.** The server loads this file directly in a read-only manner. It does NOT seed `store.documents`, does NOT hydrate `store.documents` from the manifest, and does NOT treat `store.documents` as fallback authority.
+3. **Integrity Verifier (`server/bootstrap/selfBootstrapIntegrity.ts`):**
+   Computes document digests via `crypto.createHash('sha256').update(fs.readFileSync(docPath)).digest('hex')`. This establishes the project's standard: **exact raw-byte SHA-256 without line-ending normalization**.
+4. **Governance Identity & Session (`server/proposals/identity.ts`):**
+   `requireHuman(req, res)` enforces:
+   - Same-origin validation.
+   - Active session cookie (`dmk_reviewer`).
+   - `kind === 'HUMAN'`.
+   - At least one recognized governance role: `Security Officer` OR `Lead Architect`.
+5. **Project Persistence Middleware (`server/projectPersistence.ts`):**
+   Intercepts `POST`, `PATCH`, `PUT`, `DELETE` under `/api/projects` and atomically commits snapshot changes using temporary files and directory locks.
+6. **Path Boundary & Traversal Defense (`server/security/pathBoundary.ts`):**
+   Implements `sanitizeAndResolvePath` and `assertWorkspacePath` enforcing `SEC-CTRL-011` / OWASP ASVS V12.3 path traversal defense, null-byte blocking, and deny-precedence rules.
+7. **Cryptographic Audit Hash Chaining (`server/security/auditImmutability.ts`):**
    Implements `computeAuditEventHash`, `createChainedAuditEvent`, and `verifyAuditLedgerChain` enforcing `SEC-CTRL-013` / NIST SSDF PO.1.3 tamper-evident audit chaining.
-5. **Atomic Persistence Pattern (`server/projectPersistence.ts`):**
-   Demonstrates write-to-temporary-file in the same directory followed by atomic `fs.renameSync`, with cleanup on failure and optional expected-digest checks.
-6. **In-Memory Store (`server/projectStore.ts`):**
-   Defines `store.documents: Record<string, ControlledDocumentReference[]>`, ready to hold per-project document reference lists.
-7. **Frontend View Architecture (`src/App.tsx`, `src/components/Sidebar.tsx`):**
-   Establishes clean separation of top-level views (`currentView: NavView`), coordinated by `App.tsx` with project-switching loaders (`src/data/projectWorkspace.ts`).
+8. **Frontend View Architecture (`src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/DocumentsView.tsx`):**
+   Coordinates top-level views. `DocumentsView.tsx` currently renders dynamic projections and manages Gate 7 sign-off and package transfer.
 
 ---
 
@@ -118,7 +131,7 @@ Defines the client/server permission boundary:
 | `DOC-CTRL-001` | `docs/00_control/PROJECT_CHARTER.md` | `REFERENCE` | Yes | `READ_ONLY` | Foundational charter; pinned baseline. |
 | `DOC-CTRL-002` | `docs/00_control/PROJECT_STATE.md` | `REFERENCE` | No | `CONTROLLED_EDIT` | Living execution state; explicitly allowlisted. |
 | `DOC-CTRL-003` | `docs/00_control/MASTER_WBS.yaml` | `REFERENCE` | No | `READ_ONLY` | Canonical planning authority; excluded from Docs UI edits. |
-| `DOC-CTRL-004` | `docs/00_control/MASTER_WBS.md` | `GENERATED_PROJECTION` | No | `READ_ONLY` | Projection of WBS; must be updated via generator CLI only. |
+| `DOC-CTRL-004` | `docs/00_control/MASTER_WBS.md` | `GENERATED_PROJECTION` | No | `READ_ONLY` | Projection of WBS; must be updated via `npm run wbs:render` only. |
 | `DOC-CTRL-005` | `docs/00_control/ROADMAP.md` | `REFERENCE` | Yes | `READ_ONLY` | Pinned roadmap baseline. |
 | `DOC-CTRL-006` | `docs/00_control/TRACEABILITY_MATRIX.md` | `REFERENCE` | No | `CONTROLLED_EDIT` | Living traceability record; explicitly allowlisted. |
 | `DOC-CTRL-007` | `docs/00_control/SELF_BOOTSTRAP_CONTRACT.md` | `REFERENCE` | Yes | `READ_ONLY` | Pinned bootstrap contract specification. |
@@ -139,17 +152,27 @@ The controlled documentation subsystem establishes a dedicated server-side bound
 1. **No Generic Filesystem API:** The server provides zero endpoints accepting arbitrary filesystem paths from the client.
 2. **Identity-Based Resolution:** All endpoints operate strictly on verified `documentId` values (e.g., `/api/projects/:id/docs/DOC-CTRL-002`).
 3. **Server-Side Safe Lookup:** The server maps `documentId` to its registered relative path via the project's trusted registry.
-4. **Boundary Clamp:** The server canonicalizes the target path and verifies that it resides strictly within `path.resolve(workspaceRoot, 'docs')`. Any attempt to access a path outside this directory or escape via symbolic links triggers an immediate `ERR_SECURITY_PATH_TRAVERSAL` error and HTTP 403 Forbidden.
-5. **Deny-Precedence Enforcement:** Integrates with `DENIED_PATTERNS` from `server/security/pathBoundary.ts`, ensuring secrets, `.env` files, Git internals, and system paths cannot be accessed even if an attacker attempts to inject a malicious registry entry.
-6. **Authentication & Role Authorization:** Read access requires valid session context. Write operations (`/save`) require an authenticated human identity (`requireHuman`) and record the actor in the audit ledger.
+4. **Registered Documents Only (No Auto-Discovery):** The repository contains 128 files in `docs/`, but only 28 are manifest-registered. Files that are not registered (e.g., `docs/00_control/LAST_HANDOFF.md`, planning records, unregistered verification reports, scratch specs) are **strictly invisible** and cannot be queried. The `docs/` boundary is necessary but NOT sufficient; visibility requires BOTH confinement within `docs/` AND active registry membership.
+5. **Boundary Clamp:** The server canonicalizes the target path and verifies that it resides strictly within `path.resolve(workspaceRoot, 'docs')`. Any attempt to access a path outside this directory or escape via symbolic links triggers an immediate `ERR_SECURITY_PATH_TRAVERSAL` error and HTTP 403 Forbidden.
+6. **Deny-Precedence Enforcement:** Integrates with `DENIED_PATTERNS` from `server/security/pathBoundary.ts`, ensuring secrets, `.env` files, Git internals, and system paths cannot be accessed.
+7. **Read-Only Persistence Mode:** Non-mutating POST endpoints (`/diff`, `/validate`) set `res.locals.projectPersistenceMode = 'READ_ONLY'`, preventing snapshot rewrites or state version increments.
+8. **Authentication & Authorization:** Read access (list, get, diff, validate) requires local app session context. Write operations (`/save`) require `requireHuman()` verification with `humanConfirmed === true`. Client-supplied identity fields (`actor`, `role`) are rejected.
 
 ---
 
 ## 7. Document Registry
 
-### Registry Structure
-Every controlled document in the project is registered with the following metadata:
+### Authoritative Source
+For `PRJ-DOCMONSTAKRAKIN`, the authoritative document registry is:
+`bootstrap/docmonstakrakin.self-bootstrap.json` -> `documents[]`
+The server loads and validates this file at startup in a read-only manner.
+- It does NOT seed `store.documents`.
+- It does NOT hydrate `store.documents` from the manifest.
+- It does NOT modify `.local/project-state.json`.
+- It does NOT treat `store.documents` as fallback authority.
+For other projects without a verified repository binding, the server returns an explicit empty list (`[]`).
 
+### Registry Structure
 ```typescript
 export interface ControlledDocumentRecord {
   id: string;                      // Stable identifier: e.g. "DOC-CTRL-002"
@@ -166,27 +189,19 @@ export interface ControlledDocumentRecord {
 ```
 
 ### Dynamic Evaluation Fields (List Response)
-When queried via `GET /api/projects/:id/docs`, the server reads the filesystem in a read-only manner and dynamically enriches the record with live integrity metadata:
+When queried via `GET /api/projects/:id/docs`, the server reads the filesystem in a read-only manner and dynamically enriches the record:
 
 ```typescript
 export type DocumentIntegrityStatus = 'MATCH' | 'CHANGED' | 'UNPINNED' | 'MISSING';
 
 export interface ControlledDocumentSummary extends ControlledDocumentRecord {
-  currentSha256: string | null;     // Live SHA-256 of on-disk file, or null if missing
+  currentSha256: string | null;     // Live raw-byte SHA-256 of on-disk file
   integrityStatus: DocumentIntegrityStatus;
   sizeBytes: number;
   lastModifiedAt: string | null;   // ISO 8601 timestamp
+  lineEndingMode: 'LF' | 'CRLF' | 'MIXED' | 'UNKNOWN';
 }
 ```
-
-### Integrity Evaluation Logic:
-- If `!fs.existsSync(canonicalPath)`: `integrityStatus = 'MISSING'`, `currentSha256 = null`.
-- If `sha256Digest` is present in registry:
-  - If `currentSha256 === sha256Digest`: `integrityStatus = 'MATCH'`.
-  - If `currentSha256 !== sha256Digest`: `integrityStatus = 'CHANGED'`.
-- If `sha256Digest` is absent (living document):
-  - `integrityStatus = 'UNPINNED'`.
-  - *Note:* `UNPINNED` is NOT a verification failure; it explicitly designates an intentionally living reference document.
 
 ---
 
@@ -195,9 +210,8 @@ export interface ControlledDocumentSummary extends ControlledDocumentRecord {
 The server boundary defines the following dedicated REST endpoints:
 
 ### 1. `GET /api/projects/:id/docs`
-- **Purpose:** Enumerate all controlled documents for the specified project with their live integrity statuses.
-- **Access:** Read-only.
-- **Parameters:** `:id` (Project ID).
+- **Purpose:** Enumerate all manifest-registered documents for the project with live raw-byte integrity statuses. Unregistered files in `docs/` are omitted.
+- **Access:** Read-only; standard application access.
 - **Response (200 OK):**
   ```json
   {
@@ -216,62 +230,30 @@ The server boundary defines the following dedicated REST endpoints:
         "contentType": "markdown",
         "category": "Control",
         "sizeBytes": 14205,
+        "lineEndingMode": "LF",
         "lastModifiedAt": "2026-09-20T12:00:00.000Z"
-      },
-      {
-        "id": "DOC-CTRL-002",
-        "title": "Project State - Authoritative Roadmap and Execution Baseline",
-        "path": "docs/00_control/PROJECT_STATE.md",
-        "kind": "CONTROL",
-        "authority": "REFERENCE",
-        "editability": "CONTROLLED_EDIT",
-        "sha256Digest": null,
-        "currentSha256": "4a1b...",
-        "integrityStatus": "UNPINNED",
-        "contentType": "markdown",
-        "category": "Control",
-        "sizeBytes": 24662,
-        "lastModifiedAt": "2026-09-27T16:00:00.000Z"
       }
     ]
   }
   ```
-- **Error Responses:**
-  - `404 Not Found`: Project `:id` does not exist.
-  - For projects without a registered document collection (e.g., `PRJ-ATLAS-01`), returns `{ "projectId": "PRJ-ATLAS-01", "documents": [] }`.
 
 ### 2. `GET /api/projects/:id/docs/:documentId`
 - **Purpose:** Retrieve the full text content and metadata of a registered document.
 - **Access:** Read-only.
-- **Parameters:** `:id` (Project ID), `:documentId` (e.g., `DOC-CTRL-002`).
 - **Response (200 OK):**
   ```json
   {
-    "document": {
-      "id": "DOC-CTRL-002",
-      "title": "Project State - Authoritative Roadmap and Execution Baseline",
-      "path": "docs/00_control/PROJECT_STATE.md",
-      "kind": "CONTROL",
-      "authority": "REFERENCE",
-      "editability": "CONTROLLED_EDIT",
-      "sha256Digest": null,
-      "currentSha256": "4a1b...",
-      "integrityStatus": "UNPINNED",
-      "contentType": "markdown",
-      "category": "Control"
-    },
+    "document": { ... },
     "content": "# docmonstakrakin current project state\n..."
   }
   ```
 - **Error Responses:**
-  - `404 Not Found`: Project or `documentId` not found in registry.
-  - `403 Forbidden`: Path traversal or boundary escape detected.
-  - `410 Gone`: Registered document file is missing on disk (`integrityStatus: MISSING`).
+  - `404 Not Found`: Project not found, or `documentId` not registered. Unregistered paths return 404 even if the file exists on disk.
+  - `410 Gone`: Registered document file is missing on disk.
 
 ### 3. `POST /api/projects/:id/docs/:documentId/diff`
 - **Purpose:** Compute a structured, non-mutating line diff between on-disk content and candidate draft content.
-- **Access:** Non-mutating / dry-run.
-- **Parameters:** `:id`, `:documentId`.
+- **Access:** Read-only. Enforces `res.locals.projectPersistenceMode = 'READ_ONLY'`.
 - **Request Body:**
   ```json
   {
@@ -293,12 +275,11 @@ The server boundary defines the following dedicated REST endpoints:
     "unifiedDiff": "--- a/docs/00_control/PROJECT_STATE.md\n+++ b/docs/00_control/PROJECT_STATE.md\n@@ -30,2 +30,5 @@\n..."
   }
   ```
-- **Guarantees:** Does NOT write or alter any files on disk.
+- **Guarantees:** Zero snapshot rewrites, zero stateVersion increments, zero audit events, zero temporary files.
 
 ### 4. `POST /api/projects/:id/docs/:documentId/validate`
 - **Purpose:** Run format-specific and structural invariant checks on candidate content without saving.
-- **Access:** Non-mutating.
-- **Parameters:** `:id`, `:documentId`.
+- **Access:** Read-only. Enforces `res.locals.projectPersistenceMode = 'READ_ONLY'`.
 - **Request Body:**
   ```json
   {
@@ -320,37 +301,20 @@ The server boundary defines the following dedicated REST endpoints:
     ]
   }
   ```
-- **Error Response (422 Unprocessable Entity):**
-  ```json
-  {
-    "valid": false,
-    "errors": ["Missing required section: '## Current governance and task status'"],
-    "warnings": []
-  }
-  ```
 
 ### 5. `POST /api/projects/:id/docs/:documentId/save`
-- **Purpose:** Atomically save validated candidate content after checking optimistic concurrency (`baseSha256`).
-- **Access:** Mutating; requires authenticated human operator (`requireHuman`).
-- **Parameters:** `:id`, `:documentId`.
-- **Request Body:**
+- **Purpose:** Execute a governed, coordinated transaction that updates the document on disk, increments `project.stateVersion` exactly once, appends `DOCUMENT_UPDATED` to the audit log, and durably persists `.local/project-state.json`.
+- **Access:** Mutating; requires authenticated human operator (`requireHuman(req, res)` returning valid session) and `humanConfirmed === true`.
+- **Request Body (Client Identity Omitted):**
   ```json
   {
     "candidateContent": "# Updated markdown content...",
     "baseSha256": "4a1b...",
-    "actor": "Lead Architect",
-    "reason": "Update project state following DMK-195 design review"
+    "reason": "Update project state following DMK-195 design review",
+    "humanConfirmed": true
   }
   ```
-- **Pre-Execution Enforcements:**
-  1. `documentId` must exist in registry.
-  2. Document `editability` MUST be `CONTROLLED_EDIT`. If `READ_ONLY`, immediately reject with `403 Forbidden` (`CANNOT_EDIT_READ_ONLY_DOCUMENT`).
-  3. Validate candidate content. If invalid, reject with `422 Unprocessable Entity`.
-  4. Compute live on-disk hash. If `liveSha256 !== baseSha256`, reject with `409 Conflict` (`DOCUMENT_STALE`).
-- **Execution Flow:**
-  1. Write to temporary file in same directory (`.tmp.[id].[random]`).
-  2. Atomically rename temporary file over target file (`fs.renameSync`).
-  3. Append cryptographically chained `DOCUMENT_UPDATED` event to project audit log.
+  *(Note: Any client-supplied `actor`, `role`, `approver`, or `reviewerName` fields are strictly ignored/rejected).*
 - **Response (200 OK):**
   ```json
   {
@@ -359,8 +323,9 @@ The server boundary defines the following dedicated REST endpoints:
     "path": "docs/00_control/PROJECT_STATE.md",
     "previousSha256": "4a1b...",
     "newSha256": "7c9e...",
+    "stateVersion": 31,
     "auditEventId": "AUD-MUIX89KL-1234",
-    "timestamp": "2026-09-27T17:15:00.000Z"
+    "timestamp": "2026-09-27T18:00:00.000Z"
   }
   ```
 
@@ -369,8 +334,6 @@ The server boundary defines the following dedicated REST endpoints:
 ## 9. Path Safety
 
 ### Fail-Closed Resolution Flow
-Client inputs are never trusted to contain filesystem paths. The resolution pipeline executes in six fail-closed stages:
-
 ```
 [ Client Request ]
        │
@@ -378,8 +341,8 @@ Client inputs are never trusted to contain filesystem paths. The resolution pipe
 1. Extract documentId (e.g., "DOC-CTRL-002")
        │
        ▼
-2. Registry Lookup (lookup in trusted project registry)
-       │  ├─ Not found ──► Return 404 (DOCUMENT_NOT_REGISTERED)
+2. Registry Lookup (lookup in authoritative bootstrap manifest)
+       │  ├─ Not found in registry ──► Return 404 (DOCUMENT_NOT_REGISTERED)
        ▼
 3. Retrieve registered relative path (e.g., "docs/00_control/PROJECT_STATE.md")
        │
@@ -405,223 +368,206 @@ Client inputs are never trusted to contain filesystem paths. The resolution pipe
 
 ---
 
-## 10. Hash Verification
+## 10. Hash Verification & Line Ending Semantics
 
-### Hashing Algorithm
-All document cryptographic digests are computed using SHA-256 over raw file bytes:
+### Exact Raw-Byte Hashing
+To maintain 100% mathematical consistency with `server/bootstrap/selfBootstrapIntegrity.ts`, document hashes are calculated over the **exact raw file bytes** on disk:
 ```typescript
-export function computeFileSha256(filePath: string): string {
-  const content = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(content).digest('hex');
+export function computeRawFileSha256(filePath: string): string {
+  const bytes = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 ```
+**CRITICAL:** The server does NOT normalize `CRLF -> LF` before computing pinned integrity hashes. Normalizing line endings would create false agreement/disagreement against existing bootstrap verifiers.
 
 ### Status Classification Rules
-1. **`MATCH` (Green Badge):**
-   - Condition: `sha256Digest` is defined in registry AND `currentSha256 === sha256Digest`.
-   - Meaning: File is byte-identical to the reviewed and ratified baseline artifact.
-2. **`CHANGED` (Amber Warning Badge):**
-   - Condition: `sha256Digest` is defined in registry AND `currentSha256 !== sha256Digest`.
-   - Meaning: File differs from the pinned baseline. Does not automatically imply malice; signals that the on-disk file has evolved and requires human review or baseline repinning.
-3. **`UNPINNED` (Blue Information Badge):**
-   - Condition: `sha256Digest` is undefined/null in registry AND file exists on disk.
-   - Meaning: The document is an active, living reference document (e.g., `PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`, `MASTER_WBS.yaml`). It is NOT an error or verification failure.
-4. **`MISSING` (Red Alert Badge):**
-   - Condition: File does not exist at registered path.
-   - Meaning: The registered artifact is missing from the filesystem.
+1. **`MATCH` (Green Badge):** `sha256Digest` defined AND `currentSha256 === sha256Digest`.
+2. **`CHANGED` (Amber Badge):** `sha256Digest` defined AND `currentSha256 !== sha256Digest`. Signals that on-disk bytes differ from reviewed baseline.
+3. **`UNPINNED` (Blue Badge):** `sha256Digest` is null/undefined in registry AND file exists on disk. This is a healthy, expected status for living reference documents. It is NOT an error.
+4. **`MISSING` (Red Alert Badge):** File does not exist at registered path.
+
+### Line Ending Handling for Editable Living Documents
+Browser text inputs normalize newlines to logical `\n`. To prevent unintended line-ending churn:
+1. **Detection:** When reading a document, detect its EOL convention:
+   - `LF`: contains `\n` without preceding `\r`.
+   - `CRLF`: all `\n` are preceded by `\r`.
+   - `MIXED`: contains both `\r\n` and bare `\n`.
+2. **Preservation on Save:**
+   - **`LF` source:** Candidate text is encoded with `\n`.
+   - **`CRLF` source:** Candidate logical newlines are converted to `\r\n` before computing candidate hash, diff, or saving to disk.
+   - **`MIXED` source:** Controlled editing is rejected fail-closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`. Read-only viewing remains allowed.
+3. **Candidate Hash Exactness:** Candidate SHA-256 is computed over the exact encoded bytes that will be written to disk.
 
 ---
 
-## 11. Viewer UX
+## 11. Viewer UX & Existing Components Integration
 
-### Proposed Layout (`ControlledDocsView.tsx`)
-The Docs workspace integrates cleanly with the application's sidebar navigation (`currentView === 'documents'`), replacing the current synthetic export generator with a comprehensive dual-mode layout:
+### Coexistence Architecture (Preserving Gate 7 & Package Export)
+DMK-195 does NOT replace or delete existing dynamic projection behavior. The existing `DocumentsView.tsx` component houses:
+- Dynamic Markdown projections (PRD, SAD, THREAT, RTM, GOV, RELEASE).
+- Package export and import triggers.
+- **Gate 7 Release Sign-off workflow** (`POST /api/projects/:id/release/signoff`).
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ TopBar: Active Project [PRJ-DOCMONSTAKRAKIN]                                                     │
-├──────────────────────┬───────────────────────────────────────────────────────────────────────────┤
-│ Controlled Docs      │ Document Header:                                                          │
-│ 🔍 Filter documents  │ [DOC-CTRL-002] Project State                                              │
-│                      │ Path: docs/00_control/PROJECT_STATE.md                                    │
-│ ▼ CONTROL (7)        │ Authority: [REFERENCE]   Editability: [CONTROLLED EDIT]                   │
-│   • Project Charter  │ Integrity: [UNPINNED]    Current Hash: [4a1b8c... (Copy)]                 │
-│  ▶• Project State    ├───────────────────────────────────────────────────────────────────────────┤
-│   • Master WBS (YAML)│ Actions: [Edit Draft]  [Raw / Rendered Toggle]                            │
-│   • Master WBS (MD)  ├───────────────────────────────────────────────────────────────────────────┤
-│   • Roadmap          │ Content Viewer Panel:                                                     │
-│   • Traceability     │                                                                           │
-│   • Self-Bootstrap   │ # docmonstakrakin current project state                                   │
-│                      │                                                                           │
-│ ► PRODUCT (3)        │ ## 2026-09-25 — DMK-194 Human UI Review Complete                          │
-│ ► REQUIREMENTS (1)   │ ...                                                                       │
-│ ► ARCHITECTURE (3)   │                                                                           │
-│ ► SECURITY (4)       │                                                                           │
-│ ► DECISIONS / ADR (6)│                                                                           │
-│ ► VERIFICATION (4)   │                                                                           │
-└──────────────────────┴───────────────────────────────────────────────────────────────────────────┘
-```
+The Documentation Workspace (`currentView === 'documents'`) is structured with two top-level tabs:
+1. **Tab 1: Repository Documents (New DMK-195 Controlled Workspace):**
+   Displays the controlled repository documentation catalog, category navigation, safe rendered Markdown, raw source toggle, live raw-byte hash badges, and the controlled edit workflow.
+2. **Tab 2: Dynamic Projections (Existing `DocumentsView` Reused As-Is):**
+   Preserves the existing `DocumentsView` behavior exactly as implemented. Gate 7 sign-off and package transfer remain 100% untouched.
 
-### Viewer Capabilities by Content Type:
-1. **Markdown (`.md`):**
-   - Default: Safe rendered HTML view. HTML tags and script execution are strictly sanitized (inline scripts, `<iframe>`, `javascript:` URI handlers, and `<object>` elements are stripped).
-   - Toggle: "View Raw Source" displays monospace syntax-highlighted Markdown.
-2. **YAML (`.yaml` / `.yml`):**
-   - Syntax-highlighted code viewer with line numbers and structure folding.
-   - Read-only formatted inspection.
-3. **Text / JSON (`.txt` / `.json`):**
-   - Monospace formatted code viewer with line numbers.
+### Safe Markdown Rendering (Zero Custom Sanitizers)
+- Propose using `react-markdown` with raw HTML interpretation disabled (no `rehype-raw`, no `dangerouslySetInnerHTML`).
+- Raw HTML tags embedded in Markdown remain inert text.
+- External links automatically receive `rel="noopener noreferrer"`.
+- Dangerous URL schemes (`javascript:`, `data:`) are sanitized/neutralized.
+- *(Note: `react-markdown` is recorded as a proposed implementation dependency and will be installed during Phase 2 implementation planning, not during this design task).*
 
 ---
 
 ## 12. Controlled Edit Workflow
 
-For documents designated as `CONTROLLED_EDIT` (initially `PROJECT_STATE.md` and `TRACEABILITY_MATRIX.md`), the user interface enforces a strict, multi-step state machine. Direct saving is architecturally blocked:
+For `CONTROLLED_EDIT` documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`), the UI enforces a 6-step state machine:
 
 ```
-   ┌─────────────────────────────────────────────────────────┐
-   │                       1. VIEW                           │
-   │  - Display canonical on-disk content                    │
-   │  - Capture baseSha256 = currentSha256                   │
-   │  - Action: Click "Edit Draft"                           │
-   └────────────────────────────┬────────────────────────────┘
-                                │
-                                ▼
-   ┌─────────────────────────────────────────────────────────┐
-   │                    2. EDIT DRAFT                        │
-   │  - In-memory local draft buffer                         │
-   │  - Syntax highlighting / line numbers                   │
-   │  - Actions: [Cancel Draft] or [Preview Diff]            │
-   └────────────────────────────┬────────────────────────────┘
-                                │
-                                ▼
-   ┌─────────────────────────────────────────────────────────┐
-   │                   3. PREVIEW DIFF                       │
-   │  - Calls POST /api/projects/:id/docs/:docId/diff        │
-   │  - Server generates structured line diff                │
-   │  - UI renders additions (+), deletions (-), line counts│
-   │  - Actions: [Back to Edit] or [Validate Draft]          │
-   └────────────────────────────┬────────────────────────────┘
-                                │
-                                ▼
-   ┌─────────────────────────────────────────────────────────┐
-   │                   4. VALIDATE DRAFT                     │
-   │  - Calls POST /api/projects/:id/docs/:docId/validate    │
-   │  - Evaluates UTF-8 encoding, size, syntax, invariants   │
-   │  - If FAIL: Displays exact validation errors; blocks    │
-   │  - If PASS: Enables "Proceed to Save"                   │
-   └────────────────────────────┬────────────────────────────┘
-                                │
-                                ▼
-   ┌─────────────────────────────────────────────────────────┐
-   │                   5. CONFIRM SAVE                       │
-   │  - Modal dialog prompts for:                            │
-   │    • Actor Identity (e.g., "Lead Architect")            │
-   │    • Justification / Change Summary                     │
-   │    • Displays baseSha256 and candidateSha256            │
-   │  - Actions: [Cancel] or [Confirm & Apply Save]          │
-   └────────────────────────────┬────────────────────────────┘
-                                │
-                                ▼
-   ┌─────────────────────────────────────────────────────────┐
-   │                 6. SERVER ATOMIC COMMIT                 │
-   │  - Server verifies baseSha256 === liveOnDiskSha256      │
-   │    (If mismatch: aborts with 409 DOCUMENT_STALE)        │
-   │  - Writes candidate to temp file                        │
-   │  - Atomically renames over canonical target             │
-   │  - Appends DOCUMENT_UPDATED to chained audit log        │
-   │  - Returns newSha256 and auditEventId                   │
-   │  - Client clears draft and reloads canonical file       │
-   └─────────────────────────────────────────────────────────┘
+[ 1. VIEW ] ──► [ 2. EDIT DRAFT ] ──► [ 3. PREVIEW DIFF ] ──► [ 4. VALIDATE ] ──► [ 5. CONFIRM SAVE ] ──► [ 6. COORDINATED COMMIT ]
 ```
+
+### DocSaveModal Requirements:
+- Does NOT collect typed identity (no username/role inputs).
+- Displays authenticated operator details from server session:
+  - "Signed in as: Gio"
+  - "Roles: Lead Architect"
+- Collects:
+  1. Mandatory confirmation checkbox: `[x] Confirm this governance document update` (`humanConfirmed: true`).
+  2. Mandatory justification: Reason / change summary text.
 
 ---
 
-## 13. Concurrency / TOCTOU
+## 13. Coordinated Cross-Domain Document Transaction
 
-To prevent Time-Of-Check to Time-Of-Use (TOCTOU) race conditions and stale overwrites:
-1. **Binding to Base Hash:** When the client enters Edit mode, it records the exact `baseSha256` of the file it loaded.
-2. **Server-Side Live Recheck:** Upon receiving `POST .../save`, the server reads the current on-disk target file and computes `currentLiveSha256`.
-3. **Stale Collision Handling:**
-   - If `currentLiveSha256 !== baseSha256`, the server immediately halts the write and responds with:
-     ```json
-     {
-       "error": "DOCUMENT_STALE",
-       "message": "The document on disk has been modified since your edit session began. Reload to review the latest changes.",
-       "expectedBaseSha256": "4a1b...",
-       "currentLiveSha256": "9f2e..."
-     }
+### The Cross-Domain Partial Commit Problem
+A document save affects two separate persistence domains:
+1. **Filesystem:** The physical document file in `docs/`.
+2. **Project Snapshot:** `.local/project-state.json` containing `stateVersion` and the `DOCUMENT_UPDATED` audit record.
+
+If the document file is renamed on disk but the project snapshot persistence fails, the in-memory store rolls back while the on-disk document remains mutated, resulting in an unlogged, non-audited modification.
+
+### Solution: Durable Transaction Journal (`server/docs/controlledDocsTransaction.ts`)
+Transactions utilize a durable journal directory: `.local/document-transactions/`. This directory is strictly crash-recovery infrastructure and is NOT canonical project state.
+
+### Transaction Journal Record (`journal.json`):
+```typescript
+export interface DocumentTransactionJournal {
+  operationId: string;
+  projectId: string;
+  documentId: string;
+  registeredPath: string;
+  previousSha256: string;
+  candidateSha256: string;
+  projectStateBeforeDigest: string | null;
+  stateVersionBefore: number;
+  stateVersionExpectedAfter: number;
+  auditEventId: string;
+  phase: 'PREPARED' | 'DOCUMENT_REPLACED' | 'COMMITTED';
+  createdAt: string;
+}
+```
+
+### Save Execution Lifecycle:
+1. **PREPARE Phase:**
+   - Require `requireHuman(req, res)` and `humanConfirmed === true`.
+   - Validate document registration and `CONTROLLED_EDIT` permission.
+   - Run format and structural validation on candidate content.
+   - Verify `baseSha256 === liveRawFileSha256`.
+   - Acquire document-level in-process write lock.
+   - Capture current `projectSnapshotDigest()`.
+   - Create an exact byte-for-byte rollback backup of current document (`.local/document-transactions/[opId].bak`).
+   - Write candidate content to temporary file (`.local/document-transactions/[opId].tmp`).
+   - Create `journal.json` with `phase = 'PREPARED'` and `fs.fsyncSync`.
+2. **DOCUMENT_REPLACED Phase:**
+   - Atomically rename candidate temp file over target document (`fs.renameSync`).
+   - Update `journal.json` to `phase = 'DOCUMENT_REPLACED'` and `fs.fsyncSync`.
+   - Rollback backup is preserved.
+3. **PROJECT_COMMIT Phase:**
+   - Server persistence hooks integrate with `installProjectPersistence`:
+     ```typescript
+     res.locals.projectPersistenceHooks = {
+       onCommit: () => {
+         // Journal phase = 'COMMITTED', unlink backup, temp, journal; release lock
+       },
+       onRollback: () => {
+         // Atomically restore original document from backup, cleanup journal, release lock
+       }
+     };
      ```
-   - No data is overwritten.
-   - The UI displays an explicit conflict alert and offers a "Reload Canonical Document" action.
-4. **Process-Level Write Mutex:** An in-process async lock ensures that concurrent save requests targeting the same document are queued sequentially rather than interleaving filesystem operations.
+   - Increment `project.stateVersion` exactly once ($N \to N+1$).
+   - Append `DOCUMENT_UPDATED` to `store.auditLogs[projectId]`.
+   - Commit `.local/project-state.json` via standard atomic snapshot persistence.
+4. **COMMITTED & CLEANUP Phase:**
+   - Snapshot persistence succeeds. `onCommit` triggers.
+   - Delete rollback backup.
+   - Delete transaction journal.
+   - Release lock.
+   - Respond HTTP 200 OK.
+
+### Crash Recovery on Startup
+Before allowing new document mutations, the server scans `.local/document-transactions/`:
+- **Case A (Completed):** Document hash matches `candidateSha256`, matching `DOCUMENT_UPDATED` audit event exists in snapshot, and `stateVersion` committed $\to$ Transaction completed. Clean up stale journal files.
+- **Case B (Uncommitted Replace):** Document hash matches `candidateSha256`, but committed audit event is absent $\to$ Atomically restore original document from `.bak`. Clean up journal.
+- **Case C (Uncommitted Prepare):** Document hash matches `previousSha256`, and audit event is absent $\to$ Operation never completed. Clean up journal.
+- **Case D (Ambiguous State):** Backup missing, hashes corrupt, or inconsistent state $\to$ **FAIL CLOSED**. Halt document operations and report `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
 
 ---
 
 ## 14. Validation Strategy
 
-Validation occurs server-side prior to any file mutation. Validators are specialized by file type and document identity:
+### Universal Invariants
+- Valid UTF-8 encoding (no malformed sequences or null bytes).
+- Non-empty content.
+- File size $< 5$ MB.
 
-### Universal Validators (All Documents)
-- **UTF-8 Integrity:** Content must be valid UTF-8 without malformed multi-byte sequences or null bytes.
-- **Non-Empty:** Rejects empty or whitespace-only submissions.
-- **Size Bounds:** Enforces a maximum document size of 5 MB to prevent memory exhaustion.
-
-### Format-Specific Validators
-1. **Markdown (`.md`):**
-   - Valid text stream.
-   - Preserves balanced Markdown header levels (`#`, `##`, etc.).
-2. **YAML (`.yaml` / `.yml`):**
-   - Must parse successfully via a strict YAML parser.
-   - Rejects duplicate object keys, invalid indentation, and malformed tags.
-
-### Document-Specific Structural Invariant Checks
+### Document-Specific Structural Invariants
 1. **`docs/00_control/PROJECT_STATE.md`:**
    - Must contain top-level title: `# docmonstakrakin current project state`.
-   - Must preserve standard section headers:
-     - `## Current governance and task status` (or dated milestone section).
-     - Status entries for `Gate 7`, `Live reconciliation`, and `Release status`.
+   - Must contain a recognizable governance section: `Current governance and task status`.
+   - Must contain entries referencing: `DMK-201`, `Gate 7`, `Live reconciliation`, and `Release status`.
+   - *(Note: Avoids brittle heading depth checks (`##` vs `###`) to accommodate dated section evolution).*
 2. **`docs/00_control/TRACEABILITY_MATRIX.md`:**
-   - Must contain standard Markdown table structures.
-   - Must maintain valid requirement and work item link columns.
+   - Structurally valid Markdown tables with recognized header rows.
+   - Valid requirement and work item link format.
 
 ---
 
-## 15. Atomic Persistence
+## 15. Persistence Middleware Extensions
 
-Document persistence follows the battle-tested atomic persistence pattern implemented in `server/projectPersistence.ts`:
+To support the controlled docs architecture without breaking existing routes, `server/projectPersistence.ts` receives two narrow, server-internal extensions:
 
-1. **Temporary File Allocation:**
-   The candidate content is written to a temporary sibling file in the exact same directory as the target document:
+1. **Persistence Mode Selection (`res.locals.projectPersistenceMode`):**
    ```typescript
-   const tempPath = path.join(
-     path.dirname(targetCanonicalPath),
-     `.tmp.${path.basename(targetCanonicalPath)}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`
-   );
+   // In route handlers:
+   // For /diff and /validate:
+   res.locals.projectPersistenceMode = 'READ_ONLY';
    ```
-2. **File Flush & Sync:**
-   The temporary file is written and its file descriptor is synced to physical storage (`fs.fsyncSync`) to ensure full disk commitment.
-3. **Atomic Replacement:**
-   The temporary file is atomically renamed over the target canonical file:
+   When `projectPersistenceMode === 'READ_ONLY'`, the persistence middleware bypasses snapshot writes, lock acquisition, and store cloning entirely.
+2. **Persistence Transaction Hooks (`res.locals.projectPersistenceHooks`):**
    ```typescript
-   fs.renameSync(tempPath, targetCanonicalPath);
+   res.locals.projectPersistenceHooks = {
+     onCommit?: () => void;
+     onRollback?: () => void;
+   };
    ```
-   *Rationale:* On POSIX filesystems and Windows NTFS, renaming within the same filesystem directory is an atomic directory entry update. If the server crashes or power fails, the target document is never left in a partially written or truncated state.
-4. **Fail-Closed Cleanup:**
-   If any exception occurs prior to successful rename, the temporary file is unlinked immediately in a `finally` block.
+   Invoked by the persistence middleware immediately after successful snapshot write (`onCommit`) or upon failure/error rollback (`onRollback`).
 
 ---
 
 ## 16. Audit Model
 
-Every successful document modification generates a tamper-evident, cryptographically chained `AuditEvent` linked into `store.auditLogs[projectId]`.
+Every successful document modification generates a tamper-evident, cryptographically chained `AuditEvent`:
 
-### Audit Event Definition:
 ```typescript
 {
   "id": "AUD-MUIX89KL-1234",
-  "actor": "Lead Architect",
-  "timestamp": "2026-09-27T17:15:00.000Z",
+  "actor": "Gio",
+  "timestamp": "2026-09-27T18:00:00.000Z",
   "action": "DOCUMENT_UPDATED",
   "target": "DOC-CTRL-002",
   "reason": "Update project state following DMK-195 design review",
@@ -633,62 +579,49 @@ Every successful document modification generates a tamper-evident, cryptographic
     "previousSha256": "4a1b...",
     "newSha256": "7c9e...",
     "validationStatus": "PASSED",
+    "authenticatedIdentity": "usr-lead-architect-01",
+    "roles": ["Lead Architect"],
+    "roleSource": "LOCAL_SERVER_ROSTER",
     "linesAdded": 5,
     "linesRemoved": 2
   }
 }
 ```
 
-### Audit Principles:
-- **Zero Content Bloat:** The full document content is NOT stored in the audit event; storing large text payloads would bloat the project snapshot and duplicate version-controlled Git history. Only cryptographic SHA-256 digests and diff summaries are retained.
-- **Cryptographic Hash Chaining:** `stateHash` is deterministically computed via `computeAuditEventHash` incorporating the previous event's hash, enforcing `SEC-CTRL-013`.
-- **Integrity Failures:** Failed validation attempts, stale-base rejections, or unauthorized write attempts log security warnings to the server console but do NOT append false `DOCUMENT_UPDATED` records to the audit ledger.
-
 ---
 
 ## 17. Project Isolation
 
-The Docs workspace strictly enforces multi-project boundaries:
-
 1. **Registry Scoping:**
-   - `PRJ-DOCMONSTAKRAKIN`: Has the repository-controlled document collection populated from `bootstrap/docmonstakrakin.self-bootstrap.json`.
-   - Other Projects (e.g., `PRJ-ATLAS-01`, `PRJ-FINPAY-02`): Have an empty document registry (`store.documents[id] = []`).
-2. **Explicit Empty / Unavailable State:**
-   When an operator selects a project that lacks a repository-controlled document registry:
-   - The UI does NOT display docmonstakrakin's `docs/` files.
-   - The UI displays an explicit, friendly empty state:
-     > **No Repository Documentation Available**
-     > Project `PRJ-ATLAS-01` does not have a repository-controlled documentation registry configured. Repository documents are only accessible for projects with verified repository bindings.
-3. **Selection State Reset:**
-   Switching projects in the application header immediately:
-   - Clears any selected document ID.
-   - Clears in-memory draft buffers.
-   - Clears active diff or validation results.
-   - Resets the Docs view to its initial unselected state.
+   - `PRJ-DOCMONSTAKRAKIN`: Has the repository document collection loaded from `bootstrap/docmonstakrakin.self-bootstrap.json`.
+   - Other Projects (`PRJ-ATLAS-01`, `PRJ-FINPAY-02`): Return `{ "projectId": id, "documents": [] }`.
+2. **UI Isolation:**
+   When an external project is active, the "Repository Documents" tab displays an explicit empty state:
+   > **No Repository Documentation Available**
+   > Project `PRJ-ATLAS-01` does not have a repository-controlled documentation registry configured.
+3. **State Reset:** Switching projects immediately clears selected document IDs, in-memory drafts, and diff previews.
 
 ---
 
 ## 18. Dogfooding Model
 
-DMK-195 is the first task designated for deliberate, controlled dogfooding. However, to preserve governance integrity while DMK-201 remains `VERIFICATION_PENDING`, the following separation must be maintained:
-
+### Separation of Concerns:
 - **Canonical Planning Authority:** `docs/00_control/MASTER_WBS.yaml`
 - **Operational Execution Tracking:** `docmonstakrakin` runtime / application state
 
 ### Step-by-Step Dogfooding Transition (Phase 2):
-During Phase 1 (this design task), NO status transitions occur. Once this design specification and its subsequent implementation plan receive explicit human review and approval, the dogfooding rollout will proceed as follows:
-
+During Phase 1 (this design task), NO status transitions occur. Once this design specification and its implementation plan are approved by a human:
 1. **Update Canonical WBS:**
    Update `docs/00_control/MASTER_WBS.yaml`:
    `DMK-195 status: BACKLOG -> IN_PROGRESS`
 2. **Regenerate & Verify WBS Projection:**
-   Run `npm run wbs:generate` (or verify via `npm run wbs:check`) to synchronize `docs/00_control/MASTER_WBS.md`.
+   Run `npm run wbs:render` and verify zero drift via `npm run wbs:check` to synchronize `docs/00_control/MASTER_WBS.md`.
 3. **Update Runtime WorkItem via Canonical API:**
    Issue `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items` to transition runtime `DMK-195` from `PROPOSED` to `IN_PROGRESS`.
 4. **Verify Audit Ledger:**
-   Verify that a `WORK_ITEM_UPDATED` audit event was chained into the project audit log.
+   Confirm `WORK_ITEM_UPDATED` audit event is chained.
 5. **Verify Isolation:**
-   Confirm that only `DMK-195` was updated; historical items (`DMK-187..194`) and DMK-201 remain completely untouched.
+   Confirm that only `DMK-195` was updated; historical items and DMK-201 remain completely untouched.
 
 ---
 
@@ -696,132 +629,124 @@ During Phase 1 (this design task), NO status transitions occur. Once this design
 
 | Threat ID | Threat Name | Attack Scenario | Mitigation Strategy |
 | :--- | :--- | :--- | :--- |
-| **THR-DOC-001** | Directory Traversal | Attacker provides `../../etc/passwd` or `..\\private_keys` in document ID or URL parameters. | **ID-Only Lookup & Boundary Clamp:** Client specifies only `documentId`. The server resolves the relative path exclusively from the trusted internal registry, prepends `workspaceRoot`, canonicalizes via `path.resolve`, and asserts confinement inside `docs/`. |
-| **THR-DOC-002** | Symlink Escape | A symlink inside `docs/` points to a sensitive file or directory outside the workspace (e.g., `~/.ssh/id_rsa`). | **Realpath Verification:** Server resolves `fs.realpathSync` on the target file and verifies that the canonical real path remains strictly within `docs/`. Symlinks escaping `docs/` are rejected with HTTP 403. |
-| **THR-DOC-003** | Arbitrary File Read | Attacker requests access to unregistered files within `docs/` (e.g., scratch notes or temporary dumps). | **Strict Registry Whitelist:** Only files explicitly registered in the project's document registry are exposed. Unregistered filesystem paths return HTTP 404. |
-| **THR-DOC-004** | Arbitrary File Write | Attacker attempts to overwrite read-only baseline documents or source code files. | **Strict Allowlist & Editability Flag:** Server checks `editability === 'CONTROLLED_EDIT'`. Only `DOC-CTRL-002` and `DOC-CTRL-006` are marked editable. Any attempt to write to other documents is blocked with HTTP 403. |
-| **THR-DOC-005** | TOCTOU / Stale Overwrite | Two users or agents edit `PROJECT_STATE.md` concurrently; the second write silently overwrites the first. | **Optimistic Concurrency via Base Hash:** Save endpoint requires `baseSha256`. Server hashes the live file immediately before writing; if live hash differs from base hash, write is rejected with HTTP 409 `DOCUMENT_STALE`. |
-| **THR-DOC-006** | Projection Mutation | User or agent attempts to edit `MASTER_WBS.md` directly in the Docs UI, causing drift from `MASTER_WBS.yaml`. | **Immutable Projections:** All `GENERATED_PROJECTION` documents are hardcoded as `READ_ONLY`. Server rejects save requests targeting projections with HTTP 403. |
-| **THR-DOC-007** | WBS Authority Corruption | User attempts to edit `MASTER_WBS.yaml` through the Docs UI, bypassing planning controls. | **WBS Exclusion:** `MASTER_WBS.yaml` is explicitly excluded from the editable allowlist and enforced as `READ_ONLY`. Planning updates must occur through governed WBS procedures. |
-| **THR-DOC-008** | Cross-Project Leakage | User selects `PRJ-ATLAS-01` and sees `PRJ-DOCMONSTAKRAKIN`'s proprietary governance documents. | **Project-Scoped Registry:** Documents are loaded from `store.documents[projectId]`. Non-self projects return empty registries; UI shows explicit empty state. |
-| **THR-DOC-009** | Unsafe Markdown / XSS | Malicious or untrusted Markdown document contains `<script>alert(1)</script>` or malicious iframe payloads. | **Sanitized HTML Rendering:** Markdown renderer sanitizes all HTML output, strips executable scripts, inline event handlers (`onload`, `onerror`), and `javascript:` URIs. |
-| **THR-DOC-010** | Malformed YAML / File Corruption | User submits malformed YAML or corrupted text that breaks downstream tooling. | **Pre-Save Syntax Validation:** Server runs format-specific parsers before committing files; malformed syntax is rejected with HTTP 422. |
-| **THR-DOC-011** | Audit Ledger Omission | File is updated on disk but the audit ledger update fails, leaving an unlogged modification. | **Transactional Atomic Save:** File write and audit logging occur in an integrated transaction. If audit event creation fails, the file write is not finalized or is flagged. |
-| **THR-DOC-012** | Partial Write / Truncation | Power outage or process termination during file write leaves a governance document corrupted at 0 bytes. | **Atomic Temp-and-Rename:** Writes to temporary file in same directory first, syncs to disk, then atomically renames over target file. |
-| **THR-DOC-013** | File Encoding / DoS | Attacker submits a 100MB file or non-UTF-8 binary payload to crash memory or corrupt encoding. | **Size Limit & UTF-8 Clamp:** Enforces strict 5MB payload limit and UTF-8 encoding validation. |
+| **THR-DOC-001** | Directory Traversal | Attacker provides `../../etc/passwd` or `..\\private_keys`. | **ID-Only Lookup & Boundary Clamp:** Client provides only `documentId`. The server resolves relative path exclusively from manifest registry and clamps to `docs/`. |
+| **THR-DOC-002** | Symlink Escape | Symlink inside `docs/` targets external files. | **Realpath Verification:** Resolves `fs.realpathSync` and ensures real path remains within `docs/`. |
+| **THR-DOC-003** | Arbitrary File Read | Attacker requests unregistered files inside `docs/` (e.g. `LAST_HANDOFF.md` or verification reports). | **Strict Registry Whitelist:** Only manifest-registered documents are accessible. Unregistered files return HTTP 404. |
+| **THR-DOC-004** | Arbitrary File Write | Attacker attempts to overwrite read-only baseline documents. | **Strict Allowlist:** Server verifies `editability === 'CONTROLLED_EDIT'`. Only `DOC-CTRL-002` and `DOC-CTRL-006` permit editing. |
+| **THR-DOC-005** | TOCTOU / Stale Overwrite | Concurrent edits overwrite each other. | **Optimistic Concurrency via Base Hash:** Save requires `baseSha256`. Server verifies live hash immediately before writing; rejects stale edits with HTTP 409 `DOCUMENT_STALE`. |
+| **THR-DOC-006** | Projection Mutation | Direct edit of `MASTER_WBS.md` causes drift from `MASTER_WBS.yaml`. | **Immutable Projections:** All `GENERATED_PROJECTION` documents are strictly `READ_ONLY`. Saves rejected with HTTP 403. |
+| **THR-DOC-007** | WBS Authority Corruption | User attempts to edit `MASTER_WBS.yaml` through Docs UI. | **WBS Exclusion:** `MASTER_WBS.yaml` is excluded from allowlist and enforced as `READ_ONLY`. |
+| **THR-DOC-008** | Cross-Project Leakage | Selecting `PRJ-ATLAS-01` displays docmonstakrakin documents. | **Project-Scoped Registry:** External projects return empty registries; UI shows explicit empty state. |
+| **THR-DOC-009** | Unsafe Markdown / XSS | Malicious Markdown contains executable HTML scripts. | **Disabled Raw HTML:** `react-markdown` configured with raw HTML interpretation disabled; dangerous schemes (`javascript:`) neutralized. |
+| **THR-DOC-010** | Malformed Syntax / Corruption | Submitting malformed YAML or corrupted text. | **Pre-Save Syntax Validation:** Server runs parsers before committing files; malformed syntax rejected with HTTP 422. |
+| **THR-DOC-011** | Cross-Domain Partial Commit | Document replaced on disk, but project snapshot write fails, losing audit log. | **Coordinated Transaction Journal:** `.local/document-transactions/` journal with backup copy, persistence hooks, and startup recovery guarantees complete atomic rollback or commit. |
+| **THR-DOC-012** | Line Ending Integrity Confusion | Platform newline differences cause raw-byte mismatch against pinned digest. | **Raw-Byte Semantics & EOL Preservation:** Hashes computed over exact bytes; living docs preserve detected EOL; mixed EOL fails closed. |
+| **THR-DOC-013** | File Encoding / DoS | Submitting oversized files ($> 5$MB) or non-UTF-8 payloads. | **Size Limit & UTF-8 Clamp:** Enforces 5MB payload limit and UTF-8 validation. |
 
 ---
 
 ## 20. Test Strategy
 
-The implementation must include comprehensive automated tests across the entire boundary before human acceptance.
-
-### Required Test Matrix:
-1. **Test A (Registry Listing):** `GET /api/projects/:id/docs` returns all 28 registered documents for `PRJ-DOCMONSTAKRAKIN` with accurate metadata.
-2. **Test B (Authority Classification):** Verify that every document correctly reports `authority: 'REFERENCE'` or `authority: 'GENERATED_PROJECTION'`.
-3. **Test C (Hash-Pinned MATCH):** Pinned documents matching disk return `integrityStatus: 'MATCH'`.
-4. **Test D (Hash-Pinned CHANGED):** Temporarily modifying a pinned document file in a test fixture returns `integrityStatus: 'CHANGED'`.
-5. **Test E (UNPINNED Living Documents):** Living documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`, `MASTER_WBS.yaml`) return `integrityStatus: 'UNPINNED'` and are not flagged as errors.
-6. **Test F (Traversal Rejection):** Attempting to pass traversal sequences (`../`, `..%2f`, null bytes) in document lookup fails closed with HTTP 403/404.
-7. **Test G (Absolute Path Rejection):** Attempting to resolve drive letters (`C:\...`) or root paths (`/...`) fails closed.
-8. **Test H (Unregistered Document Rejection):** Requesting a document ID not present in the registry returns HTTP 404.
-9. **Test I (Project Isolation):** Requesting docs for `PRJ-ATLAS-01` returns an empty array; no docmonstakrakin docs are leaked.
-10. **Test J (Projection Edit Rejection):** `POST .../save` targeting `DOC-CTRL-004` (`MASTER_WBS.md`) returns HTTP 403 Forbidden.
-11. **Test K (`MASTER_WBS.yaml` Edit Rejection):** `POST .../save` targeting `DOC-CTRL-003` (`MASTER_WBS.yaml`) returns HTTP 403 Forbidden.
-12. **Test L (Controlled Editable Doc Edit Flow):** `POST .../save` targeting `DOC-CTRL-002` succeeds when provided with valid content and matching base hash.
-13. **Test M (Diff Endpoint Non-Mutating):** `POST .../diff` computes accurate diff without altering target file on disk or writing temporary files.
-14. **Test N (Validation Failure Blocks Save):** Submitting malformed content to `POST .../save` returns HTTP 422 and preserves on-disk content.
-15. **Test O (Stale Base Hash Rejection):** Submitting a mismatched `baseSha256` returns HTTP 409 `DOCUMENT_STALE` and aborts save.
-16. **Test P (Atomic Persistence):** Verify that saves write to `.tmp` first, rename atomically, and leave zero leftover `.tmp` files.
-17. **Test Q (Audit Event Correctness):** Successful save appends a valid `DOCUMENT_UPDATED` event to `store.auditLogs`, maintaining audit hash chain continuity.
-18. **Test R (Persistence & Reload):** Content updated via save survives server restart and reloads identically from disk.
-19. **Test S (Project Switching State Reset):** Switching projects in the UI completely clears document selection and draft state.
-20. **Test T (UI Smoke & Accessibility):** React component renders without console errors, supports keyboard navigation, and renders Markdown safely.
+### Comprehensive Test Matrix (Tests A through AH)
+- **Test A (Registry Listing):** `GET /api/projects/:id/docs` returns exactly the 28 manifest-registered documents for `PRJ-DOCMONSTAKRAKIN`.
+- **Test B (Authority Classification):** Verify every document correctly reports `authority: 'REFERENCE'` or `'GENERATED_PROJECTION'`.
+- **Test C (Hash-Pinned MATCH):** Pinned documents matching disk return `integrityStatus: 'MATCH'`.
+- **Test D (Hash-Pinned CHANGED):** Modified pinned document file returns `integrityStatus: 'CHANGED'`.
+- **Test E (UNPINNED Living Documents):** Living documents return `integrityStatus: 'UNPINNED'` and are not flagged as errors.
+- **Test F (Traversal Rejection):** Traversal sequences in document lookup fail closed with HTTP 403/404.
+- **Test G (Absolute Path Rejection):** Absolute paths fail closed.
+- **Test H (Unregistered Document Rejection):** Requesting an unregistered document ID returns HTTP 404.
+- **Test I (Project Isolation):** Docs for `PRJ-ATLAS-01` returns empty array.
+- **Test J (Projection Edit Rejection):** `POST .../save` targeting `DOC-CTRL-004` (`MASTER_WBS.md`) returns HTTP 403.
+- **Test K (`MASTER_WBS.yaml` Edit Rejection):** `POST .../save` targeting `DOC-CTRL-003` (`MASTER_WBS.yaml`) returns HTTP 403.
+- **Test L (Controlled Editable Flow):** `POST .../save` targeting `DOC-CTRL-002` succeeds with valid content and matching base hash.
+- **Test M (Diff Non-Mutating):** `POST .../diff` computes diff without altering target file or writing temporary files.
+- **Test N (Validation Failure Blocks Save):** Malformed content returns HTTP 422 and preserves on-disk content.
+- **Test O (Stale Base Hash Rejection):** Mismatched `baseSha256` returns HTTP 409 `DOCUMENT_STALE`.
+- **Test P (Atomic Persistence):** Writes to `.tmp` first, renames atomically, leaves zero leftover `.tmp` files.
+- **Test Q (Audit Event Correctness):** Successful save appends `DOCUMENT_UPDATED` event maintaining hash chain continuity.
+- **Test R (Persistence & Reload):** Updated content survives server restart.
+- **Test S (Project Switching State Reset):** Switching projects clears document selection and draft state.
+- **Test T (UI Smoke & Accessibility):** React components render without console errors.
+- **Test U (Diff Preserves Snapshot Bytes):** Executing `POST .../diff` leaves `.local/project-state.json` SHA-256 byte-for-byte identical.
+- **Test V (Validate Preserves Snapshot Bytes):** Executing `POST .../validate` leaves `.local/project-state.json` SHA-256 byte-for-byte identical.
+- **Test W (stateVersion Increment):** Successful save increments `project.stateVersion` exactly once ($N \to N+1$).
+- **Test X (Client Identity Claims Ignored):** Client-provided `actor` or `role` fields are ignored; audit records session identity.
+- **Test Y (Persistence Failure Restores Document):** Injected snapshot persistence failure triggers rollback hook, restoring original document from backup.
+- **Test Z (Startup Recovery Restores Unaudited Replace):** Startup recovery restores document from `.bak` when `DOCUMENT_REPLACED` exists without committed audit event.
+- **Test AA (Stale COMMITTED Journal Cleans Safely):** Startup recovery removes leftover transaction files when audit record is fully committed.
+- **Test AB (Ambiguous Journal Fails Closed):** Corrupted journal halts document mutations with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
+- **Test AC (Raw Markdown HTML Inert):** Embedded `<script>` or HTML tags render as inert text in Markdown viewer.
+- **Test AD (Unregistered docs/ File Invisible):** Files in `docs/` omitted from manifest are not listed and return 404.
+- **Test AE (LAST_HANDOFF Unavailable):** `docs/00_control/LAST_HANDOFF.md` returns 404 while unregistered.
+- **Test AF (Raw-Byte Hashing Semantics):** Pinned hash verification matches `server/bootstrap/selfBootstrapIntegrity.ts` without CRLF normalization.
+- **Test AG (EOL Style Preservation):** Saving an LF file writes LF; saving a CRLF file writes CRLF.
+- **Test AH (Mixed-EOL Edit Fails Closed):** Attempting to save a mixed-EOL document is rejected with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
 
 ---
 
 ## 21. Expected Files / Components
 
-To maintain architectural cohesion, the design identifies affected existing files and specifies proposed new files:
+### Proposed Server Modules (Phase 2)
+1. **`server/docs/controlledDocsRegistry.ts`:**
+   - Authoritative bootstrap manifest registry loader.
+   - Metadata and editability enrichment.
+2. **`server/docs/controlledDocsPersistence.ts`:**
+   - Safe path resolution and confinement clamp.
+   - Raw-byte hashing and EOL detection/encoding.
+   - Low-level atomic file replacement primitives.
+3. **`server/docs/controlledDocsValidator.ts`:**
+   - Universal, Markdown, and structural validators.
+4. **`server/docs/controlledDocsTransaction.ts`:**
+   - Transaction journal management under `.local/document-transactions/`.
+   - Backup creation, cross-domain coordination, persistence hook integration, and startup crash recovery.
+5. **`server/docs/controlledDocsRouter.ts`:**
+   - HTTP route definitions.
+   - Authentication enforcement (`requireHuman`).
+   - Setting `res.locals.projectPersistenceMode = 'READ_ONLY'` for diff/validate.
 
 ### Existing Files to Modify (Phase 2)
-1. **`server.ts`:**
-   - Mount the controlled docs router: `app.use('/api/projects/:id/docs', createControlledDocsRouter(store, reviewerAuth))`.
-2. **`src/types.ts`:**
-   - Export `ControlledDocumentRecord`, `ControlledDocumentSummary`, `DocumentIntegrityStatus`, and doc API response types.
-3. **`src/App.tsx`:**
-   - Update `currentView === 'documents'` to render the new `ControlledDocsView`.
-   - Ensure `handleSelectProject` resets document selection state.
-4. **`src/components/Sidebar.tsx`:**
-   - Update label for `documents` from "Reports & Export" to "Documentation Workspace" (or provide dedicated sub-views).
-5. **`src/data/projectWorkspace.ts`:**
-   - Add `docs` endpoint to project loader or provide standalone loader.
-
-### Proposed New Files (Phase 2)
-1. **`server/docs/controlledDocsRouter.ts`:**
-   - Express router handling `/api/projects/:id/docs` endpoints (list, get, diff, validate, save).
-2. **`server/docs/controlledDocsRegistry.ts`:**
-   - Registry loader, path resolver, and metadata enricher.
-3. **`server/docs/controlledDocsValidator.ts`:**
-   - Format and structural invariant validators for Markdown and YAML.
-4. **`server/docs/controlledDocsPersistence.ts`:**
-   - Safe path resolution, confinement assertion, file hashing, and atomic write implementation.
-5. **`src/components/ControlledDocsView.tsx`:**
-   - Primary workspace UI component featuring category navigation, metadata header, viewer, and editor integration.
-6. **`src/components/docs/DocViewer.tsx`:**
-   - Content viewer with safe Markdown rendering and syntax-highlighted code views.
-7. **`src/components/docs/DocEditor.tsx`:**
-   - Multi-step editor managing Draft, Diff, and Validate states.
-8. **`src/components/docs/DocDiffModal.tsx`:**
-   - Visual line-diff preview modal displaying additions and deletions.
-9. **`src/components/docs/DocSaveModal.tsx`:**
-   - Confirmation dialog collecting actor identity and justification.
-10. **`scripts/testControlledDocs.ts`:**
-    - Comprehensive backend automated test suite covering Tests A through S.
-11. **`scripts/testControlledDocsUi.ts`:**
-    - UI smoke test suite covering Test T.
+1. **`server/projectPersistence.ts`:**
+   - Support `res.locals.projectPersistenceMode === 'READ_ONLY'`.
+   - Support `res.locals.projectPersistenceHooks`.
+2. **`server.ts`:**
+   - Mount controlled docs router under `/api/projects/:id/docs`.
+   - Run transaction recovery check on startup.
+3. **`src/types.ts`:**
+   - Export controlled document record and summary types.
+4. **`src/components/ControlledDocsView.tsx`:**
+   - Dual-tab container hosting Tab 1 ("Repository Documents") and Tab 2 ("Dynamic Projections").
+5. **`package.json`:**
+   - Proposed implementation dependency: `react-markdown` (to be installed in Phase 2).
 
 ---
 
 ## 22. Rollout / Verification
 
-The implementation of DMK-195 will be verified through the following sequential verification gates:
-
-1. **Unit & Boundary Tests:**
-   Execute `npx tsx scripts/testControlledDocs.ts` to verify API behavior, path traversal defense, hash checking, optimistic concurrency, and audit chaining.
-2. **UI & Component Smoke Tests:**
-   Execute `npx tsx scripts/testControlledDocsUi.ts` to verify static markup rendering, state isolation, and view transitions.
-3. **Regression Test Suite:**
-   Execute `npm run test:complete` (30/30 suites) to confirm zero regression across all core subsystems.
-4. **Automated QA Suite:**
-   Execute `npm run qa` (11/11 criteria) to ensure project governance and architectural rules remain intact.
-5. **WBS Consistency Check:**
-   Execute `npm run wbs:check` to ensure no unplanned task drift has occurred.
-6. **Human UI Evaluation:**
-   Conduct interactive human review of the Docs workspace in the browser, verifying category navigation, Markdown rendering, diff visualization, and save confirmation.
+1. **Unit & Boundary Tests:** `npx tsx scripts/testControlledDocs.ts` (covering Tests A through AH).
+2. **UI Smoke Tests:** `npx tsx scripts/testControlledDocsUi.ts`.
+3. **Full Regression Suite:** `npm run test:complete` (30/30 suites passing).
+4. **Automated QA Suite:** `npm run qa` (11/11 criteria passing).
+5. **WBS Consistency Check:** `npm run wbs:check`.
+6. **Human UI Evaluation:** Operator verification in browser.
 
 ---
 
 ## 23. Explicit Exclusions
 
-The following areas are strictly out of scope for DMK-195:
-- **Gate 7 Evaluation & Release Sign-Off:** Release remains at `v0.1.0-rc1`. Gate 7 is strictly held.
-- **DMK-201 State Reconciliation:** No historical state reconciliation or candidate application.
-- **DMK-196 Formal Requirement Sign-Off UX:** Requirement sign-off workflows remain in backlog.
-- **DMK-197 Approval Inbox & Quorum Sync:** Quorum verification and approval inbox UI remain in backlog.
-- **Arbitrary File Creation:** The Docs workspace allows editing existing allowlisted files; it does not allow creating arbitrary new files on disk.
-- **Git Commit / Branch Management:** Docs workspace saves directly to the working tree; staging, committing, and branching remain governed by `RepositoryView`.
+- Gate 7 sign-off or release promotion.
+- Historical DMK-201 reconciliation or recovery execution.
+- DMK-196 formal sign-off UX.
+- DMK-197 Approval Inbox.
+- Arbitrary file creation on disk.
+- Direct editing of `MASTER_WBS.yaml` or `MASTER_WBS.md`.
 
 ---
 
 ## 24. Open Issues, if any
 
-1. **Integration with Existing `DocumentsView` (Dynamic Projections):**
-   *Question:* Should the existing dynamic projection generator (PRD, SAD, THREAT, RTM, GOV, RELEASE) be retained as a secondary tab ("Dynamic Reports & Projections") within the new Controlled Docs workspace, or remain a distinct tool?
-   *Recommendation:* Integrate it as a dedicated "Dynamic Projections" tab inside `ControlledDocsView`, clearly separated from "Repository Documents", to provide a single unified documentation portal.
-2. **Living Allowlist Expansion in Future Milestones:**
-   *Question:* Should future phases (v2) expand the editable allowlist to include specific product or architecture working drafts?
-   *Recommendation:* In v1 (DMK-195), restrict strictly to `PROJECT_STATE.md` and `TRACEABILITY_MATRIX.md`. Any future expansion must be preceded by an approved ADR and security review.
-3. **Client-Side Markdown Sanitization Dependency:**
-   *Question:* What sanitization utility should be used in the client bundle?
-   *Recommendation:* Use a lightweight, local-only DOM sanitization routine or existing trusted dependencies without introducing external CDN or network dependencies.
+None. All architectural questions identified during Phase 1 have been resolved:
+- Coexistence with `DocumentsView` is resolved via dual-tab layout (Repository Documents vs Dynamic Projections).
+- Non-mutating POST persistence is resolved via `res.locals.projectPersistenceMode = 'READ_ONLY'`.
+- Cross-domain partial commit is resolved via journaled transaction in `controlledDocsTransaction.ts`.
+- Safe Markdown rendering is resolved via `react-markdown` with disabled raw HTML.
