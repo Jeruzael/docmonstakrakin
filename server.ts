@@ -5,6 +5,7 @@ import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
 import { recoverDocumentTransactions } from './server/docs/controlledDocsRecovery.ts';
+import { createControlledDocsRouter } from './server/docs/controlledDocsRouter.ts';
 import { detectSourceControlMode } from './scripts/detectEnvironment.ts';
 import { baselineFeatures, normalizeTechnicalBaseline, emptyAssurance, computeAssurance, validateProjectDraft } from './src/data/projectInitialization.ts';
 import { applicableStandards, applicableStandardLinks } from './src/data/standardsApplicability.ts';
@@ -129,6 +130,7 @@ async function startServer() {
 
   installProjectPersistence(app, store);
   const reviewerAuth = registerSignoffRoutes(app, store);
+  app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman));
   registerProposalRoutes(app, store, reviewerAuth);
   // Never let Git discover and mutate a parent repository outside this workspace.
   app.use('/api/repo', (req,res,next) => {
