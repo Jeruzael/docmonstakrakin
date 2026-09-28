@@ -752,18 +752,12 @@ runTest('Test S: Failure Stage C (Candidate fsync failure)', () => {
 // Test T: Failure Stage D (Journal write/fsync failure)
 runTest('Test T: Failure Stage D (Journal write/fsync failure)', () => {
   const ws = createTestWorkspace();
-  const origFsync = fs.fdatasyncSync;
+  const origFsync = fs.fsyncSync;
   let journalFsyncEncountered = false;
   try {
-    let callCount = 0;
-    (fs as any).fdatasyncSync = function (fd: number) {
-      callCount++;
-      // Call 1: rollback, Call 2: candidate, Call 3: journal
-      if (callCount === 3) {
-        journalFsyncEncountered = true;
-        throw new Error('SIMULATED_JOURNAL_FSYNC_FAILURE');
-      }
-      return origFsync.apply(fs, arguments as any);
+    (fs as any).fsyncSync = function (fd: number) {
+      journalFsyncEncountered = true;
+      throw new Error('SIMULATED_JOURNAL_FSYNC_FAILURE');
     };
 
     assert.throws(
@@ -796,7 +790,7 @@ runTest('Test T: Failure Stage D (Journal write/fsync failure)', () => {
     assert.strictEqual(journalFiles.length, 0);
     assert.strictEqual(isDocumentLocked(ws.targetDiskPath), false);
   } finally {
-    (fs as any).fdatasyncSync = origFsync;
+    (fs as any).fsyncSync = origFsync;
     ws.cleanup();
   }
 });
@@ -1349,6 +1343,248 @@ runTest('Test AI: Real repository pristine with zero artifacts', () => {
     const files = fs.readdirSync(realDocs00);
     const siblings = files.filter(f => f.includes('.candidate') || f.includes('.rollback'));
     assert.strictEqual(siblings.length, 0, 'No candidate or rollback siblings in real repo');
+  }
+});
+
+// Test AJ: Journal durability contract (fdatasync for siblings, fsync for journal)
+runTest('Test AJ: Journal durability contract (fdatasync for siblings, fsync for journal)', () => {
+  const ws = createTestWorkspace();
+  const origFdatasync = fs.fdatasyncSync;
+  const origFsync = fs.fsyncSync;
+  let fdatasyncCount = 0;
+  let fsyncCount = 0;
+  try {
+    (fs as any).fdatasyncSync = function (fd: number) {
+      fdatasyncCount++;
+      return origFdatasync.apply(fs, arguments as any);
+    };
+    (fs as any).fsyncSync = function (fd: number) {
+      fsyncCount++;
+      return origFsync.apply(fs, arguments as any);
+    };
+
+    prepareDocumentTransaction({
+      projectId: 'PRJ-TEST',
+      documentId: ws.record.id,
+      docRecord: ws.record,
+      candidateContent: ws.initialContent + 'Line.\n',
+      baseSha256: ws.initialSha256,
+      projectStateBeforeDigest: null,
+      stateVersionBefore: 1,
+      auditEventId: 'EVT-1',
+      workspaceRoot: ws.workspaceDir,
+    });
+
+    // 2 siblings use fdatasync (rollback and candidate)
+    assert.strictEqual(fdatasyncCount, 2, 'Exactly 2 fdatasyncSync calls for sibling files');
+    // 1 journal uses fsync
+    assert.strictEqual(fsyncCount, 1, 'Exactly 1 fsyncSync call for PREPARED journal');
+  } finally {
+    (fs as any).fdatasyncSync = origFdatasync;
+    (fs as any).fsyncSync = origFsync;
+    ws.cleanup();
+  }
+});
+
+// Test AK: DOCUMENT_REPLACED and COMMITTED journal updates invoke fs.fsyncSync
+runTest('Test AK: DOCUMENT_REPLACED and COMMITTED journal updates invoke fs.fsyncSync', () => {
+  const ws = createTestWorkspace();
+  const origFsync = fs.fsyncSync;
+  let fsyncCount = 0;
+  try {
+    (fs as any).fsyncSync = function (fd: number) {
+      fsyncCount++;
+      return origFsync.apply(fs, arguments as any);
+    };
+
+    const coord = prepareDocumentTransaction({
+      projectId: 'PRJ-TEST',
+      documentId: ws.record.id,
+      docRecord: ws.record,
+      candidateContent: ws.initialContent + 'Line.\n',
+      baseSha256: ws.initialSha256,
+      projectStateBeforeDigest: null,
+      stateVersionBefore: 1,
+      auditEventId: 'EVT-1',
+      workspaceRoot: ws.workspaceDir,
+    });
+
+    const fsyncAfterPrepare = fsyncCount;
+    assert.strictEqual(fsyncAfterPrepare, 1, '1 fsync during prepare');
+
+    coord.executeReplacement();
+    const fsyncAfterReplace = fsyncCount;
+    assert.strictEqual(fsyncAfterReplace, 2, 'fsyncSync invoked during DOCUMENT_REPLACED journal write');
+
+    coord.handleCommitSuccess();
+    const fsyncAfterCommit = fsyncCount;
+    assert.strictEqual(fsyncAfterCommit, 3, 'fsyncSync invoked during COMMITTED journal write');
+  } finally {
+    (fs as any).fsyncSync = origFsync;
+    ws.cleanup();
+  }
+});
+
+// Test AL: Journal fsync failure during prepare cleans artifacts and releases lock
+runTest('Test AL: Journal fsync failure during prepare cleans artifacts and releases lock', () => {
+  const ws = createTestWorkspace();
+  const origFsync = fs.fsyncSync;
+  let fsyncIntercepted = false;
+  try {
+    (fs as any).fsyncSync = function (fd: number) {
+      fsyncIntercepted = true;
+      throw new Error('SIMULATED_JOURNAL_FSYNC_FAILURE');
+    };
+
+    assert.throws(
+      () => {
+        prepareDocumentTransaction({
+          projectId: 'PRJ-TEST',
+          documentId: ws.record.id,
+          docRecord: ws.record,
+          candidateContent: 'new edit',
+          baseSha256: ws.initialSha256,
+          projectStateBeforeDigest: null,
+          stateVersionBefore: 1,
+          auditEventId: 'EVT-1',
+          workspaceRoot: ws.workspaceDir,
+        });
+      },
+      (err: any) => err.message.includes('SIMULATED_JOURNAL_FSYNC_FAILURE')
+    );
+
+    assert(fsyncIntercepted, 'fsyncSync was intercepted');
+    assert.strictEqual(fs.readFileSync(ws.targetDiskPath, 'utf8'), ws.initialContent);
+
+    // Rollback and candidate cleaned, journal not present
+    const docsFiles = fs.readdirSync(ws.docsDir);
+    assert.strictEqual(docsFiles.length, 1);
+    assert.strictEqual(docsFiles[0], 'PROJECT_STATE.md');
+
+    const journalDir = path.join(ws.workspaceDir, '.local', 'document-transactions');
+    const journalFiles = fs.existsSync(journalDir) ? fs.readdirSync(journalDir) : [];
+    assert.strictEqual(journalFiles.length, 0);
+    assert.strictEqual(isDocumentLocked(ws.targetDiskPath), false);
+  } finally {
+    (fs as any).fsyncSync = origFsync;
+    ws.cleanup();
+  }
+});
+
+// Test AM: Symlink swap after prepare triggers safe abort with EDITABLE_TARGET_SYMLINK
+runTest('Test AM: Symlink swap after prepare triggers safe abort with EDITABLE_TARGET_SYMLINK', () => {
+  const ws = createTestWorkspace();
+  try {
+    const otherFile = path.join(ws.docsDir, 'OTHER_TARGET.md');
+    fs.writeFileSync(otherFile, 'OTHER_TARGET_ORIGINAL_CONTENT', 'utf8');
+
+    const coord = prepareDocumentTransaction({
+      projectId: 'PRJ-TEST',
+      documentId: ws.record.id,
+      docRecord: ws.record,
+      candidateContent: 'candidate content',
+      baseSha256: ws.initialSha256,
+      projectStateBeforeDigest: null,
+      stateVersionBefore: 1,
+      auditEventId: 'EVT-1',
+      workspaceRoot: ws.workspaceDir,
+    });
+
+    // Before executeReplacement, replace target file externally with internal symlink to otherFile
+    fs.unlinkSync(ws.targetDiskPath);
+    fs.symlinkSync(otherFile, ws.targetDiskPath);
+
+    assert.throws(
+      () => {
+        coord.executeReplacement();
+      },
+      (err: any) => err.message.includes('EDITABLE_TARGET_SYMLINK')
+    );
+
+    // Symlink must NOT be overwritten by rename
+    const lstat = fs.lstatSync(ws.targetDiskPath);
+    assert(lstat.isSymbolicLink(), 'Target remains a symbolic link');
+
+    // Symlink target content must remain unchanged
+    const otherContent = fs.readFileSync(otherFile, 'utf8');
+    assert.strictEqual(otherContent, 'OTHER_TARGET_ORIGINAL_CONTENT');
+
+    // Sibling candidate, rollback, and journal cleaned up
+    assert.strictEqual(fs.existsSync(coord.candidatePath), false, 'Candidate sibling cleaned');
+    assert.strictEqual(fs.existsSync(coord.rollbackPath), false, 'Rollback sibling cleaned');
+    assert.strictEqual(fs.existsSync(coord.journalPath), false, 'Journal cleaned');
+
+    // Lock released
+    assert.strictEqual(isDocumentLocked(ws.targetDiskPath), false, 'Lock released');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AN: Symlink assertion is lock-bound and releases lock on rejection
+runTest('Test AN: Symlink assertion is lock-bound and releases lock on rejection', () => {
+  const ws = createTestWorkspace();
+  const origLstat = fs.lstatSync;
+  let targetReplacedWithSymlink = false;
+  const otherFile = path.join(ws.docsDir, 'OTHER_FILE.md');
+  fs.writeFileSync(otherFile, 'OTHER_CONTENT', 'utf8');
+
+  try {
+    let lstatCallCount = 0;
+    let lockWasHeldDuringAssertion = false;
+    (fs as any).lstatSync = function (filepath: string, options?: any) {
+      if (typeof filepath === 'string' && path.resolve(filepath) === path.resolve(ws.targetDiskPath)) {
+        lstatCallCount++;
+        // Call 1: resolveDocumentDiskPath -> observe real file
+        // Immediately after Call 1, swap target with a symlink to otherFile
+        if (lstatCallCount === 1) {
+          const res = origLstat.apply(fs, arguments as any);
+          fs.unlinkSync(ws.targetDiskPath);
+          fs.symlinkSync(otherFile, ws.targetDiskPath);
+          targetReplacedWithSymlink = true;
+          return res;
+        }
+        if (lstatCallCount === 2) {
+          lockWasHeldDuringAssertion = isDocumentLocked(ws.targetDiskPath);
+        }
+      }
+      return origLstat.apply(fs, arguments as any);
+    };
+
+    assert.throws(
+      () => {
+        prepareDocumentTransaction({
+          projectId: 'PRJ-TEST',
+          documentId: ws.record.id,
+          docRecord: ws.record,
+          candidateContent: 'new candidate',
+          baseSha256: ws.initialSha256,
+          projectStateBeforeDigest: null,
+          stateVersionBefore: 1,
+          auditEventId: 'EVT-1',
+          workspaceRoot: ws.workspaceDir,
+        });
+      },
+      (err: any) => err.message.includes('EDITABLE_TARGET_SYMLINK')
+    );
+
+    assert.strictEqual(lockWasHeldDuringAssertion, true, 'Document lock was held during assertEditableTargetNotSymlink');
+    assert(targetReplacedWithSymlink, 'Target was swapped to symlink between resolve and check');
+
+    // Zero sibling artifacts or journal
+    const docsFiles = fs.readdirSync(ws.docsDir);
+    const siblings = docsFiles.filter(f => f.includes('.candidate') || f.includes('.rollback'));
+    assert.strictEqual(siblings.length, 0, 'Zero sibling artifacts created');
+
+    const journalDir = path.join(ws.workspaceDir, '.local', 'document-transactions');
+    const journalFiles = fs.existsSync(journalDir) ? fs.readdirSync(journalDir) : [];
+    assert.strictEqual(journalFiles.length, 0, 'Zero journal artifacts created');
+
+    // Lock must be released
+    assert.strictEqual(isDocumentLocked(ws.targetDiskPath), false, 'Lock released');
+  } finally {
+    (fs as any).lstatSync = origLstat;
+    ws.cleanup();
   }
 });
 

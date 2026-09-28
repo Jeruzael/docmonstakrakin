@@ -78,7 +78,7 @@ function writeDurableJournal(journalPath: string, journal: DocumentTransactionJo
   const tmpPath = path.join(dir, `.tmp-${journal.operationId}-${crypto.randomBytes(6).toString('hex')}`);
   const jsonContent = JSON.stringify(journal, null, 2) + '\n';
   const buf = Buffer.from(jsonContent, 'utf8');
-  const fd = fs.openSync(tmpPath, 'w');
+  const fd = fs.openSync(tmpPath, 'wx');
   let renamed = false;
   try {
     let offset = 0;
@@ -89,7 +89,7 @@ function writeDurableJournal(journalPath: string, journal: DocumentTransactionJo
       }
       offset += written;
     }
-    fs.fdatasyncSync(fd);
+    fs.fsyncSync(fd);
     fs.closeSync(fd);
     fs.renameSync(tmpPath, journalPath);
     renamed = true;
@@ -139,9 +139,8 @@ export function prepareDocumentTransaction(params: {
     throw new Error('DOCUMENT_ID_MISMATCH: Provided document ID does not match record');
   }
 
-  // 3. Resolve disk target & verify not symlink
+  // 3. Resolve disk target
   const { diskPath: targetDiskPath } = resolveDocumentDiskPath(params.docRecord, workspaceRoot);
-  assertEditableTargetNotSymlink(targetDiskPath);
 
   // 4. Acquire canonical in-process lock
   const canonicalKey = path.resolve(targetDiskPath);
@@ -156,7 +155,10 @@ export function prepareDocumentTransaction(params: {
   let journalPath: string | null = null;
 
   try {
-    // 5. Authoritative live disk read
+    // 5. Verify target is not a symlink under document lock
+    assertEditableTargetNotSymlink(targetDiskPath);
+
+    // 6. Authoritative live disk read
     const liveRead = readDocumentDisk(params.docRecord, workspaceRoot);
     if (!liveRead.exists || !liveRead.rawBytes || !liveRead.rawSha256) {
       throw new Error('DOCUMENT_MISSING: Controlled document file does not exist on disk');
@@ -221,6 +223,18 @@ export function prepareDocumentTransaction(params: {
       executeReplacement: () => {
         if (journal.phase !== 'PREPARED') {
           throw new Error(`DOCUMENT_TRANSACTION_INVALID_PHASE: Cannot execute replacement from phase ${journal.phase}`);
+        }
+
+        // Pre-rename symlink assertion: verify target file was not replaced with a symlink
+        try {
+          assertEditableTargetNotSymlink(targetDiskPath);
+        } catch (symlinkErr) {
+          unlinkSiblingSafe(candidatePath!);
+          unlinkSiblingSafe(rollbackPath!);
+          unlinkSiblingSafe(journalPath!);
+          activeLocks.delete(canonicalKey);
+          lockHeld = false;
+          throw symlinkErr;
         }
 
         // Pre-rename TOCTOU check: verify target file on disk still matches previousSha256
