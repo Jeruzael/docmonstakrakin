@@ -3,6 +3,12 @@
  * Canonical Type Definitions & Schemas
  */
 
+import type {
+  ControlledDocumentKind,
+  ControlledDocumentAuthority,
+  ControlledDocumentReference,
+} from './data/selfBootstrapContract.js';
+
 export type ProjectProfile =
   | 'WEB_APPLICATION'
   | 'MOBILE_APPLICATION'
@@ -782,4 +788,39 @@ export interface ReleaseAuditReport {
     timestamp: string;
     auditEventId: string;
   };
+}
+
+export type {
+  ControlledDocumentKind,
+  ControlledDocumentAuthority,
+  ControlledDocumentReference,
+};
+
+export type ControlledDocumentEditability =
+  | 'READ_ONLY'
+  | 'CONTROLLED_EDIT';
+
+export type ControlledDocumentFileType =
+  | 'MARKDOWN'
+  | 'YAML'
+  | 'JSON'
+  | 'OTHER';
+
+export type DocumentIntegrityStatus =
+  | 'MATCH'
+  | 'CHANGED'
+  | 'UNPINNED'
+  | 'MISSING';
+
+export interface ControlledDocumentRecord {
+  id: string;
+  path: string;
+  kind: ControlledDocumentKind;
+  authority: ControlledDocumentAuthority;
+  editability: ControlledDocumentEditability;
+  fileType: ControlledDocumentFileType;
+  title: string;
+  description?: string;
+  sha256Digest?: string;
+  editableLivingDoc: boolean;
 }
