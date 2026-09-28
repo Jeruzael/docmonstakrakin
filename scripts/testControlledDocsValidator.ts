@@ -236,6 +236,44 @@ async function runTests(): Promise<void> {
   }
 
   // ============================================================
+  // TEST K2: PROJECT_STATE CODE-BLOCK TITLE REJECTION
+  // ============================================================
+  console.log('\n[Test K2] PROJECT_STATE code-block title rejection:');
+  {
+    const content = `    # docmonstakrakin current project state
+
+### Current governance and task status
+
+- **DMK-201:** VERIFICATION_PENDING
+- **Gate 7:** HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- **Live reconciliation:** NOT AUTHORIZED
+- **Release status:** v0.1.0-rc1
+`;
+    const rawBytes = Buffer.from(content, 'utf8');
+    const result = validateDocumentContent(doc002, rawBytes, content);
+    assert.equal(result.valid, false);
+    assert(result.errors.includes('PROJECT_STATE_TITLE_REQUIRED'));
+
+    // Tab-indented title
+    const tabContent = `\t# docmonstakrakin current project state\n\n### Current governance and task status\n- DMK-201\n- Gate 7\n- Live reconciliation\n- Release status\n`;
+    const tabResult = validateDocumentContent(doc002, Buffer.from(tabContent, 'utf8'), tabContent);
+    assert.equal(tabResult.valid, false);
+    assert(tabResult.errors.includes('PROJECT_STATE_TITLE_REQUIRED'));
+
+    // Up to 3 leading spaces (valid Markdown ATX heading)
+    const threeSpacesContent = `   # docmonstakrakin current project state\n\n### Current governance and task status\n- DMK-201\n- Gate 7\n- Live reconciliation\n- Release status\n`;
+    const threeSpacesResult = validateDocumentContent(
+      doc002,
+      Buffer.from(threeSpacesContent, 'utf8'),
+      threeSpacesContent
+    );
+    assert.equal(threeSpacesResult.valid, true);
+
+    console.log('  ✓ 4+ leading spaces / tabs before title rejected; up to 3 spaces accepted');
+    passed++;
+  }
+
+  // ============================================================
   // TEST L: PROJECT_STATE MISSING GOVERNANCE HEADING
   // ============================================================
   console.log('\n[Test L] PROJECT_STATE missing governance heading:');
@@ -336,6 +374,25 @@ async function runTests(): Promise<void> {
     assert.equal(result.valid, false);
     assert(result.errors.includes('TRACEABILITY_TABLE_REQUIRED'));
     console.log('  ✓ Traceability without markdown table rejected with TRACEABILITY_TABLE_REQUIRED');
+    passed++;
+  }
+
+  // ============================================================
+  // TEST P2: TRACEABILITY CODE-BLOCK TABLE REJECTION
+  // ============================================================
+  console.log('\n[Test P2] Traceability code-block table rejection:');
+  {
+    const content = `# Requirements Traceability Matrix
+
+    | Requirement | WBS |
+    | --- | --- |
+    | REQ-001 | DMK-001 |
+`;
+    const rawBytes = Buffer.from(content, 'utf8');
+    const result = validateDocumentContent(doc006, rawBytes, content);
+    assert.equal(result.valid, false);
+    assert(result.errors.includes('TRACEABILITY_TABLE_REQUIRED'));
+    console.log('  ✓ Indented code block table rejected with TRACEABILITY_TABLE_REQUIRED');
     passed++;
   }
 

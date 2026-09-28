@@ -99,8 +99,11 @@ export function validateDocumentContent(
 
 function validateProjectStateStructure(content: string, errors: string[]): void {
   const lines = content.split(/\r?\n/);
-  const firstNonEmpty = lines.map((l) => l.trim()).find((l) => l.length > 0);
-  if (firstNonEmpty !== '# docmonstakrakin current project state') {
+  const rawFirstNonEmpty = lines.find((l) => l.trim().length > 0);
+  if (
+    !rawFirstNonEmpty ||
+    !/^ {0,3}# docmonstakrakin current project state[ \t]*$/.test(rawFirstNonEmpty)
+  ) {
     errors.push('PROJECT_STATE_TITLE_REQUIRED');
   }
 
@@ -124,6 +127,9 @@ function validateProjectStateStructure(content: string, errors: string[]): void 
 }
 
 function parseTableRow(line: string): string[] | null {
+  if (!/^ {0,3}\S/.test(line)) {
+    return null;
+  }
   const trimmed = line.trim();
   if (!trimmed.includes('|')) return null;
   let s = trimmed.startsWith('|') ? trimmed.slice(1) : trimmed;
