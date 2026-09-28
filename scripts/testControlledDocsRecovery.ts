@@ -1131,6 +1131,383 @@ runTest('Test AN: real repository remains pristine', () => {
   }
 });
 
+// Test AO: rollback artifact swap between Pass 1 and Pass 2 prevents rollback and locks recovery
+runTest('Test AO: rollback artifact swap between Pass 1 and Pass 2 prevents rollback and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-swap-rollback';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const rollbackPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'DOCUMENT_REPLACED',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+      stateVersionBefore: 31,
+      stateVersionExpectedAfter: 32,
+      auditEventId: 'evt-swap-rollback',
+    });
+
+    let rollbackReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (filePath === rollbackPath) {
+        rollbackReads++;
+        if (rollbackReads === 1) {
+          // Pass 1 inspection reads valid bytes, but we simulate disk tampering before Pass 2
+          fs.writeFileSync(rollbackPath, Buffer.from('corrupted rollback tampered bytes', 'utf8'));
+          return ws.previousBytes;
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert.strictEqual(report.recoveredCount, 0, 'Zero rollbacks executed');
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    // Target must NOT have been overwritten by corrupt rollback artifact
+    const targetContent = originalReadFileSync.call(fs, ws.targetDiskPath);
+    assert(targetContent.equals(ws.candidateBytes), 'Target must remain candidate bytes');
+    assert(fs.existsSync(rollbackPath), 'Corrupt rollback artifact remains on disk');
+    assert(fs.existsSync(journalPath), 'Journal remains on disk');
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test AP: clean PREPARED target swap between Pass 1 and Pass 2 prevents cleanup and locks recovery
+runTest('Test AP: clean PREPARED target swap between Pass 1 and Pass 2 prevents cleanup and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-swap-prep-target';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const candidatePath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollbackPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+    });
+
+    let targetReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (filePath === ws.targetDiskPath) {
+        targetReads++;
+        if (targetReads === 1) {
+          // Pass 1 inspection reads previous bytes, but we alter target before Pass 2
+          fs.writeFileSync(ws.targetDiskPath, Buffer.from('externally altered target bytes', 'utf8'));
+          return ws.previousBytes;
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert.strictEqual(report.cleanedCount, 0, 'Zero cleanups executed');
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    // All artifacts and modified target preserved
+    assert(fs.existsSync(candidatePath), 'Candidate artifact preserved');
+    assert(fs.existsSync(rollbackPath), 'Rollback artifact preserved');
+    assert(fs.existsSync(journalPath), 'Journal preserved');
+    const targetAfter = originalReadFileSync.call(fs, ws.targetDiskPath, 'utf8');
+    assert.strictEqual(targetAfter, 'externally altered target bytes');
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test AQ: clean PREPARED candidate artifact swap between Pass 1 and Pass 2 prevents cleanup and locks recovery
+runTest('Test AQ: clean PREPARED candidate artifact swap between Pass 1 and Pass 2 prevents cleanup and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-swap-prep-cand';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const candidatePath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollbackPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+    });
+
+    let candReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (filePath === candidatePath) {
+        candReads++;
+        if (candReads === 1) {
+          fs.writeFileSync(candidatePath, Buffer.from('tampered candidate bytes', 'utf8'));
+          return ws.candidateBytes;
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert.strictEqual(report.cleanedCount, 0, 'Zero cleanups executed');
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    assert(fs.existsSync(candidatePath), 'Candidate artifact preserved');
+    assert(fs.existsSync(rollbackPath), 'Rollback artifact preserved');
+    assert(fs.existsSync(journalPath), 'Journal preserved');
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test AR: clean COMMITTED target swap between Pass 1 and Pass 2 prevents cleanup and locks recovery
+runTest('Test AR: clean COMMITTED target swap between Pass 1 and Pass 2 prevents cleanup and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-swap-com-target';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candidatePath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollbackPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'evt-swap-com-target';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: ws.candidateSha256,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+      stateVersionBefore: 31,
+      stateVersionExpectedAfter: 32,
+      auditEventId,
+    });
+
+    let targetReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (filePath === ws.targetDiskPath) {
+        targetReads++;
+        if (targetReads === 1) {
+          fs.writeFileSync(ws.targetDiskPath, Buffer.from('externally altered committed target', 'utf8'));
+          return ws.candidateBytes;
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert.strictEqual(report.cleanedCount, 0, 'Zero cleanups executed');
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    assert(fs.existsSync(candidatePath), 'Candidate artifact preserved');
+    assert(fs.existsSync(rollbackPath), 'Rollback artifact preserved');
+    assert(fs.existsSync(journalPath), 'Journal preserved');
+    const targetAfter = originalReadFileSync.call(fs, ws.targetDiskPath, 'utf8');
+    assert.strictEqual(targetAfter, 'externally altered committed target');
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test AS: clean COMMITTED rollback artifact swap between Pass 1 and Pass 2 prevents cleanup and locks recovery
+runTest('Test AS: clean COMMITTED rollback artifact swap between Pass 1 and Pass 2 prevents cleanup and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-swap-com-roll';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candidatePath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollbackPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'evt-swap-com-roll';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: ws.candidateSha256,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+      stateVersionBefore: 31,
+      stateVersionExpectedAfter: 32,
+      auditEventId,
+    });
+
+    let rollReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (filePath === rollbackPath) {
+        rollReads++;
+        if (rollReads === 1) {
+          fs.writeFileSync(rollbackPath, Buffer.from('tampered rollback artifact bytes', 'utf8'));
+          return ws.previousBytes;
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert.strictEqual(report.cleanedCount, 0, 'Zero cleanups executed');
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    assert(fs.existsSync(rollbackPath), 'Rollback artifact preserved');
+    assert(fs.existsSync(journalPath), 'Journal preserved');
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test AT: non-regular target (directory) fails closed without TypeError
+runTest('Test AT: non-regular target (directory) fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-dir-target';
+  try {
+    // Replace target file with a directory
+    fs.rmSync(ws.targetDiskPath, { recursive: true, force: true });
+    fs.mkdirSync(ws.targetDiskPath);
+
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Non-regular target must not throw uncaught TypeError');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath), 'Journal preserved');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AU: schema rejects numeric projectStateBeforeDigest
+runTest('Test AU: schema rejects numeric projectStateBeforeDigest', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-schema-num-digest';
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      projectStateBeforeDigest: 123 as any,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true);
+    assert.strictEqual(report.ambiguousCount, 1);
+    assert(report.errors.some(e => e.includes('projectStateBeforeDigest')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AV: schema rejects object projectStateBeforeDigest
+runTest('Test AV: schema rejects object projectStateBeforeDigest', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-schema-obj-digest';
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      projectStateBeforeDigest: { sha: 'abc' } as any,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true);
+    assert.strictEqual(report.ambiguousCount, 1);
+    assert(report.errors.some(e => e.includes('projectStateBeforeDigest')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AW: schema rejects numeric createdAt
+runTest('Test AW: schema rejects numeric createdAt', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-schema-num-created';
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      createdAt: 2026 as any,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true);
+    assert.strictEqual(report.ambiguousCount, 1);
+    assert(report.errors.some(e => e.includes('createdAt')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AX: schema rejects numeric updatedAt
+runTest('Test AX: schema rejects numeric updatedAt', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-schema-num-updated';
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+      updatedAt: 2026 as any,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true);
+    assert.strictEqual(report.ambiguousCount, 1);
+    assert(report.errors.some(e => e.includes('updatedAt')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
 console.log('\n================================================================');
 console.log(`TOTAL TESTS: ${passed + failed}`);
 console.log(`PASSED: ${passed}`);

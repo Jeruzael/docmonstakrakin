@@ -27,8 +27,11 @@ type RecoveryAction =
   | {
       kind: 'CLEAN_PREPARED';
       journalPath: string;
+      authoritativeTarget: string;
       candidateDiskPath: string;
       rollbackDiskPath: string;
+      previousSha256: string;
+      candidateSha256: string;
     }
   | {
       kind: 'ROLLBACK_REPLACED';
@@ -42,6 +45,7 @@ type RecoveryAction =
   | {
       kind: 'CLEAN_COMMITTED';
       journalPath: string;
+      authoritativeTarget: string;
       candidateDiskPath: string;
       rollbackDiskPath: string;
       candidateExpectedSha: string;
@@ -71,29 +75,88 @@ export function assertDocumentTransactionsUnlocked(): void {
   }
 }
 
-/**
- * Inspects a file path and returns its existence, symlink status, raw bytes, and SHA-256 digest.
- */
-function hashFile(filePath: string): {
+interface FileInspection {
   exists: boolean;
   isSymlink: boolean;
+  isFile: boolean;
+  isNonRegular: boolean;
   sha?: string;
   rawBytes?: Buffer;
-} {
+}
+
+/**
+ * Inspects a file path and returns its existence, symlink status, file type, raw bytes, and SHA-256 digest.
+ */
+function hashFile(filePath: string): FileInspection {
   const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
   if (!lstat) {
-    return { exists: false, isSymlink: false };
+    return { exists: false, isSymlink: false, isFile: false, isNonRegular: false };
   }
   if (lstat.isSymbolicLink()) {
-    return { exists: true, isSymlink: true };
+    return { exists: true, isSymlink: true, isFile: false, isNonRegular: false };
   }
   if (!lstat.isFile()) {
-    return { exists: true, isSymlink: false };
+    return { exists: true, isSymlink: false, isFile: false, isNonRegular: true };
   }
 
   const rawBytes = fs.readFileSync(filePath);
   const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
-  return { exists: true, isSymlink: false, sha, rawBytes };
+  return { exists: true, isSymlink: false, isFile: true, isNonRegular: false, sha, rawBytes };
+}
+
+/**
+ * Asserts that a file path exists, is a regular file, is not a symlink,
+ * and matches the exact expected raw SHA-256 digest.
+ * Throws DOCUMENT_TRANSACTION_RECOVERY_REQUIRED on any failure.
+ */
+function assertRegularFileHash(
+  filePath: string,
+  expectedSha256: string,
+  label: string
+): void {
+  const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  if (!lstat) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} missing on disk: ${filePath}`);
+  }
+  if (lstat.isSymbolicLink()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} is a symbolic link: ${filePath}`);
+  }
+  if (!lstat.isFile()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} is a non-regular filesystem node: ${filePath}`);
+  }
+  const rawBytes = fs.readFileSync(filePath);
+  const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
+  if (sha.toLowerCase() !== expectedSha256.toLowerCase()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} hash drift: expected ${expectedSha256}, actual ${sha}`);
+  }
+}
+
+/**
+ * For optional cleanup artifacts: if file exists, asserts it is a regular file,
+ * not a symlink, and matches the expected raw SHA-256 digest.
+ * Missing file is tolerated.
+ * Throws DOCUMENT_TRANSACTION_RECOVERY_REQUIRED on any failure.
+ */
+function assertOptionalRegularFileHash(
+  filePath: string,
+  expectedSha256: string,
+  label: string
+): void {
+  const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  if (!lstat) {
+    return;
+  }
+  if (lstat.isSymbolicLink()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} is a symbolic link: ${filePath}`);
+  }
+  if (!lstat.isFile()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} is a non-regular filesystem node: ${filePath}`);
+  }
+  const rawBytes = fs.readFileSync(filePath);
+  const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
+  if (sha.toLowerCase() !== expectedSha256.toLowerCase()) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} hash drift: expected ${expectedSha256}, actual ${sha}`);
+  }
 }
 
 /**
@@ -146,6 +209,13 @@ function validateJournalSchema(
   }
 
   if (
+    raw.projectStateBeforeDigest !== null &&
+    typeof raw.projectStateBeforeDigest !== 'string'
+  ) {
+    return { valid: false, error: `Invalid projectStateBeforeDigest in ${filename}` };
+  }
+
+  if (
     typeof raw.stateVersionBefore !== 'number' ||
     !Number.isInteger(raw.stateVersionBefore) ||
     raw.stateVersionBefore < 0
@@ -175,11 +245,11 @@ function validateJournalSchema(
     return { valid: false, error: `Invalid phase '${raw.phase}' in ${filename}` };
   }
 
-  if (!raw.createdAt || isNaN(Date.parse(raw.createdAt))) {
+  if (typeof raw.createdAt !== 'string' || isNaN(Date.parse(raw.createdAt))) {
     return { valid: false, error: `Invalid createdAt in ${filename}` };
   }
 
-  if (!raw.updatedAt || isNaN(Date.parse(raw.updatedAt))) {
+  if (typeof raw.updatedAt !== 'string' || isNaN(Date.parse(raw.updatedAt))) {
     return { valid: false, error: `Invalid updatedAt in ${filename}` };
   }
 
@@ -356,6 +426,10 @@ export function recoverDocumentTransactions(
       recordAmbiguity(`Authoritative target document is a symbolic link: ${expectedTargetPath}`);
       continue;
     }
+    if (targetInfo.isNonRegular || !targetInfo.isFile) {
+      recordAmbiguity(`Authoritative target document is a non-regular filesystem node: ${expectedTargetPath}`);
+      continue;
+    }
     const targetSha = targetInfo.sha!;
 
     // Snapshot commit evidence inspection
@@ -444,14 +518,14 @@ export function recoverDocumentTransactions(
       const candInfo = hashFile(expectedCandidateDisk);
       const rollInfo = hashFile(expectedRollbackDisk);
 
-      if (!candInfo.exists || candInfo.isSymlink || candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase()) {
+      if (!candInfo.exists || candInfo.isSymlink || candInfo.isNonRegular || candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase()) {
         recordAmbiguity(
           `Candidate sibling missing, symlink, or corrupt for PREPARED transaction ${journal.operationId}`
         );
         continue;
       }
 
-      if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
+      if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.isNonRegular || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
         recordAmbiguity(
           `Rollback sibling missing, symlink, or corrupt for PREPARED transaction ${journal.operationId}`
         );
@@ -461,8 +535,11 @@ export function recoverDocumentTransactions(
       plannedActions.push({
         kind: 'CLEAN_PREPARED',
         journalPath: jPath,
+        authoritativeTarget,
         candidateDiskPath: expectedCandidateDisk,
         rollbackDiskPath: expectedRollbackDisk,
+        previousSha256: journal.previousSha256,
+        candidateSha256: journal.candidateSha256,
       });
     } else if (journal.phase === 'DOCUMENT_REPLACED') {
       if (targetSha.toLowerCase() !== journal.candidateSha256.toLowerCase()) {
@@ -475,7 +552,7 @@ export function recoverDocumentTransactions(
       if (!committedEvidence) {
         // Safe rollback case: snapshot was not committed, revert to rollback sibling
         const rollInfo = hashFile(expectedRollbackDisk);
-        if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
+        if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.isNonRegular || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
           recordAmbiguity(
             `Rollback artifact missing, symlink, or corrupt for uncommitted DOCUMENT_REPLACED transaction ${journal.operationId}`
           );
@@ -483,9 +560,9 @@ export function recoverDocumentTransactions(
         }
 
         const candLstat = fs.lstatSync(expectedCandidateDisk, { throwIfNoEntry: false });
-        if (candLstat && candLstat.isSymbolicLink()) {
+        if (candLstat && (candLstat.isSymbolicLink() || !candLstat.isFile())) {
           recordAmbiguity(
-            `Candidate artifact is a symbolic link for DOCUMENT_REPLACED transaction ${journal.operationId}`
+            `Candidate artifact is a symbolic link or non-regular for DOCUMENT_REPLACED transaction ${journal.operationId}`
           );
           continue;
         }
@@ -502,7 +579,7 @@ export function recoverDocumentTransactions(
       } else {
         // Committed replace: snapshot commit succeeded before cleanup
         const candInfo = hashFile(expectedCandidateDisk);
-        if (candInfo.isSymlink || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
+        if (candInfo.isSymlink || candInfo.isNonRegular || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
           recordAmbiguity(
             `Candidate artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
           );
@@ -510,7 +587,7 @@ export function recoverDocumentTransactions(
         }
 
         const rollInfo = hashFile(expectedRollbackDisk);
-        if (rollInfo.isSymlink || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
+        if (rollInfo.isSymlink || rollInfo.isNonRegular || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
           recordAmbiguity(
             `Rollback artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
           );
@@ -520,6 +597,7 @@ export function recoverDocumentTransactions(
         plannedActions.push({
           kind: 'CLEAN_COMMITTED',
           journalPath: jPath,
+          authoritativeTarget,
           candidateDiskPath: expectedCandidateDisk,
           rollbackDiskPath: expectedRollbackDisk,
           candidateExpectedSha: journal.candidateSha256,
@@ -543,7 +621,7 @@ export function recoverDocumentTransactions(
 
       // Check artifacts if they still exist
       const candInfo = hashFile(expectedCandidateDisk);
-      if (candInfo.isSymlink || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
+      if (candInfo.isSymlink || candInfo.isNonRegular || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
         recordAmbiguity(
           `Candidate artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
         );
@@ -551,7 +629,7 @@ export function recoverDocumentTransactions(
       }
 
       const rollInfo = hashFile(expectedRollbackDisk);
-      if (rollInfo.isSymlink || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
+      if (rollInfo.isSymlink || rollInfo.isNonRegular || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
         recordAmbiguity(
           `Rollback artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
         );
@@ -561,6 +639,7 @@ export function recoverDocumentTransactions(
       plannedActions.push({
         kind: 'CLEAN_COMMITTED',
         journalPath: jPath,
+        authoritativeTarget,
         candidateDiskPath: expectedCandidateDisk,
         rollbackDiskPath: expectedRollbackDisk,
         candidateExpectedSha: journal.candidateSha256,
@@ -592,6 +671,10 @@ export function recoverDocumentTransactions(
   for (const action of plannedActions) {
     if (action.kind === 'CLEAN_PREPARED') {
       try {
+        assertRegularFileHash(action.authoritativeTarget, action.previousSha256, 'Target document');
+        assertRegularFileHash(action.candidateDiskPath, action.candidateSha256, 'Candidate artifact');
+        assertRegularFileHash(action.rollbackDiskPath, action.previousSha256, 'Rollback artifact');
+
         unlinkSiblingSafe(action.candidateDiskPath);
         unlinkSiblingSafe(action.rollbackDiskPath);
         fs.unlinkSync(action.journalPath); // Journal deleted LAST
@@ -601,20 +684,14 @@ export function recoverDocumentTransactions(
       }
     } else if (action.kind === 'ROLLBACK_REPLACED') {
       try {
-        // Assert target is not a symlink immediately before rollback
-        const targetPre = hashFile(action.authoritativeTarget);
-        if (!targetPre.exists || targetPre.isSymlink || targetPre.sha?.toLowerCase() !== action.candidateSha256.toLowerCase()) {
-          throw new Error('Target document state altered or is a symlink prior to rollback execution');
-        }
+        assertRegularFileHash(action.authoritativeTarget, action.candidateSha256, 'Target document prior to rollback');
+        assertRegularFileHash(action.rollbackDiskPath, action.previousSha256, 'Rollback artifact prior to rollback');
 
         // Atomic rollback rename
         rollbackDocumentSiblingAtomic(action.rollbackDiskPath, action.authoritativeTarget);
 
         // Post-rollback verification
-        const targetPost = hashFile(action.authoritativeTarget);
-        if (!targetPost.exists || targetPost.isSymlink || targetPost.sha?.toLowerCase() !== action.previousSha256.toLowerCase()) {
-          throw new Error('Restored target document hash does not match previousSha256 after rollback');
-        }
+        assertRegularFileHash(action.authoritativeTarget, action.previousSha256, 'Restored target document');
 
         unlinkSiblingSafe(action.candidateDiskPath);
         fs.unlinkSync(action.journalPath); // Journal deleted LAST
@@ -624,6 +701,10 @@ export function recoverDocumentTransactions(
       }
     } else if (action.kind === 'CLEAN_COMMITTED') {
       try {
+        assertRegularFileHash(action.authoritativeTarget, action.candidateExpectedSha, 'Committed target document');
+        assertOptionalRegularFileHash(action.candidateDiskPath, action.candidateExpectedSha, 'Candidate artifact');
+        assertOptionalRegularFileHash(action.rollbackDiskPath, action.rollbackExpectedSha, 'Rollback artifact');
+
         unlinkSiblingSafe(action.candidateDiskPath);
         unlinkSiblingSafe(action.rollbackDiskPath);
         fs.unlinkSync(action.journalPath); // Journal deleted LAST
