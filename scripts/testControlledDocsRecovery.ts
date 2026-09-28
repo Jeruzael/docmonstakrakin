@@ -1508,6 +1508,430 @@ runTest('Test AX: schema rejects numeric updatedAt', () => {
   }
 });
 
+// Test AY: journal file symlink is rejected fail-closed before reading
+runTest('Test AY: journal file symlink is rejected fail-closed before reading', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-link';
+  try {
+    const externalFile = path.join(ws.workspaceDir, 'external-journal.json');
+    const validJournal = {
+      operationId: opId,
+      projectId: 'PRJ-DOCMONSTAKRAKIN',
+      documentId: 'DOC-CTRL-002',
+      targetPath: 'docs/00_control/PROJECT_STATE.md',
+      candidateArtifactPath: 'docs/00_control/.PROJECT_STATE.md.dmk-op-link.candidate',
+      rollbackArtifactPath: 'docs/00_control/.PROJECT_STATE.md.dmk-op-link.rollback',
+      previousSha256: ws.previousSha256,
+      candidateSha256: ws.candidateSha256,
+      projectStateBeforeDigest: 'mock-digest',
+      stateVersionBefore: 31,
+      stateVersionExpectedAfter: 32,
+      auditEventId: 'EVT-op-link',
+      phase: 'PREPARED' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(externalFile, JSON.stringify(validJournal, null, 2), 'utf8');
+
+    const symlinkPath = path.join(ws.journalDir, `${opId}.json`);
+    fs.symlinkSync(externalFile, symlinkPath);
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    });
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(report?.errors.some(e => e.includes('symbolic link') || e.includes('not a regular file')));
+    assert(fs.lstatSync(symlinkPath).isSymbolicLink(), 'Symlink itself must remain untouched');
+    assert(fs.existsSync(externalFile), 'External target file must remain untouched');
+    assert.strictEqual(report?.cleanedCount, 0);
+    assert.strictEqual(report?.recoveredCount, 0);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test AZ: journal directory entry is rejected fail-closed without uncaught exception
+runTest('Test AZ: journal directory entry is rejected fail-closed without uncaught exception', () => {
+  const ws = createRecoveryTestWorkspace();
+  const dirJournalPath = path.join(ws.journalDir, 'op-dir.json');
+  try {
+    fs.mkdirSync(dirJournalPath);
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    });
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(report?.errors.some(e => e.includes('not a regular file') || e.includes('directory')));
+    assert(fs.existsSync(dirJournalPath), 'Directory journal entry must be preserved');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BA: missing bootstrap manifest does not escape and locks recovery
+runTest('Test BA: missing bootstrap manifest does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-missing-manifest';
+  try {
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    // Remove bootstrap manifest file
+    const manifestPath = path.join(ws.workspaceDir, 'bootstrap', 'docmonstakrakin.self-bootstrap.json');
+    fs.unlinkSync(manifestPath);
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Missing bootstrap manifest must not escape as an uncaught exception');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath), 'Journal must be preserved on missing manifest');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BB: malformed bootstrap manifest does not escape and locks recovery
+runTest('Test BB: malformed bootstrap manifest does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-malformed-manifest';
+  try {
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    // Overwrite manifest with invalid JSON
+    const manifestPath = path.join(ws.workspaceDir, 'bootstrap', 'docmonstakrakin.self-bootstrap.json');
+    fs.writeFileSync(manifestPath, '{ malformed-manifest-json', 'utf8');
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Malformed bootstrap manifest must not escape as an uncaught exception');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath), 'Journal must be preserved on malformed manifest');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BC: registry manifest read I/O failure does not escape and locks recovery
+runTest('Test BC: registry manifest read I/O failure does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-manifest-io-err';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    const manifestPath = path.join(ws.workspaceDir, 'bootstrap', 'docmonstakrakin.self-bootstrap.json');
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (typeof filePath === 'string' && path.resolve(filePath) === path.resolve(manifestPath)) {
+        throw new Error('EACCES: permission denied, open simulated manifest fault');
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Manifest I/O error must not escape as an uncaught exception');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test BD: Pass-1 target inspection I/O failure does not escape and locks recovery
+runTest('Test BD: Pass-1 target inspection I/O failure does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-target-io-err';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (typeof filePath === 'string' && path.resolve(filePath) === path.resolve(ws.targetDiskPath)) {
+        throw new Error('EACCES: permission denied, simulated target read fault');
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Pass 1 target inspection I/O fault must not throw uncaught error');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath));
+    assert.strictEqual(report?.cleanedCount, 0);
+    assert.strictEqual(report?.recoveredCount, 0);
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test BE: Pass-1 artifact read I/O failure does not escape and locks recovery
+runTest('Test BE: Pass-1 artifact read I/O failure does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-artifact-io-err';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (typeof filePath === 'string' && path.resolve(filePath) === path.resolve(candPath)) {
+        throw new Error('EACCES: permission denied, simulated candidate read fault');
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Pass 1 artifact I/O fault must not throw uncaught error');
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(candPath));
+    assert(fs.existsSync(rollPath));
+    assert(fs.existsSync(journalPath));
+    assert.strictEqual(report?.cleanedCount, 0);
+    assert.strictEqual(report?.recoveredCount, 0);
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test BF: Pass-2 revalidation I/O failure locks recovery and preserves evidence
+runTest('Test BF: Pass-2 revalidation I/O failure locks recovery and preserves evidence', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-pass2-io-err';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    let targetReads = 0;
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (typeof filePath === 'string' && path.resolve(filePath) === path.resolve(ws.targetDiskPath)) {
+        targetReads++;
+        if (targetReads > 1) {
+          // Pass 1 succeeded (read 1); Pass 2 revalidation throws
+          throw new Error('EACCES: simulated Pass-2 target revalidation fault');
+        }
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    });
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(candPath));
+    assert(fs.existsSync(rollPath));
+    assert(fs.existsSync(journalPath));
+    assert.strictEqual(report?.cleanedCount, 0);
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test BG: journal read race I/O error does not escape and locks recovery
+runTest('Test BG: journal read race I/O error does not escape and locks recovery', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-journal-race-err';
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'PREPARED',
+    });
+
+    (fs as any).readFileSync = function (filePath: any, ...args: any[]) {
+      if (typeof filePath === 'string' && path.resolve(filePath) === path.resolve(journalPath)) {
+        throw new Error('EIO: simulated transient read race failure');
+      }
+      return originalReadFileSync.apply(this, [filePath, ...args]);
+    };
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    });
+
+    assert.strictEqual(report?.locked, true);
+    assert(report?.ambiguousCount! >= 1);
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    (fs as any).readFileSync = originalReadFileSync;
+    ws.cleanup();
+  }
+});
+
+// Test BH: malformed snapshot auditLogs collection fails closed without crash
+runTest('Test BH: malformed snapshot auditLogs collection fails closed without crash', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-malformed-audits';
+  try {
+    ws.writeCandidateFile(opId, ws.candidateBytes);
+    ws.writeRollbackFile(opId, ws.previousBytes);
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId: 'EVT-test-shape',
+    });
+
+    // Sub-case A: auditLogs is a string instead of object
+    const localDir = path.join(ws.workspaceDir, '.local');
+    const snapA = {
+      schemaVersion: 1,
+      state: {
+        projects: [{ id: 'PRJ-DOCMONSTAKRAKIN', name: 'docmonstakrakin', stateVersion: 32 }],
+        auditLogs: 'not-an-object',
+      },
+    };
+    fs.writeFileSync(path.join(localDir, 'project-state.json'), JSON.stringify(snapA, null, 2));
+
+    let repA: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      repA = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Sub-case A: string auditLogs must not crash');
+    assert.strictEqual(repA?.locked, true);
+    assert(repA?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    // Sub-case B: project auditLogs entry is an empty object instead of array
+    const snapB = {
+      schemaVersion: 1,
+      state: {
+        projects: [{ id: 'PRJ-DOCMONSTAKRAKIN', name: 'docmonstakrakin', stateVersion: 32 }],
+        auditLogs: { 'PRJ-DOCMONSTAKRAKIN': {} },
+      },
+    };
+    fs.writeFileSync(path.join(localDir, 'project-state.json'), JSON.stringify(snapB, null, 2));
+
+    let repB: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      repB = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Sub-case B: non-array project audits must not crash');
+    assert.strictEqual(repB?.locked, true);
+    assert(repB?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    // Sub-case C: project auditLogs entry is a string
+    const snapC = {
+      schemaVersion: 1,
+      state: {
+        projects: [{ id: 'PRJ-DOCMONSTAKRAKIN', name: 'docmonstakrakin', stateVersion: 32 }],
+        auditLogs: { 'PRJ-DOCMONSTAKRAKIN': 'not-an-array' },
+      },
+    };
+    fs.writeFileSync(path.join(localDir, 'project-state.json'), JSON.stringify(snapC, null, 2));
+
+    let repC: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      repC = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'Sub-case C: string project audits must not crash');
+    assert.strictEqual(repC?.locked, true);
+    assert(repC?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BI: malformed matching audit event details fails closed
+runTest('Test BI: malformed matching audit event details fails closed', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-details-garbage';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-details-garbage';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: 'garbage' as any,
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked due to contradictory/malformed audit details');
+    assert.strictEqual(report.cleanedCount, 0);
+    assert.strictEqual(report.recoveredCount, 0);
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(fs.existsSync(candPath));
+    assert(fs.existsSync(rollPath));
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
 console.log('\n================================================================');
 console.log(`TOTAL TESTS: ${passed + failed}`);
 console.log(`PASSED: ${passed}`);

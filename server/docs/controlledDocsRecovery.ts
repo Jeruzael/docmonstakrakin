@@ -80,6 +80,8 @@ interface FileInspection {
   isSymlink: boolean;
   isFile: boolean;
   isNonRegular: boolean;
+  isUnreadable: boolean;
+  error?: string;
   sha?: string;
   rawBytes?: Buffer;
 }
@@ -88,20 +90,30 @@ interface FileInspection {
  * Inspects a file path and returns its existence, symlink status, file type, raw bytes, and SHA-256 digest.
  */
 function hashFile(filePath: string): FileInspection {
-  const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  let lstat: fs.Stats | undefined;
+  try {
+    lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  } catch (err: any) {
+    return { exists: true, isSymlink: false, isFile: false, isNonRegular: false, isUnreadable: true, error: String(err) };
+  }
   if (!lstat) {
-    return { exists: false, isSymlink: false, isFile: false, isNonRegular: false };
+    return { exists: false, isSymlink: false, isFile: false, isNonRegular: false, isUnreadable: false };
   }
   if (lstat.isSymbolicLink()) {
-    return { exists: true, isSymlink: true, isFile: false, isNonRegular: false };
+    return { exists: true, isSymlink: true, isFile: false, isNonRegular: false, isUnreadable: false };
   }
   if (!lstat.isFile()) {
-    return { exists: true, isSymlink: false, isFile: false, isNonRegular: true };
+    return { exists: true, isSymlink: false, isFile: false, isNonRegular: true, isUnreadable: false };
   }
 
-  const rawBytes = fs.readFileSync(filePath);
+  let rawBytes: Buffer;
+  try {
+    rawBytes = fs.readFileSync(filePath);
+  } catch (err: any) {
+    return { exists: true, isSymlink: false, isFile: true, isNonRegular: false, isUnreadable: true, error: String(err) };
+  }
   const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
-  return { exists: true, isSymlink: false, isFile: true, isNonRegular: false, sha, rawBytes };
+  return { exists: true, isSymlink: false, isFile: true, isNonRegular: false, isUnreadable: false, sha, rawBytes };
 }
 
 /**
@@ -114,7 +126,12 @@ function assertRegularFileHash(
   expectedSha256: string,
   label: string
 ): void {
-  const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  let lstat: fs.Stats | undefined;
+  try {
+    lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  } catch (err: any) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} inspection failed due to I/O error: ${filePath}: ${String(err)}`);
+  }
   if (!lstat) {
     throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} missing on disk: ${filePath}`);
   }
@@ -124,7 +141,12 @@ function assertRegularFileHash(
   if (!lstat.isFile()) {
     throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} is a non-regular filesystem node: ${filePath}`);
   }
-  const rawBytes = fs.readFileSync(filePath);
+  let rawBytes: Buffer;
+  try {
+    rawBytes = fs.readFileSync(filePath);
+  } catch (err: any) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} read failed due to I/O error: ${filePath}: ${String(err)}`);
+  }
   const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
   if (sha.toLowerCase() !== expectedSha256.toLowerCase()) {
     throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: ${label} hash drift: expected ${expectedSha256}, actual ${sha}`);
@@ -142,7 +164,12 @@ function assertOptionalRegularFileHash(
   expectedSha256: string,
   label: string
 ): void {
-  const lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  let lstat: fs.Stats | undefined;
+  try {
+    lstat = fs.lstatSync(filePath, { throwIfNoEntry: false });
+  } catch (err: any) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} inspection failed due to I/O error: ${filePath}: ${String(err)}`);
+  }
   if (!lstat) {
     return;
   }
@@ -152,7 +179,12 @@ function assertOptionalRegularFileHash(
   if (!lstat.isFile()) {
     throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} is a non-regular filesystem node: ${filePath}`);
   }
-  const rawBytes = fs.readFileSync(filePath);
+  let rawBytes: Buffer;
+  try {
+    rawBytes = fs.readFileSync(filePath);
+  } catch (err: any) {
+    throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} read failed due to I/O error: ${filePath}: ${String(err)}`);
+  }
   const sha = crypto.createHash('sha256').update(rawBytes).digest('hex');
   if (sha.toLowerCase() !== expectedSha256.toLowerCase()) {
     throw new Error(`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED: Optional ${label} hash drift: expected ${expectedSha256}, actual ${sha}`);
@@ -345,6 +377,31 @@ export function recoverDocumentTransactions(
 
   for (const jFile of journalFiles) {
     const jPath = path.join(journalDir, jFile);
+
+    // Lstat check before reading: journal file must exist, be a regular file, and not a symlink
+    let jStat: fs.Stats | undefined;
+    try {
+      jStat = fs.lstatSync(jPath, { throwIfNoEntry: false });
+    } catch (err: any) {
+      recordAmbiguity(`Failed to inspect journal file ${jFile}: ${String(err)}`);
+      continue;
+    }
+
+    if (!jStat) {
+      recordAmbiguity(`Journal file missing on disk: ${jFile}`);
+      continue;
+    }
+
+    if (jStat.isSymbolicLink()) {
+      recordAmbiguity(`Journal file is a symbolic link and will not be followed: ${jFile}`);
+      continue;
+    }
+
+    if (!jStat.isFile()) {
+      recordAmbiguity(`Journal file is not a regular file: ${jFile}`);
+      continue;
+    }
+
     let rawContent: string;
     try {
       rawContent = fs.readFileSync(jPath, 'utf8');
@@ -370,7 +427,14 @@ export function recoverDocumentTransactions(
     const journal = validation.journal;
 
     // Authoritative registry document lookup
-    const docRecord = findControlledDoc('PRJ-DOCMONSTAKRAKIN', journal.documentId, workspaceRoot);
+    let docRecord: any;
+    try {
+      docRecord = findControlledDoc('PRJ-DOCMONSTAKRAKIN', journal.documentId, workspaceRoot);
+    } catch (err: any) {
+      recordAmbiguity(`Manifest or registry lookup failure for ${journal.documentId} in ${jFile}: ${String(err)}`);
+      continue;
+    }
+
     if (!docRecord) {
       recordAmbiguity(`Document ID '${journal.documentId}' in ${jFile} is not registered in manifest`);
       continue;
@@ -418,6 +482,10 @@ export function recoverDocumentTransactions(
 
     // Authoritative target inspection
     const targetInfo = hashFile(authoritativeTarget);
+    if (targetInfo.isUnreadable) {
+      recordAmbiguity(`Authoritative target document could not be inspected due to I/O error: ${expectedTargetPath}: ${targetInfo.error}`);
+      continue;
+    }
     if (!targetInfo.exists) {
       recordAmbiguity(`Authoritative target document missing on disk: ${expectedTargetPath}`);
       continue;
@@ -435,57 +503,97 @@ export function recoverDocumentTransactions(
     // Snapshot commit evidence inspection
     let committedEvidence = false;
     if (snapshot && snapshot.state) {
-      const prj = snapshot.state.projects?.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
-      const projectAudits = snapshot.state.auditLogs?.['PRJ-DOCMONSTAKRAKIN'] || [];
-      const matchingAudits = projectAudits.filter((e: any) => e.id === journal.auditEventId);
-
-      if (matchingAudits.length > 1) {
-        recordAmbiguity(`Duplicate audit event ID '${journal.auditEventId}' found in project snapshot`);
-        continue;
-      }
-
-      if (matchingAudits.length === 1) {
-        const evt = matchingAudits[0];
-        if (evt.action !== 'DOCUMENT_UPDATED' || evt.target !== journal.documentId) {
+      const auditLogsCollection = snapshot.state.auditLogs;
+      if (auditLogsCollection !== undefined && auditLogsCollection !== null) {
+        if (typeof auditLogsCollection !== 'object' || Array.isArray(auditLogsCollection)) {
           recordAmbiguity(
-            `Contradictory audit event details for ${journal.auditEventId}: action=${evt.action}, target=${evt.target}`
+            `Malformed auditLogs collection in project snapshot: expected object, got ${Array.isArray(auditLogsCollection) ? 'array' : typeof auditLogsCollection}`
           );
           continue;
         }
 
-        if (evt.details) {
-          if (
-            evt.details.previousSha256 &&
-            evt.details.previousSha256.toLowerCase() !== journal.previousSha256.toLowerCase()
-          ) {
-            recordAmbiguity(`Audit event previousSha256 contradicts journal for ${journal.operationId}`);
+        const projectAudits = auditLogsCollection['PRJ-DOCMONSTAKRAKIN'];
+        if (projectAudits !== undefined && projectAudits !== null) {
+          if (!Array.isArray(projectAudits)) {
+            recordAmbiguity(`Malformed project audit log collection for PRJ-DOCMONSTAKRAKIN: expected array, got ${typeof projectAudits}`);
             continue;
           }
-          if (
-            evt.details.newSha256 &&
-            evt.details.newSha256.toLowerCase() !== journal.candidateSha256.toLowerCase()
-          ) {
-            recordAmbiguity(`Audit event newSha256 contradicts journal for ${journal.operationId}`);
-            continue;
-          }
-          if (evt.details.path && evt.details.path !== docRecord.path) {
-            recordAmbiguity(`Audit event path contradicts record path for ${journal.operationId}`);
-            continue;
-          }
-        }
 
-        if (prj && typeof prj.stateVersion === 'number') {
-          if (prj.stateVersion >= journal.stateVersionExpectedAfter) {
-            committedEvidence = true;
-          } else {
-            recordAmbiguity(
-              `Audit event exists for ${journal.operationId} but project stateVersion (${prj.stateVersion}) is less than expected (${journal.stateVersionExpectedAfter})`
-            );
+          const matchingAudits: any[] = [];
+          for (const rawEvt of projectAudits) {
+            if (!rawEvt || typeof rawEvt !== 'object') {
+              continue;
+            }
+            if (rawEvt.id === journal.auditEventId) {
+              matchingAudits.push(rawEvt);
+            }
+          }
+
+          if (matchingAudits.length > 1) {
+            recordAmbiguity(`Duplicate audit event ID '${journal.auditEventId}' found in project snapshot`);
             continue;
           }
-        } else {
-          recordAmbiguity(`Project record or stateVersion missing in snapshot for ${journal.projectId}`);
-          continue;
+
+          if (matchingAudits.length === 1) {
+            const evt = matchingAudits[0];
+            if (
+              typeof evt.action !== 'string' ||
+              evt.action !== 'DOCUMENT_UPDATED' ||
+              typeof evt.target !== 'string' ||
+              evt.target !== journal.documentId
+            ) {
+              recordAmbiguity(
+                `Contradictory audit event details for ${journal.auditEventId}: action=${evt.action}, target=${evt.target}`
+              );
+              continue;
+            }
+
+            if (evt.details !== undefined && evt.details !== null) {
+              if (typeof evt.details !== 'object' || Array.isArray(evt.details)) {
+                recordAmbiguity(`Malformed audit event details for ${journal.auditEventId}: expected object, got ${Array.isArray(evt.details) ? 'array' : typeof evt.details}`);
+                continue;
+              }
+
+              if (
+                evt.details.previousSha256 &&
+                evt.details.previousSha256.toLowerCase() !== journal.previousSha256.toLowerCase()
+              ) {
+                recordAmbiguity(`Audit event previousSha256 contradicts journal for ${journal.operationId}`);
+                continue;
+              }
+              if (
+                evt.details.newSha256 &&
+                evt.details.newSha256.toLowerCase() !== journal.candidateSha256.toLowerCase()
+              ) {
+                recordAmbiguity(`Audit event newSha256 contradicts journal for ${journal.operationId}`);
+                continue;
+              }
+              if (evt.details.path && evt.details.path !== docRecord.path) {
+                recordAmbiguity(`Audit event path contradicts record path for ${journal.operationId}`);
+                continue;
+              }
+            }
+
+            const prj = snapshot.state.projects?.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+            if (
+              prj &&
+              typeof prj.stateVersion === 'number' &&
+              Number.isInteger(prj.stateVersion) &&
+              prj.stateVersion >= 0
+            ) {
+              if (prj.stateVersion >= journal.stateVersionExpectedAfter) {
+                committedEvidence = true;
+              } else {
+                recordAmbiguity(
+                  `Audit event exists for ${journal.operationId} but project stateVersion (${prj.stateVersion}) is less than expected (${journal.stateVersionExpectedAfter})`
+                );
+                continue;
+              }
+            } else {
+              recordAmbiguity(`Project record or valid stateVersion missing in snapshot for ${journal.projectId}`);
+              continue;
+            }
+          }
         }
       }
     }
@@ -518,6 +626,10 @@ export function recoverDocumentTransactions(
       const candInfo = hashFile(expectedCandidateDisk);
       const rollInfo = hashFile(expectedRollbackDisk);
 
+      if (candInfo.isUnreadable) {
+        recordAmbiguity(`Candidate sibling unreadable due to I/O error for ${journal.operationId}: ${candInfo.error}`);
+        continue;
+      }
       if (!candInfo.exists || candInfo.isSymlink || candInfo.isNonRegular || candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase()) {
         recordAmbiguity(
           `Candidate sibling missing, symlink, or corrupt for PREPARED transaction ${journal.operationId}`
@@ -525,6 +637,10 @@ export function recoverDocumentTransactions(
         continue;
       }
 
+      if (rollInfo.isUnreadable) {
+        recordAmbiguity(`Rollback sibling unreadable due to I/O error for ${journal.operationId}: ${rollInfo.error}`);
+        continue;
+      }
       if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.isNonRegular || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
         recordAmbiguity(
           `Rollback sibling missing, symlink, or corrupt for PREPARED transaction ${journal.operationId}`
@@ -552,6 +668,10 @@ export function recoverDocumentTransactions(
       if (!committedEvidence) {
         // Safe rollback case: snapshot was not committed, revert to rollback sibling
         const rollInfo = hashFile(expectedRollbackDisk);
+        if (rollInfo.isUnreadable) {
+          recordAmbiguity(`Rollback artifact unreadable due to I/O error for ${journal.operationId}: ${rollInfo.error}`);
+          continue;
+        }
         if (!rollInfo.exists || rollInfo.isSymlink || rollInfo.isNonRegular || rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase()) {
           recordAmbiguity(
             `Rollback artifact missing, symlink, or corrupt for uncommitted DOCUMENT_REPLACED transaction ${journal.operationId}`
@@ -559,7 +679,13 @@ export function recoverDocumentTransactions(
           continue;
         }
 
-        const candLstat = fs.lstatSync(expectedCandidateDisk, { throwIfNoEntry: false });
+        let candLstat: fs.Stats | undefined;
+        try {
+          candLstat = fs.lstatSync(expectedCandidateDisk, { throwIfNoEntry: false });
+        } catch (err: any) {
+          recordAmbiguity(`Candidate artifact inspection I/O error for ${journal.operationId}: ${String(err)}`);
+          continue;
+        }
         if (candLstat && (candLstat.isSymbolicLink() || !candLstat.isFile())) {
           recordAmbiguity(
             `Candidate artifact is a symbolic link or non-regular for DOCUMENT_REPLACED transaction ${journal.operationId}`
@@ -579,6 +705,10 @@ export function recoverDocumentTransactions(
       } else {
         // Committed replace: snapshot commit succeeded before cleanup
         const candInfo = hashFile(expectedCandidateDisk);
+        if (candInfo.isUnreadable) {
+          recordAmbiguity(`Candidate artifact unreadable due to I/O error for ${journal.operationId}: ${candInfo.error}`);
+          continue;
+        }
         if (candInfo.isSymlink || candInfo.isNonRegular || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
           recordAmbiguity(
             `Candidate artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
@@ -587,6 +717,10 @@ export function recoverDocumentTransactions(
         }
 
         const rollInfo = hashFile(expectedRollbackDisk);
+        if (rollInfo.isUnreadable) {
+          recordAmbiguity(`Rollback artifact unreadable due to I/O error for ${journal.operationId}: ${rollInfo.error}`);
+          continue;
+        }
         if (rollInfo.isSymlink || rollInfo.isNonRegular || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
           recordAmbiguity(
             `Rollback artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
@@ -621,6 +755,10 @@ export function recoverDocumentTransactions(
 
       // Check artifacts if they still exist
       const candInfo = hashFile(expectedCandidateDisk);
+      if (candInfo.isUnreadable) {
+        recordAmbiguity(`Candidate artifact unreadable due to I/O error for ${journal.operationId}: ${candInfo.error}`);
+        continue;
+      }
       if (candInfo.isSymlink || candInfo.isNonRegular || (candInfo.exists && candInfo.sha?.toLowerCase() !== journal.candidateSha256.toLowerCase())) {
         recordAmbiguity(
           `Candidate artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
@@ -629,6 +767,10 @@ export function recoverDocumentTransactions(
       }
 
       const rollInfo = hashFile(expectedRollbackDisk);
+      if (rollInfo.isUnreadable) {
+        recordAmbiguity(`Rollback artifact unreadable due to I/O error for ${journal.operationId}: ${rollInfo.error}`);
+        continue;
+      }
       if (rollInfo.isSymlink || rollInfo.isNonRegular || (rollInfo.exists && rollInfo.sha?.toLowerCase() !== journal.previousSha256.toLowerCase())) {
         recordAmbiguity(
           `Rollback artifact corrupt or symlink in committed cleanup for ${journal.operationId}`
