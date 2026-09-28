@@ -4,6 +4,8 @@
 > superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task.
 
+**Status:** READY FOR HUMAN APPROVAL
+
 **Goal:** Implement the approved DMK-195 Controlled Documentation Workspace with
 registered-only repository document access, secure read-only viewing, controlled
 editing of two living documents, raw-byte integrity checks, journaled atomic
@@ -49,13 +51,16 @@ The implementation must preserve these approved architecture decisions without d
 11. **Persistence Mode Classification:** Requests where `req.method === 'POST'` and path matches `/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/` are classified as `READ_ONLY` pre-persistence; `/save` and all other modifying methods remain `MUTATING`.
 12. **Single State Version Increment:** A successful document save increments `project.stateVersion` exactly once ($N \to N+1$).
 13. **Human Governance Confirmation:** Document saves require `requireHuman()` session authorization, non-empty `reason`, and explicit `humanConfirmed === true` payload flag.
-14. **Prohibited Client Identity Claims:** Any request supplying client identity fields in the request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) is rejected immediately with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`). Server identity comes strictly from session state via `requireHuman()`.
+14. **Prohibited Client Identity Claims:** Any request supplying client identity fields or client-generated audit identifiers in the request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`, `auditEventId`) is rejected immediately with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`). Server identity comes strictly from session state via `requireHuman()`.
 15. **Target-Sibling Candidate and Rollback Artifacts:** Candidate and rollback files are placed as hidden sibling files in `path.dirname(targetDocument)` to guarantee same-filesystem `fs.renameSync` atomicity.
 16. **Transaction Journal Location:** Transaction journals reside under `.local/document-transactions/<operationId>.json`.
 17. **Untrusted Journal Paths:** Journal paths stored on disk are NOT authorities during crash recovery. Target and sibling paths are re-derived strictly from `documentId` and the trusted bootstrap manifest registry.
-18. **Safe Markdown Rendering:** Markdown is rendered using `react-markdown` with raw HTML interpretation disabled. No `dangerouslySetInnerHTML` or homemade HTML sanitizers.
+18. **Safe Markdown Rendering:** Markdown is rendered using `react-markdown` with raw HTML interpretation disabled (no `rehype-raw`, no `dangerouslySetInnerHTML`). Safe/default URL transforms ensure `javascript:` and `data:` URIs are neutralized and non-executable, and external links receive `rel="noopener noreferrer"`.
 19. **Preserved Dynamic Projections:** Existing `DocumentsView.tsx` functionality remains available under Tab 2 ("Dynamic Projections"). Gate 7 behavior and portable package export remain untouched.
 20. **Governance Boundaries:** DMK-201 remains untouched (`VERIFICATION_PENDING`). Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`. No reconciliation or recovery applied.
+21. **Recovery Lockout:** When transaction recovery fails closed (`isDocumentTransactionsLocked() === true`), all controlled document writes, diffs/validations that prepare transactions, and candidate artifact creations are strictly prohibited (`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`).
+22. **Server-Reserved Audit Event ID:** Audit event IDs for controlled document mutations are created server-side before transaction preparation (`createAuditEventId()`), guaranteeing exact equality across `journal.auditEventId === persisted DOCUMENT_UPDATED event.id === DocumentSaveResponse.auditEventId`. Client-supplied audit IDs are prohibited.
+23. **Pre-Replacement Hook Attachment & Route Rollback:** `res.locals.projectPersistenceHooks` is attached immediately after transaction preparation and before `coordinator.executeReplacement()`. Route execution after replacement is enclosed in try/catch to invoke `coordinator.handleRollback(error)` on post-replacement route failures.
 
 ---
 
@@ -72,6 +77,10 @@ The implementation and test suites must explicitly address the following failure
 | **5. Crash Recovery Path Security** | Startup recovery reads journal, re-derives filesystem paths strictly from manifest registry by `documentId`, and ignores untrusted paths inside the journal JSON. | Server crashes after `fs.renameSync` (phase `DOCUMENT_REPLACED`) before snapshot commit. If journal paths are trusted, an attacker could point recovery to overwrite arbitrary system files. | **Task 7**: `testControlledDocsRecovery.ts` (Test Z, Test AN). |
 | **6. Symlink Target Protection** | If a registered editable target itself is a symbolic link, writing must FAIL CLOSED (`assertEditableTargetNotSymlink`). | An attacker replaces `docs/00_control/PROJECT_STATE.md` with a symlink targeting `/etc/shadow` or `.env`. Controlled writes through symlinks must be strictly prohibited. | **Task 4**: `testControlledDocsPersistence.ts` (Symlink Write Rejection). |
 | **7. Byte-Level EOL Preservation & Candidate Hash Ownership** | Raw-byte hashing; detect LF/CRLF; candidate hash computed over encoded bytes (`encodeDocumentBytes(candidateContent, eol)`); reject mixed EOL. | Git on Windows or editors convert LF to CRLF, altering raw-byte SHA-256 and triggering spurious integrity drift or corrupting LF-only repositories. Hashing unencoded JS strings produces wrong hashes for CRLF documents. | **Task 4, 5, 8**: `testControlledDocsPersistence.ts`, `testControlledDocsValidator.ts`, `testControlledDocsApi.ts` (Test AF, Test AG, Test AH, Raw-Byte Diff Hash Tests). |
+| **8. Recovery Lockout & Early Rejection** | Route verifies `assertDocumentTransactionsUnlocked()` before any file or transaction preparation. If recovery is locked, immediately returns `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`. | Attempting mutations while recovery is incomplete or ambiguous risks corrupting state, overwriting recovery artifacts, or masking uncommitted changes. | **Task 8**: `testControlledDocsApi.ts` (Recovery Lock Test). |
+| **9. Early Persistence Hook Attachment & Route Rollback** | Attach `res.locals.projectPersistenceHooks` immediately after prepare and before `executeReplacement()`; wrap post-replacement route execution in `try/catch` calling `coordinator.handleRollback(error)`. | If route fails between document replacement and `res.json()`, persistence middleware rollback wouldn't trigger without attached hooks and route catch, leaving the filesystem mutated without audit. | **Task 8**: `testControlledDocsApi.ts` (Post-Replacement Failure Tests F & G). |
+| **10. Ambiguous PREPARED Crash Fail-Closed** | If journal phase is `PREPARED` and disk document matches `candidateSha256`, recovery must NOT guess; fail closed with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`. | Automatic forward completion or rollback on ambiguous state could overwrite intentional changes or commit unverified drafts. | **Task 7 & 12**: `testControlledDocsRecovery.ts`, `testControlledDocs.ts` (PREPARED-Crash Ambiguity Test). |
+| **11. Markdown URI Sanitization & Safe External Links** | Default safe URL transforms neutralize `javascript:` and `data:` URIs; external links receive `rel="noopener noreferrer"`; raw HTML disabled. | Malicious or untrusted Markdown content could trigger XSS or tabnabbing if `rehype-raw` is enabled or URL transforms are weakened. | **Task 10 & 12**: `testControlledDocsViewComponent.ts`, `testControlledDocs.ts` (Markdown Link Safety Tests). |
 
 ---
 
@@ -445,12 +454,17 @@ Create `server/docs/controlledDocsTransaction.ts` to manage filesystem transacti
   ```
 
 **Implementation Steps:**
-- [ ] Write failing test in `scripts/testControlledDocsTransaction.ts` asserting:
-  - Prepare sequence: verifies base hash, writes rollback sibling, fsyncs rollback, writes candidate sibling, fsyncs candidate, writes PREPARED journal with all spec fields, fsyncs journal (Test AJ, Test AK).
+- [ ] Write failing test in `scripts/testControlledDocsTransaction.ts` asserting transaction preparation, execution, and failure injection stages:
+  - Prepare sequence: verifies base hash, writes rollback sibling, fsyncs rollback, writes candidate sibling, fsyncs candidate, writes PREPARED journal with all spec fields (including server-reserved `auditEventId`), fsyncs journal (Test AJ, Test AK).
   - Stale `baseSha256` triggers immediate rejection with `DOCUMENT_STALE` without disk mutations (Test O).
   - `executeReplacement()` performs atomic rename and advances journal to `DOCUMENT_REPLACED` (Test P, Test AL).
-  - Rollback failure semantics: if rollback rename fails or restored hash does not equal `previousSha256`, throws `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` and preserves all artifacts.
-  - Post-commit cleanup failure semantics: if `handleCommitSuccess()` fails to unlink artifacts, advances journal to `COMMITTED_CLEANUP_PENDING` without throwing rollback errors.
+  - Failure Stage A (Rollback sibling write failure): target document remains unchanged, zero sibling or journal artifacts remain.
+  - Failure Stage B (Candidate sibling write failure): target document remains unchanged, rollback sibling cleaned.
+  - Failure Stage C (Candidate sibling fsync failure): target document remains unchanged, temporary files cleaned.
+  - Failure Stage D (PREPARED journal write/fsync failure): target document remains unchanged, fails closed.
+  - Failure Stage E (Candidate rename failure): `executeReplacement()` failure leaves target unchanged, preserves recoverable PREPARED transaction without corrupting target.
+  - Failure Stage I (Rollback failure): persistence or route rollback fails (or restored hash does not equal `previousSha256`) $\to$ throws `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` and preserves all artifacts on disk for human investigation.
+  - Failure Stage J (Cleanup failure after durable project commit): snapshot commit succeeds but `handleCommitSuccess()` fails to unlink artifacts $\to$ advances journal to `COMMITTED_CLEANUP_PENDING`, throws NO rollback error, does NOT roll back store.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsTransaction.ts`.
 - [ ] Implement `server/docs/controlledDocsTransaction.ts` strictly following the approved 14-step prepare and execution sequence.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsTransaction.ts` (PASS).
@@ -492,13 +506,16 @@ Create `server/docs/controlledDocsRecovery.ts` and integrate it into server init
   - Phase `DOCUMENT_REPLACED` without committed audit event restores original document from rollback sibling file (Test Z).
   - Phase `COMMITTED` or `COMMITTED_CLEANUP_PENDING` safely cleans leftover files (Test AA).
   - Corrupted or unparseable journal locks transactions with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` (Test AB).
+  - PREPARED-Crash Ambiguity: Journal in phase `PREPARED` where target disk hash equals `candidateSha256` triggers fail-closed `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` (does not guess whether rename succeeded), sets `locked = true`, records error, and ensures `assertDocumentTransactionsUnlocked()` throws `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` to block further mutations.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsRecovery.ts`.
 - [ ] Implement `server/docs/controlledDocsRecovery.ts`:
   - Scan journal directory. Read each journal JSON.
   - Look up `documentId` in `getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', workspaceRoot)`. If not found, fail closed (lock).
   - Re-derive expected disk path and sibling paths.
   - Reconcile against `.local/project-state.json` audit events.
+  - PREPARED Ambiguity Check: if journal phase is `PREPARED` and disk document matches `candidateSha256`, set `locked = true` and fail closed with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
   - Execute recovery rollback or cleanup.
+  - Implement `isDocumentTransactionsLocked()` and `assertDocumentTransactionsUnlocked()`.
 - [ ] Wire `recoverDocumentTransactions()` into `server.ts` startup sequence before Express route handlers.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsRecovery.ts` (PASS).
 - [ ] Commit changes: `feat(docs): implement startup transaction recovery and path derivation`.
@@ -508,17 +525,20 @@ Create `server/docs/controlledDocsRecovery.ts` and integrate it into server init
 ### Task 8 — Controlled Docs API & Store Orchestration
 
 **Description:**
-Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for document catalog listing, reading, diffing, validating, and saving. Enforce strict rejection of client identity claims in request body, authenticate via `requireHuman()`, orchestrate ProjectStore audit event and `stateVersion` updates, compute encoded candidate raw-byte hashes for `/diff`, return `DocumentSaveResponse`, and attach `projectPersistenceHooks`.
+Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for document catalog listing, reading, diffing, validating, and saving. Enforce recovery lock before any document mutation, enforce strict rejection of client identity claims and client-supplied audit IDs in request body, authenticate via `requireHuman()`, orchestrate ProjectStore audit event and `stateVersion` updates using server-reserved audit event IDs, attach `projectPersistenceHooks` immediately after prepare and prior to replacement, wrap post-replacement execution in route-level try/catch for rollback, compute encoded candidate raw-byte hashes for `/diff`, and return `DocumentSaveResponse`.
 
 **Files:**
 - Create: `server/docs/controlledDocsRouter.ts`
 - Modify: `server.ts`
+- Modify: `server/projectStore.ts`
 - Create / Test: `scripts/testControlledDocsApi.ts`
 
 **Interfaces:**
-- Consumes: Express `Router`, `ProjectStore`, `requireHuman` from `server/proposals/identity.ts`, `encodeDocumentBytes` from `controlledDocsPersistence.ts`
+- Consumes: Express `Router`, `ProjectStore`, `requireHuman` from `server/proposals/identity.ts`, `encodeDocumentBytes` from `controlledDocsPersistence.ts`, `assertDocumentTransactionsUnlocked`, `isDocumentTransactionsLocked` from `server/docs/controlledDocsRecovery.ts`
 - Produces:
   ```ts
+  export function createAuditEventId(): string;
+
   export interface DocumentSaveResponse {
     success: true;
     documentId: string;
@@ -530,6 +550,23 @@ Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for docume
     timestamp: string;
   }
   ```
+  Updates `server/projectStore.ts`:
+  ```ts
+  addAuditEvent(
+    projectId: string,
+    actor: string,
+    action: string,
+    target: string,
+    reason?: string,
+    details?: any,
+    eventId?: string
+  ): AuditEvent;
+  ```
+  - When `eventId` is omitted: preserves existing behavior exactly (generates random ID, zero impact on existing callers).
+  - When `eventId` is supplied: must be server-generated; verifies uniqueness (throws on duplicate ID); uses that ID before computing the chained stateHash.
+  - Client-supplied `auditEventId` is strictly rejected by the body validator.
+  - Invariant: `journal.auditEventId === persisted DOCUMENT_UPDATED event.id === DocumentSaveResponse.auditEventId`.
+
   Endpoints:
   - `GET /api/projects/:id/docs`
   - `GET /api/projects/:id/docs/:documentId` (returns 410 if status is MISSING)
@@ -539,6 +576,7 @@ Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for docume
 
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testControlledDocsApi.ts` asserting:
+  - Recovery Lock Enforcement: Simulate `isDocumentTransactionsLocked() === true`. POST `/save`. Verify save is rejected with HTTP 500 `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`, target bytes unchanged, stateVersion unchanged, audit count unchanged, and zero transaction artifacts created.
   - `GET /api/projects/PRJ-DOCMONSTAKRAKIN/docs` returns 28 items.
   - Missing registered file returns 410 on GET content.
   - `/diff` flow:
@@ -549,27 +587,111 @@ Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for docume
     5. Computes SHA-256 over candidate bytes.
     6. Passes `candidateSha256` into `computeDocumentDiff()`.
     7. Asserts `candidateHash === SHA256(the exact bytes /save would write)`.
-  - `POST .../save` rejects client identity claims in request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`) (Test X).
+  - `POST .../save` rejects client identity claims and client-supplied audit IDs in request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`, `auditEventId`) with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`) (Test X).
   - `POST .../save` requires human session authentication (returns 401/403 if unauthorized).
   - `POST .../save` requires non-empty `reason` and `humanConfirmed === true` (returns 422 if invalid).
+  - Server-Reserved Audit ID tests:
+    - Reserved audit ID is written into PREPARED journal.
+    - Persisted `DOCUMENT_UPDATED` event uses the exact same ID.
+    - `DocumentSaveResponse.auditEventId` matches that ID.
+    - Duplicate reserved audit event ID fails closed.
+    - Existing `addAuditEvent` callers without explicit IDs behave unchanged.
+    - Client cannot supply `auditEventId`.
+  - Post-Replacement Pre-Audit Failure Test (Failure Stage F): Injected error after `executeReplacement()` but before audit append triggers route catch, calls `coordinator.handleRollback(error)`, restores original document (`restoredSha256 === previousSha256`), preserves original `stateVersion` and audit count, and returns HTTP 500 `DOCUMENT_UPDATE_FAILED`.
+  - Audit Append Failure Test (Failure Stage G): Injected error during `store.addAuditEvent()` triggers route catch and rollback; document is restored and store snapshot restored.
+  - Snapshot Persistence Failure Test (Failure Stage H / Test Y): Injected snapshot persistence failure triggers `res.locals.projectPersistenceHooks.onRollback` restoring document from rollback sibling file.
   - Successful save returns `DocumentSaveResponse` with `newSha256`, `stateVersion`, and `auditEventId`.
   - Successful save appends `DOCUMENT_UPDATED` audit event (Test Q).
   - Successful save increments `project.stateVersion` exactly once ($N \to N+1$) (Test W).
   - Full save flow persists document, appends audit, and survives server restart (Test L, Test R).
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsApi.ts`.
+- [ ] Implement `server/projectStore.ts` extension:
+  - Update `addAuditEvent` signature to accept optional `eventId?: string`.
+  - If `eventId` is provided, verify no duplicate ID exists in `this.auditLogs[projectId]`; throw error if duplicate.
+  - Use `id = eventId || createAuditEventId()`.
+  - Maintain existing behavior when `eventId` is undefined.
+- [ ] Implement `createAuditEventId()` helper in `server/projectStore.ts` or `server/docs/controlledDocsRouter.ts`.
 - [ ] Implement `server/docs/controlledDocsRouter.ts`:
-  - Body claim check: scan `req.body` for prohibited fields; return `res.status(400).json({ error: 'CLIENT_IDENTITY_CLAIMS_PROHIBITED' })`.
+  - Body claim check: scan `req.body` for prohibited fields (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`, `auditEventId`); return `res.status(400).json({ error: 'CLIENT_IDENTITY_CLAIMS_PROHIBITED' })`.
   - Wire `/diff` route orchestration with exact raw-byte candidate encoding and diff computation.
   - Wire `/validate` route handler.
-  - Wire `/save` handler:
-    1. Authenticate with `reviewerAuth.requireHuman(req, res)`.
-    2. Validate `reason` and `humanConfirmed === true`.
-    3. Generate audit event ID and prepare transaction coordinator.
-    4. Execute replacement.
-    5. Append `DOCUMENT_UPDATED` audit event to `store` using authenticated reviewer identity.
-    6. Increment `project.stateVersion`.
-    7. Set `res.locals.projectPersistenceHooks = { onCommit: coordinator.handleCommitSuccess, onRollback: coordinator.handleRollback }`.
-    8. Return `DocumentSaveResponse`.
+  - Wire `/save` handler strictly enforcing save order:
+    1. Reject prohibited client identity claims and client-supplied audit IDs (HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
+    2. Require human session authentication: `const reviewer = reviewerAuth.requireHuman(req, res);` (401/403).
+    3. Validate `reason` (non-empty string; HTTP 422).
+    4. Require `humanConfirmed === true` (HTTP 422).
+    5. Enforce recovery lock: `assertDocumentTransactionsUnlocked();` (return HTTP 500 `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` if locked; zero mutations or artifacts permitted).
+    6. Look up document in registry (`getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', workspaceRoot)`); return 404 if unregistered.
+    7. Verify `docRecord.editability === 'CONTROLLED_EDIT'`; return 403 `DOCUMENT_READ_ONLY` if not editable.
+    8. Validate candidate content with `validateDocumentContent()`; return 422 if invalid.
+    9. Generate server-reserved audit ID: `const auditEventId = createAuditEventId();`.
+    10. Prepare transaction coordinator:
+        ```ts
+        const coordinator = prepareDocumentTransaction({
+          projectId,
+          documentId,
+          docRecord,
+          candidateContent,
+          baseSha256,
+          projectStateBeforeDigest: store.getStateDigest(projectId),
+          stateVersionBefore: project.stateVersion,
+          auditEventId,
+          workspaceRoot,
+        });
+        ```
+    11. Immediately attach persistence hooks BEFORE calling replacement:
+        ```ts
+        res.locals.projectPersistenceHooks = {
+          onCommit: coordinator.handleCommitSuccess,
+          onRollback: coordinator.handleRollback,
+        };
+        ```
+    12. Route-level try/catch executing replacement, audit append, and version increment:
+        ```ts
+        try {
+          const replacement = coordinator.executeReplacement();
+
+          const auditEvent = store.addAuditEvent(
+            projectId,
+            reviewer.name,
+            'DOCUMENT_UPDATED',
+            documentId,
+            reason,
+            {
+              previousSha256: replacement.previousSha256,
+              newSha256: replacement.newSha256,
+              path: docRecord.path,
+            },
+            auditEventId
+          );
+
+          project.stateVersion += 1;
+
+          return res.json({
+            success: true,
+            documentId,
+            path: docRecord.path,
+            previousSha256: replacement.previousSha256,
+            newSha256: replacement.newSha256,
+            stateVersion: project.stateVersion,
+            auditEventId: auditEvent.id,
+            timestamp: auditEvent.timestamp,
+          });
+        } catch (error) {
+          try {
+            coordinator.handleRollback(error);
+          } catch (rollbackError) {
+            return res.status(500).json({
+              error: 'DOCUMENT_TRANSACTION_RECOVERY_REQUIRED',
+            });
+          }
+
+          return res.status(500).json({
+            error: 'DOCUMENT_UPDATE_FAILED',
+          });
+        }
+        ```
+    13. Non-2xx response enables project persistence middleware to restore pre-request in-memory store snapshot.
 - [ ] Mount router in `server.ts` via `app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman))`.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsApi.ts` (PASS).
 - [ ] Commit changes: `feat(docs): add controlled docs REST API, store orchestration, and identity filtering`.
@@ -687,7 +809,7 @@ Create `src/data/controlledDocsClient.ts` to provide typed API helpers with requ
 ### Task 10 — Repository Documents UI & Lockfile Convention
 
 **Description:**
-Install `react-markdown` adhering to the repository's lockfile convention (`package.json`, `package-lock.json`, `bun.lock`). Create `src/components/ControlledDocsView.tsx` implementing the repository document browser, status badges, secure markdown viewer (HTML disabled), the approved six-step controlled editing workflow (`VIEW -> EDIT DRAFT -> PREVIEW DIFF -> VALIDATE -> CONFIRM SAVE -> COORDINATED COMMIT`), and post-save canonical content reloading.
+Install `react-markdown` adhering to the repository's lockfile convention (`package.json`, `package-lock.json`, `bun.lock`). Create `src/components/ControlledDocsView.tsx` implementing the repository document browser, status badges, secure markdown viewer (HTML disabled, default safe URL transformation preserving non-executable `javascript:`/`data:` URIs and setting `rel="noopener noreferrer"` on external links; no `rehype-raw`, no `dangerouslySetInnerHTML`), the approved six-step controlled editing workflow (`VIEW -> EDIT DRAFT -> PREVIEW DIFF -> VALIDATE -> CONFIRM SAVE -> COORDINATED COMMIT`), and post-save canonical content reloading.
 
 **Files:**
 - Create: `src/components/ControlledDocsView.tsx`
@@ -705,7 +827,13 @@ Install `react-markdown` adhering to the repository's lockfile convention (`pack
 - [ ] Write component tests in `scripts/testControlledDocsViewComponent.ts` asserting:
   - Renders document catalog grouped by kind with search filter.
   - Renders badges: MATCH (green), CHANGED (amber), UNPINNED (slate), MISSING (red), CONTROLLED_EDIT (blue), READ_ONLY (slate).
-  - Embedded HTML `<script>` tags render as inert text without executing (Test AC).
+  - Markdown Link & Content Safety:
+    - Embedded HTML `<script>` tags render as inert text without executing (Test AC).
+    - `[bad](javascript:alert(1))` does NOT produce an executable javascript link.
+    - Markdown with `data:` URI (e.g. `[data](data:text/html;base64,...)`) does NOT produce an executable data link.
+    - External HTTPS links (`target="_blank"`) render with `rel` containing `noopener` and `noreferrer`.
+    - Internal and relative links remain usable where safe.
+    - Safe/default URL transformation preserved; no `rehype-raw`, no `dangerouslySetInnerHTML`.
   - Read-only documents show no edit controls.
   - Living documents (`DOC-CTRL-002`, `DOC-CTRL-006`) provide Edit button.
   - Editor workflow enforces the approved six-step sequential progression:
@@ -804,13 +932,34 @@ Implement the complete test matrix covering Tests A through AN in `scripts/testC
 - **Test AM:** Atomic Rollback Same-Directory Replacement (rollback rename verifies restored hash).
 - **Test AN:** Journal Path Tampering (re-derives paths from manifest; ignores untrusted journal paths).
 - **Additional Security & Contract Tests:**
+  - **Recovery Lock Enforcement:** Simulating `isDocumentTransactionsLocked() === true` causes `POST /api/projects/:id/docs/:documentId/save` to fail closed with HTTP 500 `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`, generating zero sibling files, zero journal entries, and zero store modifications.
+  - **Audit Event ID Invariant:** Asserts `journal.auditEventId === persisted DOCUMENT_UPDATED event.id === DocumentSaveResponse.auditEventId`.
+  - **Reserved Audit ID Duplicate Rejection:** Supplying an already-existing audit ID to `store.addAuditEvent(..., eventId)` fails closed and throws an error.
+  - **Default `addAuditEvent` Backward Compatibility:** Existing callers omitting `eventId` continue generating unique IDs and computing valid hash chains without change.
+  - **Client Audit ID Injection Rejection:** Request body containing `auditEventId` is rejected with HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`.
+  - **Post-Replacement Pre-Audit Failure (Failure Stage F):** Injected crash immediately after `executeReplacement()` invokes route-level catch, triggers `coordinator.handleRollback()`, restores original document hash, leaves `stateVersion` unchanged, and returns `DOCUMENT_UPDATE_FAILED`.
+  - **Audit Append Failure (Failure Stage G):** Injected throw in `store.addAuditEvent()` triggers route catch and rollback, restoring both disk document and in-memory store snapshot.
+  - **PREPARED-Crash Ambiguity Recovery Test:** Journal in phase `PREPARED` with target disk hash matching `candidateSha256` triggers `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` on recovery without guessing, locking subsequent mutations.
+  - **Markdown Link Safety - Javascript URI:** `[click](javascript:alert(1))` does not produce executable javascript link.
+  - **Markdown Link Safety - Data URI:** `[click](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)` does not produce executable data link.
+  - **Markdown Link Safety - External Rel:** External links render with `rel="noopener noreferrer"`.
+  - **Markdown Link Safety - Safe Relative Links:** Safe relative links (e.g. `[link](./DOCS.md)`) render normally.
   - **Raw-Byte Diff Hash (LF Source):** `candidateHash` equals SHA-256 of final encoded LF bytes.
   - **Raw-Byte Diff Hash (CRLF Source):** `candidateHash` equals SHA-256 of final encoded CRLF bytes.
   - **Diff-to-Save Hash Identity:** `candidateHash` from `/diff` equals `candidateSha256` used by the later save transaction for the same draft.
   - **Encoding Drift Detection:** Changing only newline encoding changes raw-byte hash as expected.
   - **Save Contract & UI Lifecycle:** `requestSave` sends `candidateContent`, `baseSha256`, `reason`, `humanConfirmed` (no identity claims); parses `DocumentSaveResponse`; triggers canonical reload via `loadDocumentContent()`; updates editor base hash to newly loaded hash.
-  - **Post-Commit Cleanup Failure:** Snapshot commit succeeds + `onCommit` cleanup fails $\to$ durable state remains committed, no rollback (`COMMITTED_CLEANUP_PENDING`).
-  - **Rollback Failure:** Persistence fails + rollback rename fails $\to$ fails closed with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
+  - **Complete Transaction Failure Injection Matrix (Stages A through J):**
+    - **Stage A (Rollback sibling write failure):** target document unchanged.
+    - **Stage B (Candidate sibling write failure):** target document unchanged, rollback sibling cleaned.
+    - **Stage C (Candidate fsync failure):** target document unchanged, temporary files cleaned.
+    - **Stage D (PREPARED journal write/fsync failure):** target document unchanged, fails closed.
+    - **Stage E (Candidate rename failure):** target document unchanged or recoverable PREPARED transaction.
+    - **Stage F (Post-replacement pre-audit failure):** automatic route-level rollback restores document.
+    - **Stage G (Audit append failure):** document rollback + store rollback restores clean state.
+    - **Stage H (Snapshot persistence failure):** persistence middleware Test Y rollback restores document.
+    - **Stage I (Rollback failure):** persistence/route fails and rollback fails $\to$ `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`, recovery artifacts retained.
+    - **Stage J (Post-commit cleanup failure):** snapshot commit succeeds + `onCommit` cleanup fails $\to$ durable state remains committed, no rollback (`COMMITTED_CLEANUP_PENDING`).
   - **Missing Document:** Registered document absent on disk $\to$ reports `integrityStatus: 'MISSING'`, `currentSha256 = null`, GET returns 410.
   - **Symlink Write Rejection:** Editable target is a symlink $\to$ fails closed.
 
