@@ -1932,6 +1932,467 @@ runTest('Test BI: malformed matching audit event details fails closed', () => {
   }
 });
 
+// Test BJ: matching audit details.previousSha256 = 123 fails closed without TypeError
+runTest('Test BJ: matching audit details.previousSha256 = 123 fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-prev-num';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-prev-num';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: 123 as any,
+            newSha256: ws.candidateSha256,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'recoverDocumentTransactions must not throw TypeError when previousSha256 is numeric');
+
+    assert.strictEqual(report?.locked, true, 'Report must be locked');
+    assert(report?.ambiguousCount! >= 1, 'ambiguousCount >= 1');
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')), 'errors contain recovery required');
+    assert.strictEqual(report?.cleanedCount, 0, 'zero cleanup mutations');
+    assert.strictEqual(report?.recoveredCount, 0, 'zero recovery mutations');
+    assert(fs.existsSync(journalPath), 'journal remains');
+    assert(fs.existsSync(candPath), 'candidate evidence remains');
+    assert(fs.existsSync(rollPath), 'rollback evidence remains');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BK: matching audit details.previousSha256 = {} fails closed without TypeError
+runTest('Test BK: matching audit details.previousSha256 = {} fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-prev-obj';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-prev-obj';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: {} as any,
+            newSha256: ws.candidateSha256,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'recoverDocumentTransactions must not throw TypeError when previousSha256 is an object');
+
+    assert.strictEqual(report?.locked, true, 'Report must be locked');
+    assert(report?.ambiguousCount! >= 1, 'ambiguousCount >= 1');
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')), 'errors contain recovery required');
+    assert.strictEqual(report?.cleanedCount, 0, 'zero cleanup mutations');
+    assert.strictEqual(report?.recoveredCount, 0, 'zero recovery mutations');
+    assert(fs.existsSync(journalPath), 'journal remains');
+    assert(fs.existsSync(candPath), 'candidate evidence remains');
+    assert(fs.existsSync(rollPath), 'rollback evidence remains');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BL: matching audit details.newSha256 = 123 fails closed without TypeError
+runTest('Test BL: matching audit details.newSha256 = 123 fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-new-num';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-new-num';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: 123 as any,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'recoverDocumentTransactions must not throw TypeError when newSha256 is numeric');
+
+    assert.strictEqual(report?.locked, true, 'Report must be locked');
+    assert(report?.ambiguousCount! >= 1, 'ambiguousCount >= 1');
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')), 'errors contain recovery required');
+    assert.strictEqual(report?.cleanedCount, 0, 'zero cleanup mutations');
+    assert.strictEqual(report?.recoveredCount, 0, 'zero recovery mutations');
+    assert(fs.existsSync(journalPath), 'journal remains');
+    assert(fs.existsSync(candPath), 'candidate evidence remains');
+    assert(fs.existsSync(rollPath), 'rollback evidence remains');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BM: matching audit details.newSha256 = [] fails closed without TypeError
+runTest('Test BM: matching audit details.newSha256 = [] fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-new-arr';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-new-arr';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: [] as any,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'recoverDocumentTransactions must not throw TypeError when newSha256 is an array');
+
+    assert.strictEqual(report?.locked, true, 'Report must be locked');
+    assert(report?.ambiguousCount! >= 1, 'ambiguousCount >= 1');
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')), 'errors contain recovery required');
+    assert.strictEqual(report?.cleanedCount, 0, 'zero cleanup mutations');
+    assert.strictEqual(report?.recoveredCount, 0, 'zero recovery mutations');
+    assert(fs.existsSync(journalPath), 'journal remains');
+    assert(fs.existsSync(candPath), 'candidate evidence remains');
+    assert(fs.existsSync(rollPath), 'rollback evidence remains');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BN: matching audit details.path = 123 fails closed without TypeError and identifies invalid path type
+runTest('Test BN: matching audit details.path = 123 fails closed without TypeError', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-path-num';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-path-num';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: ws.candidateSha256,
+            path: 123 as any,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    let report: RecoveryReport | undefined;
+    assert.doesNotThrow(() => {
+      report = recoverDocumentTransactions(ws.workspaceDir);
+    }, 'recoverDocumentTransactions must not throw when path is numeric');
+
+    assert.strictEqual(report?.locked, true, 'Report must be locked');
+    assert(report?.ambiguousCount! >= 1, 'ambiguousCount >= 1');
+    assert(report?.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')), 'errors contain recovery required');
+    assert(report?.errors.some(e => e.includes('expected string for path')), 'error must explicitly state expected string for path');
+    assert.strictEqual(report?.cleanedCount, 0, 'zero cleanup mutations');
+    assert.strictEqual(report?.recoveredCount, 0, 'zero recovery mutations');
+    assert(fs.existsSync(journalPath), 'journal remains');
+    assert(fs.existsSync(candPath), 'candidate evidence remains');
+    assert(fs.existsSync(rollPath), 'rollback evidence remains');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BO: matching audit details malformed sha hashes (non-64-hex) fail closed
+runTest('Test BO: matching audit details malformed sha hashes (non-64-hex) fail closed', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-malformed-hash';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-malformed-hash';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: 'not-a-64-hex-sha',
+            newSha256: ws.candidateSha256,
+            path: ws.targetRelPath,
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Report must be locked');
+    assert(report.ambiguousCount >= 1);
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert(report.errors.some(e => e.includes('64-character hex')));
+    assert.strictEqual(report.cleanedCount, 0);
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BP: matching audit details.path = "" fails closed and does not bypass validation
+runTest('Test BP: matching audit details.path = "" fails closed and does not bypass validation', () => {
+  const ws = createRecoveryTestWorkspace();
+  const opId = 'op-audit-empty-path';
+  try {
+    fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+    const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+    const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+    const auditEventId = 'EVT-empty-path';
+    ws.writeSnapshot({
+      stateVersion: 32,
+      auditEvents: [
+        {
+          id: auditEventId,
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          details: {
+            previousSha256: ws.previousSha256,
+            newSha256: ws.candidateSha256,
+            path: '',
+          },
+        },
+      ],
+    });
+    const journalPath = ws.writeJournal({
+      operationId: opId,
+      phase: 'COMMITTED',
+      candidateSha256: ws.candidateSha256,
+      previousSha256: ws.previousSha256,
+      auditEventId,
+    });
+
+    const report = recoverDocumentTransactions(ws.workspaceDir);
+    assert.strictEqual(report.locked, true, 'Empty path must contradict docRecord.path and lock recovery');
+    assert(report.ambiguousCount >= 1);
+    assert(report.errors.some(e => e.includes('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED')));
+    assert.strictEqual(report.cleanedCount, 0);
+    assert(fs.existsSync(journalPath));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// Test BQ: absent details fields (undefined, null, {}) permit clean recovery
+runTest('Test BQ: absent details fields (undefined, null, {}) permit clean recovery', () => {
+  // Case 1: details is undefined
+  {
+    const ws = createRecoveryTestWorkspace();
+    const opId = 'op-audit-details-undef';
+    try {
+      fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+      const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+      const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+      const auditEventId = 'EVT-details-undef';
+      ws.writeSnapshot({
+        stateVersion: 32,
+        auditEvents: [
+          {
+            id: auditEventId,
+            action: 'DOCUMENT_UPDATED',
+            target: 'DOC-CTRL-002',
+            // details undefined
+          },
+        ],
+      });
+      const journalPath = ws.writeJournal({
+        operationId: opId,
+        phase: 'COMMITTED',
+        candidateSha256: ws.candidateSha256,
+        previousSha256: ws.previousSha256,
+        auditEventId,
+      });
+
+      const report = recoverDocumentTransactions(ws.workspaceDir);
+      assert.strictEqual(report.locked, false, 'Report must be unlocked');
+      assert.strictEqual(report.cleanedCount, 1, 'Transaction cleaned up');
+      assert.strictEqual(report.ambiguousCount, 0);
+      assert(!fs.existsSync(journalPath));
+      assert(!fs.existsSync(candPath));
+      assert(!fs.existsSync(rollPath));
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // Case 2: details is null
+  {
+    const ws = createRecoveryTestWorkspace();
+    const opId = 'op-audit-details-null';
+    try {
+      fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+      const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+      const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+      const auditEventId = 'EVT-details-null';
+      ws.writeSnapshot({
+        stateVersion: 32,
+        auditEvents: [
+          {
+            id: auditEventId,
+            action: 'DOCUMENT_UPDATED',
+            target: 'DOC-CTRL-002',
+            details: null,
+          },
+        ],
+      });
+      const journalPath = ws.writeJournal({
+        operationId: opId,
+        phase: 'COMMITTED',
+        candidateSha256: ws.candidateSha256,
+        previousSha256: ws.previousSha256,
+        auditEventId,
+      });
+
+      const report = recoverDocumentTransactions(ws.workspaceDir);
+      assert.strictEqual(report.locked, false, 'Report must be unlocked');
+      assert.strictEqual(report.cleanedCount, 1, 'Transaction cleaned up');
+      assert.strictEqual(report.ambiguousCount, 0);
+      assert(!fs.existsSync(journalPath));
+      assert(!fs.existsSync(candPath));
+      assert(!fs.existsSync(rollPath));
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // Case 3: details is {} (empty object)
+  {
+    const ws = createRecoveryTestWorkspace();
+    const opId = 'op-audit-details-empty';
+    try {
+      fs.writeFileSync(ws.targetDiskPath, ws.candidateBytes);
+      const candPath = ws.writeCandidateFile(opId, ws.candidateBytes);
+      const rollPath = ws.writeRollbackFile(opId, ws.previousBytes);
+      const auditEventId = 'EVT-details-empty';
+      ws.writeSnapshot({
+        stateVersion: 32,
+        auditEvents: [
+          {
+            id: auditEventId,
+            action: 'DOCUMENT_UPDATED',
+            target: 'DOC-CTRL-002',
+            details: {},
+          },
+        ],
+      });
+      const journalPath = ws.writeJournal({
+        operationId: opId,
+        phase: 'COMMITTED',
+        candidateSha256: ws.candidateSha256,
+        previousSha256: ws.previousSha256,
+        auditEventId,
+      });
+
+      const report = recoverDocumentTransactions(ws.workspaceDir);
+      assert.strictEqual(report.locked, false, 'Report must be unlocked');
+      assert.strictEqual(report.cleanedCount, 1, 'Transaction cleaned up');
+      assert.strictEqual(report.ambiguousCount, 0);
+      assert(!fs.existsSync(journalPath));
+      assert(!fs.existsSync(candPath));
+      assert(!fs.existsSync(rollPath));
+    } finally {
+      ws.cleanup();
+    }
+  }
+});
+
 console.log('\n================================================================');
 console.log(`TOTAL TESTS: ${passed + failed}`);
 console.log(`PASSED: ${passed}`);

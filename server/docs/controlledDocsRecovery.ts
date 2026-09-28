@@ -554,23 +554,58 @@ export function recoverDocumentTransactions(
                 continue;
               }
 
-              if (
-                evt.details.previousSha256 &&
-                evt.details.previousSha256.toLowerCase() !== journal.previousSha256.toLowerCase()
-              ) {
-                recordAmbiguity(`Audit event previousSha256 contradicts journal for ${journal.operationId}`);
-                continue;
+              // Optional details.previousSha256 validation
+              if (evt.details.previousSha256 !== undefined) {
+                if (typeof evt.details.previousSha256 !== 'string') {
+                  recordAmbiguity(
+                    `Malformed audit event details for ${journal.auditEventId}: expected string for previousSha256, got ${Array.isArray(evt.details.previousSha256) ? 'array' : typeof evt.details.previousSha256}`
+                  );
+                  continue;
+                }
+                if (!/^[0-9a-fA-F]{64}$/.test(evt.details.previousSha256)) {
+                  recordAmbiguity(
+                    `Malformed audit event details for ${journal.auditEventId}: previousSha256 is not a valid 64-character hex string`
+                  );
+                  continue;
+                }
+                if (evt.details.previousSha256.toLowerCase() !== journal.previousSha256.toLowerCase()) {
+                  recordAmbiguity(`Audit event previousSha256 contradicts journal for ${journal.operationId}`);
+                  continue;
+                }
               }
-              if (
-                evt.details.newSha256 &&
-                evt.details.newSha256.toLowerCase() !== journal.candidateSha256.toLowerCase()
-              ) {
-                recordAmbiguity(`Audit event newSha256 contradicts journal for ${journal.operationId}`);
-                continue;
+
+              // Optional details.newSha256 validation
+              if (evt.details.newSha256 !== undefined) {
+                if (typeof evt.details.newSha256 !== 'string') {
+                  recordAmbiguity(
+                    `Malformed audit event details for ${journal.auditEventId}: expected string for newSha256, got ${Array.isArray(evt.details.newSha256) ? 'array' : typeof evt.details.newSha256}`
+                  );
+                  continue;
+                }
+                if (!/^[0-9a-fA-F]{64}$/.test(evt.details.newSha256)) {
+                  recordAmbiguity(
+                    `Malformed audit event details for ${journal.auditEventId}: newSha256 is not a valid 64-character hex string`
+                  );
+                  continue;
+                }
+                if (evt.details.newSha256.toLowerCase() !== journal.candidateSha256.toLowerCase()) {
+                  recordAmbiguity(`Audit event newSha256 contradicts journal for ${journal.operationId}`);
+                  continue;
+                }
               }
-              if (evt.details.path && evt.details.path !== docRecord.path) {
-                recordAmbiguity(`Audit event path contradicts record path for ${journal.operationId}`);
-                continue;
+
+              // Optional details.path validation
+              if (evt.details.path !== undefined) {
+                if (typeof evt.details.path !== 'string') {
+                  recordAmbiguity(
+                    `Malformed audit event details for ${journal.auditEventId}: expected string for path, got ${Array.isArray(evt.details.path) ? 'array' : typeof evt.details.path}`
+                  );
+                  continue;
+                }
+                if (evt.details.path !== docRecord.path) {
+                  recordAmbiguity(`Audit event path contradicts record path for ${journal.operationId}`);
+                  continue;
+                }
               }
             }
 
