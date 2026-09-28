@@ -198,7 +198,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-193"]
     requirements: ["REQ-DOC-001"]
     architecture_links: ["CMP-01"]

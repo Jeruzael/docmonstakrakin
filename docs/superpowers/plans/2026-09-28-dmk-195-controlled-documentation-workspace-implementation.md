@@ -4,7 +4,7 @@
 > superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task.
 
-**Status:** READY FOR HUMAN APPROVAL
+**Status:** APPROVED (Commit 140c425161be28b860a309e65beda75b055b3a03)
 
 **Goal:** Implement the approved DMK-195 Controlled Documentation Workspace with
 registered-only repository document access, secure read-only viewing, controlled
@@ -119,27 +119,27 @@ Following human approval of this implementation plan, record the initial state b
 - Produces: Updated WBS status `IN_PROGRESS`, updated runtime WorkItem status `IN_PROGRESS`, single `WORK_ITEM_UPDATED` audit event, incremented `stateVersion` ($N \to N+1$).
 
 **Implementation Steps:**
-- [ ] Freshly capture baseline state before mutations:
-  - Read runtime DMK-195 status: expect `PROPOSED`
-  - Read WBS DMK-195 status: expect `BACKLOG`
-  - Read project `stateVersion` = $N$
-  - Read audit event count = $A$
-  - Read `.local/project-state.json` SHA-256 digest = $H$
-  - Read DMK-201 status: expect `VERIFICATION_PENDING`
+- [x] Freshly capture baseline state before mutations:
+  - Read runtime DMK-195 status: expect `PROPOSED` (verified: `PROPOSED`)
+  - Read WBS DMK-195 status: expect `BACKLOG` (verified: `BACKLOG`)
+  - Read project `stateVersion` = $N$ (verified: 30)
+  - Read audit event count = $A$ (verified: 35)
+  - Read `.local/project-state.json` SHA-256 digest = $H$ (verified: `68B8252E9B3A98194E670EAC3BF06B4A8260A17EE22EAAD1F409A7F4A577EE82`)
+  - Read DMK-201 status: expect `VERIFICATION_PENDING` (verified: `VERIFICATION_PENDING`)
   - If any expected statuses differ unexpectedly: **STOP and review**.
-- [ ] Edit `docs/00_control/MASTER_WBS.yaml`: change DMK-195 `status` from `BACKLOG` to `IN_PROGRESS`.
-- [ ] Run `npm run wbs:render` to regenerate `docs/00_control/MASTER_WBS.md`.
-- [ ] Run `npm run wbs:check` to verify zero WBS drift.
-- [ ] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items` with payload:
+- [x] Edit `docs/00_control/MASTER_WBS.yaml`: change DMK-195 `status` from `BACKLOG` to `IN_PROGRESS`.
+- [x] Run `npm run wbs:render` to regenerate `docs/00_control/MASTER_WBS.md`.
+- [x] Run `npm run wbs:check` to verify zero WBS drift.
+- [x] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items` with payload:
   ```json
   {
     "itemId": "DMK-195",
     "status": "IN_PROGRESS"
   }
   ```
-- [ ] Verify post-transition state:
-  - Audit event count equals $A + 1$, containing exactly one new `WORK_ITEM_UPDATED` event for `DMK-195`.
-  - Project `stateVersion` equals $N + 1$.
+- [x] Verify post-transition state:
+  - Audit event count equals $A + 1$ (36), containing exactly one new `WORK_ITEM_UPDATED` event for `DMK-195`.
+  - Project `stateVersion` equals $N + 1$ (31).
   - Runtime WorkItem status for `DMK-195` is `IN_PROGRESS`.
   - DMK-201 remains `VERIFICATION_PENDING` and other historical WorkItems remain untouched.
   - Prior runtime snapshot hash $H$ is now historical/stale as expected from this audited mutation. Do NOT run DMK-201 reconciliation.
