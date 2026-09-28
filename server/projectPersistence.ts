@@ -9,8 +9,8 @@ export const PROJECT_STATE_SCHEMA_VERSION = 1;
 export type ProjectPersistenceMode = 'READ_ONLY' | 'MUTATING';
 
 export interface ProjectPersistenceHooks {
-  onCommit?: () => void | Promise<void>;
-  onRollback?: (error: unknown) => void | Promise<void>;
+  onCommit?: () => void;
+  onRollback?: (error: unknown) => void;
 }
 
 export function classifyProjectRequestMode(req: { method?: string; baseUrl?: string; path?: string }): ProjectPersistenceMode {
@@ -200,26 +200,22 @@ export function installProjectPersistence(app: Express, store: any, workspaceRoo
         } catch (error) {
           Object.assign(store, before);
           try {
-            const rollbackResult = hooks?.onRollback?.(error);
-            if (rollbackResult && typeof (rollbackResult as any).catch === 'function') {
-              (rollbackResult as any).catch((hookErr: unknown) => {
-                console.error('projectPersistenceHooks.onRollback error:', hookErr);
-              });
-            }
-          } catch (hookErr) {
-            console.error('projectPersistenceHooks.onRollback error:', hookErr);
+            hooks?.onRollback?.(error);
+          } catch (rollbackError) {
+            res.status(500);
+            return respond({
+              error:
+                rollbackError instanceof Error
+                  ? rollbackError.message
+                  : 'Persistence rollback hook failed',
+            });
           }
           res.status(500);
           return respond({ error: 'Failed to persist project transaction; changes rolled back' });
         }
         if (hooks?.onCommit) {
           try {
-            const commitResult = hooks.onCommit();
-            if (commitResult && typeof (commitResult as any).catch === 'function') {
-              (commitResult as any).catch((err: unknown) => {
-                console.error('projectPersistenceHooks.onCommit cleanup error:', err);
-              });
-            }
+            hooks.onCommit();
           } catch (err) {
             console.error('projectPersistenceHooks.onCommit cleanup error:', err);
           }

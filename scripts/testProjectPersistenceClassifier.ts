@@ -515,6 +515,77 @@ async function runTests() {
   }
 
   // ============================================================
+  // 7B. SNAPSHOT PERSISTENCE FAILURE + onRollback THROWS
+  // ============================================================
+  console.log('\n[Group 7B] onRollback failure propagation:');
+  {
+    const ws = createTempWorkspace();
+    try {
+      const app = express();
+      app.use(express.json());
+      const store = new ProjectStore();
+      installProjectPersistence(app, store, ws.dir);
+
+      let rollbackCallCount = 0;
+      let commitCallCount = 0;
+      const initialVersion = store.projects[0].stateVersion ?? 0;
+
+      app.post('/api/projects/:id/rollback-throw-test', (req, res) => {
+        const prj = store.projects.find((p) => p.id === req.params.id);
+        if (prj) prj.stateVersion = (prj.stateVersion ?? 0) + 77;
+
+        res.locals.projectPersistenceHooks = {
+          onCommit: () => {
+            commitCallCount++;
+          },
+          onRollback: (_err) => {
+            rollbackCallCount++;
+            throw new Error('DOCUMENT_TRANSACTION_RECOVERY_REQUIRED');
+          },
+        };
+
+        res.json({ ok: true });
+      });
+
+      // Inject deterministic lock collision to make writeProjectSnapshotAtomic fail
+      const lockFile = path.join(ws.dir, '.local', 'project-state.write.lock');
+      fs.writeFileSync(lockFile, 'synthetic conflict lock');
+
+      const server = await startTestServer(app);
+      try {
+        const res = await fetch(`${server.base}/api/projects/PRJ-DOCMONSTAKRAKIN/rollback-throw-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+
+        assert.equal(res.status, 500, 'Persistence failure with throwing onRollback must return 500');
+        const data = await res.json();
+        assert.equal(rollbackCallCount, 1, 'onRollback must be called exactly once');
+        assert.equal(commitCallCount, 0, 'onCommit must not be called when persistence fails');
+        assert.equal(store.projects[0].stateVersion, initialVersion, 'Store must be restored to pre-request value');
+        assert.equal(
+          data.error,
+          'DOCUMENT_TRANSACTION_RECOVERY_REQUIRED',
+          'Response error must match thrown rollback error'
+        );
+        assert(
+          !String(data.error).includes('changes rolled back'),
+          'Middleware must NOT report changes rolled back when rollback hook threw'
+        );
+
+        console.log('  ✓ onRollback failure propagates safely as HTTP 500 error, without false rollback claim');
+        passed++;
+      } finally {
+        fs.unlinkSync(lockFile);
+        await server.close();
+      }
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
   // 8. NON-2XX ROUTE RESPONSE DOES NOT DOUBLE-ROLLBACK
   // ============================================================
   console.log('\n[Group 8] Non-2xx route response does not trigger onRollback:');
