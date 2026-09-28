@@ -8,6 +8,7 @@ import {
   findControlledDoc,
   isControlledEditAllowed,
 } from '../server/docs/controlledDocsRegistry.ts';
+import { validateSelfBootstrapManifest } from '../src/data/selfBootstrapContract.ts';
 import type {
   ControlledDocumentRecord,
   ControlledDocumentEditability,
@@ -402,6 +403,174 @@ async function runTests() {
     assert.equal(secondCall[0].title, originalTitle, 'Subsequent call must not reflect mutations to records');
     console.log('  ✓ Caller mutations on returned registry array or records do not corrupt registry authority');
     passed++;
+  }
+
+  // ============================================================
+  // TEST R: ALLOWLIST ID WITH WRONG PATH IS READ_ONLY
+  // ============================================================
+  console.log('\n[Test R] Allowlist ID with wrong path:');
+  {
+    const ws = createTempWorkspace();
+    try {
+      const manifestClone = JSON.parse(realManifestRaw);
+      const doc002 = manifestClone.documents.find((d: any) => d.id === 'DOC-CTRL-002');
+      doc002.path = 'docs/00_control/PROJECT_STATE_MOVED.md';
+
+      const validation = validateSelfBootstrapManifest(manifestClone);
+      assert.equal(validation.valid, true, 'Manifest fixture must pass canonical self-bootstrap validation');
+
+      const bootstrapDir = path.join(ws.dir, 'bootstrap');
+      fs.mkdirSync(bootstrapDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bootstrapDir, 'docmonstakrakin.self-bootstrap.json'),
+        JSON.stringify(manifestClone, null, 2),
+        'utf8'
+      );
+
+      const doc = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir);
+      assert.ok(doc);
+      assert.equal(doc.path, 'docs/00_control/PROJECT_STATE_MOVED.md');
+      assert.equal(doc.editability, 'READ_ONLY', 'DOC-CTRL-002 with non-canonical path must be READ_ONLY');
+      assert.equal(doc.editableLivingDoc, false, 'editableLivingDoc must be false when path does not match');
+      assert.equal(isControlledEditAllowed('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir), false);
+
+      console.log('  ✓ Allowlist ID with moved/modified path is strictly READ_ONLY');
+      passed++;
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
+  // TEST S: ALLOWLIST ID AS GENERATED_PROJECTION IS READ_ONLY
+  // ============================================================
+  console.log('\n[Test S] Allowlist ID as GENERATED_PROJECTION:');
+  {
+    const ws = createTempWorkspace();
+    try {
+      const manifestClone = JSON.parse(realManifestRaw);
+      const doc002 = manifestClone.documents.find((d: any) => d.id === 'DOC-CTRL-002');
+      doc002.authority = 'GENERATED_PROJECTION';
+
+      const validation = validateSelfBootstrapManifest(manifestClone);
+      assert.equal(validation.valid, true, 'Manifest fixture must pass canonical self-bootstrap validation');
+
+      const bootstrapDir = path.join(ws.dir, 'bootstrap');
+      fs.mkdirSync(bootstrapDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bootstrapDir, 'docmonstakrakin.self-bootstrap.json'),
+        JSON.stringify(manifestClone, null, 2),
+        'utf8'
+      );
+
+      const doc = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir);
+      assert.ok(doc);
+      assert.equal(doc.authority, 'GENERATED_PROJECTION');
+      assert.equal(doc.editability, 'READ_ONLY', 'GENERATED_PROJECTION can never be CONTROLLED_EDIT');
+      assert.equal(doc.editableLivingDoc, false);
+      assert.equal(isControlledEditAllowed('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir), false);
+
+      console.log('  ✓ GENERATED_PROJECTION invariant prevents CONTROLLED_EDIT even on allowlisted ID');
+      passed++;
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
+  // TEST T: ALLOWLIST DOCUMENT BECOMES HASH-PINNED -> READ_ONLY
+  // ============================================================
+  console.log('\n[Test T] Allowlist document becomes hash-pinned:');
+  {
+    const ws = createTempWorkspace();
+    try {
+      const manifestClone = JSON.parse(realManifestRaw);
+      const doc002 = manifestClone.documents.find((d: any) => d.id === 'DOC-CTRL-002');
+      doc002.sha256Digest = 'a'.repeat(64);
+
+      const validation = validateSelfBootstrapManifest(manifestClone);
+      assert.equal(validation.valid, true, 'Manifest fixture must pass canonical self-bootstrap validation');
+
+      const bootstrapDir = path.join(ws.dir, 'bootstrap');
+      fs.mkdirSync(bootstrapDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bootstrapDir, 'docmonstakrakin.self-bootstrap.json'),
+        JSON.stringify(manifestClone, null, 2),
+        'utf8'
+      );
+
+      const doc = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir);
+      assert.ok(doc);
+      assert.equal(doc.sha256Digest, 'a'.repeat(64));
+      assert.equal(doc.editability, 'READ_ONLY', 'Hash-pinned document can never be CONTROLLED_EDIT');
+      assert.equal(doc.editableLivingDoc, false);
+      assert.equal(isControlledEditAllowed('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.dir), false);
+
+      console.log('  ✓ Hash-pin invariant ensures any pinned document drops to READ_ONLY');
+      passed++;
+    } finally {
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
+  // TEST U: SECOND LIVING DOCUMENT (DOC-CTRL-006) EXACT MATCH
+  // ============================================================
+  console.log('\n[Test U] Second living document exact match:');
+  {
+    const doc006 = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-006');
+    assert.ok(doc006);
+    assert.equal(doc006.path, 'docs/00_control/TRACEABILITY_MATRIX.md');
+    assert.equal(doc006.authority, 'REFERENCE');
+    assert.equal(doc006.sha256Digest, undefined);
+    assert.equal(doc006.editability, 'CONTROLLED_EDIT');
+    assert.equal(doc006.editableLivingDoc, true);
+    assert.equal(isControlledEditAllowed('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-006'), true);
+
+    console.log('  ✓ DOC-CTRL-006 with exact path docs/00_control/TRACEABILITY_MATRIX.md is CONTROLLED_EDIT');
+    passed++;
+  }
+
+  // ============================================================
+  // TEST V: NO OTHER UNPINNED REFERENCE BECOMES EDITABLE
+  // ============================================================
+  console.log('\n[Test V] No other unpinned reference becomes editable:');
+  {
+    const ws = createTempWorkspace();
+    try {
+      const manifestClone = JSON.parse(realManifestRaw);
+      manifestClone.documents.push({
+        id: 'DOC-CTRL-999',
+        path: 'docs/00_control/EXTRA_UNPINNED.md',
+        kind: 'CONTROL',
+        authority: 'REFERENCE',
+        title: 'Extra Unpinned Reference Document',
+      });
+
+      const validation = validateSelfBootstrapManifest(manifestClone);
+      assert.equal(validation.valid, true, 'Manifest fixture must pass canonical self-bootstrap validation');
+
+      const bootstrapDir = path.join(ws.dir, 'bootstrap');
+      fs.mkdirSync(bootstrapDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bootstrapDir, 'docmonstakrakin.self-bootstrap.json'),
+        JSON.stringify(manifestClone, null, 2),
+        'utf8'
+      );
+
+      const doc = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-999', ws.dir);
+      assert.ok(doc);
+      assert.equal(doc.authority, 'REFERENCE');
+      assert.equal(doc.sha256Digest, undefined);
+      assert.equal(doc.editability, 'READ_ONLY', 'Unpinned reference outside exact allowlist must be READ_ONLY');
+      assert.equal(doc.editableLivingDoc, false);
+      assert.equal(isControlledEditAllowed('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-999', ws.dir), false);
+
+      console.log('  ✓ Arbitrary unpinned REFERENCE documents remain strictly READ_ONLY');
+      passed++;
+    } finally {
+      ws.cleanup();
+    }
   }
 
   console.log(`\nAll ${passed} tests in testControlledDocsRegistry.ts passed!`);

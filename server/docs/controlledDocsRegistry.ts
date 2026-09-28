@@ -9,7 +9,31 @@ import type {
 
 export const SELF_BOOTSTRAP_PROJECT_ID = 'PRJ-DOCMONSTAKRAKIN';
 
-const EDITABLE_LIVING_DOC_IDS = new Set(['DOC-CTRL-002', 'DOC-CTRL-006']);
+const EDITABLE_LIVING_DOCS = new Map<string, string>([
+  ['DOC-CTRL-002', 'docs/00_control/PROJECT_STATE.md'],
+  ['DOC-CTRL-006', 'docs/00_control/TRACEABILITY_MATRIX.md'],
+]);
+
+/**
+ * Determines whether a manifest document reference matches the exact approved
+ * living-document criteria for CONTROLLED_EDIT.
+ * Requires:
+ * 1. ID exists in EDITABLE_LIVING_DOCS map.
+ * 2. Registered path exactly equals the expected path for that ID.
+ * 3. authority === 'REFERENCE' (GENERATED_PROJECTION can never be editable).
+ * 4. sha256Digest is absent/null (hash-pinned documents are strictly READ_ONLY).
+ */
+function isApprovedLivingEditableDocument(doc: any): boolean {
+  const expectedPath = EDITABLE_LIVING_DOCS.get(doc.id);
+  if (!expectedPath) {
+    return false;
+  }
+  return (
+    doc.path === expectedPath &&
+    doc.authority === 'REFERENCE' &&
+    !doc.sha256Digest
+  );
+}
 
 /**
  * Derives the ControlledDocumentFileType enum from the registered file path extension.
@@ -58,7 +82,7 @@ function loadValidatedSelfManifest(workspaceRoot: string): any {
  * Projects a validated manifest document reference into an authoritative ControlledDocumentRecord.
  */
 function toControlledDocumentRecord(doc: any): ControlledDocumentRecord {
-  const isLivingEditable = EDITABLE_LIVING_DOC_IDS.has(doc.id);
+  const isLivingEditable = isApprovedLivingEditableDocument(doc);
   const editability: ControlledDocumentEditability = isLivingEditable ? 'CONTROLLED_EDIT' : 'READ_ONLY';
   const editableLivingDoc = isLivingEditable;
 
