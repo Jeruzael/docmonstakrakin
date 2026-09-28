@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
+import { recoverDocumentTransactions } from './server/docs/controlledDocsRecovery.ts';
 import { detectSourceControlMode } from './scripts/detectEnvironment.ts';
 import { baselineFeatures, normalizeTechnicalBaseline, emptyAssurance, computeAssurance, validateProjectDraft } from './src/data/projectInitialization.ts';
 import { applicableStandards, applicableStandardLinks } from './src/data/standardsApplicability.ts';
@@ -117,6 +118,15 @@ async function startServer() {
   const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json({ limit: '10mb' }));
+
+  const recoveryReport = recoverDocumentTransactions(process.cwd());
+  if (recoveryReport.locked) {
+    console.error(
+      'Controlled document transaction recovery is locked:',
+      recoveryReport.errors
+    );
+  }
+
   installProjectPersistence(app, store);
   const reviewerAuth = registerSignoffRoutes(app, store);
   registerProposalRoutes(app, store, reviewerAuth);
