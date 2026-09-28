@@ -833,6 +833,76 @@ async function runTests() {
   }
 
   // ============================================================
+  // TEST AG: DETERMINISTIC PARTIAL WRITE COMPLETION
+  // ============================================================
+  console.log('\n[Test AG] Deterministic partial write completion:');
+  {
+    const ws = createTempWorkspace();
+    const originalWriteSync = fs.writeSync;
+    try {
+      const siblingPath = path.join(ws.docsDir, '.test.md.dmk-op8.candidate');
+      const expectedBytes = Buffer.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'utf8');
+
+      let callCount = 0;
+      (fs as any).writeSync = function (
+        fd: number,
+        buffer: any,
+        offset?: number,
+        length?: number,
+        position?: any
+      ): number {
+        callCount++;
+        if (callCount === 1) {
+          const partialLen = 10;
+          return originalWriteSync.call(fs, fd, buffer, offset, partialLen, position);
+        }
+        return originalWriteSync.call(fs, fd, buffer, offset, length, position);
+      };
+
+      writeSiblingFileAtomic(siblingPath, expectedBytes);
+      const onDisk = fs.readFileSync(siblingPath);
+      assert.deepEqual(onDisk, expectedBytes, 'Disk content must match expectedBytes completely');
+      assert(callCount > 1, 'writeSync must have been called multiple times to complete write');
+      console.log('  ✓ writeSiblingFileAtomic loops until complete buffer is written');
+      passed++;
+    } finally {
+      fs.writeSync = originalWriteSync;
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
+  // TEST AH: ZERO-PROGRESS FAIL-CLOSED TEST
+  // ============================================================
+  console.log('\n[Test AH] Zero-progress fail-closed test:');
+  {
+    const ws = createTempWorkspace();
+    const originalWriteSync = fs.writeSync;
+    try {
+      const siblingPath = path.join(ws.docsDir, '.test.md.dmk-op9.candidate');
+      const expectedBytes = Buffer.from('some content for zero progress test', 'utf8');
+
+      (fs as any).writeSync = function (): number {
+        return 0;
+      };
+
+      assert.throws(
+        () => writeSiblingFileAtomic(siblingPath, expectedBytes),
+        (err: any) => {
+          assert(String(err).includes('SIBLING_WRITE_INCOMPLETE'));
+          return true;
+        }
+      );
+      assert.equal(fs.existsSync(siblingPath), false, 'Partial artifact must be cleaned up on write failure');
+      console.log('  ✓ Zero-progress write throws SIBLING_WRITE_INCOMPLETE and unlinks partial sibling');
+      passed++;
+    } finally {
+      fs.writeSync = originalWriteSync;
+      ws.cleanup();
+    }
+  }
+
+  // ============================================================
   // TEST AF: LIVE REPOSITORY NEVER WRITTEN
   // ============================================================
   console.log('\n[Test AF] Live repository never written:');

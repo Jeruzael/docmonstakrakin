@@ -245,14 +245,26 @@ export function deriveSiblingRollbackPath(targetDiskPath: string, operationId: s
  */
 export function writeSiblingFileAtomic(siblingPath: string, bytes: Buffer): void {
   const fd = fs.openSync(siblingPath, 'wx');
+  let closed = false;
   try {
-    fs.writeSync(fd, bytes, 0, bytes.length);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const written = fs.writeSync(fd, bytes, offset, bytes.length - offset);
+      if (written <= 0) {
+        throw new Error('SIBLING_WRITE_INCOMPLETE: filesystem made no forward write progress');
+      }
+      offset += written;
+    }
     fs.fdatasyncSync(fd);
+    fs.closeSync(fd);
+    closed = true;
   } catch (err: unknown) {
-    try {
-      fs.closeSync(fd);
-    } catch {
-      // ignore descriptor close failure
+    if (!closed) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        // ignore descriptor close failure
+      }
     }
     try {
       if (fs.existsSync(siblingPath)) {
@@ -263,7 +275,6 @@ export function writeSiblingFileAtomic(siblingPath: string, bytes: Buffer): void
     }
     throw err;
   }
-  fs.closeSync(fd);
 }
 
 /**
