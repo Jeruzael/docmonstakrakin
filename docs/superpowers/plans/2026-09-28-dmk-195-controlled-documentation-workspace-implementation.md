@@ -33,10 +33,10 @@ The implementation must preserve these approved architecture decisions without d
 8. **Planning Authority Protection:** `MASTER_WBS.yaml` (`DOC-CTRL-003`) and `MASTER_WBS.md` (`DOC-CTRL-004`) remain strictly `READ_ONLY` through the Docs workspace.
 9. **Raw-Byte Integrity Semantics:** Pinned integrity checks compute SHA-256 over exact raw bytes on disk without newline normalization.
 10. **EOL Style Preservation:** Living editable documents preserve their detected EOL convention (`LF` or `CRLF`). Mixed-EOL documents fail closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
-11. **Persistence Mode Classification:** `/diff` and `/validate` routes are classified as `READ_ONLY` pre-persistence; `/save` is classified as `MUTATING`.
+11. **Persistence Mode Classification:** Requests where `req.method === 'POST'` and path matches `/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/` are classified as `READ_ONLY` pre-persistence; `/save` and all other modifying methods remain `MUTATING`.
 12. **Single State Version Increment:** A successful document save increments `project.stateVersion` exactly once ($N \to N+1$).
-13. **Human Governance Confirmation:** Document saves require `requireHuman()` session authorization and explicit `humanConfirmed === true` payload flag.
-14. **Prohibited Client Identity Claims:** Any request supplying client identity fields (`actor`, `role`, `approver`, `reviewerName`, etc.) or headers is rejected immediately with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
+13. **Human Governance Confirmation:** Document saves require `requireHuman()` session authorization, non-empty `reason`, and explicit `humanConfirmed === true` payload flag.
+14. **Prohibited Client Identity Claims:** Any request supplying client identity fields in the request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) is rejected immediately with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`). Server identity comes strictly from session state via `requireHuman()`.
 15. **Target-Sibling Candidate and Rollback Artifacts:** Candidate and rollback files are placed as hidden sibling files in `path.dirname(targetDocument)` to guarantee same-filesystem `fs.renameSync` atomicity.
 16. **Transaction Journal Location:** Transaction journals reside under `.local/document-transactions/<operationId>.json`.
 17. **Untrusted Journal Paths:** Journal paths stored on disk are NOT authorities during crash recovery. Target and sibling paths are re-derived strictly from `documentId` and the trusted bootstrap manifest registry.
@@ -48,15 +48,17 @@ The implementation must preserve these approved architecture decisions without d
 
 ## 2. Implementation Review Focus
 
-The implementation and test suites must explicitly address the following five high-risk failure modes:
+The implementation and test suites must explicitly address the following failure modes and safety invariants:
 
 | Focus Area | Architecture Requirement | Concrete Risk | Owning Task & Test |
 | :--- | :--- | :--- | :--- |
-| **1. Pre-Persistence Classification** | Middleware evaluates `${req.baseUrl}${req.path}` before `next()` reaches route handlers. | Mounted Express routers strip mount prefixes from `req.path`. If tested against `req.path` alone, `/diff` and `/validate` match nothing, fall through to `MUTATING`, acquire writer locks, and rewrite `.local/project-state.json`. | **Task 2**: `testProjectPersistenceClassifier.ts` (Test AI, Test U, Test V). |
-| **2. Cross-Domain Rollback** | Injected snapshot persistence failure triggers rollback hook to restore document from sibling `.rollback` file. | Document is replaced on disk, but `writeProjectSnapshotAtomic` fails. Without a rollback hook, the document is mutated on disk while the audit ledger and `stateVersion` remain unrecorded. | **Task 6**: `testControlledDocsTransaction.ts` (Test Y). |
-| **3. Crash Recovery Security** | Startup recovery reads journal, re-derives filesystem paths from manifest registry, and ignores untrusted paths inside the journal JSON. | Server crashes after `fs.renameSync` (phase `DOCUMENT_REPLACED`) before snapshot commit. If journal paths are trusted, an attacker could point recovery to overwrite arbitrary system files. | **Task 7**: `testControlledDocsRecovery.ts` (Test Z, Test AN). |
-| **4. Symlink Target Protection** | If a registered editable target itself is a symbolic link, writing must FAIL CLOSED. | An attacker replaces `docs/00_control/PROJECT_STATE.md` with a symlink targeting `/etc/shadow` or `.env`. Controlled writes through symlinks must be strictly prohibited. | **Task 4**: `testControlledDocsPersistence.ts` (Symlink Write Rejection). |
-| **5. Byte-Level EOL Preservation** | Raw-byte hashing; detect LF/CRLF; preserve convention; reject mixed EOL. | Git on Windows or editors convert LF to CRLF, altering raw-byte SHA-256 and triggering spurious integrity drift or corrupting LF-only repositories. | **Task 4**: `testControlledDocsPersistence.ts` (Test AF, Test AG, Test AH). |
+| **1. Pre-Persistence Method & Path Classification** | Middleware checks both `req.method === 'POST'` and `${req.baseUrl}${req.path}` matching `/diff` or `/validate` before `next()`. Non-POST methods (e.g. PATCH/PUT/DELETE) remain `MUTATING`. | Mounted Express routers strip mount prefixes from `req.path`. If tested against `req.path` alone or without method check, read-only requests acquire writer locks and rewrite state snapshots, or non-POST requests bypass persistence. | **Task 2**: `testProjectPersistenceClassifier.ts` (Test AI, Test U, Test V). |
+| **2. Cross-Domain Rollback** | Injected snapshot persistence failure triggers `projectPersistenceHooks.onRollback` to restore document from sibling `.rollback` file. | Document is replaced on disk, but `writeProjectSnapshotAtomic` fails. Without a rollback hook, the document is mutated on disk while the audit ledger and `stateVersion` remain unrecorded. | **Task 6 & Task 8**: `testControlledDocsTransaction.ts`, `testControlledDocsApi.ts` (Test Y). |
+| **3. Post-Commit Cleanup Failure Semantics** | Once `writeProjectSnapshotAtomic` succeeds, the project transaction is durably committed. If `onCommit` cleanup fails, do NOT rollback or restore ProjectStore. Report `COMMITTED_CLEANUP_PENDING` and let recovery finish cleanup. | Erroneously rolling back after snapshot persistence succeeds creates state divergence where snapshot has audit event and incremented `stateVersion` while document is reverted. | **Task 2 & Task 6**: `testProjectPersistenceClassifier.ts`, `testControlledDocsTransaction.ts`. |
+| **4. Rollback Failure Semantics** | If project persistence fails and `onRollback` cannot restore the exact previous document hash, fail closed with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`. Retain all artifacts. | Silently swallowing rollback failures leaves an altered document without audit or leaves missing artifacts for recovery. | **Task 6**: `testControlledDocsTransaction.ts`. |
+| **5. Crash Recovery Path Security** | Startup recovery reads journal, re-derives filesystem paths strictly from manifest registry by `documentId`, and ignores untrusted paths inside the journal JSON. | Server crashes after `fs.renameSync` (phase `DOCUMENT_REPLACED`) before snapshot commit. If journal paths are trusted, an attacker could point recovery to overwrite arbitrary system files. | **Task 7**: `testControlledDocsRecovery.ts` (Test Z, Test AN). |
+| **6. Symlink Target Protection** | If a registered editable target itself is a symbolic link, writing must FAIL CLOSED (`assertEditableTargetNotSymlink`). | An attacker replaces `docs/00_control/PROJECT_STATE.md` with a symlink targeting `/etc/shadow` or `.env`. Controlled writes through symlinks must be strictly prohibited. | **Task 4**: `testControlledDocsPersistence.ts` (Symlink Write Rejection). |
+| **7. Byte-Level EOL Preservation** | Raw-byte hashing; detect LF/CRLF; preserve convention; reject mixed EOL. | Git on Windows or editors convert LF to CRLF, altering raw-byte SHA-256 and triggering spurious integrity drift or corrupting LF-only repositories. | **Task 4**: `testControlledDocsPersistence.ts` (Test AF, Test AG, Test AH). |
 
 ---
 
@@ -69,13 +71,13 @@ Implementation will proceed via small, focused commits corresponding to each tas
 3. `feat(docs): add controlled docs registry and domain types` (Task 3)
 4. `feat(docs): add safe document filesystem primitives and EOL handling` (Task 4)
 5. `feat(docs): add document validation and non-mutating line diff` (Task 5)
-6. `feat(docs): implement journaled atomic document transaction` (Task 6)
+6. `feat(docs): implement journaled atomic document transaction primitives` (Task 6)
 7. `feat(docs): implement startup transaction recovery and path derivation` (Task 7)
-8. `feat(docs): add controlled docs REST API and identity claim rejection` (Task 8)
-9. `feat(ui): add controlled docs frontend client and types` (Task 9)
-10. `feat(ui): implement controlled documentation workspace UI` (Task 10 & 11)
+8. `feat(docs): add controlled docs REST API, store orchestration, and identity filtering` (Task 8)
+9. `feat(ui): add controlled docs frontend client, types, and session display` (Task 9)
+10. `feat(ui): implement controlled documentation workspace UI and lockfile update` (Task 10 & 11)
 11. `test(docs): add comprehensive boundary and security regression suite` (Task 12)
-12. `docs(dmk-195): record verification evidence and transition to VERIFICATION` (Task 13 & 14)
+12. `docs(dmk-195): record automated verification evidence, checklist, and transition to VERIFICATION` (Task 13 & 14)
 
 ---
 
@@ -84,37 +86,41 @@ Implementation will proceed via small, focused commits corresponding to each tas
 ### Task 1 — Begin Controlled Dogfooding
 
 **Description:**
-Following human approval of this implementation plan, record the initial state baseline, transition DMK-195 from `BACKLOG` to `IN_PROGRESS` in the canonical WBS, synchronize generated markdown, and update runtime WorkItem state via the canonical HTTP API.
+Following human approval of this implementation plan, record the initial state baseline freshly from runtime and repository state, transition DMK-195 from `BACKLOG` to `IN_PROGRESS` in the canonical WBS, synchronize generated markdown, and update runtime WorkItem state via the canonical HTTP API.
 
 **Files:**
 - Modify: `docs/00_control/MASTER_WBS.yaml`
 - Modify: `docs/00_control/MASTER_WBS.md` (via `npm run wbs:render`)
-- Test / Verify: `scripts/testDogfoodingBaseline.ts`
 
 **Interfaces:**
 - Consumes: Canonical WBS `docs/00_control/MASTER_WBS.yaml`, runtime API `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items`
 - Produces: Updated WBS status `IN_PROGRESS`, updated runtime WorkItem status `IN_PROGRESS`, single `WORK_ITEM_UPDATED` audit event, incremented `stateVersion` ($N \to N+1$).
 
 **Implementation Steps:**
-- [ ] Record initial baseline:
-  - WBS DMK-195 status: `BACKLOG`
-  - Runtime DMK-195 status: `PROPOSED`
-  - Project `stateVersion`: 30
-  - Current `.local/project-state.json` SHA-256: `68b8252e9b3a98194e670eac3bf06b4a8260a17ee22eaad1f409a7f4a577ee82`
-  - DMK-201 status: `VERIFICATION_PENDING`
+- [ ] Freshly capture baseline state before mutations:
+  - Read runtime DMK-195 status: expect `PROPOSED`
+  - Read WBS DMK-195 status: expect `BACKLOG`
+  - Read project `stateVersion` = $N$
+  - Read audit event count = $A$
+  - Read `.local/project-state.json` SHA-256 digest = $H$
+  - Read DMK-201 status: expect `VERIFICATION_PENDING`
+  - If any expected statuses differ unexpectedly: **STOP and review**.
 - [ ] Edit `docs/00_control/MASTER_WBS.yaml`: change DMK-195 `status` from `BACKLOG` to `IN_PROGRESS`.
 - [ ] Run `npm run wbs:render` to regenerate `docs/00_control/MASTER_WBS.md`.
 - [ ] Run `npm run wbs:check` to verify zero WBS drift.
-- [ ] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items`:
+- [ ] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items` with payload:
   ```json
   {
-    "id": "DMK-195",
+    "itemId": "DMK-195",
     "status": "IN_PROGRESS"
   }
   ```
-- [ ] Verify audit ledger contains exactly one new `WORK_ITEM_UPDATED` event and `project.stateVersion` increments exactly once ($30 \to 31$).
-- [ ] Verify that DMK-201 and other historical WorkItems remain completely untouched.
-- [ ] Note: This intentionally makes prior runtime snapshot hash bindings historical/stale. Do NOT apply DMK-201 reconciliation.
+- [ ] Verify post-transition state:
+  - Audit event count equals $A + 1$, containing exactly one new `WORK_ITEM_UPDATED` event for `DMK-195`.
+  - Project `stateVersion` equals $N + 1$.
+  - Runtime WorkItem status for `DMK-195` is `IN_PROGRESS`.
+  - DMK-201 remains `VERIFICATION_PENDING` and other historical WorkItems remain untouched.
+  - Prior runtime snapshot hash $H$ is now historical/stale as expected from this audited mutation. Do NOT run DMK-201 reconciliation.
 - [ ] Commit changes: `chore(dmk-195): transition WBS and runtime to IN_PROGRESS for dogfooding`.
 
 ---
@@ -122,7 +128,7 @@ Following human approval of this implementation plan, record the initial state b
 ### Task 2 — Persistence Middleware Extension
 
 **Description:**
-Extend `server/projectPersistence.ts` to support pre-persistence request classification using the fully qualified routed path `${req.baseUrl}${req.path}`. Add lifecycle hooks (`onCommit`, `onRollback`) and ensure `READ_ONLY` requests bypass transaction locks, snapshot cloning, and atomic snapshot writes.
+Extend `server/projectPersistence.ts` to support pre-persistence request classification using the fully qualified routed path `${req.baseUrl}${req.path}` and HTTP method check. Add synchronous lifecycle hooks (`projectPersistenceHooks = { onCommit, onRollback }`) and define post-commit cleanup failure semantics.
 
 **Files:**
 - Modify: `server/projectPersistence.ts`
@@ -133,35 +139,44 @@ Extend `server/projectPersistence.ts` to support pre-persistence request classif
 - Produces:
   ```ts
   export type ProjectPersistenceMode = 'READ_ONLY' | 'MUTATING';
-  export type ProjectPersistenceClassifier = (req: express.Request) => ProjectPersistenceMode;
   export function classifyProjectRequestMode(req: express.Request): ProjectPersistenceMode;
   ```
   `res.locals` extensions:
   ```ts
   res.locals.projectPersistenceMode?: ProjectPersistenceMode;
-  res.locals.onPersistenceCommit?: () => Promise<void> | void;
-  res.locals.onPersistenceRollback?: (error: unknown) => Promise<void> | void;
+  res.locals.projectPersistenceHooks?: {
+    onCommit?: () => void;
+    onRollback?: (error: unknown) => void;
+  };
   ```
 
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testProjectPersistenceClassifier.ts` asserting:
-  - Mounted Express router with prefix `/api/projects` correctly classifies `/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff` as `READ_ONLY`.
-  - Mounted Express router correctly classifies `/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/validate` as `READ_ONLY`.
-  - All other POST/PUT/PATCH/DELETE requests classify as `MUTATING`.
-  - `READ_ONLY` mode does not trigger `writeProjectSnapshotAtomic` or modify `.local/project-state.json`.
-  - Injected persistence failure triggers `res.locals.onPersistenceRollback`.
+  - `POST /api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff` classifies as `READ_ONLY`.
+  - `POST /api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/validate` classifies as `READ_ONLY`.
+  - `POST /api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/save` classifies as `MUTATING`.
+  - `PATCH /diff`, `PUT /validate`, `DELETE /diff` classify as `MUTATING`.
+  - `READ_ONLY` mode does not acquire writer lock, clone state, or call `writeProjectSnapshotAtomic` (Test U, Test V).
+  - Injected persistence failure triggers `projectPersistenceHooks.onRollback` (Test Y).
+  - Post-commit cleanup failure: if `onCommit` fails after `writeProjectSnapshotAtomic` succeeds, the project transaction remains COMMITTED and `onRollback` is NOT called.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testProjectPersistenceClassifier.ts`.
-- [ ] Implement `classifyProjectRequestMode(req)` in `server/projectPersistence.ts` using `${req.baseUrl}${req.path}`:
+- [ ] Implement `classifyProjectRequestMode(req)` in `server/projectPersistence.ts`:
   ```ts
-  const routedPath = `${req.baseUrl}${req.path}`;
-  if (/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(routedPath)) {
-    return 'READ_ONLY';
+  export function classifyProjectRequestMode(req: express.Request): ProjectPersistenceMode {
+    const routedPath = `${req.baseUrl}${req.path}`;
+    if (
+      req.method === 'POST' &&
+      /^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(routedPath)
+    ) {
+      return 'READ_ONLY';
+    }
+    return 'MUTATING';
   }
   ```
 - [ ] Update `installProjectPersistence` to check `classifyProjectRequestMode(req)`. If `READ_ONLY`, immediately call `next()` without setting `transactionInFlight`, cloning state, or attaching snapshot commit interceptors.
-- [ ] Add execution of `res.locals.onPersistenceCommit` after successful `writeProjectSnapshotAtomic` and `res.locals.onPersistenceRollback` upon persistence catch block.
+- [ ] Add execution of `res.locals.projectPersistenceHooks?.onCommit()` after successful `writeProjectSnapshotAtomic`, catching and logging any cleanup error without triggering rollback.
+- [ ] Add execution of `res.locals.projectPersistenceHooks?.onRollback(error)` in persistence failure catch block.
 - [ ] Run focused test: `npx tsx scripts/testProjectPersistenceClassifier.ts` (PASS).
-- [ ] Run complete regression: `npm run qa`.
 - [ ] Commit changes: `feat(persistence): add pre-persistence classifier and lifecycle hooks`.
 
 ---
@@ -169,7 +184,7 @@ Extend `server/projectPersistence.ts` to support pre-persistence request classif
 ### Task 3 — Controlled Document Registry & Types
 
 **Description:**
-Create `server/docs/controlledDocsRegistry.ts` reading `bootstrap/docmonstakrakin.self-bootstrap.json` as the sole authoritative repository document registry. Expose strongly typed document records and enforce project isolation.
+Create `server/docs/controlledDocsRegistry.ts` loading and validating `bootstrap/docmonstakrakin.self-bootstrap.json` as the sole authoritative repository document registry. Import existing types from `src/data/selfBootstrapContract.ts`, add DMK-195-specific derived types, make registry loading accept `workspaceRoot` for testing, and restore the `MISSING` integrity status.
 
 **Files:**
 - Create: `server/docs/controlledDocsRegistry.ts`
@@ -177,13 +192,12 @@ Create `server/docs/controlledDocsRegistry.ts` reading `bootstrap/docmonstakraki
 - Create / Test: `scripts/testControlledDocsRegistry.ts`
 
 **Interfaces:**
-- Consumes: `bootstrap/docmonstakrakin.self-bootstrap.json` (`documents[]`)
+- Consumes: `ControlledDocumentKind`, `ControlledDocumentAuthority`, `ControlledDocumentReference` from `src/data/selfBootstrapContract.ts`
 - Produces:
   ```ts
-  export type ControlledDocumentKind = 'CONTROL' | 'PRODUCT' | 'REQUIREMENTS' | 'ARCHITECTURE' | 'SECURITY' | 'VERIFICATION' | 'OPERATIONS';
-  export type ControlledDocumentAuthority = 'REFERENCE' | 'GENERATED_PROJECTION';
   export type ControlledDocumentEditability = 'READ_ONLY' | 'CONTROLLED_EDIT';
   export type ControlledDocumentFileType = 'MARKDOWN' | 'YAML' | 'JSON' | 'OTHER';
+  export type DocumentIntegrityStatus = 'MATCH' | 'CHANGED' | 'UNPINNED' | 'MISSING';
 
   export interface ControlledDocumentRecord {
     id: string;
@@ -198,9 +212,9 @@ Create `server/docs/controlledDocsRegistry.ts` reading `bootstrap/docmonstakraki
     editableLivingDoc: boolean;
   }
 
-  export function getControlledDocsRegistry(projectId: string): ControlledDocumentRecord[];
-  export function findControlledDoc(projectId: string, documentId: string): ControlledDocumentRecord | null;
-  export function isControlledEditAllowed(projectId: string, documentId: string): boolean;
+  export function getControlledDocsRegistry(projectId: string, workspaceRoot?: string): ControlledDocumentRecord[];
+  export function findControlledDoc(projectId: string, documentId: string, workspaceRoot?: string): ControlledDocumentRecord | null;
+  export function isControlledEditAllowed(projectId: string, documentId: string, workspaceRoot?: string): boolean;
   ```
 
 **Implementation Steps:**
@@ -213,12 +227,12 @@ Create `server/docs/controlledDocsRegistry.ts` reading `bootstrap/docmonstakraki
   - External projects (e.g. `PRJ-ATLAS-01`) return empty array `[]` (Test I).
   - Unregistered documents return `null` (Test H, Test AD).
   - `LAST_HANDOFF.md` returns `null` (Test AE).
+  - Registry functions accept custom `workspaceRoot` and validate the manifest; malformed manifest fails closed.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsRegistry.ts`.
 - [ ] Implement `server/docs/controlledDocsRegistry.ts`:
-  - Load manifest synchronously at module initialization.
-  - Enrich items with `fileType` (`.md` -> MARKDOWN, `.yaml` -> YAML, `.json` -> JSON).
+  - Validate and load manifest on demand for specified `workspaceRoot` (defaulting to `process.cwd()`).
   - Derive `editability`: `CONTROLLED_EDIT` ONLY for `DOC-CTRL-002` and `DOC-CTRL-006` in `PRJ-DOCMONSTAKRAKIN`.
-- [ ] Add domain types to `src/types.ts`.
+- [ ] Add derived types to `src/types.ts` without duplicating canonical bootstrap types.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsRegistry.ts` (PASS).
 - [ ] Commit changes: `feat(docs): add controlled docs registry and domain types`.
 
@@ -227,14 +241,14 @@ Create `server/docs/controlledDocsRegistry.ts` reading `bootstrap/docmonstakraki
 ### Task 4 — Safe Document Filesystem Primitives
 
 **Description:**
-Create `server/docs/controlledDocsPersistence.ts` to implement path boundary clamping within `docs/`, raw-byte SHA-256 calculation, line ending detection/preservation, symlink write rejection, and atomic same-directory replacement primitives.
+Create `server/docs/controlledDocsPersistence.ts` to implement path boundary clamping within `docs/`, raw-byte SHA-256 calculation, line ending detection/preservation, symlink write rejection, missing-document detection, and atomic same-directory replacement primitives.
 
 **Files:**
 - Create: `server/docs/controlledDocsPersistence.ts`
 - Create / Test: `scripts/testControlledDocsPersistence.ts`
 
 **Interfaces:**
-- Consumes: Node.js `fs`, `path`, `crypto`, `server/security/pathBoundary.ts`, `ControlledDocumentRecord`
+- Consumes: Node.js `fs`, `path`, `crypto`, `ControlledDocumentRecord`, `DocumentIntegrityStatus`
 - Produces:
   ```ts
   export type DetectedEol = 'LF' | 'CRLF' | 'MIXED' | 'NONE';
@@ -245,7 +259,8 @@ Create `server/docs/controlledDocsPersistence.ts` to implement path boundary cla
     content: string;
     eol: DetectedEol;
     sizeBytes: number;
-    integrityStatus: 'MATCH' | 'CHANGED' | 'UNPINNED';
+    integrityStatus: DocumentIntegrityStatus; // 'MATCH' | 'CHANGED' | 'UNPINNED' | 'MISSING'
+    exists: boolean;
   }
 
   export function resolveDocumentDiskPath(docRecord: ControlledDocumentRecord, workspaceRoot?: string): { diskPath: string; dirPath: string };
@@ -265,8 +280,8 @@ Create `server/docs/controlledDocsPersistence.ts` to implement path boundary cla
 - [ ] Write failing test in `scripts/testControlledDocsPersistence.ts` asserting:
   - Traversal attempts (`../`, `..\\`) fail closed (Test F).
   - Absolute path attempts fail closed (Test G).
-  - Realpath verification ensures target remains within `docs/`.
-  - Review Focus 4: Symlink target write rejection fails closed when target itself is a symlink (`assertEditableTargetNotSymlink`).
+  - Review Focus 6: Symlink write rejection fails closed when target is a symlink (`assertEditableTargetNotSymlink`).
+  - Missing file returns `exists: false` and `integrityStatus: 'MISSING'`.
   - Raw-byte SHA-256 matches unnormalized disk bytes (Test AF).
   - Hash-pinned MATCH (Test C) and CHANGED (Test D).
   - Living docs report UNPINNED (Test E).
@@ -277,6 +292,7 @@ Create `server/docs/controlledDocsPersistence.ts` to implement path boundary cla
 - [ ] Implement `server/docs/controlledDocsPersistence.ts`:
   - Enforce `path.resolve(workspaceRoot, docRecord.path)` containment in `path.resolve(workspaceRoot, 'docs')`.
   - Implement `assertEditableTargetNotSymlink`: check `fs.lstatSync(diskPath).isSymbolicLink()`; throw error if true.
+  - Implement missing file check: if `!fs.existsSync(diskPath)`, return `exists: false`, `integrityStatus: 'MISSING'`.
   - Implement `detectLineEndings`: scan `\r\n` vs `\n`. If both present, return `'MIXED'`.
   - Implement `encodeDocumentBytes`: normalize newlines to target EOL and encode as UTF-8 buffer.
   - Implement atomic write with `fs.openSync`, `fs.writeSync`, `fs.fdatasyncSync`, `fs.closeSync`.
@@ -289,7 +305,7 @@ Create `server/docs/controlledDocsPersistence.ts` to implement path boundary cla
 ### Task 5 — Validation & Diff
 
 **Description:**
-Create `server/docs/controlledDocsValidator.ts` to implement universal content validation (UTF-8, size limits, no null bytes), document-specific structural validation, and deterministic line diffing.
+Create `server/docs/controlledDocsValidator.ts` to implement universal content validation (UTF-8, size limits, no null bytes), document-specific structural validation with exact title check for `PROJECT_STATE.md`, and deterministic line diffing exposing stale information.
 
 **Files:**
 - Create: `server/docs/controlledDocsValidator.ts`
@@ -306,60 +322,73 @@ Create `server/docs/controlledDocsValidator.ts` to implement universal content v
   }
 
   export interface DocumentDiffResult {
-    originalSha256: string;
-    candidateSha256: string;
+    oldHash: string;
+    candidateHash: string;
+    isStale: boolean;
+    hasChanges: boolean;
     additions: number;
     deletions: number;
-    changes: number;
-    diffUnified: string;
+    changedLines: number;
+    unifiedDiff: string;
   }
 
   export function validateUniversalConstraints(rawBytes: Buffer, content: string): DocumentValidationResult;
   export function validateDocumentContent(docRecord: ControlledDocumentRecord, rawBytes: Buffer, candidateContent: string): DocumentValidationResult;
-  export function computeDocumentDiff(originalContent: string, candidateContent: string, originalSha256: string, candidateSha256: string): DocumentDiffResult;
+  export function computeDocumentDiff(originalContent: string, candidateContent: string, baseSha256: string, currentSha256: string): DocumentDiffResult;
   ```
 
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testControlledDocsValidator.ts` asserting:
   - Rejects payloads exceeding 5MB or containing null bytes `\0`.
-  - `DOC-CTRL-002` (`PROJECT_STATE.md`) requires top-level `# Project State` and governance sections referencing DMK-201, Gate 7, and Release Status (Test N).
+  - `DOC-CTRL-002` (`PROJECT_STATE.md`) requires exact title `# docmonstakrakin current project state` and sections referencing `Current governance and task status`, `DMK-201`, `Gate 7`, `Live reconciliation`, and `Release status` (Test N).
   - `DOC-CTRL-006` (`TRACEABILITY_MATRIX.md`) validates Markdown table syntax `| ... |`.
   - Rejects edits to `DOC-CTRL-004` (Test J) and `DOC-CTRL-003` (Test K).
-  - Line diff computes additions, deletions, modifications without disk mutations (Test M).
+  - Line diff exposes `oldHash`, `candidateHash`, `isStale` (`baseSha256 !== currentSha256`), `hasChanges`, `additions`, `deletions`, `changedLines`, and `unifiedDiff` without modifying disk (Test M).
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsValidator.ts`.
 - [ ] Implement `server/docs/controlledDocsValidator.ts`:
   - Add UTF-8 decoding and null byte checks.
-  - Implement structural regex checks for `PROJECT_STATE.md` and Markdown table parser for `TRACEABILITY_MATRIX.md`.
-  - Implement unified diff generator comparing original and candidate lines.
+  - Implement structural regex checks for `PROJECT_STATE.md` with exact canonical title and non-brittle heading depth.
+  - Implement table syntax validator for `TRACEABILITY_MATRIX.md`.
+  - Implement diff engine with stale detection.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsValidator.ts` (PASS).
 - [ ] Commit changes: `feat(docs): add document validation and non-mutating line diff`.
 
 ---
 
-### Task 6 — Cross-Domain Document Transaction
+### Task 6 — Cross-Domain Document Transaction Primitives
 
 **Description:**
-Create `server/docs/controlledDocsTransaction.ts` to coordinate dual-domain transactions between filesystem markdown documents and `.local/project-state.json` via target-sibling rollback files and durable journal logging.
+Create `server/docs/controlledDocsTransaction.ts` to manage filesystem transaction artifacts, target-sibling candidate/rollback files, and durable journal logging conforming strictly to the approved specification. (ProjectStore mutation and audit event generation are owned by Task 8 orchestration).
 
 **Files:**
 - Create: `server/docs/controlledDocsTransaction.ts`
 - Create / Test: `scripts/testControlledDocsTransaction.ts`
 
 **Interfaces:**
-- Consumes: `ProjectStore`, `ControlledDocumentRecord`, `controlledDocsPersistence.ts`, `server/projectPersistence.ts`
+- Consumes: `ControlledDocumentRecord`, `controlledDocsPersistence.ts`
 - Produces:
   ```ts
-  export type DocumentTransactionState = 'PREPARED' | 'DOCUMENT_REPLACED' | 'COMMITTED';
+  export type DocumentTransactionPhase =
+    | 'PREPARED'
+    | 'DOCUMENT_REPLACED'
+    | 'COMMITTED'
+    | 'COMMITTED_CLEANUP_PENDING';
 
   export interface DocumentTransactionJournal {
     operationId: string;
     projectId: string;
     documentId: string;
-    state: DocumentTransactionState;
-    baseSha256: string;
+    targetPath: string;
+    candidateArtifactPath: string;
+    rollbackArtifactPath: string;
+    previousSha256: string;
     candidateSha256: string;
-    actor: string;
-    startedAt: string;
+    projectStateBeforeDigest: string | null;
+    stateVersionBefore: number;
+    stateVersionExpectedAfter: number;
+    auditEventId: string;
+    phase: DocumentTransactionPhase;
+    createdAt: string;
     updatedAt: string;
   }
 
@@ -369,8 +398,8 @@ Create `server/docs/controlledDocsTransaction.ts` to coordinate dual-domain tran
     rollbackPath: string;
     journalPath: string;
     executeReplacement: () => { newSha256: string; candidateBytes: Buffer };
-    onPersistenceSuccess: () => void;
-    onPersistenceFailure: (error: unknown) => void;
+    handleCommitSuccess: () => void;
+    handleRollback: (error: unknown) => void;
   }
 
   export function prepareDocumentTransaction(params: {
@@ -379,35 +408,31 @@ Create `server/docs/controlledDocsTransaction.ts` to coordinate dual-domain tran
     docRecord: ControlledDocumentRecord;
     candidateContent: string;
     baseSha256: string;
-    actor: string;
+    projectStateBeforeDigest: string | null;
+    stateVersionBefore: number;
+    auditEventId: string;
     workspaceRoot?: string;
   }): DocumentTransactionCoordinator;
   ```
 
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testControlledDocsTransaction.ts` asserting:
-  - Valid transaction creates sibling `.rollback` and `.candidate` files in `path.dirname(targetDocument)` (Test AJ, Test AK).
+  - Prepare sequence: verifies base hash, writes rollback sibling, fsyncs rollback, writes candidate sibling, fsyncs candidate, writes PREPARED journal with all spec fields, fsyncs journal (Test AJ, Test AK).
   - Stale `baseSha256` triggers immediate rejection with `DOCUMENT_STALE` without disk mutations (Test O).
-  - Forward rename replaces document atomically (Test P, Test AL).
-  - Review Focus 2: Injected snapshot persistence failure triggers rollback hook, atomically restoring original document from rollback sibling file (Test Y, Test AM).
-  - Successful transaction appends `DOCUMENT_UPDATED` audit event and increments `project.stateVersion` exactly once (Test Q, Test W).
+  - `executeReplacement()` performs atomic rename and advances journal to `DOCUMENT_REPLACED` (Test P, Test AL).
+  - Rollback failure semantics: if rollback rename fails or restored hash does not equal `previousSha256`, throws `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` and preserves all artifacts.
+  - Post-commit cleanup failure semantics: if `handleCommitSuccess()` fails to unlink artifacts, advances journal to `COMMITTED_CLEANUP_PENDING` without throwing rollback errors.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsTransaction.ts`.
-- [ ] Implement `server/docs/controlledDocsTransaction.ts`:
-  - Generate `operationId = 'dmk-' + randomUUID()`.
-  - Write journal in `.local/document-transactions/<operationId>.json` with state `PREPARED`.
-  - Write rollback copy to `.target.rollback` and candidate copy to `.target.candidate`.
-  - Advance journal state to `DOCUMENT_REPLACED` upon `executeReplacement()`.
-  - In `onPersistenceSuccess()`, advance journal to `COMMITTED`, unlink siblings, and unlink journal.
-  - In `onPersistenceFailure(err)`, execute atomic rollback rename, verify restored hash equals `baseSha256`, and unlink temporary artifacts.
+- [ ] Implement `server/docs/controlledDocsTransaction.ts` strictly following the approved 14-step prepare and execution sequence.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsTransaction.ts` (PASS).
-- [ ] Commit changes: `feat(docs): implement journaled atomic document transaction`.
+- [ ] Commit changes: `feat(docs): implement journaled atomic document transaction primitives`.
 
 ---
 
 ### Task 7 — Startup Transaction Recovery
 
 **Description:**
-Create `server/docs/controlledDocsRecovery.ts` and integrate it into server initialization in `server.ts`. Re-derive authoritative paths from manifest registry by `documentId` and safely resolve orphaned journals.
+Create `server/docs/controlledDocsRecovery.ts` and integrate it into server initialization in `server.ts`. Re-derive authoritative paths from manifest registry by `documentId`, ignore untrusted journal paths, safely resolve orphaned journals, and handle `COMMITTED_CLEANUP_PENDING`.
 
 **Files:**
 - Create: `server/docs/controlledDocsRecovery.ts`
@@ -434,14 +459,14 @@ Create `server/docs/controlledDocsRecovery.ts` and integrate it into server init
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testControlledDocsRecovery.ts` asserting:
   - Discovers journals in `.local/document-transactions/`.
-  - Review Focus 3: Journal in state `DOCUMENT_REPLACED` without committed audit event restores original document from rollback sibling file (Test Z).
-  - Completed `COMMITTED` journal safely cleans leftover files (Test AA).
+  - Re-derives paths from manifest by `documentId`; ignores untrusted paths inside journal JSON (Test AN).
+  - Phase `DOCUMENT_REPLACED` without committed audit event restores original document from rollback sibling file (Test Z).
+  - Phase `COMMITTED` or `COMMITTED_CLEANUP_PENDING` safely cleans leftover files (Test AA).
   - Corrupted or unparseable journal locks transactions with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` (Test AB).
-  - Journal path tampering: altered paths inside journal JSON are completely ignored; recovery re-derives paths from manifest registry (Test AN).
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsRecovery.ts`.
 - [ ] Implement `server/docs/controlledDocsRecovery.ts`:
   - Scan journal directory. Read each journal JSON.
-  - Look up `documentId` in `getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN')`. If not found, fail closed (lock).
+  - Look up `documentId` in `getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', workspaceRoot)`. If not found, fail closed (lock).
   - Re-derive expected disk path and sibling paths.
   - Reconcile against `.local/project-state.json` audit events.
   - Execute recovery rollback or cleanup.
@@ -451,10 +476,10 @@ Create `server/docs/controlledDocsRecovery.ts` and integrate it into server init
 
 ---
 
-### Task 8 — Controlled Docs API
+### Task 8 — Controlled Docs API & Store Orchestration
 
 **Description:**
-Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for document catalog listing, reading, diffing, validating, and saving. Enforce strict rejection of client identity claims and integrate with human reviewer authorization.
+Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for document catalog listing, reading, diffing, validating, and saving. Enforce strict rejection of client identity claims in request body, authenticate via `requireHuman()`, orchestrate ProjectStore audit event and `stateVersion` updates, and attach `projectPersistenceHooks`.
 
 **Files:**
 - Create: `server/docs/controlledDocsRouter.ts`
@@ -465,7 +490,7 @@ Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for docume
 - Consumes: Express `Router`, `ProjectStore`, `requireHuman` from `server/proposals/identity.ts`
 - Produces:
   - `GET /api/projects/:id/docs`
-  - `GET /api/projects/:id/docs/:documentId`
+  - `GET /api/projects/:id/docs/:documentId` (returns 410 if status is MISSING)
   - `POST /api/projects/:id/docs/:documentId/diff`
   - `POST /api/projects/:id/docs/:documentId/validate`
   - `POST /api/projects/:id/docs/:documentId/save`
@@ -473,26 +498,35 @@ Create `server/docs/controlledDocsRouter.ts` providing REST endpoints for docume
 **Implementation Steps:**
 - [ ] Write failing test in `scripts/testControlledDocsApi.ts` asserting:
   - `GET /api/projects/PRJ-DOCMONSTAKRAKIN/docs` returns 28 items.
-  - `GET .../docs/DOC-CTRL-002` returns document metadata and content.
-  - `POST .../save` rejects client identity claims with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`) (Test X).
+  - Missing registered file returns 410 on GET content.
+  - `POST .../save` rejects client identity claims in request body (`actor`, `role`, `approver`, `reviewerName`, `reviewerRole`, `authorizedRole`, `identityId`, `actorType`) with `HTTP 400 Bad Request` (`CLIENT_IDENTITY_CLAIMS_PROHIBITED`) (Test X).
   - `POST .../save` requires human session authentication (returns 401/403 if unauthorized).
-  - `POST .../save` requires `humanConfirmed === true` (returns 422 if false).
-  - Full save flow persists document, appends audit, increments `stateVersion`, and survives server restart (Test L, Test R).
+  - `POST .../save` requires non-empty `reason` and `humanConfirmed === true` (returns 422 if invalid).
+  - Successful save appends `DOCUMENT_UPDATED` audit event (Test Q).
+  - Successful save increments `project.stateVersion` exactly once ($N \to N+1$) (Test W).
+  - Full save flow persists document, appends audit, and survives server restart (Test L, Test R).
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsApi.ts`.
 - [ ] Implement `server/docs/controlledDocsRouter.ts`:
-  - Check `req.body` and headers for prohibited identity claims (`actor`, `role`, `approver`, etc.). If found, return `res.status(400).json({ error: 'CLIENT_IDENTITY_CLAIMS_PROHIBITED' })`.
+  - Body claim check: scan `req.body` for prohibited fields; return `res.status(400).json({ error: 'CLIENT_IDENTITY_CLAIMS_PROHIBITED' })`.
   - Wire `/diff` and `/validate` handlers.
-  - Wire `/save` handler to `prepareDocumentTransaction`, attach `res.locals.onPersistenceCommit` and `onPersistenceRollback`, update store audit log, and return response.
+  - Wire `/save` handler:
+    1. Authenticate with `reviewerAuth.requireHuman(req, res)`.
+    2. Validate `reason` and `humanConfirmed === true`.
+    3. Generate audit event ID and prepare transaction coordinator.
+    4. Execute replacement.
+    5. Append `DOCUMENT_UPDATED` audit event to `store` using authenticated reviewer identity.
+    6. Increment `project.stateVersion`.
+    7. Set `res.locals.projectPersistenceHooks = { onCommit: coordinator.handleCommitSuccess, onRollback: coordinator.handleRollback }`.
 - [ ] Mount router in `server.ts` via `app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman))`.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsApi.ts` (PASS).
-- [ ] Commit changes: `feat(docs): add controlled docs REST API and identity claim rejection`.
+- [ ] Commit changes: `feat(docs): add controlled docs REST API, store orchestration, and identity filtering`.
 
 ---
 
-### Task 9 — Frontend Document Types & Data Access
+### Task 9 — Frontend Document Types, Data Access & Session Display
 
 **Description:**
-Create `src/data/controlledDocsClient.ts` to provide typed API helpers with request sequencing, timeouts, and `AbortController` cancellation to prevent stale responses during project switching.
+Create `src/data/controlledDocsClient.ts` to provide typed API helpers with request sequencing, timeouts, and `AbortController` cancellation. Implement typed governance session reader for read-only reviewer identity display in save modals.
 
 **Files:**
 - Create: `src/data/controlledDocsClient.ts`
@@ -512,7 +546,7 @@ Create `src/data/controlledDocsClient.ts` to provide typed API helpers with requ
     fileType: ControlledDocumentFileType;
     title: string;
     description?: string;
-    integrityStatus: 'MATCH' | 'CHANGED' | 'UNPINNED';
+    integrityStatus: DocumentIntegrityStatus; // MATCH | CHANGED | UNPINNED | MISSING
     sha256Digest?: string;
     currentSha256?: string;
     sizeBytes?: number;
@@ -529,12 +563,14 @@ Create `src/data/controlledDocsClient.ts` to provide typed API helpers with requ
 
   export interface DocumentDiffResponse {
     documentId: string;
-    originalSha256: string;
-    candidateSha256: string;
+    oldHash: string;
+    candidateHash: string;
+    isStale: boolean;
+    hasChanges: boolean;
     additions: number;
     deletions: number;
-    changes: number;
-    diffUnified: string;
+    changedLines: number;
+    unifiedDiff: string;
   }
 
   export interface DocumentValidationResponse {
@@ -544,12 +580,27 @@ Create `src/data/controlledDocsClient.ts` to provide typed API helpers with requ
     warnings: string[];
   }
 
+  export interface DocumentSaveInput {
+    projectId: string;
+    documentId: string;
+    candidateContent: string;
+    baseSha256: string;
+    reason: string;
+    humanConfirmed: boolean;
+  }
+
+  export interface ReviewerSessionInfo {
+    name: string;
+    roles: string[];
+  }
+
   export function createControlledDocsLoader(request?: typeof fetch): {
     loadDocumentList: (projectId: string) => Promise<ControlledDocumentSummary[]>;
     loadDocumentContent: (projectId: string, documentId: string) => Promise<DocumentContentResponse>;
-    requestDiff: (projectId: string, documentId: string, candidateContent: string) => Promise<DocumentDiffResponse>;
+    requestDiff: (projectId: string, documentId: string, candidateContent: string, baseSha256: string) => Promise<DocumentDiffResponse>;
     requestValidate: (projectId: string, documentId: string, candidateContent: string) => Promise<DocumentValidationResponse>;
-    requestSave: (projectId: string, documentId: string, candidateContent: string, baseSha256: string) => Promise<DocumentContentResponse>;
+    requestSave: (input: DocumentSaveInput) => Promise<DocumentContentResponse>;
+    loadGovernanceSession: () => Promise<ReviewerSessionInfo | null>;
     invalidate: () => void;
   };
   ```
@@ -558,22 +609,26 @@ Create `src/data/controlledDocsClient.ts` to provide typed API helpers with requ
 - [ ] Write failing test in `scripts/testControlledDocsClient.ts` asserting:
   - Sequence tracking ignores out-of-order responses.
   - `invalidate()` aborts in-flight requests.
-  - API errors are parsed and reported as typed error strings.
+  - `requestDiff` passes `baseSha256` and receives stale indicators.
+  - `requestSave` sends required input fields without identity claims.
+  - `loadGovernanceSession` fetches and formats reviewer identity.
 - [ ] Run failing test and verify failure: `npx tsx scripts/testControlledDocsClient.ts`.
 - [ ] Implement `src/data/controlledDocsClient.ts` following `src/data/projectWorkspace.ts` pattern.
 - [ ] Run focused test: `npx tsx scripts/testControlledDocsClient.ts` (PASS).
-- [ ] Commit changes: `feat(ui): add controlled docs frontend client and types`.
+- [ ] Commit changes: `feat(ui): add controlled docs frontend client, types, and session display`.
 
 ---
 
-### Task 10 — Repository Documents UI
+### Task 10 — Repository Documents UI & Lockfile Convention
 
 **Description:**
-Install `react-markdown` and create `src/components/ControlledDocsView.tsx` implementing the repository document browser, status badges, secure markdown viewer (HTML disabled), and the controlled editing 5-stage sequential workflow (`View -> Edit -> Diff -> Validate -> Confirm -> Save`).
+Install `react-markdown` adhering to the repository's lockfile convention (`package.json`, `package-lock.json`, `bun.lock`). Create `src/components/ControlledDocsView.tsx` implementing the repository document browser, status badges, secure markdown viewer (HTML disabled), and the approved six-step controlled editing workflow (`VIEW -> EDIT DRAFT -> PREVIEW DIFF -> VALIDATE -> CONFIRM SAVE -> COORDINATED COMMIT`).
 
 **Files:**
 - Create: `src/components/ControlledDocsView.tsx`
-- Modify: `package.json` (add dependency `react-markdown`)
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Modify: `bun.lock` (if updated by package manager)
 - Create / Test: `scripts/testControlledDocsViewComponent.ts`
 
 **Interfaces:**
@@ -581,17 +636,19 @@ Install `react-markdown` and create `src/components/ControlledDocsView.tsx` impl
 - Produces: Controlled documentation workspace React component.
 
 **Implementation Steps:**
-- [ ] Add `react-markdown` to `dependencies` in `package.json` and install (`npm install --legacy-peer-deps` or repository standard).
+- [ ] Inspect repository lockfile convention and install `react-markdown` via `npm install react-markdown` (or `npm install --legacy-peer-deps`), cleanly updating `package.json` and `package-lock.json` without unrelated dependency churn.
 - [ ] Write component tests in `scripts/testControlledDocsViewComponent.ts` asserting:
   - Renders document catalog grouped by kind with search filter.
-  - Renders badges: MATCH (green), CHANGED (amber), UNPINNED (slate), CONTROLLED_EDIT (blue), READ_ONLY (slate).
+  - Renders badges: MATCH (green), CHANGED (amber), UNPINNED (slate), MISSING (red), CONTROLLED_EDIT (blue), READ_ONLY (slate).
   - Embedded HTML `<script>` tags render as inert text without executing (Test AC).
   - Read-only documents show no edit controls.
   - Living documents (`DOC-CTRL-002`, `DOC-CTRL-006`) provide Edit button.
-  - Editor workflow enforces sequential progression: cannot save without diff, validate, and explicit confirmation checkbox.
+  - Editor workflow enforces the approved six-step sequential progression:
+    `VIEW -> EDIT DRAFT -> PREVIEW DIFF -> VALIDATE -> CONFIRM SAVE -> COORDINATED COMMIT`.
+  - Save modal displays authenticated reviewer name and roles in read-only format from session state; never editable.
 - [ ] Implement `src/components/ControlledDocsView.tsx`.
 - [ ] Run focused component test: `npx tsx scripts/testControlledDocsViewComponent.ts` (PASS).
-- [ ] Commit changes: `feat(ui): implement controlled documentation workspace UI`.
+- [ ] Commit changes: `feat(ui): implement controlled documentation workspace UI and lockfile update`.
 
 ---
 
@@ -651,14 +708,14 @@ Implement the complete test matrix covering Tests A through AN in `scripts/testC
 - **Test N:** Validation Failure Blocks Save (malformed content returns HTTP 422).
 - **Test O:** Stale Base Hash Rejection (returns HTTP 409 `DOCUMENT_STALE`).
 - **Test P:** Atomic Persistence (writes `.candidate`, renames, leaves zero leftover siblings).
-- **Test Q:** Audit Event Correctness (appends `DOCUMENT_UPDATED` maintaining hash chain).
+- **Test Q:** Audit Event Correctness (appends `DOCUMENT_UPDATED` maintaining hash chain; owned by Task 8 API).
 - **Test R:** Persistence & Reload (document update survives server restart).
 - **Test S:** Project Switching State Reset (clears document selection and draft state).
 - **Test T:** UI Smoke & Accessibility (renders cleanly without console errors).
 - **Test U:** Diff Preserves Snapshot Bytes & Early Exit (zero state writes, zero locks).
 - **Test V:** Validate Preserves Snapshot Bytes & Early Exit (zero state writes, zero locks).
-- **Test W:** `stateVersion` Increment (increments exactly once: $N \to N+1$).
-- **Test X:** Client Identity Claims Rejected (returns HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
+- **Test W:** `stateVersion` Increment (increments exactly once: $N \to N+1$; owned by Task 8 API).
+- **Test X:** Client Identity Claims Rejected (body fields rejected with HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`).
 - **Test Y:** Persistence Failure Restores Document (rollback hook restores from sibling file).
 - **Test Z:** Startup Recovery Restores Unaudited Replace (`DOCUMENT_REPLACED` restored on restart).
 - **Test AA:** Stale `COMMITTED` Journal Cleans Safely (removes completed transaction files).
@@ -669,45 +726,58 @@ Implement the complete test matrix covering Tests A through AN in `scripts/testC
 - **Test AF:** Raw-Byte Hashing Semantics (exact byte SHA-256 without CRLF normalization).
 - **Test AG:** EOL Style Preservation (LF stays LF; CRLF stays CRLF).
 - **Test AH:** Mixed-EOL Edit Fails Closed (`UNSUPPORTED_MIXED_LINE_ENDINGS`).
-- **Test AI:** Mounted Path Classification (`${req.baseUrl}${req.path}` classifies `/diff` as `READ_ONLY`).
+- **Test AI:** Mounted Path & Method Classification (POST `/diff` and `/validate` are `READ_ONLY`; non-POST and `/save` are `MUTATING`).
 - **Test AJ:** Candidate Sibling Placement (candidate in `path.dirname(targetDocument)`).
 - **Test AK:** Rollback Sibling Placement (rollback in `path.dirname(targetDocument)`).
 - **Test AL:** Forward Same-Directory Replacement (`fs.renameSync` sibling to target).
 - **Test AM:** Atomic Rollback Same-Directory Replacement (rollback rename verifies restored hash).
 - **Test AN:** Journal Path Tampering (re-derives paths from manifest; ignores untrusted journal paths).
+- **Additional Security Tests:**
+  - Post-commit cleanup failure: snapshot commit succeeds + `onCommit` cleanup fails $\to$ durable state remains committed, no rollback (`COMMITTED_CLEANUP_PENDING`).
+  - Rollback failure: persistence fails + rollback rename fails $\to$ fails closed with `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`.
+  - Missing file: registered document absent on disk $\to$ reports `integrityStatus: 'MISSING'`, GET returns 410.
+  - Symlink write rejection: editable target is a symlink $\to$ fails closed.
 
 **Implementation Steps:**
-- [ ] Create `scripts/testControlledDocs.ts` with explicit test cases for Tests A through AN.
+- [ ] Create `scripts/testControlledDocs.ts` with explicit test cases for all tests.
 - [ ] Add `"test:controlled-docs": "tsx scripts/testControlledDocs.ts"` to `package.json`.
-- [ ] Run test suite: `npm run test:controlled-docs` (verify all 40 tests pass with exit code 0).
+- [ ] Run test suite: `npm run test:controlled-docs` (verify all tests pass with exit code 0).
 - [ ] Commit changes: `test(docs): add comprehensive boundary and security regression suite`.
 
 ---
 
-### Task 13 — Regression & Human Verification Preparation
+### Task 13 — Regression & Verification Evidence Documentation
 
 **Description:**
-Execute the full repository regression suite, verify zero lint errors and zero WBS drift, and prepare a structured checklist for human browser verification.
+Execute the full repository regression suite, verify zero lint errors and zero WBS drift, and produce both an automated verification report and a structured human verification checklist.
 
 **Files:**
 - Test / Verify: `npm run lint`, `npm run wbs:check`, `npm run qa`, `npm run test:controlled-docs`, `npm run test:complete`
+- Create: `docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md`
 - Create: `docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md`
 
 **Implementation Steps:**
 - [ ] Run `npm run lint` and verify zero TypeScript errors.
 - [ ] Run `npm run wbs:check` and verify zero WBS drift.
-- [ ] Run `npm run qa` and verify all 11 criteria pass.
-- [ ] Run `npm run test:controlled-docs` and verify all 40 tests pass.
-- [ ] Run `npm run test:complete` and verify complete regression pass.
-- [ ] Create verification checklist in `docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md` detailing browser verification steps:
+- [ ] Run `npm run qa` and record actual exit code and criteria passed.
+- [ ] Run `npm run test:controlled-docs` and verify all tests pass with exit code 0.
+- [ ] Run `npm run test:complete` and record actual exit code and suite counts.
+- [ ] Expected verification standard: **exit code 0, zero unexpected failures**.
+- [ ] Create `docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md` recording:
+  - Branch, commit SHA, timestamp.
+  - Exact command lines executed and exit codes.
+  - Controlled docs test output.
+  - Lint, WBS, QA, and complete regression results with actual freshly measured counts (no hardcoded historical values).
+  - Known pre-existing failures/skips (e.g. historical Stage A regression notes) documented honestly.
+- [ ] Create `docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md` detailing browser verification steps:
   - Document catalog navigation & kind filtering.
-  - Integrity hash badges (MATCH / CHANGED / UNPINNED).
+  - Integrity hash badges (MATCH / CHANGED / UNPINNED / MISSING).
   - Read-only protection on `MASTER_WBS.yaml` and `MASTER_WBS.md`.
   - Sequential controlled editing flow for `PROJECT_STATE.md`.
   - Stale base hash conflict rejection in UI.
   - Project switching draft isolation.
   - Dynamic Projections preservation and Gate 7 check.
-- [ ] Commit changes: `docs(dmk-195): add verification checklist and automated test evidence`.
+- [ ] Commit changes: `docs(dmk-195): record automated verification evidence and human checklist`.
 
 ---
 
@@ -731,13 +801,14 @@ Following successful automated regression, transition DMK-195 status in canonica
   - Attach evidence files to `evidence[]`:
     - `docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md`
     - `docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md`
+    - `docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md`
     - `docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md`
     - `scripts/testControlledDocs.ts`
 - [ ] Run `npm run wbs:render` and verify zero drift with `npm run wbs:check`.
-- [ ] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items`:
+- [ ] Update runtime WorkItem state via `POST /api/projects/PRJ-DOCMONSTAKRAKIN/work-items` with payload:
   ```json
   {
-    "id": "DMK-195",
+    "itemId": "DMK-195",
     "status": "VERIFICATION"
   }
   ```
