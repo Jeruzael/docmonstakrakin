@@ -6,6 +6,23 @@ import type { ProjectStore } from './projectStore.ts';
 
 export const PROJECT_STATE_SCHEMA_VERSION = 1;
 
+export type ProjectPersistenceMode = 'READ_ONLY' | 'MUTATING';
+
+export interface ProjectPersistenceHooks {
+  onCommit?: () => void | Promise<void>;
+  onRollback?: (error: unknown) => void | Promise<void>;
+}
+
+export function classifyProjectRequestMode(req: { method?: string; baseUrl?: string; path?: string }): ProjectPersistenceMode {
+  if (req.method === 'POST') {
+    const fullPath = `${req.baseUrl ?? ''}${req.path ?? ''}`.replace(/\/+/g, '/');
+    if (/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(fullPath)) {
+      return 'READ_ONLY';
+    }
+  }
+  return 'MUTATING';
+}
+
 export interface ProjectStateSnapshot {
   schemaVersion: number;
   state: Record<string, any>;
@@ -158,6 +175,11 @@ export function installProjectPersistence(app: Express, store: any, workspaceRoo
     if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) && !(req.method === 'GET' && req.path.endsWith('/package/export'))) {
       return next();
     }
+    const mode = classifyProjectRequestMode(req);
+    res.locals.projectPersistenceMode = mode;
+    if (mode === 'READ_ONLY') {
+      return next();
+    }
     if (projectSnapshotDigest(workspaceRoot) !== persistedDigest) {
       return res.status(409).json({error: 'Persisted state changed outside this server; restart before updating projects'});
     }
@@ -170,14 +192,37 @@ export function installProjectPersistence(app: Express, store: any, workspaceRoo
     const send = res.json.bind(res);
     const respond = (body: any) => { const result = send(body); release(); return result; };
     res.json = (body: any) => {
+      const hooks: ProjectPersistenceHooks | undefined = res.locals?.projectPersistenceHooks;
       if (res.statusCode >= 200 && res.statusCode < 300) {
         try {
           const snapshot = snapshotProjectStore(store);
           persistedDigest = writeProjectSnapshotAtomic(snapshot, workspaceRoot, {expectedDigest: persistedDigest});
         } catch (error) {
           Object.assign(store, before);
+          try {
+            const rollbackResult = hooks?.onRollback?.(error);
+            if (rollbackResult && typeof (rollbackResult as any).catch === 'function') {
+              (rollbackResult as any).catch((hookErr: unknown) => {
+                console.error('projectPersistenceHooks.onRollback error:', hookErr);
+              });
+            }
+          } catch (hookErr) {
+            console.error('projectPersistenceHooks.onRollback error:', hookErr);
+          }
           res.status(500);
           return respond({ error: 'Failed to persist project transaction; changes rolled back' });
+        }
+        if (hooks?.onCommit) {
+          try {
+            const commitResult = hooks.onCommit();
+            if (commitResult && typeof (commitResult as any).catch === 'function') {
+              (commitResult as any).catch((err: unknown) => {
+                console.error('projectPersistenceHooks.onCommit cleanup error:', err);
+              });
+            }
+          } catch (err) {
+            console.error('projectPersistenceHooks.onCommit cleanup error:', err);
+          }
         }
       } else {
         Object.assign(store, before);
