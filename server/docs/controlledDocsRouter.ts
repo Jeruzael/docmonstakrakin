@@ -184,6 +184,8 @@ export function createControlledDocsRouter(
       return res.status(422).json({ error: 'INVALID_BASE_SHA256' });
     }
 
+    const canonicalBaseSha256 = baseSha256.toLowerCase();
+
     let current: DocumentFileReadResult;
     try {
       current = readDocumentDisk(doc, workspaceRoot);
@@ -209,7 +211,7 @@ export function createControlledDocsRouter(
     const diff = computeDocumentDiff({
       originalContent: current.content!,
       candidateContent,
-      baseSha256,
+      baseSha256: canonicalBaseSha256,
       currentSha256: current.rawSha256!,
       candidateSha256,
     });
@@ -323,6 +325,8 @@ export function createControlledDocsRouter(
       return res.status(422).json({ error: 'INVALID_BASE_SHA256' });
     }
 
+    const canonicalBaseSha256 = baseSha256.toLowerCase();
+
     // 4. Recovery lock enforcement (Zero mutations or artifacts if locked)
     try {
       assertDocumentTransactionsUnlocked();
@@ -392,7 +396,7 @@ export function createControlledDocsRouter(
         documentId: docRecord.id,
         docRecord,
         candidateContent,
-        baseSha256,
+        baseSha256: canonicalBaseSha256,
         projectStateBeforeDigest: projectSnapshotDigest(workspaceRoot),
         stateVersionBefore: project.stateVersion,
         auditEventId,

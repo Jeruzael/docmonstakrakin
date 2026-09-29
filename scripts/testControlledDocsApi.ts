@@ -542,6 +542,55 @@ async function runTests() {
     }
   });
 
+  await test('Test 4E: Uppercase matching baseSha256 on /diff evaluates isStale as false without mutation', async () => {
+    const ws = createTestWorkspace();
+    try {
+      const app = express();
+      app.use(express.json());
+      const store = new ProjectStore();
+      store.projects = [{ id: 'PRJ-DOCMONSTAKRAKIN', name: 'self', stateVersion: 31 } as any];
+      installProjectPersistence(app, store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(store, fakeRequireHuman, ws.workspaceDir));
+
+      const targetPath = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+      const currentBytes = fs.readFileSync(targetPath);
+      const currentSha = crypto.createHash('sha256').update(currentBytes).digest('hex');
+      const uppercaseBaseSha = currentSha.toUpperCase();
+      assert.notStrictEqual(uppercaseBaseSha, currentSha, 'SHA-256 hex string must contain letters to uppercase');
+
+      const candidateContent =
+        '# docmonstakrakin current project state\n\n### Current governance and task status\n- DMK-201\n- Gate 7\n- Live reconciliation\n- Release status\n- Uppercase diff test line\n';
+      const snapDigestBefore = projectSnapshotDigest(ws.workspaceDir);
+
+      const { base, close } = await startTestServer(app);
+      try {
+        const res = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateContent,
+            baseSha256: uppercaseBaseSha,
+          }),
+        });
+
+        assert.strictEqual(res.status, 200);
+        const diffData = await res.json();
+        assert.strictEqual(diffData.isStale, false);
+        assert.strictEqual(diffData.oldHash, currentSha);
+
+        // Verify READ-ONLY guarantee (zero mutation)
+        assert.strictEqual(store.projects[0].stateVersion, 31);
+        assert.strictEqual(store.auditLogs['PRJ-DOCMONSTAKRAKIN'].length, 0);
+        assert.strictEqual(projectSnapshotDigest(ws.workspaceDir), snapDigestBefore);
+        assert(!fs.existsSync(path.join(ws.workspaceDir, '.local', 'document-transactions')));
+      } finally {
+        await close();
+      }
+    } finally {
+      ws.cleanup();
+    }
+  });
+
   // =========================================================================
   // Group 5: Validation Orchestration (POST /api/projects/:id/docs/:documentId/validate)
   // =========================================================================
@@ -1284,6 +1333,60 @@ async function runTests() {
         assert(!savedBytes.includes(Buffer.from('\r\r\n')), 'No double carriage returns');
         const savedSha = crypto.createHash('sha256').update(savedBytes).digest('hex');
         assert.strictEqual(savedSha, expectedSha);
+      } finally {
+        await close();
+      }
+    } finally {
+      ws.cleanup();
+    }
+  });
+
+  await test('Test 13C: Uppercase matching baseSha256 on /save succeeds with canonical previousSha256 and state increment', async () => {
+    const ws = createTestWorkspace();
+    try {
+      const app = express();
+      app.use(express.json());
+      const store = new ProjectStore();
+      store.projects = [{ id: 'PRJ-DOCMONSTAKRAKIN', name: 'self', stateVersion: 31 } as any];
+      store.auditLogs['PRJ-DOCMONSTAKRAKIN'] = [];
+      installProjectPersistence(app, store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(store, fakeRequireHuman, ws.workspaceDir));
+
+      const targetPath = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+      const currentBytes = fs.readFileSync(targetPath);
+      const currentSha = crypto.createHash('sha256').update(currentBytes).digest('hex');
+      const uppercaseBaseSha = currentSha.toUpperCase();
+      assert.notStrictEqual(uppercaseBaseSha, currentSha, 'SHA-256 hex string must contain letters to uppercase');
+
+      const candidateContent =
+        '# docmonstakrakin current project state\n\n### Current governance and task status\n- DMK-201\n- Gate 7\n- Live reconciliation\n- Release status\n- Uppercase save test line\n';
+
+      const { base, close } = await startTestServer(app);
+      try {
+        const res = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateContent,
+            baseSha256: uppercaseBaseSha,
+            reason: 'Uppercase base SHA save test',
+            humanConfirmed: true,
+          }),
+        });
+
+        assert.strictEqual(res.status, 200);
+        const data = await res.json();
+        assert.strictEqual(data.previousSha256, currentSha);
+        assert.strictEqual(data.documentId, 'DOC-CTRL-002');
+
+        // Verify stateVersion N -> N+1
+        assert.strictEqual(store.projects[0].stateVersion, 32);
+
+        // Verify exactly one DOCUMENT_UPDATED audit
+        assert.strictEqual(store.auditLogs['PRJ-DOCMONSTAKRAKIN'].length, 1);
+        const audit = store.auditLogs['PRJ-DOCMONSTAKRAKIN'][0];
+        assert.strictEqual(audit.action, 'DOCUMENT_UPDATED');
+        assert.strictEqual(audit.details.previousSha256, currentSha);
       } finally {
         await close();
       }
