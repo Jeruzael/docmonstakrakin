@@ -824,3 +824,77 @@ export interface ControlledDocumentRecord {
   sha256Digest?: string;
   editableLivingDoc: boolean;
 }
+
+export type DetectedEol =
+  | 'LF'
+  | 'CRLF'
+  | 'MIXED'
+  | 'NONE';
+
+export interface ControlledDocumentSummary {
+  id: string;
+  path: string;
+  kind: ControlledDocumentKind;
+  authority: ControlledDocumentAuthority;
+  editability: ControlledDocumentEditability;
+  fileType: ControlledDocumentFileType;
+  title: string;
+  description?: string;
+  integrityStatus: DocumentIntegrityStatus;
+  sha256Digest?: string;
+  currentSha256: string | null;
+  sizeBytes?: number;
+  eol?: DetectedEol;
+}
+
+export interface DocumentContentResponse {
+  document: ControlledDocumentSummary;
+  content: string;
+  rawSha256: string;
+  eol: DetectedEol;
+  sizeBytes: number;
+}
+
+export interface DocumentDiffResponse {
+  documentId: string;
+  oldHash: string;
+  candidateHash: string;
+  isStale: boolean;
+  hasChanges: boolean;
+  additions: number;
+  deletions: number;
+  changedLines: number;
+  unifiedDiff: string;
+}
+
+export interface DocumentValidationResponse {
+  documentId: string;
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface DocumentSaveInput {
+  projectId: string;
+  documentId: string;
+  candidateContent: string;
+  baseSha256: string;
+  reason: string;
+  humanConfirmed: boolean;
+}
+
+export interface DocumentSaveResponse {
+  success: true;
+  documentId: string;
+  path: string;
+  previousSha256: string;
+  newSha256: string;
+  stateVersion: number;
+  auditEventId: string;
+  timestamp: string;
+}
+
+export interface ReviewerSessionInfo {
+  name: string;
+  roles: string[];
+}
