@@ -1,13 +1,12 @@
 /**
  * ControlledDocsView.tsx
- * Repository Documents UI & Controlled Documentation Workspace (DMK-195 Task 10).
- * Enforces secure markdown rendering, lockfile conventions, and 6-step edit workflow.
+ * Repository Documents UI & Controlled Documentation Workspace (DMK-195 Task 10 / Task 10A).
+ * Enforces secure markdown rendering, lockfile conventions, and hardened 6-step edit workflow.
  */
 
 import { useState, useEffect, useMemo, useCallback, type FC } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
-  FileText,
   Search,
   Edit3,
   Eye,
@@ -16,16 +15,13 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  Clock,
   RefreshCw,
-  Lock,
   Check,
   AlertCircle,
   ExternalLink,
 } from 'lucide-react';
 import type {
   ControlledDocumentSummary,
-  ControlledDocumentKind,
   DocumentContentResponse,
   DocumentDiffResponse,
   DocumentValidationResponse,
@@ -39,7 +35,13 @@ export interface ControlledDocsViewProps {
   loader?: ReturnType<typeof createControlledDocsLoader>;
 }
 
-type WorkflowStep = 'VIEW' | 'EDIT_DRAFT' | 'PREVIEW_DIFF' | 'VALIDATE' | 'CONFIRM_SAVE';
+export type WorkflowStep =
+  | 'VIEW'
+  | 'EDIT_DRAFT'
+  | 'PREVIEW_DIFF'
+  | 'VALIDATE'
+  | 'CONFIRM_SAVE'
+  | 'COORDINATED_COMMIT';
 
 export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   projectId,
@@ -75,13 +77,22 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   const [validationLoading, setValidationLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Save Modal State
+  // Governance Session State
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [reviewerSession, setReviewerSession] = useState<ReviewerSessionInfo | null>(null);
+
+  // Save Modal & Lifecycle State
   const [saveReason, setSaveReason] = useState('');
   const [humanConfirmed, setHumanConfirmed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<DocumentSaveResponse | null>(null);
+
+  // Canonical Refresh State
+  const [canonicalRefreshRequired, setCanonicalRefreshRequired] = useState(false);
+  const [canonicalRefreshError, setCanonicalRefreshError] = useState<string | null>(null);
+  const [uncertainSaveNotice, setUncertainSaveNotice] = useState<string | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -97,7 +108,6 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     try {
       const list = await api.loadDocumentList(projectId);
       setDocuments(list);
-      // Auto-select first doc if none selected or current selection no longer exists
       if (list.length > 0) {
         setSelectedDocId((prev) => (prev && list.some((d) => d.id === prev) ? prev : list[0].id));
       } else {
@@ -112,16 +122,29 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     }
   }, [api, projectId]);
 
+  // Project switching reset
   useEffect(() => {
-    // Reset state on project change
     api.invalidate();
     setSelectedDocId(null);
     setContentResponse(null);
+    setContentError(null);
     setWorkflowStep('VIEW');
     setDraftContent('');
+    setBaseSha256('');
     setDiffResponse(null);
+    setDiffError(null);
     setValidationResponse(null);
+    setValidationError(null);
     setSaveSuccess(null);
+    setSaveError(null);
+    setSaveReason('');
+    setHumanConfirmed(false);
+    setReviewerSession(null);
+    setSessionError(null);
+    setSessionLoading(false);
+    setCanonicalRefreshRequired(false);
+    setCanonicalRefreshError(null);
+    setUncertainSaveNotice(null);
     refreshDocumentList();
   }, [projectId, refreshDocumentList, api]);
 
@@ -130,7 +153,6 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     async (docId: string) => {
       setLoadingContent(true);
       setContentError(null);
-      setSaveSuccess(null);
       try {
         const resp = await api.loadDocumentContent(projectId, docId);
         setContentResponse(resp);
@@ -186,9 +208,60 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     return groups;
   }, [documents, searchQuery]);
 
+  // Canonical refresh helper
+  const performCanonicalRefresh = useCallback(
+    async (docId: string): Promise<boolean> => {
+      try {
+        const [freshContent, freshList] = await Promise.all([
+          api.loadDocumentContent(projectId, docId),
+          api.loadDocumentList(projectId),
+        ]);
+        setContentResponse(freshContent);
+        setDraftContent(freshContent.content);
+        setBaseSha256(freshContent.rawSha256);
+        setDocuments(freshList);
+        setDiffResponse(null);
+        setValidationResponse(null);
+        setSaveReason('');
+        setHumanConfirmed(false);
+        setReviewerSession(null);
+        setSessionError(null);
+        setCanonicalRefreshRequired(false);
+        setCanonicalRefreshError(null);
+        setWorkflowStep('VIEW');
+        return true;
+      } catch (err: any) {
+        setCanonicalRefreshRequired(true);
+        setCanonicalRefreshError('Save succeeded, but canonical refresh failed.');
+        return false;
+      }
+    },
+    [api, projectId]
+  );
+
+  // Editability calculation
+  const isEditable = useMemo(() => {
+    if (!selectedDoc) return false;
+    if (selectedDoc.editability !== 'CONTROLLED_EDIT') return false;
+    if (selectedDoc.integrityStatus === 'MISSING') return false;
+    if (!contentResponse) return false;
+    if (contentResponse.eol === 'MIXED') return false;
+    if (canonicalRefreshRequired) return false;
+    return true;
+  }, [selectedDoc, contentResponse, canonicalRefreshRequired]);
+
+  // Handle Draft Change with automatic downstream invalidation
+  const handleDraftChange = (newContent: string) => {
+    setDraftContent(newContent);
+    setDiffResponse(null);
+    setValidationResponse(null);
+    setDiffError(null);
+    setValidationError(null);
+  };
+
   // Handle Edit Draft transition
   const handleStartEdit = () => {
-    if (!contentResponse) return;
+    if (!contentResponse || !isEditable) return;
     setDraftContent(contentResponse.content);
     setBaseSha256(contentResponse.rawSha256);
     setDiffResponse(null);
@@ -214,9 +287,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     }
   };
 
-  // Handle Validate transition
+  // Handle Validate transition (strictly guarded against stale or empty changes)
   const handleValidate = async () => {
-    if (!selectedDoc) return;
+    if (!selectedDoc || !diffResponse || diffResponse.isStale || !diffResponse.hasChanges) {
+      return;
+    }
     setValidationLoading(true);
     setValidationError(null);
     try {
@@ -232,27 +307,46 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     }
   };
 
-  // Handle Proceed to Save (open modal)
+  // Handle Proceed to Save (open modal and load session state)
   const handleOpenSaveModal = async () => {
     setSaveError(null);
     setSaveReason('');
     setHumanConfirmed(false);
+    setReviewerSession(null);
+    setSessionError(null);
+    setSessionLoading(true);
+    setWorkflowStep('CONFIRM_SAVE');
+
     try {
       const session = await api.loadGovernanceSession();
       setReviewerSession(session);
     } catch {
-      setReviewerSession(null);
+      setSessionError('Unable to load governance reviewer session.');
+    } finally {
+      setSessionLoading(false);
     }
-    setWorkflowStep('CONFIRM_SAVE');
   };
 
-  // Handle Save Execution (Step 6)
+  // Handle Save Execution (Step 6 COORDINATED_COMMIT)
   const handleConfirmSave = async () => {
-    if (!selectedDoc || !saveReason.trim() || !humanConfirmed) return;
+    if (
+      !selectedDoc ||
+      !saveReason.trim() ||
+      !humanConfirmed ||
+      !reviewerSession ||
+      isSaving ||
+      workflowStep === 'COORDINATED_COMMIT'
+    ) {
+      return;
+    }
+
     setIsSaving(true);
     setSaveError(null);
+    setWorkflowStep('COORDINATED_COMMIT');
+
+    let saveResp: DocumentSaveResponse | null = null;
     try {
-      const resp = await api.requestSave({
+      saveResp = await api.requestSave({
         projectId,
         documentId: selectedDoc.id,
         candidateContent: draftContent,
@@ -260,42 +354,30 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         reason: saveReason.trim(),
         humanConfirmed: true,
       });
-
-      setSaveSuccess(resp);
-      setWorkflowStep('VIEW');
-
-      // Post-Save Lifecycle:
-      // 1. Reload canonical content
-      const freshContent = await api.loadDocumentContent(projectId, selectedDoc.id);
-      setContentResponse(freshContent);
-      setDraftContent(freshContent.content);
-      setBaseSha256(freshContent.rawSha256);
-
-      // 2. Refresh document list catalog
-      const freshList = await api.loadDocumentList(projectId);
-      setDocuments(freshList);
-
-      // 3. Clear diff, validation state
-      setDiffResponse(null);
-      setValidationResponse(null);
+      setSaveSuccess(saveResp);
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        setSaveError('Save timed out or was aborted. Please reload canonical content to verify current status.');
-      } else {
-        setSaveError(err.message || 'Failed to save document.');
-      }
-    } finally {
       setIsSaving(false);
-    }
-  };
+      const isUncertain = err.name === 'AbortError' || err.message?.includes('timed out');
+      if (isUncertain) {
+        setWorkflowStep('VIEW');
+        const refreshed = await performCanonicalRefresh(selectedDoc.id);
+        if (refreshed) {
+          setUncertainSaveNotice('Save outcome was uncertain; canonical state was reloaded.');
+        } else {
+          setCanonicalRefreshRequired(true);
+          setCanonicalRefreshError('Save outcome is uncertain and canonical refresh failed.');
+        }
+        return;
+      }
 
-  // Handle Reload Canonical
-  const handleReloadCanonical = async () => {
-    if (!selectedDocId) return;
-    await loadContent(selectedDocId);
-    setWorkflowStep('VIEW');
-    setDiffResponse(null);
-    setValidationResponse(null);
+      setWorkflowStep('CONFIRM_SAVE');
+      setSaveError(err.message || 'Failed to save document.');
+      return;
+    }
+
+    // Step B: Canonical-refresh phase (separated from save)
+    setIsSaving(false);
+    await performCanonicalRefresh(selectedDoc.id);
   };
 
   // Safe Link Renderer for ReactMarkdown
@@ -304,7 +386,6 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
       a: ({ href, children, ...props }: any) => {
         if (!href) return <a className="text-slate-400 underline cursor-not-allowed" {...props}>{children}</a>;
         const normalized = href.trim().toLowerCase();
-        // Block dangerous schemes
         if (
           normalized.startsWith('javascript:') ||
           normalized.startsWith('data:') ||
@@ -339,7 +420,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     []
   );
 
-  // Badge Helper
+  // Badge Helpers
   const renderIntegrityBadge = (doc: ControlledDocumentSummary) => {
     switch (doc.integrityStatus) {
       case 'MATCH':
@@ -364,7 +445,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return (
           <span
             data-testid={`badge-integrity-${doc.id}`}
-            className="px-2 py-0.5 text-xs font-semibold rounded bg-sky-950 text-sky-300 border border-sky-800"
+            className="px-2 py-0.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700"
           >
             UNPINNED
           </span>
@@ -404,8 +485,8 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     );
   };
 
-  // If no documents available for this project, show project isolation empty state
-  if (!loadingList && documents.length === 0) {
+  // If no documents available and no list error, show project isolation empty state
+  if (!loadingList && !listError && documents.length === 0) {
     return (
       <div data-testid="controlled-docs-workspace" className="p-8 text-slate-200">
         <div
@@ -425,6 +506,8 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     );
   }
 
+  const isCoordinatedCommit = workflowStep === 'COORDINATED_COMMIT';
+
   return (
     <div
       data-testid="controlled-docs-workspace"
@@ -442,7 +525,8 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
               placeholder="Search by ID, title, or path..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+              disabled={isCoordinatedCommit}
+              className="w-full bg-slate-950 border border-slate-700 rounded pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 disabled:opacity-50"
             />
           </div>
         </div>
@@ -450,15 +534,26 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         {/* Catalog List grouped by kind */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {loadingList && (
-            <div className="flex items-center justify-center p-6 text-slate-400 text-sm">
+            <div role="status" className="flex items-center justify-center p-6 text-slate-400 text-sm">
               <RefreshCw className="w-4 h-4 animate-spin mr-2" />
               Loading catalog...
             </div>
           )}
 
           {listError && (
-            <div className="p-3 bg-rose-950/60 border border-rose-800 rounded text-rose-300 text-xs">
-              {listError}
+            <div
+              data-testid="catalog-error-alert"
+              role="alert"
+              className="p-3 bg-rose-950/80 border border-rose-800 rounded text-rose-300 text-xs space-y-2"
+            >
+              <div>{listError}</div>
+              <button
+                data-testid="btn-retry-catalog"
+                onClick={refreshDocumentList}
+                className="px-2.5 py-1 bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold rounded"
+              >
+                Retry catalog
+              </button>
             </div>
           )}
 
@@ -474,8 +569,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   <button
                     key={doc.id}
                     data-testid={`doc-item-${doc.id}`}
-                    onClick={() => setSelectedDocId(doc.id)}
-                    className={`w-full text-left p-2.5 rounded transition-colors text-sm flex flex-col gap-1.5 ${
+                    disabled={isCoordinatedCommit}
+                    onClick={() => {
+                      if (!isCoordinatedCommit) setSelectedDocId(doc.id);
+                    }}
+                    className={`w-full text-left p-2.5 rounded transition-colors text-sm flex flex-col gap-1.5 disabled:opacity-50 ${
                       isSelected
                         ? 'bg-sky-950/80 border border-sky-600/60 text-sky-100'
                         : 'hover:bg-slate-800/60 text-slate-300 border border-transparent'
@@ -551,12 +649,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                       </button>
                     </div>
 
-                    {selectedDoc.editability === 'CONTROLLED_EDIT' && (
+                    {isEditable && (
                       <button
                         data-testid="btn-edit-document"
                         onClick={handleStartEdit}
-                        disabled={selectedDoc.integrityStatus === 'MISSING'}
-                        className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                        className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         Edit Document
@@ -571,6 +668,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
             {saveSuccess && (
               <div
                 data-testid="save-success-banner"
+                role="status"
                 className="p-3 bg-emerald-950/70 border-b border-emerald-800 text-emerald-200 text-xs flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
@@ -591,18 +689,81 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
               </div>
             )}
 
-            {/* Error or Missing Banner */}
-            {contentError && (
-              <div className="p-4 m-4 bg-rose-950/60 border border-rose-800 rounded text-rose-200 text-sm flex items-center gap-2">
+            {/* Canonical Refresh Error Banner with Retry */}
+            {canonicalRefreshError && (
+              <div
+                data-testid="canonical-refresh-error"
+                role="alert"
+                className="p-3 bg-amber-950/80 border-b border-amber-800 text-amber-200 text-xs flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{canonicalRefreshError}</span>
+                </div>
+                <button
+                  data-testid="btn-retry-canonical-refresh"
+                  onClick={() => selectedDocId && performCanonicalRefresh(selectedDocId)}
+                  className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Retry canonical refresh
+                </button>
+              </div>
+            )}
+
+            {/* Uncertain Save Outcome Notice */}
+            {uncertainSaveNotice && (
+              <div
+                data-testid="uncertain-save-warning"
+                role="alert"
+                className="p-3 bg-amber-950/80 border-b border-amber-800 text-amber-200 text-xs flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{uncertainSaveNotice}</span>
+                </div>
+                <button
+                  onClick={() => setUncertainSaveNotice(null)}
+                  className="text-amber-400 hover:text-amber-200 text-xs underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Mixed-EOL Warning */}
+            {contentResponse?.eol === 'MIXED' && (
+              <div
+                data-testid="mixed-eol-warning"
+                role="alert"
+                className="p-3 m-4 bg-amber-950/60 border border-amber-800 rounded text-amber-200 text-xs flex items-center gap-2"
+              >
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Editing is unavailable because this document has mixed line endings.</span>
+              </div>
+            )}
+
+            {/* Missing Document State */}
+            {(selectedDoc.integrityStatus === 'MISSING' || contentError) && (
+              <div
+                data-testid="missing-doc-state"
+                role="alert"
+                className="p-4 m-4 bg-rose-950/60 border border-rose-800 rounded text-rose-200 text-sm flex items-center gap-2"
+              >
                 <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                <span>{contentError}</span>
+                <div>
+                  <p className="font-semibold">Document is missing from repository disk (410 Gone).</p>
+                  {contentError && (
+                    <p className="text-xs text-rose-300 font-mono mt-1">{contentError}</p>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Content Display / 6-Step Workflow Panels */}
             <div className="flex-1 overflow-y-auto p-6">
               {loadingContent && (
-                <div className="flex items-center justify-center p-12 text-slate-400">
+                <div role="status" className="flex items-center justify-center p-12 text-slate-400">
                   <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                   Loading document content...
                 </div>
@@ -658,7 +819,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   </div>
 
                   {diffError && (
-                    <div className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
+                    <div role="alert" className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
                       {diffError}
                     </div>
                   )}
@@ -666,7 +827,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   <textarea
                     data-testid="draft-editor-textarea"
                     value={draftContent}
-                    onChange={(e) => setDraftContent(e.target.value)}
+                    onChange={(e) => handleDraftChange(e.target.value)}
                     className="flex-1 w-full bg-slate-900 border border-slate-700 rounded p-4 font-mono text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 resize-none min-h-[400px]"
                     placeholder="Enter document markdown or text content..."
                   />
@@ -687,15 +848,17 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                       >
                         Back to Editor
                       </button>
-                      <button
-                        data-testid="btn-validate"
-                        onClick={handleValidate}
-                        disabled={validationLoading}
-                        className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
-                      >
-                        {validationLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                        Validate Invariants
-                      </button>
+                      {!diffResponse.isStale && diffResponse.hasChanges && (
+                        <button
+                          data-testid="btn-validate"
+                          onClick={handleValidate}
+                          disabled={validationLoading}
+                          className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                        >
+                          {validationLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                          Validate Invariants
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -703,6 +866,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   {diffResponse.isStale && (
                     <div
                       data-testid="stale-warning"
+                      role="alert"
                       className="p-4 bg-amber-950/80 border border-amber-700 rounded text-amber-200 text-sm flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2">
@@ -716,7 +880,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                       </div>
                       <button
                         data-testid="btn-reload-canonical"
-                        onClick={handleReloadCanonical}
+                        onClick={() => selectedDocId && performCanonicalRefresh(selectedDocId)}
                         className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded shrink-0 flex items-center gap-1"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
@@ -725,17 +889,31 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                     </div>
                   )}
 
+                  {/* No Changes Notice */}
+                  {!diffResponse.hasChanges && (
+                    <div
+                      data-testid="no-changes-detected"
+                      className="p-4 bg-slate-900 border border-slate-800 rounded text-slate-400 text-sm"
+                    >
+                      No changes detected.
+                    </div>
+                  )}
+
                   {/* Diff Stats */}
-                  <div className="flex items-center gap-4 text-xs font-mono bg-slate-900/60 p-3 rounded border border-slate-800">
-                    <span className="text-emerald-400 font-bold">+{diffResponse.additions} lines</span>
-                    <span className="text-rose-400 font-bold">-{diffResponse.deletions} lines</span>
-                    <span className="text-slate-400">Total changed: {diffResponse.changedLines} lines</span>
-                  </div>
+                  {diffResponse.hasChanges && (
+                    <div className="flex items-center gap-4 text-xs font-mono bg-slate-900/60 p-3 rounded border border-slate-800">
+                      <span className="text-emerald-400 font-bold">+{diffResponse.additions} lines</span>
+                      <span className="text-rose-400 font-bold">-{diffResponse.deletions} lines</span>
+                      <span className="text-slate-400">Total changed: {diffResponse.changedLines} lines</span>
+                    </div>
+                  )}
 
                   {/* Unified Diff */}
-                  <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-200 overflow-x-auto whitespace-pre">
-                    {diffResponse.unifiedDiff || 'No changes detected.'}
-                  </pre>
+                  {diffResponse.hasChanges && (
+                    <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-200 overflow-x-auto whitespace-pre">
+                      {diffResponse.unifiedDiff}
+                    </pre>
+                  )}
                 </div>
               )}
 
@@ -775,6 +953,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   ) : (
                     <div
                       data-testid="validation-errors"
+                      role="alert"
                       className="p-4 bg-rose-950/70 border border-rose-800 rounded text-rose-200 text-sm space-y-2"
                     >
                       <div className="flex items-center gap-2 font-bold text-rose-300">
@@ -813,37 +992,61 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         )}
       </div>
 
-      {/* STEP 5: CONFIRM_SAVE MODAL (DocSaveModal) */}
-      {workflowStep === 'CONFIRM_SAVE' && selectedDoc && (
+      {/* STEP 5 & 6: CONFIRM_SAVE & COORDINATED_COMMIT (DocSaveModal) */}
+      {(workflowStep === 'CONFIRM_SAVE' || workflowStep === 'COORDINATED_COMMIT') && selectedDoc && (
         <div
           data-testid="doc-save-modal"
           className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-6 space-y-5 shadow-2xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-save-title"
+            className="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-6 space-y-5 shadow-2xl"
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-sky-400" />
-                <h3 className="font-bold text-slate-100 text-base">
+                <h3 id="modal-save-title" className="font-bold text-slate-100 text-base">
                   Confirm Governance Document Update
                 </h3>
               </div>
-              <button
-                onClick={() => setWorkflowStep('VALIDATE')}
-                className="text-slate-400 hover:text-slate-200 text-sm"
-              >
-                ✕
-              </button>
+              {!isCoordinatedCommit && (
+                <button
+                  onClick={() => setWorkflowStep('VALIDATE')}
+                  className="text-slate-400 hover:text-slate-200 text-sm"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Read-Only Governance Session Info */}
             <div className="p-3 bg-slate-950 border border-slate-800 rounded space-y-1 text-xs text-slate-300">
-              <div data-testid="modal-session-name" className="font-medium text-slate-200">
-                Signed in as: <span className="text-sky-300">{reviewerSession?.name || 'Authorized Operator'}</span>
-              </div>
-              <div data-testid="modal-session-roles" className="text-slate-400">
-                Roles: <span className="text-slate-300">{reviewerSession?.roles?.join(', ') || 'Reviewer'}</span>
-              </div>
+              {sessionLoading ? (
+                <div role="status" className="flex items-center gap-2 text-slate-400">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Loading governance session...
+                </div>
+              ) : sessionError ? (
+                <div role="alert" className="text-rose-400 font-medium">
+                  {sessionError}
+                </div>
+              ) : reviewerSession ? (
+                <>
+                  <div data-testid="modal-session-name" className="font-medium text-slate-200">
+                    Signed in as: <span className="text-sky-300">{reviewerSession.name}</span>
+                  </div>
+                  <div data-testid="modal-session-roles" className="text-slate-400">
+                    Roles: <span className="text-slate-300">{reviewerSession.roles.join(', ')}</span>
+                  </div>
+                </>
+              ) : (
+                <div data-testid="modal-session-name" role="alert" className="text-amber-400 font-medium">
+                  No authenticated governance reviewer session.
+                </div>
+              )}
             </div>
 
             {/* Target Document */}
@@ -860,10 +1063,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
               <textarea
                 data-testid="modal-save-reason"
                 rows={3}
+                disabled={isCoordinatedCommit}
                 value={saveReason}
                 onChange={(e) => setSaveReason(e.target.value)}
                 placeholder="Enter mandatory justification for updating this controlled document..."
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                className="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 disabled:opacity-50"
               />
             </div>
 
@@ -873,18 +1077,31 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                 type="checkbox"
                 id="human-confirm-checkbox"
                 data-testid="modal-confirm-checkbox"
+                disabled={isCoordinatedCommit}
                 checked={humanConfirmed}
                 onChange={(e) => setHumanConfirmed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded bg-slate-950 border-slate-700 text-sky-600 focus:ring-0 focus:outline-none"
+                className="mt-0.5 h-4 w-4 rounded bg-slate-950 border-slate-700 text-sky-600 focus:ring-0 focus:outline-none disabled:opacity-50"
               />
               <label htmlFor="human-confirm-checkbox" className="text-xs text-slate-300 select-none">
                 Confirm this governance document update and append cryptographic audit record
               </label>
             </div>
 
+            {/* Saving indicator during Step 6 */}
+            {isCoordinatedCommit && (
+              <div
+                data-testid="saving-indicator"
+                role="status"
+                className="p-3 bg-sky-950/80 border border-sky-800 rounded text-sky-200 text-xs flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4 animate-spin text-sky-400" />
+                <span>Executing coordinated document replacement and audit persistence...</span>
+              </div>
+            )}
+
             {/* Error Message */}
             {saveError && (
-              <div className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
+              <div role="alert" className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
                 {saveError}
               </div>
             )}
@@ -893,18 +1110,24 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
               <button
                 onClick={() => setWorkflowStep('VALIDATE')}
-                disabled={isSaving}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded transition"
+                disabled={isCoordinatedCommit}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 data-testid="btn-confirm-save"
                 onClick={handleConfirmSave}
-                disabled={!saveReason.trim() || !humanConfirmed || isSaving}
+                disabled={
+                  !saveReason.trim() ||
+                  !humanConfirmed ||
+                  !reviewerSession ||
+                  isSaving ||
+                  isCoordinatedCommit
+                }
                 className="px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
               >
-                {isSaving ? (
+                {isCoordinatedCommit ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     Committing...

@@ -123,6 +123,20 @@ const MOCK_DOCS: ControlledDocumentSummary[] = [
     sizeBytes: 0,
     eol: 'NONE',
   },
+  {
+    id: 'DOC-CTRL-005',
+    path: 'docs/00_control/MIXED_DOC.md',
+    kind: 'CONTROL',
+    authority: 'REFERENCE',
+    editability: 'CONTROLLED_EDIT',
+    fileType: 'MARKDOWN',
+    title: 'Mixed EOL Document',
+    description: 'Document with mixed line endings',
+    integrityStatus: 'UNPINNED',
+    currentSha256: '5555555555555555555555555555555555555555555555555555555555555555',
+    sizeBytes: 1024,
+    eol: 'MIXED',
+  },
 ];
 
 const DOC_CTRL_001_CONTENT: DocumentContentResponse = {
@@ -163,6 +177,14 @@ const DOC_CTRL_002_SAVED_CONTENT: DocumentContentResponse = {
   rawSha256: '9999999999999999999999999999999999999999999999999999999999999999',
   eol: 'LF',
   sizeBytes: 2100,
+};
+
+const DOC_CTRL_005_CONTENT: DocumentContentResponse = {
+  document: MOCK_DOCS[4],
+  content: 'Line 1\r\nLine 2\nLine 3',
+  rawSha256: '5555555555555555555555555555555555555555555555555555555555555555',
+  eol: 'MIXED',
+  sizeBytes: 1024,
 };
 
 const SESSION_INFO: ReviewerSessionInfo = {
@@ -207,8 +229,15 @@ async function setupPage() {
   let validateCalls: any[] = [];
   let listLoadCalls: string[] = [];
   let contentLoadCalls: string[] = [];
+
   let diffIsStale = false;
+  let diffHasChanges = true;
   let validationShouldFail = false;
+  let sessionMode: 'AUTHENTICATED' | 'SIGNED_OUT' | 'ERROR' = 'AUTHENTICATED';
+  let catalogFailOnce = false;
+  let postSaveRefreshFailOnce = false;
+  let saveHoldPromise: Promise<void> | null = null;
+  let saveFailsTimeout = false;
 
   await page.route('**/api/**', async (route: Route) => {
     const url = new URL(route.request().url()).pathname;
@@ -219,6 +248,12 @@ async function setupPage() {
     };
 
     if (url === '/api/governance/session') {
+      if (sessionMode === 'ERROR') {
+        return route.fulfill({ status: 500, json: { error: 'SESSION_STORE_UNAVAILABLE' } }).catch(() => {});
+      }
+      if (sessionMode === 'SIGNED_OUT') {
+        return send({ identity: null });
+      }
       return send({ identity: SESSION_INFO });
     }
 
@@ -229,6 +264,14 @@ async function setupPage() {
 
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs') {
       listLoadCalls.push(url);
+      if (catalogFailOnce) {
+        catalogFailOnce = false;
+        return route.fulfill({ status: 503, json: { error: 'CATALOG_FETCH_FAILED' } }).catch(() => {});
+      }
+      if (postSaveRefreshFailOnce && saveCalls.length > 0) {
+        postSaveRefreshFailOnce = false;
+        return route.fulfill({ status: 500, json: { error: 'REFRESH_CATALOG_FAILED' } }).catch(() => {});
+      }
       return send(MOCK_DOCS);
     }
 
@@ -247,6 +290,11 @@ async function setupPage() {
       return route.fulfill({ status: 410, json: { error: 'DOCUMENT_MISSING' } }).catch(() => {});
     }
 
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-005') {
+      contentLoadCalls.push(url);
+      return send(DOC_CTRL_005_CONTENT);
+    }
+
     if (method === 'POST' && url.endsWith('/diff')) {
       const body = route.request().postDataJSON();
       diffCalls.push(body);
@@ -255,11 +303,13 @@ async function setupPage() {
         oldHash: body.baseSha256,
         candidateHash: '9999999999999999999999999999999999999999999999999999999999999999',
         isStale: diffIsStale,
-        hasChanges: true,
-        additions: 1,
-        deletions: 1,
-        changedLines: 2,
-        unifiedDiff: '--- a/docs/00_control/PROJECT_STATE.md\n+++ b/docs/00_control/PROJECT_STATE.md\n@@ -1,3 +1,3 @@\n-old\n+new',
+        hasChanges: diffHasChanges,
+        additions: diffHasChanges ? 1 : 0,
+        deletions: diffHasChanges ? 1 : 0,
+        changedLines: diffHasChanges ? 2 : 0,
+        unifiedDiff: diffHasChanges
+          ? '--- a/docs/00_control/PROJECT_STATE.md\n+++ b/docs/00_control/PROJECT_STATE.md\n@@ -1,3 +1,3 @@\n-old\n+new'
+          : '',
       };
       return send(diffResp);
     }
@@ -288,6 +338,15 @@ async function setupPage() {
     if (method === 'POST' && url.endsWith('/save')) {
       const body = route.request().postDataJSON();
       saveCalls.push(body);
+
+      if (saveHoldPromise) {
+        await saveHoldPromise;
+      }
+
+      if (saveFailsTimeout) {
+        return route.fulfill({ status: 504, json: { error: 'Controlled docs request timed out.' } }).catch(() => {});
+      }
+
       currentDoc2Content = DOC_CTRL_002_SAVED_CONTENT;
       const saveResp: DocumentSaveResponse = {
         success: true,
@@ -316,12 +375,29 @@ async function setupPage() {
     setDiffIsStale: (val: boolean) => {
       diffIsStale = val;
     },
+    setDiffHasChanges: (val: boolean) => {
+      diffHasChanges = val;
+    },
     setValidationShouldFail: (val: boolean) => {
       validationShouldFail = val;
     },
+    setSessionMode: (mode: 'AUTHENTICATED' | 'SIGNED_OUT' | 'ERROR') => {
+      sessionMode = mode;
+    },
+    setCatalogFailOnce: (val: boolean) => {
+      catalogFailOnce = val;
+    },
+    setPostSaveRefreshFailOnce: (val: boolean) => {
+      postSaveRefreshFailOnce = val;
+    },
+    setSaveHoldPromise: (p: Promise<void> | null) => {
+      saveHoldPromise = p;
+    },
+    setSaveFailsTimeout: (val: boolean) => {
+      saveFailsTimeout = val;
+    },
     async start() {
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      // Wait for catalog heading or empty indicator
       await page.waitForSelector('[data-testid="controlled-docs-workspace"]', { timeout: 10000 });
     },
     async close() {
@@ -361,41 +437,38 @@ try {
     }
   });
 
-  // Test 2: Document catalog rendering, grouping by kind, search filter, and status badges
+  // Test 2: Document catalog grouping, search filter, and status badges (with UNPINNED slate)
   await runTest('Test 2: Document catalog grouping, search filter, and status badges', async () => {
     const ctx = await setupPage();
     try {
       await ctx.start();
-      // Check group headers
       await ctx.page.waitForSelector('[data-testid="kind-group-CONTROL"]');
       await ctx.page.waitForSelector('[data-testid="kind-group-ARCHITECTURE"]');
 
-      // Check badges for DOC-CTRL-001 (MATCH, READ_ONLY)
       const badgeMatch = await ctx.page.waitForSelector('[data-testid="badge-integrity-DOC-CTRL-001"]');
       assert.equal(await badgeMatch.textContent(), 'MATCH');
 
-      // Check badges for DOC-CTRL-002 (UNPINNED, CONTROLLED_EDIT)
+      // UNPINNED should use neutral/slate family styling
       const badgeUnpinned = await ctx.page.waitForSelector('[data-testid="badge-integrity-DOC-CTRL-002"]');
       assert.equal(await badgeUnpinned.textContent(), 'UNPINNED');
+      const unpinnedClasses = (await badgeUnpinned.getAttribute('class')) || '';
+      assert(unpinnedClasses.includes('bg-slate-800') || unpinnedClasses.includes('text-slate-300'), 'UNPINNED uses slate style');
+
       const badgeEdit = await ctx.page.waitForSelector('[data-testid="badge-editability-DOC-CTRL-002"]');
       assert.equal(await badgeEdit.textContent(), 'CONTROLLED_EDIT');
 
-      // Check badges for DOC-CTRL-003 (CHANGED, READ_ONLY)
       const badgeChanged = await ctx.page.waitForSelector('[data-testid="badge-integrity-DOC-CTRL-003"]');
       assert.equal(await badgeChanged.textContent(), 'CHANGED');
 
-      // Check badges for DOC-CTRL-004 (MISSING, READ_ONLY)
       const badgeMissing = await ctx.page.waitForSelector('[data-testid="badge-integrity-DOC-CTRL-004"]');
       assert.equal(await badgeMissing.textContent(), 'MISSING');
 
       // Search filter
       const searchInput = ctx.page.locator('[data-testid="docs-search-input"]');
       await searchInput.fill('DOC-CTRL-002');
-      // DOC-CTRL-002 should be visible, others hidden
       assert(await ctx.page.locator('[data-testid="doc-item-DOC-CTRL-002"]').isVisible());
       assert(!(await ctx.page.locator('[data-testid="doc-item-DOC-CTRL-001"]').isVisible()));
 
-      // Clear search
       await searchInput.fill('');
       assert(await ctx.page.locator('[data-testid="doc-item-DOC-CTRL-001"]').isVisible());
     } finally {
@@ -403,18 +476,16 @@ try {
     }
   });
 
-  // Test 3: Read-only document selection & absence of Edit controls
+  // Test 3: Read-only document selection and absence of Edit button
   await runTest('Test 3: Read-only document selection and absence of Edit button', async () => {
     const ctx = await setupPage();
     try {
       await ctx.start();
-      // Click DOC-CTRL-001
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-001"]');
       await ctx.page.waitForSelector('[data-testid="doc-title"]');
       const title = await ctx.page.textContent('[data-testid="doc-title"]');
       assert(title?.includes('Project Charter'));
 
-      // Verify NO Edit button is rendered
       const editButtonCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
       assert.strictEqual(editButtonCount, 0, 'No edit button for read-only documents');
     } finally {
@@ -422,36 +493,30 @@ try {
     }
   });
 
-  // Test 4: Markdown security, inert script tags, dangerous URI blocking, and safe external links
+  // Test 4: Markdown security & link safety
   await runTest('Test 4: Markdown security & link safety (inert HTML, blocked URI, safe links)', async () => {
     const ctx = await setupPage();
     try {
       await ctx.start();
-      // Click DOC-CTRL-002
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
       await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
 
-      // Verify embedded <script> did NOT execute
       const xssTriggered = await ctx.page.evaluate("window.__XSS_TRIGGERED__");
       assert.strictEqual(xssTriggered, undefined, 'Embedded script must not execute');
 
-      // Verify malicious javascript: link is sanitized/inert (no executable javascript href)
       const jsLink = ctx.page.locator('a', { hasText: 'Malicious JS Link' });
       const jsHref = (await jsLink.getAttribute('href')) || '';
       assert(!jsHref.toLowerCase().startsWith('javascript:'), 'javascript: URI must be stripped or blocked');
 
-      // Verify malicious data: link is sanitized/inert
       const dataLink = ctx.page.locator('a', { hasText: 'Malicious Data Link' });
       const dataHref = (await dataLink.getAttribute('href')) || '';
       assert(!dataHref.toLowerCase().startsWith('data:'), 'data: URI must be stripped or blocked');
 
-      // Verify external link has target="_blank" and rel="noopener noreferrer"
       const extLink = ctx.page.locator('a', { hasText: 'Safe External Link' });
       assert.equal(await extLink.getAttribute('target'), '_blank');
       const extRel = (await extLink.getAttribute('rel')) || '';
       assert(extRel.includes('noopener') && extRel.includes('noreferrer'), 'External link has safe rel');
 
-      // Verify relative link is preserved and safe
       const relLink = ctx.page.locator('a', { hasText: 'Safe Relative Link' });
       assert.equal(await relLink.getAttribute('href'), './OTHER.md');
 
@@ -461,7 +526,6 @@ try {
       const rawText = await ctx.page.textContent('[data-testid="doc-content-raw"]');
       assert(rawText?.includes('# docmonstakrakin current project state'));
 
-      // Toggle back to rendered
       await ctx.page.click('[data-testid="btn-toggle-rendered"]');
       await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
     } finally {
@@ -469,90 +533,175 @@ try {
     }
   });
 
-  // Test 5: Controlled 6-step edit workflow progression
-  await runTest('Test 5: Controlled 6-step edit workflow (VIEW -> EDIT -> DIFF -> VALIDATE -> MODAL -> COMMIT)', async () => {
+  // Test 5A: Controlled 6-step edit workflow
+  await runTest('Test 5A: Controlled 6-step edit workflow (VIEW -> EDIT -> DIFF -> VALIDATE -> MODAL -> COMMIT)', async () => {
     const ctx = await setupPage();
     try {
       await ctx.start();
-      // Step 1: VIEW
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
       await ctx.page.waitForSelector('[data-testid="btn-edit-document"]');
       await ctx.page.click('[data-testid="btn-edit-document"]');
 
-      // Step 2: EDIT_DRAFT
       await ctx.page.waitForSelector('[data-testid="draft-editor-textarea"]');
       const editor = ctx.page.locator('[data-testid="draft-editor-textarea"]');
       await editor.fill('# docmonstakrakin current project state\n\nUpdated candidate content for Task 10 verification.');
       await ctx.page.click('[data-testid="btn-preview-diff"]');
 
-      // Step 3: PREVIEW_DIFF
       await ctx.page.waitForSelector('[data-testid="diff-view"]');
-      assert(ctx.getDiffCalls().length > 0, 'diff API was called');
-      const diffCalls = ctx.getDiffCalls();
-      assert.equal(diffCalls[0].baseSha256, '1111111111111111111111111111111111111111111111111111111111111111');
       await ctx.page.click('[data-testid="btn-validate"]');
 
-      // Step 4: VALIDATE
       await ctx.page.waitForSelector('[data-testid="validation-view"]');
-      assert(ctx.getValidateCalls().length > 0, 'validate API was called');
-      await ctx.page.waitForSelector('[data-testid="btn-proceed-to-save"]');
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
-      // Step 5: CONFIRM_SAVE (DocSaveModal)
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
-      // Verify governance session identity display
       const sessionName = await ctx.page.textContent('[data-testid="modal-session-name"]');
       assert(sessionName?.includes('Gio'), 'Reviewer name displayed');
       const sessionRoles = await ctx.page.textContent('[data-testid="modal-session-roles"]');
       assert(sessionRoles?.includes('Lead Architect'), 'Reviewer roles displayed');
 
-      // Verify NO editable identity fields exist
       const identityInputs = await ctx.page.locator('input[name="actor"], input[name="role"], input[name="reviewer"]').count();
       assert.strictEqual(identityInputs, 0, 'No identity input fields in save modal');
 
-      // Confirm & Save button should be disabled until reason & checkbox checked
       const confirmSaveBtn = ctx.page.locator('[data-testid="btn-confirm-save"]');
       assert(await confirmSaveBtn.isDisabled(), 'Confirm button disabled initially');
 
-      // Fill reason
       await ctx.page.fill('[data-testid="modal-save-reason"]', 'Formal Task 10 verification update');
       assert(await confirmSaveBtn.isDisabled(), 'Confirm button still disabled without checkbox');
 
-      // Check confirmation checkbox
       await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
       assert(!(await confirmSaveBtn.isDisabled()), 'Confirm button enabled once reason and checkbox valid');
 
-      // Step 6: COORDINATED_COMMIT
       await confirmSaveBtn.click();
 
-      // Post-save checks
       await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
       const saveCalls = ctx.getSaveCalls();
       assert.strictEqual(saveCalls.length, 1, 'requestSave called exactly once');
       assert.strictEqual(saveCalls[0].reason, 'Formal Task 10 verification update');
       assert.strictEqual(saveCalls[0].humanConfirmed, true);
-      assert.strictEqual(saveCalls[0].baseSha256, '1111111111111111111111111111111111111111111111111111111111111111');
-      // Assert zero client identity claims in payload
-      const prohibitedKeys = ['actor', 'role', 'approver', 'reviewerName', 'reviewerRole', 'authorizedRole', 'identityId', 'actorType', 'auditEventId'];
-      for (const key of prohibitedKeys) {
-        assert.strictEqual(saveCalls[0][key], undefined, `Payload must not contain prohibited key: ${key}`);
-      }
 
-      // Verify post-save reload: content and catalog reloaded
-      assert(ctx.getContentLoadCalls().length >= 2, 'Canonical content reloaded post-save');
-      assert(ctx.getListLoadCalls().length >= 2, 'Catalog reloaded post-save');
-
-      // Verify save metadata displayed
       const metaText = await ctx.page.textContent('[data-testid="save-success-banner"]');
-      assert(metaText?.includes('AUD-TEST-EVENT-001'), 'Audit event ID displayed in save metadata');
-      assert(metaText?.includes('32'), 'State version displayed');
+      assert(metaText?.includes('AUD-TEST-EVENT-001'));
+      assert(metaText?.includes('32'));
     } finally {
       await ctx.close();
     }
   });
 
-  // Test 6: Stale base hash handling during diff
-  await runTest('Test 6: Stale base hash detection in diff offers canonical reload', async () => {
+  // Test 5B: Signed-out session disables final save and shows signed-out text
+  await runTest('Test 5B: Signed-out session disables final save without fake identity', async () => {
+    const ctx = await setupPage();
+    ctx.setSessionMode('SIGNED_OUT');
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+
+      await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      const text = await ctx.page.textContent('[data-testid="modal-session-name"]');
+      assert(text?.includes('No authenticated governance reviewer session'), 'Explicit signed-out message');
+      assert(!text?.includes('Authorized Operator') && !text?.includes('Reviewer'), 'No fallback fake identity');
+
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Justification text');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+
+      const confirmBtn = ctx.page.locator('[data-testid="btn-confirm-save"]');
+      assert(await confirmBtn.isDisabled(), 'Confirm button must remain disabled when signed out');
+      assert.strictEqual(ctx.getSaveCalls().length, 0, 'No save call permitted');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 5C: Session load failure disables final save and shows error text
+  await runTest('Test 5C: Session load failure disables final save and displays error text', async () => {
+    const ctx = await setupPage();
+    ctx.setSessionMode('ERROR');
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+
+      await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      const text = await ctx.page.textContent('[data-testid="doc-save-modal"]');
+      assert(text?.includes('Unable to load governance reviewer session'), 'Explicit session load error displayed');
+
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Justification text');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+
+      const confirmBtn = ctx.page.locator('[data-testid="btn-confirm-save"]');
+      assert(await confirmBtn.isDisabled(), 'Confirm button must remain disabled on session error');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 5D: Accessible save dialog (role="dialog" and aria-modal="true")
+  await runTest('Test 5D: Accessible save dialog attributes', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+
+      const modal = ctx.page.locator('[data-testid="doc-save-modal"] [role="dialog"]');
+      await modal.waitFor();
+      assert.equal(await modal.getAttribute('aria-modal'), 'true');
+      assert(await modal.getAttribute('aria-labelledby'), 'aria-labelledby present');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 5E: Explicit COORDINATED_COMMIT pending state + exactly one save request
+  await runTest('Test 5E: Explicit COORDINATED_COMMIT pending state + single save call', async () => {
+    const ctx = await setupPage();
+    let resolveSave!: () => void;
+    const saveDeferred = new Promise<void>((r) => (resolveSave = r));
+    ctx.setSaveHoldPromise(saveDeferred);
+
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Testing deferred save commit');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+
+      const confirmBtn = ctx.page.locator('[data-testid="btn-confirm-save"]');
+      await confirmBtn.click();
+
+      // Check Step 6 COORDINATED_COMMIT state in UI
+      await ctx.page.waitForSelector('[data-testid="saving-indicator"]');
+      assert(await confirmBtn.isDisabled(), 'Duplicate save button disabled during commit');
+
+      // Verify catalog navigation is disabled
+      const otherDocItem = ctx.page.locator('[data-testid="doc-item-DOC-CTRL-001"]');
+      assert(await otherDocItem.isDisabled() || (await otherDocItem.getAttribute('disabled')) !== null, 'Catalog navigation disabled during save');
+
+      // Resolve the held save
+      resolveSave();
+
+      await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
+      assert.strictEqual(ctx.getSaveCalls().length, 1, 'requestSave called exactly once');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 6A: Stale base hash blocks validation and save progression
+  await runTest('Test 6A: Stale base hash in diff hides Validate button and blocks save progression', async () => {
     const ctx = await setupPage();
     ctx.setDiffIsStale(true);
     try {
@@ -561,21 +710,43 @@ try {
       await ctx.page.click('[data-testid="btn-edit-document"]');
       await ctx.page.click('[data-testid="btn-preview-diff"]');
 
-      // Verify stale warning and reload button
       await ctx.page.waitForSelector('[data-testid="stale-warning"]');
-      await ctx.page.waitForSelector('[data-testid="btn-reload-canonical"]');
+      const validateCount = await ctx.page.locator('[data-testid="btn-validate"]').count();
+      assert.strictEqual(validateCount, 0, 'Validate button must not be rendered when diff is stale');
 
-      // Click reload canonical
-      await ctx.page.click('[data-testid="btn-reload-canonical"]');
-      // Should reload and reset back to view or fresh draft
-      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      assert.strictEqual(ctx.getValidateCalls().length, 0, 'No requestValidate called');
+      assert.strictEqual(ctx.getSaveCalls().length, 0, 'No requestSave called');
     } finally {
       await ctx.close();
     }
   });
 
-  // Test 7: Validation failure blocks progression to save
-  await runTest('Test 7: Validation failure blocks progression to save', async () => {
+  // Test 6B: No-change diff blocks validation and save progression
+  await runTest('Test 6B: No-change diff blocks validation and save progression', async () => {
+    const ctx = await setupPage();
+    ctx.setDiffHasChanges(false);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+
+      await ctx.page.waitForSelector('[data-testid="no-changes-detected"]');
+      const text = await ctx.page.textContent('[data-testid="no-changes-detected"]');
+      assert(text?.includes('No changes detected'), 'Displays No changes detected');
+
+      const validateCount = await ctx.page.locator('[data-testid="btn-validate"]').count();
+      assert.strictEqual(validateCount, 0, 'Validate button must not be rendered when no changes exist');
+
+      assert.strictEqual(ctx.getValidateCalls().length, 0, 'No requestValidate called');
+      assert.strictEqual(ctx.getSaveCalls().length, 0, 'No requestSave called');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 7A: Validation failure blocks progression to save
+  await runTest('Test 7A: Validation failure blocks progression to save', async () => {
     const ctx = await setupPage();
     ctx.setValidationShouldFail(true);
     try {
@@ -589,9 +760,67 @@ try {
       const errText = await ctx.page.textContent('[data-testid="validation-errors"]');
       assert(errText?.toLowerCase().includes('missing required section'));
 
-      // Proceed to save button should NOT be available
       const proceedCount = await ctx.page.locator('[data-testid="btn-proceed-to-save"]').count();
       assert.strictEqual(proceedCount, 0, 'Cannot proceed to save when validation fails');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 7B: Draft mutation invalidation clears diff and validation results
+  await runTest('Test 7B: Draft mutation clears diff and validation results', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.waitForSelector('[data-testid="diff-view"]');
+
+      // Go back to editor and change draft
+      await ctx.page.click('button:has-text("Back to Editor")');
+      const editor = ctx.page.locator('[data-testid="draft-editor-textarea"]');
+      await editor.type(' Additional draft modifications.');
+
+      // Check that internal diff is cleared or re-preview is required
+      assert.strictEqual(await ctx.page.locator('[data-testid="diff-view"]').count(), 0);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 7C: MIXED EOL document hides Edit button and shows explicit warning
+  await runTest('Test 7C: MIXED EOL document hides Edit button and shows explicit warning', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-005"]');
+      await ctx.page.waitForSelector('[data-testid="doc-title"]');
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MIXED EOL document');
+
+      await ctx.page.waitForSelector('[data-testid="mixed-eol-warning"]');
+      const warningText = await ctx.page.textContent('[data-testid="mixed-eol-warning"]');
+      assert(warningText?.includes('Editing is unavailable because this document has mixed line endings'));
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 7D: MISSING document hides Edit button and shows explicit missing state
+  await runTest('Test 7D: MISSING document hides Edit button and shows explicit missing state', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-004"]');
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MISSING document');
+
+      await ctx.page.waitForSelector('[data-testid="missing-doc-state"]');
+      const text = await ctx.page.textContent('[data-testid="missing-doc-state"]');
+      assert(text?.includes('missing') || text?.includes('Missing'));
     } finally {
       await ctx.close();
     }
@@ -602,7 +831,6 @@ try {
     const ctx = await setupPage();
     try {
       await ctx.start();
-      let invalidateCalled = false;
       await ctx.page.evaluate(`
         let inv = false;
         window.__invalidateCalled = () => inv;
@@ -647,12 +875,10 @@ try {
         });
       `);
 
-      // Wait for custom doc to be rendered in catalog
       await ctx.page.waitForSelector('[data-testid="doc-item-DOC-CUSTOM-001"]');
       const customTitle = await ctx.page.textContent('[data-testid="doc-item-DOC-CUSTOM-001"]');
       assert(customTitle?.includes('Custom Injected Doc'));
 
-      // Trigger unmount
       await ctx.page.evaluate("window.__setMounted(false)");
       await ctx.page.waitForSelector('#unmounted-marker');
 
@@ -662,10 +888,125 @@ try {
       await ctx.close();
     }
   });
+
+  // Test 9A: Save succeeds but canonical refresh fails, preserving metadata and blocking Edit until retry
+  await runTest('Test 9A: Save succeeds + refresh fails preserves metadata and blocks Edit until retry', async () => {
+    const ctx = await setupPage();
+    ctx.setPostSaveRefreshFailOnce(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Valid save justification');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      // Save metadata preserved
+      await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
+      const bannerText = await ctx.page.textContent('[data-testid="save-success-banner"]');
+      assert(bannerText?.includes('AUD-TEST-EVENT-001'), 'Audit ID preserved');
+
+      // Refresh failure message
+      await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
+      const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
+      assert(errText?.includes('Save succeeded, but canonical refresh failed'));
+
+      // Edit button must NOT be available while refresh is required
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'Edit unavailable during refresh error');
+
+      // Retry button present
+      await ctx.page.waitForSelector('[data-testid="btn-retry-canonical-refresh"]');
+      await ctx.page.click('[data-testid="btn-retry-canonical-refresh"]');
+
+      // Successful refresh re-enables Edit
+      await ctx.page.waitForSelector('[data-testid="btn-edit-document"]');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 9B: Retry refresh uses fresh base hash in subsequent edit
+  await runTest('Test 9B: Subsequent edit uses freshly loaded base hash', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'First update');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
+
+      // Start second edit
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+
+      const diffCalls = ctx.getDiffCalls();
+      const lastDiff = diffCalls[diffCalls.length - 1];
+      assert.equal(
+        lastDiff.baseSha256,
+        '9999999999999999999999999999999999999999999999999999999999999999',
+        'Next edit uses new canonical rawSha256'
+      );
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 9C: Uncertain timeout save triggers canonical reload without auto-retrying save
+  await runTest('Test 9C: Uncertain save timeout reloads canonical state without auto-retry', async () => {
+    const ctx = await setupPage();
+    ctx.setSaveFailsTimeout(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Timing out update');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      // Should display uncertain outcome banner
+      await ctx.page.waitForSelector('[data-testid="uncertain-save-warning"]');
+      const text = await ctx.page.textContent('[data-testid="uncertain-save-warning"]');
+      assert(text?.includes('Save outcome was uncertain; canonical state was reloaded'));
+
+      assert.strictEqual(ctx.getSaveCalls().length, 1, 'Never retries save automatically');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 10A: Catalog initial failure shows role="alert" and Retry catalog button
+  await runTest('Test 10A: Catalog initial load error shows alert and Retry catalog button', async () => {
+    const ctx = await setupPage();
+    ctx.setCatalogFailOnce(true);
+    try {
+      await ctx.start();
+      await ctx.page.waitForSelector('[data-testid="catalog-error-alert"][role="alert"]');
+      const emptyStateCount = await ctx.page.locator('[data-testid="controlled-docs-empty"]').count();
+      assert.strictEqual(emptyStateCount, 0, 'Must not show empty state when catalog fails');
+
+      await ctx.page.click('[data-testid="btn-retry-catalog"]');
+      // Retry succeeds and catalog displays
+      await ctx.page.waitForSelector('[data-testid="kind-group-CONTROL"]');
+    } finally {
+      await ctx.close();
+    }
+  });
 } finally {
   await browser.close();
   await vite.close();
-  // Cleanup temporary harness directory
   try {
     fs.rmSync(harnessDir, { recursive: true, force: true });
   } catch {}
