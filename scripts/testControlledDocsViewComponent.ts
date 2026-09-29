@@ -238,6 +238,9 @@ async function setupPage() {
   let postSaveRefreshFailOnce = false;
   let saveHoldPromise: Promise<void> | null = null;
   let saveFailsTimeout = false;
+  let holdDoc2ContentPromise: Promise<void> | null = null;
+  let saveFailsDocStale = false;
+  let refreshFailOnce = false;
 
   await page.route('**/api/**', async (route: Route) => {
     const url = new URL(route.request().url()).pathname;
@@ -281,6 +284,13 @@ async function setupPage() {
     }
 
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002') {
+      if (holdDoc2ContentPromise) {
+        await holdDoc2ContentPromise;
+      }
+      if (refreshFailOnce) {
+        refreshFailOnce = false;
+        return route.fulfill({ status: 500, json: { error: 'REFRESH_CONTENT_FAILED' } }).catch(() => {});
+      }
       contentLoadCalls.push(url);
       return send(currentDoc2Content);
     }
@@ -347,6 +357,10 @@ async function setupPage() {
         return route.fulfill({ status: 504, json: { error: 'Controlled docs request timed out.' } }).catch(() => {});
       }
 
+      if (saveFailsDocStale) {
+        return route.fulfill({ status: 409, json: { error: 'DOCUMENT_STALE: Base SHA mismatch.' } }).catch(() => {});
+      }
+
       currentDoc2Content = DOC_CTRL_002_SAVED_CONTENT;
       const saveResp: DocumentSaveResponse = {
         success: true,
@@ -395,6 +409,15 @@ async function setupPage() {
     },
     setSaveFailsTimeout: (val: boolean) => {
       saveFailsTimeout = val;
+    },
+    setHoldDoc2ContentPromise: (p: Promise<void> | null) => {
+      holdDoc2ContentPromise = p;
+    },
+    setSaveFailsDocStale: (val: boolean) => {
+      saveFailsDocStale = val;
+    },
+    setRefreshFailOnce: (val: boolean) => {
+      refreshFailOnce = val;
     },
     async start() {
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -914,6 +937,14 @@ try {
       const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
       assert(errText?.includes('Save succeeded, but canonical refresh failed'));
 
+      // doc-save-modal absent
+      const modalCount = await ctx.page.locator('[data-testid="doc-save-modal"]').count();
+      assert.strictEqual(modalCount, 0, 'doc-save-modal must be absent');
+
+      // saving-indicator absent
+      const savingCount = await ctx.page.locator('[data-testid="saving-indicator"]').count();
+      assert.strictEqual(savingCount, 0, 'saving-indicator must be absent');
+
       // Edit button must NOT be available while refresh is required
       const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
       assert.strictEqual(editBtnCount, 0, 'Edit unavailable during refresh error');
@@ -1000,6 +1031,157 @@ try {
       await ctx.page.click('[data-testid="btn-retry-catalog"]');
       // Retry succeeds and catalog displays
       await ctx.page.waitForSelector('[data-testid="kind-group-CONTROL"]');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 11: Document selection reset and race condition protection (Section 10 & 11)
+  await runTest('Test 11: Document selection reset and race condition protection', async () => {
+    const ctx = await setupPage();
+    let resolveDoc2: (() => void) | null = null;
+    const holdDoc2 = new Promise<void>((resolve) => {
+      resolveDoc2 = resolve;
+    });
+    ctx.setHoldDoc2ContentPromise(holdDoc2);
+
+    try {
+      await ctx.start();
+      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      const doc1Text = await ctx.page.textContent('[data-testid="doc-content-rendered"]');
+      assert(doc1Text?.includes('Project Charter'), 'Doc 1 content rendered initially');
+
+      // Click Document 2 (DOC-CTRL-002), whose content load is held
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+
+      // 1. Loading state is shown
+      await ctx.page.waitForSelector('text=Loading document content...');
+
+      // 2. A's rendered/raw content is NOT visible
+      const renderedCount = await ctx.page.locator('[data-testid="doc-content-rendered"]').count();
+      assert.strictEqual(renderedCount, 0, "Document A's rendered content is not visible while B loads");
+
+      // 3. A's draft/base is not usable (Edit button is not shown while loading)
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'Edit button not visible while document content is loading');
+
+      // Now resolve Document B
+      resolveDoc2!();
+
+      // Only B content appears
+      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      const doc2Text = await ctx.page.textContent('[data-testid="doc-content-rendered"]');
+      assert(doc2Text?.includes('docmonstakrakin current project state'), 'Only Doc B content rendered');
+      assert(!doc2Text?.includes('Project Charter'), 'Doc A content must not remain');
+    } finally {
+      resolveDoc2?.();
+      await ctx.close();
+    }
+  });
+
+  // Test 12: DOCUMENT_STALE save rejection locks editing until reload (Section 9 & 12)
+  await runTest('Test 12: DOCUMENT_STALE save rejection locks editing until reload', async () => {
+    const ctx = await setupPage();
+    ctx.setSaveFailsDocStale(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Stale edit attempt');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      // Modal must close
+      const modalCount = await ctx.page.locator('[data-testid="doc-save-modal"]').count();
+      assert.strictEqual(modalCount, 0, 'Save modal closed after DOCUMENT_STALE');
+
+      // Canonical reload warning shown
+      await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
+      const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
+      assert(
+        errText?.includes('Document changed before save. Reload canonical state before editing again.'),
+        'Shows document changed message'
+      );
+
+      // No second save request
+      assert.strictEqual(ctx.getSaveCalls().length, 1, 'Only one save request made');
+
+      // Edit unavailable
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'Edit unavailable while refresh is required');
+
+      // Reload Canonical Content action exposed
+      await ctx.page.waitForSelector('[data-testid="btn-reload-canonical"]');
+      await ctx.page.click('[data-testid="btn-reload-canonical"]');
+
+      // Refresh succeeds: Edit becomes available again
+      await ctx.page.waitForSelector('[data-testid="btn-edit-document"]');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 13: Stale-diff reload failure message is context-neutral (Section 8)
+  await runTest('Test 13: Stale-diff reload failure message is context-neutral', async () => {
+    const ctx = await setupPage();
+    ctx.setDiffIsStale(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.waitForSelector('[data-testid="btn-edit-document"]');
+      ctx.setRefreshFailOnce(true);
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+
+      await ctx.page.waitForSelector('[data-testid="stale-warning"]');
+      await ctx.page.click('[data-testid="btn-reload-canonical"]');
+
+      await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
+      const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
+      assert(
+        errText?.includes('Canonical refresh failed. Reload the latest document before continuing.'),
+        'Must display exact stale-diff reload failure message'
+      );
+      assert(!errText?.includes('Save succeeded'), 'Must not say Save succeeded');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 14: Uncertain save timeout followed by refresh failure displays uncertain failure message (Section 7)
+  await runTest('Test 14: Uncertain save timeout followed by refresh failure', async () => {
+    const ctx = await setupPage();
+    ctx.setSaveFailsTimeout(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.waitForSelector('[data-testid="btn-edit-document"]');
+      ctx.setRefreshFailOnce(true);
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Uncertain timeout update');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
+      const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
+      assert(
+        errText?.includes('Save outcome is uncertain and canonical refresh failed.'),
+        'Displays uncertain refresh failure message'
+      );
+
+      const modalCount = await ctx.page.locator('[data-testid="doc-save-modal"]').count();
+      assert.strictEqual(modalCount, 0, 'Modal is closed');
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'Edit unavailable');
+
+      assert.strictEqual(ctx.getSaveCalls().length, 1, 'Never retries save');
     } finally {
       await ctx.close();
     }

@@ -148,38 +148,78 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     refreshDocumentList();
   }, [projectId, refreshDocumentList, api]);
 
-  // Load selected document content
-  const loadContent = useCallback(
-    async (docId: string) => {
-      setLoadingContent(true);
+  // Selected document content loader and synchronous selection reset (Section 10)
+  useEffect(() => {
+    if (!selectedDocId) {
+      setContentResponse(null);
       setContentError(null);
-      try {
-        const resp = await api.loadDocumentContent(projectId, docId);
+      setDraftContent('');
+      setBaseSha256('');
+      setDiffResponse(null);
+      setDiffError(null);
+      setValidationResponse(null);
+      setValidationError(null);
+      setSaveReason('');
+      setHumanConfirmed(false);
+      setReviewerSession(null);
+      setSessionError(null);
+      setSaveError(null);
+      setSaveSuccess(null);
+      setUncertainSaveNotice(null);
+      setCanonicalRefreshRequired(false);
+      setCanonicalRefreshError(null);
+      setWorkflowStep('VIEW');
+      return;
+    }
+
+    let active = true;
+
+    // Reset document state BEFORE starting loadDocumentContent
+    setContentResponse(null);
+    setContentError(null);
+    setDraftContent('');
+    setBaseSha256('');
+    setDiffResponse(null);
+    setDiffError(null);
+    setValidationResponse(null);
+    setValidationError(null);
+    setSaveReason('');
+    setHumanConfirmed(false);
+    setReviewerSession(null);
+    setSessionError(null);
+    setSaveError(null);
+    setSaveSuccess(null);
+    setUncertainSaveNotice(null);
+    setCanonicalRefreshRequired(false);
+    setCanonicalRefreshError(null);
+    setWorkflowStep('VIEW');
+
+    setLoadingContent(true);
+    api
+      .loadDocumentContent(projectId, selectedDocId)
+      .then((resp) => {
+        if (!active) return;
         setContentResponse(resp);
         setDraftContent(resp.content);
         setBaseSha256(resp.rawSha256);
-      } catch (err: any) {
+      })
+      .catch((err: any) => {
+        if (!active) return;
         if (err.name !== 'AbortError') {
           setContentError(err.message || 'Failed to load document content.');
           setContentResponse(null);
         }
-      } finally {
-        setLoadingContent(false);
-      }
-    },
-    [api, projectId]
-  );
+      })
+      .finally(() => {
+        if (active) {
+          setLoadingContent(false);
+        }
+      });
 
-  useEffect(() => {
-    if (selectedDocId) {
-      setWorkflowStep('VIEW');
-      setDiffResponse(null);
-      setValidationResponse(null);
-      loadContent(selectedDocId);
-    } else {
-      setContentResponse(null);
-    }
-  }, [selectedDocId, loadContent]);
+    return () => {
+      active = false;
+    };
+  }, [selectedDocId, api, projectId]);
 
   // Selected document summary
   const selectedDoc = useMemo(
@@ -208,7 +248,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     return groups;
   }, [documents, searchQuery]);
 
-  // Canonical refresh helper
+  // Context-neutral canonical refresh helper (Section 5)
   const performCanonicalRefresh = useCallback(
     async (docId: string): Promise<boolean> => {
       try {
@@ -230,9 +270,8 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         setCanonicalRefreshError(null);
         setWorkflowStep('VIEW');
         return true;
-      } catch (err: any) {
+      } catch {
         setCanonicalRefreshRequired(true);
-        setCanonicalRefreshError('Save succeeded, but canonical refresh failed.');
         return false;
       }
     },
@@ -354,12 +393,20 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         reason: saveReason.trim(),
         humanConfirmed: true,
       });
+
+      // Commit phase ends immediately when requestSave resolves (Section 2)
       setSaveSuccess(saveResp);
+      setIsSaving(false);
+      setWorkflowStep('VIEW');
+
+      // Lock editing during post-save refresh (Section 3)
+      setCanonicalRefreshRequired(true);
     } catch (err: any) {
       setIsSaving(false);
       const isUncertain = err.name === 'AbortError' || err.message?.includes('timed out');
       if (isUncertain) {
         setWorkflowStep('VIEW');
+        setCanonicalRefreshRequired(true);
         const refreshed = await performCanonicalRefresh(selectedDoc.id);
         if (refreshed) {
           setUncertainSaveNotice('Save outcome was uncertain; canonical state was reloaded.');
@@ -370,14 +417,47 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return;
       }
 
+      const isDocStale = typeof err.message === 'string' && err.message.includes('DOCUMENT_STALE');
+      if (isDocStale) {
+        setWorkflowStep('VIEW');
+        setCanonicalRefreshRequired(true);
+        setCanonicalRefreshError('Document changed before save. Reload canonical state before editing again.');
+        return;
+      }
+
       setWorkflowStep('CONFIRM_SAVE');
       setSaveError(err.message || 'Failed to save document.');
       return;
     }
 
     // Step B: Canonical-refresh phase (separated from save)
-    setIsSaving(false);
-    await performCanonicalRefresh(selectedDoc.id);
+    const refreshed = await performCanonicalRefresh(selectedDoc.id);
+    if (!refreshed) {
+      setCanonicalRefreshRequired(true);
+      setCanonicalRefreshError('Save succeeded, but canonical refresh failed.');
+    }
+  };
+
+  // Handle Reload Canonical Content from stale diff (Section 8)
+  const handleReloadFromStaleDiff = async () => {
+    if (!selectedDocId) return;
+    setCanonicalRefreshError(null);
+    const refreshed = await performCanonicalRefresh(selectedDocId);
+    if (!refreshed) {
+      setCanonicalRefreshRequired(true);
+      setCanonicalRefreshError('Canonical refresh failed. Reload the latest document before continuing.');
+    }
+  };
+
+  // Handle Retry Canonical Refresh from banner (Section 4 & 9)
+  const handleRetryCanonicalRefresh = async () => {
+    if (!selectedDocId) return;
+    const previousError = canonicalRefreshError;
+    const refreshed = await performCanonicalRefresh(selectedDocId);
+    if (!refreshed) {
+      setCanonicalRefreshRequired(true);
+      setCanonicalRefreshError(previousError || 'Canonical refresh failed. Please try again.');
+    }
   };
 
   // Safe Link Renderer for ReactMarkdown
@@ -700,14 +780,25 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>{canonicalRefreshError}</span>
                 </div>
-                <button
-                  data-testid="btn-retry-canonical-refresh"
-                  onClick={() => selectedDocId && performCanonicalRefresh(selectedDocId)}
-                  className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Retry canonical refresh
-                </button>
+                {canonicalRefreshError.includes('Document changed') ? (
+                  <button
+                    data-testid="btn-reload-canonical"
+                    onClick={handleRetryCanonicalRefresh}
+                    className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Reload Canonical Content
+                  </button>
+                ) : (
+                  <button
+                    data-testid="btn-retry-canonical-refresh"
+                    onClick={handleRetryCanonicalRefresh}
+                    className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Retry canonical refresh
+                  </button>
+                )}
               </div>
             )}
 
@@ -880,7 +971,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                       </div>
                       <button
                         data-testid="btn-reload-canonical"
-                        onClick={() => selectedDocId && performCanonicalRefresh(selectedDocId)}
+                        onClick={handleReloadFromStaleDiff}
                         className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded shrink-0 flex items-center gap-1"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
