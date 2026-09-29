@@ -232,6 +232,15 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
       controller.abort(new DOMException('Controlled docs request timed out.', 'AbortError'));
     }, REQUEST_TIMEOUT_MS);
 
+    const assertCurrent = () => {
+      if (timedOut) {
+        throw new Error('Controlled docs request timed out.');
+      }
+      if (sequence[channel] !== token) {
+        throw new DOMException('Controlled docs request superseded', 'AbortError');
+      }
+    };
+
     try {
       const response = await request(url, {
         ...init,
@@ -239,9 +248,7 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
         credentials: 'same-origin',
       });
 
-      if (sequence[channel] !== token) {
-        throw new DOMException('Controlled docs request superseded', 'AbortError');
-      }
+      assertCurrent();
 
       if (!response.ok) {
         let errJson: any = null;
@@ -251,9 +258,7 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
           // Response body was not JSON
         }
 
-        if (sequence[channel] !== token) {
-          throw new DOMException('Controlled docs request superseded', 'AbortError');
-        }
+        assertCurrent();
 
         if (errJson && typeof errJson === 'object' && typeof errJson.error === 'string') {
           throw new Error(errJson.error);
@@ -263,11 +268,13 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
 
       const rawJson = await response.json();
 
-      if (sequence[channel] !== token) {
-        throw new DOMException('Controlled docs request superseded', 'AbortError');
-      }
+      assertCurrent();
 
-      return validateFn(rawJson);
+      const result = validateFn(rawJson);
+
+      assertCurrent();
+
+      return result;
     } catch (error: any) {
       if (timedOut || (error instanceof Error && error.message.includes('timed out'))) {
         throw new Error('Controlled docs request timed out.');

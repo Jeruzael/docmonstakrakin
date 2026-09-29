@@ -772,6 +772,171 @@ async function runTests(): Promise<void> {
     }
   });
 
+  await test('Test 7E: Timeout finality prevents late fetch resolution from succeeding when abort is ignored', async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    let timeoutCallback: (() => void) | undefined;
+
+    (globalThis as any).setTimeout = (cb: () => void, ms?: number) => {
+      if (ms === 20000) {
+        timeoutCallback = cb;
+        return 9999 as any;
+      }
+      return originalSetTimeout(cb, ms);
+    };
+
+    try {
+      let deferredResolve: (res: Response) => void;
+      let capturedSignal: AbortSignal | undefined;
+
+      const deferredPromise = new Promise<Response>((resolve) => {
+        deferredResolve = resolve;
+      });
+
+      const fakeFetch: typeof fetch = async (input, init) => {
+        capturedSignal = init?.signal as AbortSignal;
+        // Deliberately ignore signal.abort() and return deferredPromise
+        return deferredPromise;
+      };
+
+      const loader = createControlledDocsLoader(fakeFetch);
+      const req = loader.loadDocumentList('PRJ-DOCMONSTAKRAKIN');
+
+      assert(timeoutCallback, 'Timeout callback must be registered');
+      timeoutCallback();
+
+      assert(capturedSignal, 'Signal must be passed to request');
+      assert.strictEqual(capturedSignal.aborted, true, 'Signal must be aborted upon timeout');
+
+      // Now resolve the deferred fetch with valid HTTP 200 document-list payload
+      deferredResolve!(jsonResponse(200, [sampleSummary]));
+
+      await assert.rejects(
+        async () => await req,
+        (err: Error) => {
+          assert.strictEqual(err.message, 'Controlled docs request timed out.');
+          return true;
+        }
+      );
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+    }
+  });
+
+  await test('Test 7F: Timeout during response.json() rejects with timeout error and prevents payload return', async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    let timeoutCallback: (() => void) | undefined;
+
+    (globalThis as any).setTimeout = (cb: () => void, ms?: number) => {
+      if (ms === 20000) {
+        timeoutCallback = cb;
+        return 9999 as any;
+      }
+      return originalSetTimeout(cb, ms);
+    };
+
+    try {
+      let deferredJsonResolve: (data: any) => void;
+      const deferredJsonPromise = new Promise<any>((resolve) => {
+        deferredJsonResolve = resolve;
+      });
+
+      let capturedSignal: AbortSignal | undefined;
+
+      const fakeFetch: typeof fetch = async (input, init) => {
+        capturedSignal = init?.signal as AbortSignal;
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+          json: () => deferredJsonPromise,
+          text: async () => JSON.stringify([sampleSummary]),
+        } as unknown as Response;
+      };
+
+      const loader = createControlledDocsLoader(fakeFetch);
+      const req = loader.loadDocumentList('PRJ-DOCMONSTAKRAKIN');
+
+      await new Promise((r) => setImmediate(r));
+
+      assert(timeoutCallback, 'Timeout callback must be registered');
+      timeoutCallback();
+
+      assert(capturedSignal, 'Signal must be captured');
+      assert.strictEqual(capturedSignal.aborted, true, 'Signal must be aborted upon timeout');
+
+      deferredJsonResolve!([sampleSummary]);
+
+      await assert.rejects(
+        async () => await req,
+        (err: Error) => {
+          assert.strictEqual(err.message, 'Controlled docs request timed out.');
+          return true;
+        }
+      );
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+    }
+  });
+
+  await test('Test 7G: Timeout during non-2xx response body parse returns timeout error instead of server error', async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    let timeoutCallback: (() => void) | undefined;
+
+    (globalThis as any).setTimeout = (cb: () => void, ms?: number) => {
+      if (ms === 20000) {
+        timeoutCallback = cb;
+        return 9999 as any;
+      }
+      return originalSetTimeout(cb, ms);
+    };
+
+    try {
+      let deferredJsonResolve: (data: any) => void;
+      const deferredJsonPromise = new Promise<any>((resolve) => {
+        deferredJsonResolve = resolve;
+      });
+
+      const fakeFetch: typeof fetch = async () => {
+        return {
+          ok: false,
+          status: 409,
+          statusText: 'Conflict',
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+          json: () => deferredJsonPromise,
+          text: async () => JSON.stringify({ error: 'DOCUMENT_STALE' }),
+        } as unknown as Response;
+      };
+
+      const loader = createControlledDocsLoader(fakeFetch);
+      const req = loader.requestSave({
+        projectId: 'P',
+        documentId: 'D',
+        candidateContent: 'C',
+        baseSha256: 'a'.repeat(64),
+        reason: 'R',
+        humanConfirmed: true,
+      });
+
+      await new Promise((r) => setImmediate(r));
+
+      assert(timeoutCallback, 'Timeout callback must be registered');
+      timeoutCallback();
+
+      deferredJsonResolve!({ error: 'DOCUMENT_STALE' });
+
+      await assert.rejects(
+        async () => await req,
+        (err: Error) => {
+          assert.strictEqual(err.message, 'Controlled docs request timed out.');
+          return true;
+        }
+      );
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+    }
+  });
+
   console.log('\n================================================================');
   console.log(`TOTAL TESTS: ${passed + failed}`);
   console.log(`PASSED: ${passed}`);
