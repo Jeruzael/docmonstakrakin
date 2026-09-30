@@ -688,9 +688,15 @@ export default function App() {
 
       <OverrideModal
         isOpen={!!overrideGate}
-        gateName={overrideGate || 'DISCOVERY_PHASE_GATE'}
+        gateOrBlockerName={overrideGate || 'DISCOVERY_PHASE_GATE'}
         onClose={() => setOverrideGate(null)}
-        onSubmitOverride={handleCreateOverride}
+        onConfirmOverride={(reason, riskAcknowledged) =>
+          handleCreateOverride({
+            gateOrControl: overrideGate || 'DISCOVERY_PHASE_GATE',
+            reason,
+            riskAcknowledged,
+          })
+        }
       />
 
       </div>}

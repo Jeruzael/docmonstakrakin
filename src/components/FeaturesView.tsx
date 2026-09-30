@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { Feature } from '../types.js';
 
+type FeatureFormPriority = Extract<Feature['priority'], 'P0' | 'P1' | 'P2'>;
+
 interface FeaturesViewProps {
   features: Feature[];
   onAddFeature: (feat: Partial<Feature>) => Promise<void>;
@@ -35,7 +37,7 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({
   const [title, setTitle] = useState('');
   const [capability, setCapability] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'P0' | 'P1' | 'P2' | 'P3'>('P1');
+  const [priority, setPriority] = useState<FeatureFormPriority>('P1');
   const [personas, setPersonas] = useState('');
 
   const filteredFeatures = features.filter((f) => {
@@ -125,9 +127,9 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({
           >
             <option value="ALL">All Statuses</option>
             <option value="PROPOSED">Proposed</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="VERIFIED">Verified</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="APPROVED">Approved</option>
+            <option value="DEFERRED">Deferred</option>
             <option value="REJECTED">Rejected</option>
           </select>
 
@@ -140,7 +142,6 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({
             <option value="P0">P0 - Critical</option>
             <option value="P1">P1 - High</option>
             <option value="P2">P2 - Medium</option>
-            <option value="P3">P3 - Low</option>
           </select>
         </div>
       </div>
@@ -178,11 +179,15 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      feat.status === 'APPROVED' || feat.status === 'ACCEPTED' || feat.status === 'VERIFIED'
+                      feat.status === 'APPROVED'
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : feat.status === 'PROPOSED'
                         ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                        : 'bg-slate-100 text-slate-600'
+                        : feat.status === 'UNDER_REVIEW'
+                        ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                        : feat.status === 'REJECTED'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}
                   >
                     {feat.status}
@@ -269,13 +274,12 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({
                   <label className="font-bold text-slate-700 block mb-1">Priority</label>
                   <select
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value as any)}
+                    onChange={(e) => setPriority(e.target.value as FeatureFormPriority)}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
                   >
                     <option value="P0">P0 - Critical</option>
                     <option value="P1">P1 - High</option>
                     <option value="P2">P2 - Medium</option>
-                    <option value="P3">P3 - Low</option>
                   </select>
                 </div>
                 <div>

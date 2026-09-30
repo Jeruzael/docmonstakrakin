@@ -297,7 +297,7 @@ ${a.resolutionNotes ? `- **Resolution:** ${a.resolutionNotes} (by ${a.resolvedBy
 
 ## 2. Work Delivery & Epic Progress
 Total Tasks: ${workItems.length}
-- **Verified / Completed:** ${workItems.filter((w) => w.status === 'VERIFIED' || w.status === 'DONE').length}
+- **Verified / Completed:** ${workItems.filter((w) => w.status === 'VERIFIED' || w.status === 'RELEASED').length}
 - **In Progress:** ${workItems.filter((w) => w.status === 'IN_PROGRESS').length}
 - **Backlog / Ready:** ${workItems.filter((w) => w.status === 'BACKLOG' || w.status === 'READY').length}
 `;
