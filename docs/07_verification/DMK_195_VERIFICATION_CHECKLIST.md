@@ -36,13 +36,13 @@ SAFETY NOTICE: CANONICAL STATE & ADVERSARIAL TESTING
 ## 2. Document Catalog & Organization
 
 - [ ] The repository document catalog renders the full registered manifest.
-- [ ] Catalog items are visually organized and grouped by document kind (Control, Product, Requirements, Architecture, Security, Decisions, Verification).
+- [ ] Catalog items are visually organized and grouped by document kind (CONTROL, PRODUCT, REQUIREMENTS, ARCHITECTURE, SECURITY, VERIFICATION).
 - [ ] Search input successfully filters documents by ID, title, or logical path.
 - [ ] Expected controlled document identifiers and titles are clearly recognizable.
 - [ ] Unregistered filesystem documents (e.g., test scratch files, internal scripts) are not exposed in the catalog.
 
 > [!NOTE]
-> The catalog UI provides visual grouping by document kind alongside text search. An independent kind dropdown filter is not implemented and was not part of the approved UI design.
+> The catalog UI provides visual grouping by document kind alongside text search. An independent kind dropdown filter is not implemented and was not part of the approved UI design. ADR / decision documents are currently registered under ARCHITECTURE; there is no separate DECISIONS kind group.
 
 
 ---
@@ -77,9 +77,9 @@ Verify on living document `DOC-CTRL-002` (`PROJECT_STATE.md`):
 ### Safe Pre-Commit UI Verification
 - [ ] Select `PROJECT_STATE.md` in catalog; confirm canonical content displays.
 - [ ] Click **Edit Document**; draft editing buffer opens with current document content.
-- [ ] Modify content in draft buffer; confirm unsaved changes indicator appears.
+- [ ] Modify content in the draft buffer; confirm the edited draft remains visible and Preview Diff uses the modified content.
 - [ ] Click **Preview Diff**; review computed line-by-line diff.
-- [ ] Confirm additions, deletions, line counts, and candidate hash preview match modifications.
+- [ ] Confirm additions, deletions, total changed line count, and unified diff correspond to the draft modifications.
 - [ ] Click **Validate Invariants**; structural validation executes against document schema.
 - [ ] Confirm validation errors block progression if required headers/sections are deleted.
 - [ ] Confirm **Proceed to Save** button becomes enabled/accessible only after structural validation succeeds.

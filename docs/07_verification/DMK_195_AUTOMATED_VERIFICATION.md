@@ -77,7 +77,7 @@ The self-bootstrap manifest defines exactly **28 registered documents**:
 - **Strict Read-Only Enforcement**: All other 26 registered documents strictly disallow edit actions and reject save requests:
   - `DOC-CTRL-003` (`MASTER_WBS.yaml`) remains `READ_ONLY` by registry policy.
   - `DOC-CTRL-004` (`MASTER_WBS.md`) remains `GENERATED_PROJECTION` + `READ_ONLY`.
-  - All 24 SHA-pinned architecture, security, decision, and verification documents remain `READ_ONLY`.
+  - All 24 SHA-pinned registered reference documents across the manifest's CONTROL, PRODUCT, REQUIREMENTS, ARCHITECTURE, SECURITY, and VERIFICATION categories remain `READ_ONLY`.
 
 
 ## 4. Security & Boundary Results
@@ -128,7 +128,7 @@ Controlled document persistence follows a two-phase atomic write protocol:
 | **Stage B** | Candidate sibling write failure | Rollback sibling cleaned; transaction aborts; target untouched | PASS |
 | **Stage C** | Candidate fsync failure | Temporary siblings removed; transaction aborts; target untouched | PASS |
 | **Stage D** | Journal write/fsync failure | Sibling files cleaned; transaction aborts; target untouched | PASS |
-| **Stage E** | Candidate rename failure | Original file restored from rollback sibling; journal cleaned; abort | PASS |
+| **Stage E** | Candidate rename failure | Candidate-to-target rename fails; target remains on original bytes; candidate and rollback siblings remain available for recovery; no untracked partial replacement occurs | PASS |
 | **Stage F** | Post-replacement pre-audit failure | Replacement occurs; post-replacement/pre-audit failure is injected; route-level rollback restores the original target; transaction artifacts are cleaned when rollback succeeds; stateVersion and audit remain uncommitted | PASS |
 | **Stage G** | Audit append failure | Atomic rollback to original bytes; state unmutated; abort | PASS |
 | **Stage H** | Snapshot persistence failure | Atomic rollback to original bytes; snapshot state reverted; abort | PASS |
@@ -141,9 +141,9 @@ Controlled document persistence follows a two-phase atomic write protocol:
 Audit logging adheres to strict immutability and cryptographically chained hashing:
 - **Audit Event Type**: Every controlled document modification emits a `DOCUMENT_UPDATED` audit record.
 - **Audit Event ID Format**: Emits standard historical format: `AUD-<timestamp-base36>-<4 random chars>`. Audit IDs are not monotonic sequence numbers or UUIDs; audit chain ordering and integrity are established via `timestamp`, `previousHash`, and `stateHash`.
-- **Audit Payload**: Contains document ID, logical path, actor identity, reason, base SHA-256 hash, and candidate SHA-256 hash.
+- **Audit Payload**: Contains document ID, logical path, actor identity, reason, previousSha256, and newSha256.
 - **Reviewer Identity**: Production reviewer identity is derived from the authenticated local reviewer session backed by the operator-controlled roster; client-supplied identity claims are rejected before authentication with HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`.
-- **Duplicate Audit ID Rejection**: Inbound or duplicate audit event IDs are rejected to preserve monotonic ledger integrity.
+- **Duplicate Audit ID Rejection**: Inbound or duplicate audit event IDs are rejected to preserve unique event identity and cryptographic hash-chain integrity.
 - **Audit Chain Integrity**: Live audit ledger cryptographically verified valid (`76 / 76` entries verified via `verifyAuditLedgerChain` in `REVERSE_CHRONOLOGICAL` sequence).
 
 
