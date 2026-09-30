@@ -1,71 +1,12 @@
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ExternalLink } from 'lucide-react';
 
 export interface MarkdownRendererProps {
   content: string;
   className?: string;
   testId?: string;
-}
-
-/**
- * Remark plugin to parse Markdown tables in CommonMark without external dependencies.
- */
-function remarkTablePlugin() {
-  return (tree: any) => {
-    if (!tree || !Array.isArray(tree.children)) return;
-    for (let i = 0; i < tree.children.length; i++) {
-      const node = tree.children[i];
-      if (
-        node.type === 'paragraph' &&
-        Array.isArray(node.children) &&
-        node.children.length === 1 &&
-        node.children[0].type === 'text'
-      ) {
-        const text: string = node.children[0].value;
-        const lines = text.trim().split('\n');
-        if (
-          lines.length >= 2 &&
-          lines[0].includes('|') &&
-          lines[1].includes('|') &&
-          /^\s*\|?(\s*:?-+:?\s*\|)+\s*$/.test(lines[1])
-        ) {
-          const splitRow = (rowStr: string) => {
-            const raw = rowStr.trim();
-            const trimmed = raw.replace(/^\|/, '').replace(/\|$/, '');
-            return trimmed.split('|').map((c) => c.trim());
-          };
-
-          const headerCells = splitRow(lines[0]);
-          const tableNode: any = {
-            type: 'table',
-            children: [
-              {
-                type: 'tableRow',
-                children: headerCells.map((c) => ({
-                  type: 'tableCell',
-                  children: [{ type: 'text', value: c }],
-                })),
-              },
-            ],
-          };
-
-          for (let r = 2; r < lines.length; r++) {
-            if (!lines[r].includes('|')) continue;
-            const rowCells = splitRow(lines[r]);
-            tableNode.children.push({
-              type: 'tableRow',
-              children: rowCells.map((c) => ({
-                type: 'tableCell',
-                children: [{ type: 'text', value: c }],
-              })),
-            });
-          }
-          tree.children[i] = tableNode;
-        }
-      }
-    }
-  };
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
@@ -235,7 +176,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
   return (
     <div className={`markdown-body ${className}`} data-testid={testId}>
-      <ReactMarkdown remarkPlugins={[remarkTablePlugin]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
     </div>

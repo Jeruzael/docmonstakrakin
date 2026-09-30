@@ -184,9 +184,9 @@ Paragraph with **bold** and *italic* text.
 echo hello
 \`\`\`
 
-| Header 1 | Header 2 |
-| -------- | -------- |
-| Cell 1   | Cell 2   |
+| Name | Ref | Status |
+| :--- | :--- | :--- |
+| **Core API** | \`CMP-01\` | **VERIFIED** |
 `,
   rawSha256: '6666666666666666666666666666666666666666666666666666666666666666',
   eol: 'LF',
@@ -1283,10 +1283,12 @@ try {
       const p = rendered.locator('p');
       assert((await p.count()) >= 1, 'p rendered');
 
-      // strong element is rendered
+      // strong elements are rendered (1 paragraph + 2 table)
       const strong = rendered.locator('strong');
-      assert.strictEqual(await strong.count(), 1, 'strong rendered');
-      assert.strictEqual((await strong.textContent())?.trim(), 'bold');
+      assert.strictEqual(await strong.count(), 3, '3 strong elements rendered');
+      const pStrong = rendered.locator('p strong');
+      assert.strictEqual(await pStrong.count(), 1, 'paragraph strong rendered');
+      assert.strictEqual((await pStrong.textContent())?.trim(), 'bold');
 
       // ul and li elements are rendered
       const ul = rendered.locator('ul');
@@ -1314,13 +1316,26 @@ try {
       assert((await pre.count()) >= 1, 'pre rendered');
       assert((await pre.textContent())?.includes('echo hello'), 'pre code block content rendered');
 
-      // table, th, and td elements are rendered
+      // table, thead, tbody, th, and td elements are rendered with inline formatting
       const table = rendered.locator('table');
-      assert.strictEqual(await table.count(), 1, 'table rendered');
+      assert.strictEqual(await table.count(), 1, 'exactly one table');
+      assert.strictEqual(await table.locator('thead').count(), 1, 'thead exists');
+      assert.strictEqual(await table.locator('tbody').count(), 1, 'tbody exists');
+
       const th = table.locator('th');
-      assert.strictEqual(await th.count(), 2, 'th rendered');
+      assert.strictEqual(await th.count(), 3, '3 th cells');
+
       const td = table.locator('td');
-      assert.strictEqual(await td.count(), 2, 'td rendered');
+      assert.strictEqual(await td.count(), 3, '3 td cells');
+
+      const tdStrong = td.locator('strong');
+      assert.strictEqual(await tdStrong.count(), 2, 'two strong elements in table cells');
+      assert.strictEqual((await tdStrong.nth(0).textContent())?.trim(), 'Core API', 'td strong text = Core API');
+      assert.strictEqual((await tdStrong.nth(1).textContent())?.trim(), 'VERIFIED', 'td strong text = VERIFIED');
+
+      const tdCode = td.locator('code');
+      assert.strictEqual(await tdCode.count(), 1, 'one code element in table cells');
+      assert.strictEqual((await tdCode.textContent())?.trim(), 'CMP-01', 'td code text = CMP-01');
     } finally {
       await ctx.close();
     }

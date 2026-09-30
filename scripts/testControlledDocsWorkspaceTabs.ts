@@ -258,6 +258,24 @@ async function setupPage() {
     if (url.endsWith('/questions')) return route.fulfill({ status: 200, json: [] });
     if (url.endsWith('/work-items')) return route.fulfill({ status: 200, json: INITIAL_WORK_ITEMS.slice(0, 1) });
     if (url.endsWith('/adrs')) return route.fulfill({ status: 200, json: [] });
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/components') {
+      return route.fulfill({
+        status: 200,
+        json: [
+          {
+            id: 'CMP-01',
+            projectId: 'PRJ-DOCMONSTAKRAKIN',
+            name: 'API Gateway',
+            trustZone: 'ZONE-01',
+            category: 'GATEWAY',
+            technology: 'Node.js',
+            inboundProtocols: ['HTTPS'],
+            outboundProtocols: ['gRPC'],
+            securityControls: ['TLS 1.3', 'JWT Verification'],
+          },
+        ],
+      });
+    }
     if (url.endsWith('/components')) return route.fulfill({ status: 200, json: [] });
     if (url.endsWith('/risks')) return route.fulfill({ status: 200, json: [] });
     if (url.endsWith('/threats')) return route.fulfill({ status: 200, json: [] });
@@ -347,7 +365,7 @@ try {
   pass('Test 11B: Tab Accessibility (role=tablist, aria-controls, aria-labelledby, keyboard/click navigation)');
 
   // =========================================================================
-  // Test 11C — Dynamic Projection Baseline
+  // Test 11C — Dynamic Projection Baseline & GFM Table Rendering
   // =========================================================================
   await dynamicTab.click();
 
@@ -381,24 +399,41 @@ try {
   assert.equal(await renderedView.isVisible(), true, 'Dynamic projection defaults to Rendered mode');
   assert.equal(await rawView.isVisible(), false, 'Raw source view is hidden by default');
 
-  // Click Raw Source toggle
+  // Click Software Architecture (SAD) projection tab
+  await page.getByRole('button', { name: 'Software Architecture (SAD)', exact: true }).click();
+  await page.getByText('Software Architecture Document (SAD)').waitFor();
+
+  // In Rendered mode:
+  assert.equal(await renderedView.isVisible(), true, 'Dynamic projection rendered view must be visible');
+  const sadTable = renderedView.locator('table');
+  await sadTable.waitFor();
+  assert.equal(await sadTable.isVisible(), true, 'SAD projection table must be visible');
+  const sadTableText = await sadTable.textContent();
+  assert(sadTableText?.includes('API Gateway'), 'SAD table must contain API Gateway');
+
+  const sadStrong = sadTable.locator('td strong', { hasText: 'API Gateway' });
+  assert.equal(await sadStrong.count() > 0, true, 'SAD table cell must contain <strong> element with "API Gateway"');
+
+  const sadCode = sadTable.locator('td code', { hasText: 'ZONE-01' });
+  assert.equal(await sadCode.count() > 0, true, 'SAD table cell must contain <code> element with "ZONE-01"');
+
+  // In Raw Source mode:
   await toggleRaw.click();
   await rawView.waitFor();
   assert.equal(await rawView.isVisible(), true, 'Raw source view is visible after toggle');
   assert.equal(await renderedView.isVisible(), false, 'Rendered view is hidden in raw mode');
-  const rawContent = await rawView.textContent();
-  assert(
-    rawContent?.includes('# Product Requirements Document'),
-    'Raw source view contains PRD title'
-  );
+  const rawSADContent = await rawView.textContent();
+  assert(rawSADContent?.includes('| Component | Trust Zone |'), 'Raw source contains table header');
+  assert(rawSADContent?.includes('**API Gateway**'), 'Raw source contains **API Gateway**');
+  assert(rawSADContent?.includes('`ZONE-01`'), 'Raw source contains `ZONE-01`');
 
-  // Click Rendered toggle
+  // Switch back to Rendered:
   await toggleRendered.click();
   await renderedView.waitFor();
   assert.equal(await renderedView.isVisible(), true, 'Rendered view is visible after toggling back');
-  assert.equal(await rawView.isVisible(), false, 'Raw source view is hidden after toggling back');
+  assert.equal(await sadTable.isVisible(), true, 'SAD table is visible again after toggling back');
 
-  pass('Test 11C: Dynamic Projection Baseline (Header, disclaimer, action buttons, 6 projection tabs, Rendered/Raw toggle)');
+  pass('Test 11C: Dynamic Projection Baseline & GFM Table Rendering (Header, disclaimer, action buttons, 6 projection tabs, Rendered/Raw toggle, semantic table)');
 
   // =========================================================================
   // Test 11D — Package Modal
