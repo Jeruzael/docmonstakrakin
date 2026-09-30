@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `IN_PROGRESS` (Scoped implementation; Gate 7 pending) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -114,7 +114,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `IN_PROGRESS`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md, docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md, docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md, docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md, scripts/testControlledDocs.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-DOC-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows.
