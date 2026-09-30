@@ -24,6 +24,7 @@ import {
   readDocumentDisk,
   encodeDocumentBytes,
   resolveDocumentDiskPath,
+  assertEditableTargetNotSymlink,
   deriveSiblingCandidatePath,
   deriveSiblingRollbackPath,
   replaceDocumentSiblingAtomic,
@@ -169,15 +170,29 @@ function createDisposableWorkspace(): DisposableWorkspace {
     projectStatePath,
     store,
     cleanup: () => {
-      resetDocumentLocksForTesting();
       try {
         fs.rmSync(workspaceDir, { recursive: true, force: true });
       } catch {
         // best effort
       }
-      recoverDocumentTransactions(os.tmpdir());
+      resetRecoveryLockSafely();
     },
   };
+}
+
+function resetRecoveryLockSafely(): void {
+  resetDocumentLocksForTesting();
+  const resetRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-recovery-reset-'));
+  try {
+    recoverDocumentTransactions(resetRoot);
+  } finally {
+    fs.rmSync(resetRoot, { recursive: true, force: true });
+  }
+}
+
+function listDmkSiblings(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((f) => f.includes('.dmk-') || f.endsWith('.candidate') || f.endsWith('.rollback'));
 }
 
 // Authenticated test reviewer identity
@@ -237,7 +252,19 @@ async function main() {
   assert.equal(txDirExistsBefore, false, 'Live .local/document-transactions must be absent before testing');
   console.log('  Live tx directory:     absent');
 
-  // Living docs hashes before
+  // Living docs hashes before & all 28 registered docs
+  const realManifestPath = path.resolve(process.cwd(), 'bootstrap', 'docmonstakrakin.self-bootstrap.json');
+  const realManifestData = JSON.parse(fs.readFileSync(realManifestPath, 'utf8'));
+  const liveDocHashesBefore = new Map<string, string>();
+  for (const doc of realManifestData.documents) {
+    const docPath = path.resolve(process.cwd(), doc.path);
+    if (fs.existsSync(docPath)) {
+      const h = crypto.createHash('sha256').update(fs.readFileSync(docPath)).digest('hex');
+      liveDocHashesBefore.set(doc.id, h);
+    }
+  }
+  console.log(`  Live registered docs:  ${liveDocHashesBefore.size} / ${realManifestData.documents.length} hashed`);
+
   const projectStateLivingPath = path.resolve(process.cwd(), 'docs', '00_control', 'PROJECT_STATE.md');
   const traceMatrixLivingPath = path.resolve(process.cwd(), 'docs', '00_control', 'TRACEABILITY_MATRIX.md');
   const projectStateLivingShaBefore = crypto.createHash('sha256').update(fs.readFileSync(projectStateLivingPath)).digest('hex');
@@ -254,21 +281,20 @@ async function main() {
   interface FocusedSuiteDef {
     name: string;
     script: string;
-    expectedTestCount?: number;
   }
 
   const focusedSuites: FocusedSuiteDef[] = [
-    { name: 'testControlledDocsRegistry', script: 'scripts/testControlledDocsRegistry.ts', expectedTestCount: 22 },
-    { name: 'testControlledDocsPersistence', script: 'scripts/testControlledDocsPersistence.ts', expectedTestCount: 34 },
-    { name: 'testControlledDocsValidator', script: 'scripts/testControlledDocsValidator.ts', expectedTestCount: 35 },
-    { name: 'testControlledDocsTransaction', script: 'scripts/testControlledDocsTransaction.ts', expectedTestCount: 40 },
-    { name: 'testControlledDocsRecovery', script: 'scripts/testControlledDocsRecovery.ts', expectedTestCount: 69 },
-    { name: 'testControlledDocsApi', script: 'scripts/testControlledDocsApi.ts', expectedTestCount: 36 },
-    { name: 'testControlledDocsClient', script: 'scripts/testControlledDocsClient.ts', expectedTestCount: 27 },
-    { name: 'testControlledDocsViewComponent', script: 'scripts/testControlledDocsViewComponent.ts', expectedTestCount: 24 },
-    { name: 'testControlledDocsWorkspaceTabs', script: 'scripts/testControlledDocsWorkspaceTabs.ts', expectedTestCount: 14 },
-    { name: 'testProjectPersistenceClassifier', script: 'scripts/testProjectPersistenceClassifier.ts', expectedTestCount: 18 },
-    { name: 'testWorkItemUpdates', script: 'scripts/testWorkItemUpdates.ts', expectedTestCount: 4 },
+    { name: 'testControlledDocsRegistry', script: 'scripts/testControlledDocsRegistry.ts' },
+    { name: 'testControlledDocsPersistence', script: 'scripts/testControlledDocsPersistence.ts' },
+    { name: 'testControlledDocsValidator', script: 'scripts/testControlledDocsValidator.ts' },
+    { name: 'testControlledDocsTransaction', script: 'scripts/testControlledDocsTransaction.ts' },
+    { name: 'testControlledDocsRecovery', script: 'scripts/testControlledDocsRecovery.ts' },
+    { name: 'testControlledDocsApi', script: 'scripts/testControlledDocsApi.ts' },
+    { name: 'testControlledDocsClient', script: 'scripts/testControlledDocsClient.ts' },
+    { name: 'testControlledDocsViewComponent', script: 'scripts/testControlledDocsViewComponent.ts' },
+    { name: 'testControlledDocsWorkspaceTabs', script: 'scripts/testControlledDocsWorkspaceTabs.ts' },
+    { name: 'testProjectPersistenceClassifier', script: 'scripts/testProjectPersistenceClassifier.ts' },
+    { name: 'testWorkItemUpdates', script: 'scripts/testWorkItemUpdates.ts' },
   ];
 
   interface FocusedSuiteExecution {
@@ -278,6 +304,24 @@ async function main() {
     stdout: string;
     stderr: string;
     passCount: number;
+  }
+
+  function parseSuitePassCount(suiteName: string, stdout: string): number | null {
+    const passedMatch = stdout.match(/PASSED:\s*(\d+)/i);
+    if (passedMatch) {
+      return parseInt(passedMatch[1], 10);
+    }
+    const allTestsMatch = stdout.match(/All\s+(\d+)\s+tests in .* passed!/i);
+    if (allTestsMatch) {
+      return parseInt(allTestsMatch[1], 10);
+    }
+    if (suiteName === 'testWorkItemUpdates') {
+      const passLines = stdout.split('\n').filter((l) => l.trim().startsWith('PASS '));
+      if (passLines.length > 0) {
+        return passLines.length;
+      }
+    }
+    return null;
   }
 
   const focusedSuiteResults: FocusedSuiteExecution[] = [];
@@ -301,10 +345,9 @@ async function main() {
       throw new Error(`Prerequisite focused suite failed: ${suite.name} (exit code ${result.status})`);
     }
 
-    let passCount = 0;
-    if (suite.expectedTestCount) {
-      passCount = suite.expectedTestCount;
-    }
+    const measuredPasses = parseSuitePassCount(suite.name, result.stdout);
+    const passCount = measuredPasses !== null ? measuredPasses : 0;
+    const countDisplay = measuredPasses !== null ? `${measuredPasses}` : 'NOT_REPORTED';
 
     focusedSuiteResults.push({
       name: suite.name,
@@ -315,17 +358,26 @@ async function main() {
       passCount,
     });
 
-    console.log(`  ✓ [SUITE PASS] ${suite.name.padEnd(35)} (exit: 0, tests: ${passCount}, ${duration}s)`);
+    console.log(`  ✓ [SUITE PASS] ${suite.name.padEnd(35)} (exit: 0, tests: ${countDisplay}, ${duration}s)`);
   }
 
   const totalFocusedPassed = focusedSuiteResults.reduce((sum, s) => sum + s.passCount, 0);
-  console.log(`\n  All ${focusedSuites.length} focused suites passed (${totalFocusedPassed} focused assertions verified).\n`);
+  assert.equal(totalFocusedPassed, 323, 'Must measure exactly 323 passing child suite assertions');
+  console.log(`\n  All ${focusedSuites.length} focused suites passed (${totalFocusedPassed} measured assertions verified).\n`);
 
   // --------------------------------------------------------------------------
   // STEP 3: CORE MATRIX A–AN (40 ITEMS) MAPPINGS & DIRECT GAP PROBES
   // --------------------------------------------------------------------------
   console.log('[Phase 3] Executing Core Matrix A–AN (40 Items) Probes:');
   const coreMatrixResults: Partial<Record<CoreMatrixId, MatrixItemResult>> = {};
+  const recordedCoreIds = new Set<string>();
+
+  function registerCoreId(id: CoreMatrixId): void {
+    if (recordedCoreIds.has(id)) {
+      throw new Error(`DUPLICATE_MATRIX_ID: ${id} has already been recorded`);
+    }
+    recordedCoreIds.add(id);
+  }
 
   function recordCore(
     id: CoreMatrixId,
@@ -333,6 +385,7 @@ async function main() {
     evidenceSource: string,
     fn: () => void | Promise<void>
   ): void {
+    registerCoreId(id);
     try {
       const maybePromise = fn();
       if (maybePromise && typeof (maybePromise as any).then === 'function') {
@@ -353,6 +406,7 @@ async function main() {
     evidenceSource: string,
     fn: () => Promise<void>
   ): Promise<void> {
+    registerCoreId(id);
     try {
       await fn();
       coreMatrixResults[id] = { id, name, evidenceSource, passed: true };
@@ -383,14 +437,33 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const registry = getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', ws.workspaceDir);
-      const doc4 = registry.find((d) => d.id === 'DOC-CTRL-004');
-      assert.equal(doc4?.authority, 'GENERATED_PROJECTION', 'DOC-CTRL-004 must be GENERATED_PROJECTION');
+
+      // 24 SHA-pinned manifest entries
+      const pinnedDocs = registry.filter((d) => d.sha256Digest !== undefined && d.sha256Digest !== null);
+      assert.equal(pinnedDocs.length, 24, 'Must have exactly 24 SHA-pinned manifest entries');
+
+      // 4 unpinned-by-digest entries: DOC-CTRL-002, DOC-CTRL-003, DOC-CTRL-004, DOC-CTRL-006
+      const unpinnedDocs = registry.filter((d) => !d.sha256Digest);
+      assert.equal(unpinnedDocs.length, 4, 'Must have exactly 4 unpinned-by-digest entries');
+      const unpinnedIds = unpinnedDocs.map((d) => d.id).sort();
+      assert.deepEqual(unpinnedIds, ['DOC-CTRL-002', 'DOC-CTRL-003', 'DOC-CTRL-004', 'DOC-CTRL-006']);
+
+      // 2 controlled-edit living documents: DOC-CTRL-002, DOC-CTRL-006
+      const controlledLivingDocs = registry.filter((d) => d.editability === 'CONTROLLED_EDIT');
+      assert.equal(controlledLivingDocs.length, 2, 'Must have exactly 2 controlled-edit living documents');
+      const controlledLivingIds = controlledLivingDocs.map((d) => d.id).sort();
+      assert.deepEqual(controlledLivingIds, ['DOC-CTRL-002', 'DOC-CTRL-006']);
+
+      // MASTER_WBS.yaml: READ_ONLY by registry editability policy
       const doc3 = registry.find((d) => d.id === 'DOC-CTRL-003');
       assert.equal(doc3?.authority, 'REFERENCE', 'DOC-CTRL-003 must be REFERENCE');
-      const doc2 = registry.find((d) => d.id === 'DOC-CTRL-002');
-      assert.equal(doc2?.authority, 'REFERENCE', 'DOC-CTRL-002 must be REFERENCE');
-      const doc6 = registry.find((d) => d.id === 'DOC-CTRL-006');
-      assert.equal(doc6?.authority, 'REFERENCE', 'DOC-CTRL-006 must be REFERENCE');
+      assert.equal(doc3?.editability, 'READ_ONLY', 'MASTER_WBS.yaml must be READ_ONLY by registry policy');
+
+      // MASTER_WBS.md: GENERATED_PROJECTION + READ_ONLY
+      const doc4 = registry.find((d) => d.id === 'DOC-CTRL-004');
+      assert.equal(doc4?.authority, 'GENERATED_PROJECTION', 'DOC-CTRL-004 must be GENERATED_PROJECTION');
+      assert.equal(doc4?.editability, 'READ_ONLY', 'MASTER_WBS.md must be READ_ONLY');
+
       for (const d of registry) {
         assert.ok(['REFERENCE', 'GENERATED_PROJECTION'].includes(d.authority), `Valid authority for ${d.id}`);
       }
@@ -441,6 +514,8 @@ async function main() {
       assert.equal(doc6Read.integrityStatus, 'UNPINNED');
       assert.equal(doc2.editability, 'CONTROLLED_EDIT');
       assert.equal(doc6.editability, 'CONTROLLED_EDIT');
+      assert.equal(doc2.editableLivingDoc, true);
+      assert.equal(doc6.editableLivingDoc, true);
     } finally {
       ws.cleanup();
     }
@@ -757,6 +832,8 @@ async function main() {
       assert.equal(initialRead.exists, true);
 
       const candidateContent = `${initialRead.content!.trim()}\n\n## Governance\nCurrent governance nominal.\nDMK-201: VERIFICATION_PENDING\nGate 7: HUMAN_APPROVAL_REQUIRED\nLive reconciliation active.\nRelease status: RC1.\n`;
+      const candidateBytesExpected = encodeDocumentBytes(candidateContent, initialRead.eol);
+      const candidateHashExpected = crypto.createHash('sha256').update(candidateBytesExpected).digest('hex');
 
       const coordinator = prepareDocumentTransaction({
         workspaceRoot: ws.workspaceDir,
@@ -772,12 +849,26 @@ async function main() {
 
       assert.ok(fs.existsSync(coordinator.candidatePath), 'Candidate sibling must exist in PREPARED state');
       assert.ok(fs.existsSync(coordinator.rollbackPath), 'Rollback sibling must exist in PREPARED state');
+      assert.ok(fs.existsSync(coordinator.journalPath), 'Journal must exist in PREPARED state');
 
-      coordinator.executeReplacement();
+      // Execute replacement
+      const replacementResult = coordinator.executeReplacement();
+      assert.equal(replacementResult.newSha256, candidateHashExpected);
+
+      // Verify target bytes and hash on disk equal candidate immediately after executeReplacement()
+      const targetAbs = path.join(ws.workspaceDir, docRecord.path);
+      const currentTargetBytes = fs.readFileSync(targetAbs);
+      const currentTargetHash = crypto.createHash('sha256').update(currentTargetBytes).digest('hex');
+      assert.deepEqual(currentTargetBytes, candidateBytesExpected, 'Target bytes must equal candidate bytes after executeReplacement');
+      assert.equal(currentTargetHash, candidateHashExpected, 'Target hash must equal candidate hash after executeReplacement');
+
+      // Commit
       coordinator.handleCommitSuccess();
 
-      assert.equal(fs.existsSync(coordinator.candidatePath), false, 'Candidate sibling must be cleaned after commit');
-      assert.equal(fs.existsSync(coordinator.rollbackPath), false, 'Rollback sibling must be cleaned after commit');
+      // After successful commit:
+      assert.equal(fs.existsSync(coordinator.candidatePath), false, 'Candidate sibling must be absent after commit');
+      assert.equal(fs.existsSync(coordinator.rollbackPath), false, 'Rollback sibling must be absent after commit');
+      assert.equal(fs.existsSync(coordinator.journalPath), false, 'Journal must be unlinked/cleaned after commit');
     } finally {
       ws.cleanup();
     }
@@ -839,11 +930,12 @@ async function main() {
       try {
         const getRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002`);
         const getBody = await getRes.json();
+        const candidateContent = getBody.content + '\n<!-- reload persistence check -->\n';
         const saveRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            candidateContent: getBody.content + '\n<!-- reload persistence check -->\n',
+            candidateContent,
             baseSha256: getBody.rawSha256,
             reason: 'Persistence reload check',
             humanConfirmed: true,
@@ -855,14 +947,32 @@ async function main() {
         await close();
       }
 
-      // Rehydrate new store from the persisted file
-      const reloadedStore = new ProjectStore();
-      const persistedSnapshot = JSON.parse(fs.readFileSync(ws.projectStatePath, 'utf8'));
-      hydrateProjectStoreFromSnapshot(reloadedStore, persistedSnapshot);
-      const reloadedProject = reloadedStore.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN');
-      assert.equal(reloadedProject?.stateVersion, saveBody!.stateVersion, 'Persisted stateVersion must survive rehydration');
-      const reloadedAudit = reloadedStore.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? [];
-      assert.equal(reloadedAudit[0].id, saveBody!.auditEventId, 'Persisted audit event must survive rehydration');
+      // Rehydrate new store from the persisted file AND start fresh Express app/server
+      const freshStore = new ProjectStore();
+      const freshApp = express();
+      freshApp.use(express.json());
+      installProjectPersistence(freshApp, freshStore, ws.workspaceDir);
+      freshApp.use('/api/projects', createControlledDocsRouter(freshStore, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base: freshBase, close: freshClose } = await startTestServer(freshApp);
+
+      try {
+        const freshGetRes = await fetch(`${freshBase}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002`);
+        assert.equal(freshGetRes.status, 200, 'Fresh server GET must succeed');
+        const freshGetBody = await freshGetRes.json();
+
+        assert.equal(freshGetBody.rawSha256, saveBody!.newSha256, 'Fresh server must return updated document hash');
+        assert.ok(freshGetBody.content.includes('reload persistence check'), 'Fresh server must return updated content');
+
+        const freshProject = freshStore.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+        assert.equal(freshProject?.stateVersion, saveBody!.stateVersion, 'Fresh stateVersion must match save result');
+
+        const freshAudit = freshStore.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? [];
+        assert.equal(freshAudit[0].id, saveBody!.auditEventId, 'Fresh audit log must contain saved event ID');
+        assert.equal(freshAudit[0].action, 'DOCUMENT_UPDATED', 'Fresh audit must contain DOCUMENT_UPDATED');
+        assert.equal(freshAudit[0].details?.newSha256, saveBody!.newSha256, 'Fresh audit details must record new SHA');
+      } finally {
+        await freshClose();
+      }
     } finally {
       ws.cleanup();
     }
@@ -887,15 +997,152 @@ async function main() {
   });
 
   // --- Test U: Diff Early Exit ---
-  recordCore('U', 'Diff Early Exit', 'testProjectPersistenceClassifier.ts: Group 1A, Group 3', () => {
-    const classification = classifyProjectRequestMode({ method: 'POST', path: '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff' });
-    assert.equal(classification, 'READ_ONLY', 'POST /diff must be classified READ_ONLY');
+  await recordCoreAsync('U', 'Diff Early Exit', 'POST /diff on unchanged canonical content', async () => {
+    const ws = createDisposableWorkspace();
+    try {
+      const targetAbs = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+      const targetDir = path.dirname(targetAbs);
+      const snapshotAbs = ws.projectStatePath;
+      const txDirAbs = path.join(ws.workspaceDir, '.local', 'document-transactions');
+
+      // Capture before
+      const snapshotBytesBefore = fs.readFileSync(snapshotAbs);
+      const snapshotHashBefore = crypto.createHash('sha256').update(snapshotBytesBefore).digest('hex');
+      const targetBytesBefore = fs.readFileSync(targetAbs);
+      const targetHashBefore = crypto.createHash('sha256').update(targetBytesBefore).digest('hex');
+      const stateVersionBefore = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountBefore = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const txDirExistsBefore = fs.existsSync(txDirAbs);
+      const siblingsBefore = listDmkSiblings(targetDir);
+
+      assert.equal(txDirExistsBefore, false, 'tx directory must not exist initially');
+      assert.deepEqual(siblingsBefore, [], 'no siblings initially');
+
+      // Call actual POST /diff
+      const app = express();
+      app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base, close } = await startTestServer(app);
+
+      let diffBody: any;
+      try {
+        const canonicalContent = targetBytesBefore.toString('utf8');
+        const diffRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateContent: canonicalContent,
+            baseSha256: targetHashBefore,
+          }),
+        });
+        assert.equal(diffRes.status, 200, 'Diff on identical content must return 200');
+        diffBody = await diffRes.json();
+      } finally {
+        await close();
+      }
+
+      assert.equal(diffBody.hasChanges, false, 'hasChanges must be false for identical candidate content');
+
+      // Capture after
+      const snapshotBytesAfter = fs.readFileSync(snapshotAbs);
+      const snapshotHashAfter = crypto.createHash('sha256').update(snapshotBytesAfter).digest('hex');
+      const targetBytesAfter = fs.readFileSync(targetAbs);
+      const targetHashAfter = crypto.createHash('sha256').update(targetBytesAfter).digest('hex');
+      const stateVersionAfter = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountAfter = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const txDirExistsAfter = fs.existsSync(txDirAbs);
+      const siblingsAfter = listDmkSiblings(targetDir);
+
+      assert.equal(snapshotHashAfter, snapshotHashBefore, 'Snapshot bytes must remain identical');
+      assert.equal(targetHashAfter, targetHashBefore, 'Target document bytes must remain identical');
+      assert.equal(stateVersionAfter, stateVersionBefore, 'stateVersion must remain identical');
+      assert.equal(auditCountAfter, auditCountBefore, 'audit count must remain identical');
+      assert.equal(txDirExistsAfter, false, 'no transaction journal directory must exist');
+      assert.deepEqual(siblingsAfter, [], 'no candidate or rollback siblings must exist');
+
+      // Also verify route classifier = READ_ONLY
+      assert.equal(
+        classifyProjectRequestMode({ method: 'POST', baseUrl: '/api/projects', path: '/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/diff' }),
+        'READ_ONLY'
+      );
+    } finally {
+      ws.cleanup();
+    }
   });
 
   // --- Test V: Validate Early Exit ---
-  recordCore('V', 'Validate Early Exit', 'testProjectPersistenceClassifier.ts: Group 1B, Group 3', () => {
-    const classification = classifyProjectRequestMode({ method: 'POST', path: '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/validate' });
-    assert.equal(classification, 'READ_ONLY', 'POST /validate must be classified READ_ONLY');
+  await recordCoreAsync('V', 'Validate Early Exit', 'POST /validate on unchanged canonical content', async () => {
+    const ws = createDisposableWorkspace();
+    try {
+      const targetAbs = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+      const targetDir = path.dirname(targetAbs);
+      const snapshotAbs = ws.projectStatePath;
+      const txDirAbs = path.join(ws.workspaceDir, '.local', 'document-transactions');
+
+      // Capture before
+      const snapshotBytesBefore = fs.readFileSync(snapshotAbs);
+      const snapshotHashBefore = crypto.createHash('sha256').update(snapshotBytesBefore).digest('hex');
+      const targetBytesBefore = fs.readFileSync(targetAbs);
+      const targetHashBefore = crypto.createHash('sha256').update(targetBytesBefore).digest('hex');
+      const stateVersionBefore = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountBefore = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const txDirExistsBefore = fs.existsSync(txDirAbs);
+      const siblingsBefore = listDmkSiblings(targetDir);
+
+      assert.equal(txDirExistsBefore, false, 'tx directory must not exist initially');
+      assert.deepEqual(siblingsBefore, [], 'no siblings initially');
+
+      // Call actual POST /validate
+      const app = express();
+      app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base, close } = await startTestServer(app);
+
+      let valBody: any;
+      try {
+        const canonicalContent = targetBytesBefore.toString('utf8');
+        const valRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateContent: canonicalContent,
+          }),
+        });
+        assert.equal(valRes.status, 200, 'Validate on identical content must return 200');
+        valBody = await valRes.json();
+      } finally {
+        await close();
+      }
+
+      assert.equal(valBody.valid, true, 'valid must be true for unchanged canonical content');
+
+      // Capture after
+      const snapshotBytesAfter = fs.readFileSync(snapshotAbs);
+      const snapshotHashAfter = crypto.createHash('sha256').update(snapshotBytesAfter).digest('hex');
+      const targetBytesAfter = fs.readFileSync(targetAbs);
+      const targetHashAfter = crypto.createHash('sha256').update(targetBytesAfter).digest('hex');
+      const stateVersionAfter = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountAfter = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const txDirExistsAfter = fs.existsSync(txDirAbs);
+      const siblingsAfter = listDmkSiblings(targetDir);
+
+      assert.equal(snapshotHashAfter, snapshotHashBefore, 'Snapshot bytes must remain identical');
+      assert.equal(targetHashAfter, targetHashBefore, 'Target document bytes must remain identical');
+      assert.equal(stateVersionAfter, stateVersionBefore, 'stateVersion must remain identical');
+      assert.equal(auditCountAfter, auditCountBefore, 'audit count must remain identical');
+      assert.equal(txDirExistsAfter, false, 'no transaction journal directory must exist');
+      assert.deepEqual(siblingsAfter, [], 'no candidate or rollback siblings must exist');
+
+      // Also verify route classifier = READ_ONLY
+      assert.equal(
+        classifyProjectRequestMode({ method: 'POST', baseUrl: '/api/projects', path: '/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/validate' }),
+        'READ_ONLY'
+      );
+    } finally {
+      ws.cleanup();
+    }
   });
 
   // --- Test W: stateVersion Increment ---
@@ -1018,28 +1265,62 @@ async function main() {
   });
 
   // --- Test AD: Unregistered docs/ File Invisible ---
-  recordCore('AD', 'Unregistered docs/ File Invisible', 'testControlledDocsRegistry.ts: Test K & testControlledDocsApi.ts: Test 2E', () => {
+  await recordCoreAsync('AD', 'Unregistered docs/ File Invisible', 'testControlledDocsRegistry.ts: Test K & testControlledDocsApi.ts: Test 2E', async () => {
     const ws = createDisposableWorkspace();
     try {
       const dummyFile = path.join(ws.workspaceDir, 'docs', 'unregistered_test_doc.md');
-      fs.writeFileSync(dummyFile, '# Hidden\n', 'utf8');
+      fs.writeFileSync(dummyFile, '# Hidden Unregistered Doc\n', 'utf8');
+
+      // 1. Absent from catalog
       const registry = getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', ws.workspaceDir);
       assert.ok(!registry.some((d) => d.path.includes('unregistered_test_doc.md')), 'Unregistered file must not appear in registry');
+
+      // 2. HTTP GET through controlled-doc API returns 404
+      const app = express();
+      app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base, close } = await startTestServer(app);
+      try {
+        const getRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/unregistered_test_doc.md`);
+        assert.equal(getRes.status, 404, 'Unregistered document GET must return 404');
+        const getBody = await getRes.json();
+        assert.equal(getBody.error, 'DOCUMENT_NOT_FOUND');
+      } finally {
+        await close();
+      }
     } finally {
       ws.cleanup();
     }
   });
 
   // --- Test AE: LAST_HANDOFF.md Invisible ---
-  recordCore('AE', 'LAST_HANDOFF.md Invisible', 'testControlledDocsRegistry.ts: Test J', () => {
+  await recordCoreAsync('AE', 'LAST_HANDOFF.md Invisible', 'testControlledDocsRegistry.ts: Test J', async () => {
     const ws = createDisposableWorkspace();
     try {
       const handoffFile = path.join(ws.workspaceDir, 'docs', 'LAST_HANDOFF.md');
-      fs.writeFileSync(handoffFile, '# Handoff\n', 'utf8');
+      fs.writeFileSync(handoffFile, '# Handoff Information\n', 'utf8');
+
+      // 1. Absent from registry & null from findControlledDoc
       const registry = getControlledDocsRegistry('PRJ-DOCMONSTAKRAKIN', ws.workspaceDir);
       assert.ok(!registry.some((d) => d.path.includes('LAST_HANDOFF.md')), 'LAST_HANDOFF.md must never appear in registry');
       const query = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'LAST_HANDOFF.md', ws.workspaceDir);
       assert.equal(query, null, 'Direct lookup of LAST_HANDOFF.md must return null');
+
+      // 2. HTTP GET through controlled-doc API returns 404
+      const app = express();
+      app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base, close } = await startTestServer(app);
+      try {
+        const getRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/LAST_HANDOFF.md`);
+        assert.equal(getRes.status, 404, 'LAST_HANDOFF.md GET must return 404');
+        const getBody = await getRes.json();
+        assert.equal(getBody.error, 'DOCUMENT_NOT_FOUND');
+      } finally {
+        await close();
+      }
     } finally {
       ws.cleanup();
     }
@@ -1144,6 +1425,14 @@ async function main() {
 
   // --- Test AN: Journal Path Tampering ---
   recordCore('AN', 'Journal Path Tampering', 'testControlledDocsRecovery.ts: Test I', () => {
+    // 1. Validate operationId pattern [A-Za-z0-9_-]+
+    assert.throws(() => deriveSiblingCandidatePath('docs/00_control/PROJECT_STATE.md', '../bad'), /INVALID_OPERATION_ID/);
+    assert.throws(() => deriveSiblingCandidatePath('docs/00_control/PROJECT_STATE.md', 'bad/slash'), /INVALID_OPERATION_ID/);
+    assert.throws(() => deriveSiblingCandidatePath('docs/00_control/PROJECT_STATE.md', 'bad\\slash'), /INVALID_OPERATION_ID/);
+    assert.throws(() => deriveSiblingCandidatePath('docs/00_control/PROJECT_STATE.md', 'bad space'), /INVALID_OPERATION_ID/);
+    assert.ok(deriveSiblingCandidatePath('docs/00_control/PROJECT_STATE.md', 'valid_OP-123'));
+
+    // 2. Recovery journal path tampering verified by recovery suite Test I
     const suiteOutput = focusedSuiteResults.find((s) => s.name === 'testControlledDocsRecovery')?.stdout ?? '';
     assert.ok(
       suiteOutput.includes('Test I: journal path tampering -> locked, external sentinel untouched'),
@@ -1188,14 +1477,24 @@ async function main() {
   await recordAddAsync('Recovery Lock Enforcement', 'testControlledDocsApi.ts: Test 8A', async () => {
     const ws = createDisposableWorkspace();
     try {
+      const targetAbs = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+      const targetDir = path.dirname(targetAbs);
       const journalDir = path.join(ws.workspaceDir, '.local', 'document-transactions');
       fs.mkdirSync(journalDir, { recursive: true });
       fs.writeFileSync(path.join(journalDir, 'corrupt.json'), '{ malformed json');
       recoverDocumentTransactions(ws.workspaceDir);
       assert.equal(isDocumentTransactionsLocked(), true, 'Recovery must be locked due to malformed journal');
 
+      // Before locked save capture:
+      const stateVersionBefore = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountBefore = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const targetHashBefore = crypto.createHash('sha256').update(fs.readFileSync(targetAbs)).digest('hex');
+      const journalFilesBefore = fs.readdirSync(journalDir);
+      const siblingsBefore = listDmkSiblings(targetDir);
+
       const app = express();
       app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
       try {
@@ -1215,6 +1514,19 @@ async function main() {
       } finally {
         await close();
       }
+
+      // After blocked save require:
+      const stateVersionAfter = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')?.stateVersion;
+      const auditCountAfter = (ws.store.auditLogs['PRJ-DOCMONSTAKRAKIN'] ?? []).length;
+      const targetHashAfter = crypto.createHash('sha256').update(fs.readFileSync(targetAbs)).digest('hex');
+      const journalFilesAfter = fs.readdirSync(journalDir);
+      const siblingsAfter = listDmkSiblings(targetDir);
+
+      assert.equal(stateVersionAfter, stateVersionBefore, 'stateVersion must remain unchanged');
+      assert.equal(auditCountAfter, auditCountBefore, 'audit count must remain unchanged');
+      assert.equal(targetHashAfter, targetHashBefore, 'target hash must remain unchanged');
+      assert.deepEqual(journalFilesAfter, journalFilesBefore, 'no NEW journal created');
+      assert.deepEqual(siblingsAfter, siblingsBefore, 'no candidate or rollback siblings created');
     } finally {
       ws.cleanup();
     }
@@ -1523,13 +1835,71 @@ async function main() {
   });
 
   // 29. Symlink Write Rejection
-  recordAdd('Symlink Write Rejection', 'testControlledDocsPersistence.ts: Test H', () => {
-    const persistOutput = focusedSuiteResults.find((s) => s.name === 'testControlledDocsPersistence')?.stdout ?? '';
-    assert.ok(
-      persistOutput.includes('Test H: Internal safe symlink read vs editable write target') ||
-      persistOutput.includes('write target rejected by assertEditableTargetNotSymlink'),
-      'Symlink write rejection verified'
-    );
+  await recordAddAsync('Symlink Write Rejection', 'Direct Task 12 Symlink Probe', async () => {
+    const ws = createDisposableWorkspace();
+    try {
+      const realTargetAbs = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE_REAL.md');
+      const linkAbs = path.join(ws.workspaceDir, 'docs', '00_control', 'PROJECT_STATE.md');
+
+      // Rename canonical target file to REAL
+      fs.renameSync(linkAbs, realTargetAbs);
+      const originalRealBytes = fs.readFileSync(realTargetAbs);
+      const originalRealHash = crypto.createHash('sha256').update(originalRealBytes).digest('hex');
+
+      // Create symlink at canonical path pointing to real target file inside docs/
+      try {
+        fs.symlinkSync(realTargetAbs, linkAbs, 'file');
+      } catch (err: any) {
+        throw new Error(`SYMLINK_FIXTURE_BLOCKED: Unable to create symlink fixture: ${err?.message}`);
+      }
+
+      // 1. Verify safe internal read works where allowed
+      const docRecord = findControlledDoc('PRJ-DOCMONSTAKRAKIN', 'DOC-CTRL-002', ws.workspaceDir)!;
+      const readRes = readDocumentDisk(docRecord, ws.workspaceDir);
+      assert.equal(readRes.exists, true, 'Safe internal symlink read should resolve target file');
+      assert.equal(readRes.rawSha256, originalRealHash, 'Read hash should match real target hash');
+
+      // 2. Verify controlled write target is rejected directly
+      assert.throws(
+        () => assertEditableTargetNotSymlink(linkAbs),
+        /EDITABLE_TARGET_SYMLINK/
+      );
+
+      // 3. Exercise actual /save route
+      const app = express();
+      app.use(express.json());
+      installProjectPersistence(app, ws.store, ws.workspaceDir);
+      app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
+      const { base, close } = await startTestServer(app);
+      try {
+        const saveRes = await fetch(`${base}/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateContent: originalRealBytes.toString('utf8') + '\n<!-- attempted symlink write -->\n',
+            baseSha256: originalRealHash,
+            reason: 'Attempted symlink write',
+            humanConfirmed: true,
+          }),
+        });
+
+        // 4. Require non-2xx response
+        assert.ok(saveRes.status >= 400, `Expected non-2xx response, got ${saveRes.status}`);
+        assert.equal(saveRes.status, 500);
+        const saveBody = await saveRes.json();
+        assert.equal(saveBody.error, 'DOCUMENT_UPDATE_FAILED');
+      } finally {
+        await close();
+      }
+
+      // 5. Verify real symlink target bytes unchanged
+      const currentRealBytes = fs.readFileSync(realTargetAbs);
+      assert.deepEqual(currentRealBytes, originalRealBytes, 'Real symlink target bytes must remain completely unchanged');
+      const currentRealHash = crypto.createHash('sha256').update(currentRealBytes).digest('hex');
+      assert.equal(currentRealHash, originalRealHash, 'Real target hash must remain unchanged');
+    } finally {
+      ws.cleanup();
+    }
   });
 
   // --------------------------------------------------------------------------
@@ -1543,6 +1913,7 @@ async function main() {
   console.log(`  Core matrix expected: ${CORE_MATRIX_IDS.length}`);
   console.log(`  Core matrix covered:  ${coveredIds.length}`);
   console.log(`  Core matrix failed:   ${failedCore.length}`);
+  console.log(`  Unique IDs tracked:   ${recordedCoreIds.size}`);
 
   if (missingIds.length > 0) {
     throw new Error(`Incomplete matrix coverage: missing IDs ${missingIds.join(', ')}`);
@@ -1551,7 +1922,11 @@ async function main() {
     throw new Error(`Core matrix test failures: IDs ${failedCore.join(', ')}`);
   }
   assert.equal(coveredIds.length, 40, 'All 40 core matrix IDs must be covered');
-  console.log('  CORE MATRIX COVERAGE: 40 / 40 PASS\n');
+  assert.equal(recordedCoreIds.size, 40, 'Must have exactly 40 unique core IDs recorded');
+  for (const id of CORE_MATRIX_IDS) {
+    assert.ok(recordedCoreIds.has(id), `Missing core matrix ID: ${id}`);
+  }
+  console.log('  CORE MATRIX COVERAGE: 40 / 40 PASS (0 duplicates, 0 missing)\n');
 
   // --------------------------------------------------------------------------
   // STEP 6: POST-TEST LIVE STATE VERIFICATION
@@ -1573,6 +1948,16 @@ async function main() {
 
   assert.equal(fs.existsSync(liveTxDir), false, 'Live .local/document-transactions must remain absent');
 
+  // Verify all 28 registered live documents remain unchanged
+  for (const doc of realManifestData.documents) {
+    const docPath = path.resolve(process.cwd(), doc.path);
+    if (fs.existsSync(docPath)) {
+      const h = crypto.createHash('sha256').update(fs.readFileSync(docPath)).digest('hex');
+      const expected = liveDocHashesBefore.get(doc.id);
+      assert.equal(h, expected, `Live document ${doc.id} (${doc.path}) was mutated during tests`);
+    }
+  }
+
   const projectStateLivingShaAfter = crypto.createHash('sha256').update(fs.readFileSync(projectStateLivingPath)).digest('hex');
   const traceMatrixLivingShaAfter = crypto.createHash('sha256').update(fs.readFileSync(traceMatrixLivingPath)).digest('hex');
   assert.equal(projectStateLivingShaAfter, projectStateLivingShaBefore, 'Live PROJECT_STATE.md must remain untouched');
@@ -1583,7 +1968,7 @@ async function main() {
   console.log('  ✓ Live auditCount verified unchanged:       76');
   console.log('  ✓ Live audit chain verified unchanged:      76 / 76 valid');
   console.log('  ✓ Live document-transactions verified:      absent');
-  console.log('  ✓ Controlled documents verified:            pristine / untouched\n');
+  console.log(`  ✓ All ${liveDocHashesBefore.size} registered live documents verified untouched\n`);
 
   // --------------------------------------------------------------------------
   // STEP 7: FINAL REPORT SUMMARY
