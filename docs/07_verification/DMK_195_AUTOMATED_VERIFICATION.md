@@ -69,26 +69,29 @@ The formal controlled documentation test suite (`scripts/testControlledDocs.ts`)
 The self-bootstrap manifest defines exactly **28 registered documents**:
 - **24 SHA-Pinned Manifest Entries**: Cryptographically bound to fixed SHA-256 digests; tampering is detected immediately (`integrityStatus: CHANGED`).
 - **4 Unpinned-by-Digest Documents**:
-  - `DOC-CTRL-002` — `docs/00_control/PROJECT_STATE.md` (Living document, `CONTROLLED_EDIT`)
-  - `DOC-CTRL-003` — `docs/00_control/MASTER_WBS.yaml` (`READ_ONLY` by registry policy)
-  - `DOC-CTRL-004` — `docs/00_control/MASTER_WBS.md` (`GENERATED_PROJECTION` + `READ_ONLY`)
-  - `DOC-CTRL-006` — `docs/00_control/TRACEABILITY_MATRIX.md` (Living document, `CONTROLLED_EDIT`)
-- **2 Controlled-Edit Living Documents**: Exactly `DOC-CTRL-002` and `DOC-CTRL-006` permit the controlled edit workflow.
-- **Strict Read-Only Enforcement**: All other 26 registered documents (including `MASTER_WBS.yaml`, `MASTER_WBS.md`, and all pinned architecture/security/decision documents) strictly disallow edit actions and reject save requests.
+  - `DOC-CTRL-002` — `docs/00_control/PROJECT_STATE.md`
+  - `DOC-CTRL-003` — `docs/00_control/MASTER_WBS.yaml`
+  - `DOC-CTRL-004` — `docs/00_control/MASTER_WBS.md`
+  - `DOC-CTRL-006` — `docs/00_control/TRACEABILITY_MATRIX.md`
+- **2 Controlled-Edit Living Documents**: Only `DOC-CTRL-002` and `DOC-CTRL-006` are `CONTROLLED_EDIT` and permit the controlled edit workflow.
+- **Strict Read-Only Enforcement**: All other 26 registered documents strictly disallow edit actions and reject save requests:
+  - `DOC-CTRL-003` (`MASTER_WBS.yaml`) remains `READ_ONLY` by registry policy.
+  - `DOC-CTRL-004` (`MASTER_WBS.md`) remains `GENERATED_PROJECTION` + `READ_ONLY`.
+  - All 24 SHA-pinned architecture, security, decision, and verification documents remain `READ_ONLY`.
 
 
 ## 4. Security & Boundary Results
 
 The suite probed all security boundaries and confirmed robust fail-closed enforcement:
 
-- **Path Traversal & Absolute Paths**: Directory traversal sequences (`../`, `..\\`, `%2e%2e/`) and absolute paths (`/etc/passwd`, `C:\...`) are rejected with HTTP 400 (`INVALID_DOCUMENT_ID` / `INVALID_DOCUMENT_PATH`).
+- **Path Traversal & Absolute Paths**: Unregistered or malicious document IDs requested through the HTTP document route are rejected as `DOCUMENT_NOT_FOUND` / HTTP 404. Registered-path filesystem primitives independently reject unsafe manifest paths using fail-closed errors including `TRAVERSAL_DETECTED`, `ABSOLUTE_PATH_REJECTED`, `UNC_PATH_REJECTED`, `PATH_OUTSIDE_DOCS_BOUNDARY`, and `SYMLINK_ESCAPED`.
 - **Project Boundary Isolation**: Document operations are isolated to the active project context; cross-tenant document manipulation is rejected.
-- **Physical Unregistered Files**: Arbitrary files placed inside `docs/` (e.g., `docs/test-unregistered.md`) are excluded from the registry catalog, return `null` on logical lookup, and yield HTTP 404 (`DOCUMENT_NOT_FOUND`) on API access.
-- **Handover Exclusion**: Physical `docs/LAST_HANDOFF.md` is excluded from the registry catalog, returns `null` from `findControlledDocByLogicalPath`, and yields HTTP 404 (`DOCUMENT_NOT_FOUND`) on API routes.
+- **Physical Unregistered Files**: Arbitrary files placed inside `docs/` (e.g., `docs/test-unregistered.md`) are excluded from the registry catalog, registry document lookup returns no registered record (`findControlledDoc(projectId, documentId, workspaceRoot)` returns `null`), and HTTP GET requests yield HTTP 404 (`DOCUMENT_NOT_FOUND`).
+- **Handover Exclusion**: Physical `docs/LAST_HANDOFF.md` is excluded from the registry catalog, registry document lookup returns no registered record, and HTTP GET requests yield HTTP 404 (`DOCUMENT_NOT_FOUND`).
 - **Symlink Rejection**: Symlinked targets are detected via `assertEditableTargetNotSymlink` throwing `EDITABLE_TARGET_SYMLINK`; router operations reject symlink write requests returning non-2xx HTTP 500 (`DOCUMENT_UPDATE_FAILED`) while preserving original real target file bytes untouched.
 - **Mixed Line Endings**: Documents containing inconsistent line endings (CRLF mixed with LF) are rejected fail-closed with `UNSUPPORTED_MIXED_LINE_ENDINGS`.
-- **Client Identity Boundary**: Inbound client attempts to inject reviewer username or roles in save payloads are ignored and stripped; the server derives reviewer identity exclusively from the authenticated session context or fallback (`CLIENT_IDENTITY_CLAIMS_PROHIBITED` invariant).
-- **Recovery Lock Enforcement**: If a pending transaction journal exists in `.local/document-transactions/`, any subsequent save attempt is blocked fail-closed with HTTP 500 (`DOCUMENT_TRANSACTION_RECOVERY_REQUIRED`) with zero state or disk mutation.
+- **Client Identity Boundary**: Prohibited client identity fields in save payloads are rejected before authentication with HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`. Production reviewer identity is derived from the authenticated local reviewer session backed by the operator-controlled roster (`CLIENT_IDENTITY_CLAIMS_PROHIBITED` invariant).
+- **Recovery Lock Enforcement**: Ambiguous, malformed, or unrecoverable transaction state causes `DOCUMENT_TRANSACTION_RECOVERY_REQUIRED` and locks subsequent mutations until operator resolution. Valid recoverable/committed journals may be recovered or cleaned automatically.
 - **Journal Path Tampering Guard**: Operation IDs are validated against strict regex `^[A-Za-z0-9_-]+$`; directory traversal sequences within journal IDs are rejected.
 - **Markdown URI Security**: Dangerous URI schemes (`javascript:`, `data:`) in Markdown links are inertly filtered; external hyperlinks enforce `rel="noopener noreferrer"`; safe relative documentation links remain functional.
 
@@ -98,7 +101,23 @@ The suite probed all security boundaries and confirmed robust fail-closed enforc
 Controlled document persistence follows a two-phase atomic write protocol:
 - **Candidate Sibling**: `.<filename>.dmk-<operationId>.candidate` placed in the same directory as the target document.
 - **Rollback Sibling**: `.<filename>.dmk-<operationId>.rollback` placed in the same directory as the target document.
-- **Transaction Journal**: `.local/document-transactions/<operationId>.json` records operation metadata, actor, target path, base hash, and candidate hash.
+- **Transaction Journal**: `.local/document-transactions/<operationId>.json` records:
+  - `operationId`
+  - `projectId`
+  - `documentId`
+  - `targetPath`
+  - `candidateArtifactPath`
+  - `rollbackArtifactPath`
+  - `previousSha256`
+  - `candidateSha256`
+  - `projectStateBeforeDigest`
+  - `stateVersionBefore`
+  - `stateVersionExpectedAfter`
+  - `auditEventId`
+  - `phase`
+  - `createdAt`
+  - `updatedAt`
+  *(Note: The journal schema does not store actor or reason; actor and reason belong strictly to audit ledger semantics.)*
 - **Operation ID Hygiene**: Sanitized against `^[A-Za-z0-9_-]+$`.
 
 ### Failure Stage Matrix (Stages A through J)
@@ -110,7 +129,7 @@ Controlled document persistence follows a two-phase atomic write protocol:
 | **Stage C** | Candidate fsync failure | Temporary siblings removed; transaction aborts; target untouched | PASS |
 | **Stage D** | Journal write/fsync failure | Sibling files cleaned; transaction aborts; target untouched | PASS |
 | **Stage E** | Candidate rename failure | Original file restored from rollback sibling; journal cleaned; abort | PASS |
-| **Stage F** | Post-replacement pre-audit failure | Atomic rollback to original bytes; journal marked `ABORTED`; cleanup | PASS |
+| **Stage F** | Post-replacement pre-audit failure | Replacement occurs; post-replacement/pre-audit failure is injected; route-level rollback restores the original target; transaction artifacts are cleaned when rollback succeeds; stateVersion and audit remain uncommitted | PASS |
 | **Stage G** | Audit append failure | Atomic rollback to original bytes; state unmutated; abort | PASS |
 | **Stage H** | Snapshot persistence failure | Atomic rollback to original bytes; snapshot state reverted; abort | PASS |
 | **Stage I** | Rollback execution failure | System fails closed; recovery lock engaged to prevent corruption | PASS |
@@ -119,13 +138,13 @@ Controlled document persistence follows a two-phase atomic write protocol:
 
 ## 6. Audit & Identity
 
-Audit logging adheres to strict immutability and monotonically chained hashing:
+Audit logging adheres to strict immutability and cryptographically chained hashing:
 - **Audit Event Type**: Every controlled document modification emits a `DOCUMENT_UPDATED` audit record.
-- **Audit Event ID Format**: Monotonically formatted as `AUD-<timestamp-base36>-<4 chars>` (not UUIDs).
+- **Audit Event ID Format**: Emits standard historical format: `AUD-<timestamp-base36>-<4 random chars>`. Audit IDs are not monotonic sequence numbers or UUIDs; audit chain ordering and integrity are established via `timestamp`, `previousHash`, and `stateHash`.
 - **Audit Payload**: Contains document ID, logical path, actor identity, reason, base SHA-256 hash, and candidate SHA-256 hash.
-- **Reviewer Identity**: Derived strictly from server session; client-supplied identity claims are rejected.
+- **Reviewer Identity**: Production reviewer identity is derived from the authenticated local reviewer session backed by the operator-controlled roster; client-supplied identity claims are rejected before authentication with HTTP 400 `CLIENT_IDENTITY_CLAIMS_PROHIBITED`.
 - **Duplicate Audit ID Rejection**: Inbound or duplicate audit event IDs are rejected to preserve monotonic ledger integrity.
-- **Audit Chain Integrity**: Live audit ledger cryptographically verified valid (`76 / 76` entries in `REVERSE_CHRONOLOGICAL` sequence).
+- **Audit Chain Integrity**: Live audit ledger cryptographically verified valid (`76 / 76` entries verified via `verifyAuditLedgerChain` in `REVERSE_CHRONOLOGICAL` sequence).
 
 
 ## 7. Raw Bytes & Encoding

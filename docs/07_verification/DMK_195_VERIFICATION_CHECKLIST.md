@@ -50,7 +50,7 @@ SAFETY NOTICE: CANONICAL STATE & ADVERSARIAL TESTING
 ## 3. Document Integrity Badges
 
 - [ ] **MATCH** badge displays for uncorrupted SHA-pinned documents.
-- [ ] **UNPINNED** badge displays for unpinned living documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`, `MASTER_WBS.yaml`, `MASTER_WBS.md`).
+- [ ] **UNPINNED** badge displays for unpinned documents (`PROJECT_STATE.md`, `TRACEABILITY_MATRIX.md`, `MASTER_WBS.yaml`, `MASTER_WBS.md`).
 - [ ] **CHANGED** badge semantics are recognized in UI when file hash differs from manifest digest.
 - [ ] **MISSING** badge semantics are recognized in UI when a registered document file cannot be found on disk.
 
@@ -62,9 +62,9 @@ SAFETY NOTICE: CANONICAL STATE & ADVERSARIAL TESTING
 
 ## 4. Read-Only Document Protection
 
-- [ ] `MASTER_WBS.yaml` (`DOC-CTRL-003`) displays `READ_ONLY` authority badge and exposes no Edit Draft action.
-- [ ] `MASTER_WBS.md` (`DOC-CTRL-004`) displays `READ_ONLY` / generated projection authority badge and exposes no Edit Draft action.
-- [ ] SHA-pinned reference documents (e.g., `SYSTEM_ARCHITECTURE.md`, `SECURITY_CONTROLS.md`) display `READ_ONLY` badges and expose no Edit Draft action.
+- [ ] `MASTER_WBS.yaml` (`DOC-CTRL-003`) displays `READ_ONLY` authority badge and exposes no **Edit Document** action.
+- [ ] `MASTER_WBS.md` (`DOC-CTRL-004`) displays `READ_ONLY` / generated projection authority badge and exposes no **Edit Document** action.
+- [ ] SHA-pinned reference documents (e.g., `SYSTEM_ARCHITECTURE.md`, `SECURITY_CONTROLS.md`) display `READ_ONLY` badges and expose no **Edit Document** action.
 - [ ] Read-only view displays canonical raw markdown content or rendered view without draft buffer controls.
 
 
@@ -76,16 +76,17 @@ Verify on living document `DOC-CTRL-002` (`PROJECT_STATE.md`):
 
 ### Safe Pre-Commit UI Verification
 - [ ] Select `PROJECT_STATE.md` in catalog; confirm canonical content displays.
-- [ ] Click **Edit Draft**; draft editing buffer opens with current document content.
+- [ ] Click **Edit Document**; draft editing buffer opens with current document content.
 - [ ] Modify content in draft buffer; confirm unsaved changes indicator appears.
 - [ ] Click **Preview Diff**; review computed line-by-line diff.
 - [ ] Confirm additions, deletions, line counts, and candidate hash preview match modifications.
-- [ ] Click **Validate**; structural validation executes against document schema.
+- [ ] Click **Validate Invariants**; structural validation executes against document schema.
 - [ ] Confirm validation errors block progression if required headers/sections are deleted.
-- [ ] Confirm **Save** dialog / modal becomes accessible only after structural validation succeeds.
-- [ ] Confirm Reviewer Identity and assigned roles display as read-only values in the Save dialog.
+- [ ] Confirm **Proceed to Save** button becomes enabled/accessible only after structural validation succeeds.
+- [ ] Click **Proceed to Save** to open the save modal; confirm Reviewer Identity and assigned roles display as read-only values.
 - [ ] Confirm Change Reason field is mandatory (empty reason disables submission).
 - [ ] Confirm Human Confirmation checkbox is required before submission.
+- [ ] Confirm **Confirm & Save** button initiates the coordinated commit.
 
 ### Coordinated Commit & Live State (Audited Live Save)
 - [ ] Confirm coordinated commit state locks UI and disables duplicate submission during save request.
@@ -96,8 +97,8 @@ Verify on living document `DOC-CTRL-002` (`PROJECT_STATE.md`):
 
 ## 6. Stale Concurrency & Optimistic Locking
 
-- [ ] Attempting to save against a document whose base hash has changed on disk/server is rejected with conflict error (HTTP 409 `STALE_BASE_HASH` / concurrency conflict).
-- [ ] UI displays clear conflict notification and offers canonical reload action.
+- [ ] Attempting to save against a document whose base hash has changed on disk/server is rejected with conflict error (HTTP 409 `DOCUMENT_STALE` / concurrency conflict).
+- [ ] UI displays clear conflict notification and offers **Reload Canonical Content** action.
 - [ ] No automatic or unprompted save retry is initiated by the client.
 
 > [!NOTE]
@@ -123,12 +124,12 @@ Verify on living document `DOC-CTRL-002` (`PROJECT_STATE.md`):
 
 Confirm all six canonical Dynamic Projections remain fully functional under the **Dynamic Projections** tab:
 
-- [ ] **Product Requirements** (`REQ`) projection renders canonical requirements.
-- [ ] **Threat Model & Risk Register** (`SEC`) projection renders threats and risk matrix.
+- [ ] **Product Requirements** (`PRD`) projection renders canonical requirements.
+- [ ] **Threat Model & Risk Register** (`THREAT` internally) projection renders threats and risk matrix.
 - [ ] **Traceability Matrix** (`RTM`) projection renders requirement-to-component mappings.
-- [ ] **Software Architecture** (`ARC`) projection renders architectural baselines and ADRs.
+- [ ] **Software Architecture** (`SAD`) projection renders architectural baselines and ADRs.
 - [ ] **Governance & Quorum** (`GOV`) projection renders approval status and reviewer quorum.
-- [ ] **Release Gates & DoD** (`REL`) projection renders gate evaluation criteria.
+- [ ] **Release Gates & DoD** (`RELEASE` internally / `REL` label) projection renders gate evaluation criteria.
 
 For all projections, confirm supporting capabilities remain operational:
 - [ ] `STATE PROJECTION ONLY` indicator remains visible.
