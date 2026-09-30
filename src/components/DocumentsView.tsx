@@ -16,7 +16,10 @@ import {
   Award,
   AlertTriangle,
   Lock,
+  Eye,
+  FileCode,
 } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   Project,
   Requirement,
@@ -54,6 +57,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   const [selectedDoc, setSelectedDoc] = useState<
     'PRD' | 'SAD' | 'THREAT' | 'RTM' | 'GOV' | 'RELEASE'
   >('PRD');
+  const [viewMode, setViewMode] = useState<'RENDERED' | 'RAW'>('RENDERED');
   const [copied, setCopied] = useState(false);
   const [releaseReport, setReleaseReport] = useState<ReleaseAuditReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -683,12 +687,56 @@ ${components
             <FileText className="w-4 h-4 text-slate-400" />
             <span className="font-bold text-slate-700">{selectedDoc}.md</span>
           </div>
-          <span className="font-mono text-[11px]">Rendered dynamically from canonical state hash</span>
+          <div className="flex items-center gap-4">
+            <span className="font-mono text-[11px] hidden sm:inline">Rendered dynamically from canonical state hash</span>
+            <div className="bg-slate-100 border border-slate-200 rounded-lg p-0.5 flex items-center text-xs">
+              <button
+                type="button"
+                data-testid="projection-toggle-rendered"
+                onClick={() => setViewMode('RENDERED')}
+                className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium transition-colors cursor-pointer ${
+                  viewMode === 'RENDERED'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Rendered
+              </button>
+              <button
+                type="button"
+                data-testid="projection-toggle-raw"
+                onClick={() => setViewMode('RAW')}
+                className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium transition-colors cursor-pointer ${
+                  viewMode === 'RAW'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                Raw Source
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="p-8 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto bg-white">
-          {mdContent}
-        </div>
+        {viewMode === 'RENDERED' ? (
+          <div className="p-8 bg-slate-50/50">
+            <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200/80 p-8 shadow-xs">
+              <MarkdownRenderer
+                content={mdContent}
+                testId="dynamic-projection-rendered"
+              />
+            </div>
+          </div>
+        ) : (
+          <div
+            data-testid="dynamic-projection-raw"
+            className="p-8 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto bg-white"
+          >
+            {mdContent}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -137,6 +137,21 @@ const MOCK_DOCS: ControlledDocumentSummary[] = [
     sizeBytes: 1024,
     eol: 'MIXED',
   },
+  {
+    id: 'DOC-CTRL-006',
+    path: 'docs/00_control/RICH_FORMATTING.md',
+    kind: 'CONTROL',
+    authority: 'REFERENCE',
+    editability: 'READ_ONLY',
+    fileType: 'MARKDOWN',
+    title: 'Rich Formatting Test Document',
+    description: 'Document verifying all typography elements',
+    integrityStatus: 'MATCH',
+    sha256Digest: '6666666666666666666666666666666666666666666666666666666666666666',
+    currentSha256: '6666666666666666666666666666666666666666666666666666666666666666',
+    sizeBytes: 2048,
+    eol: 'LF',
+  },
 ];
 
 const DOC_CTRL_001_CONTENT: DocumentContentResponse = {
@@ -145,6 +160,37 @@ const DOC_CTRL_001_CONTENT: DocumentContentResponse = {
   rawSha256: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
   eol: 'LF',
   sizeBytes: 1024,
+};
+
+const DOC_CTRL_006_CONTENT: DocumentContentResponse = {
+  document: MOCK_DOCS[5],
+  content: `# Heading 1
+## Heading 2
+### Heading 3
+
+Paragraph with **bold** and *italic* text.
+
+- Bullet 1
+- Bullet 2
+
+1. Numbered 1
+2. Numbered 2
+
+> Blockquote
+
+\`inline code\`
+
+\`\`\`bash
+echo hello
+\`\`\`
+
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |
+`,
+  rawSha256: '6666666666666666666666666666666666666666666666666666666666666666',
+  eol: 'LF',
+  sizeBytes: 2048,
 };
 
 const DOC_CTRL_002_INITIAL_CONTENT: DocumentContentResponse = {
@@ -303,6 +349,11 @@ async function setupPage() {
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-005') {
       contentLoadCalls.push(url);
       return send(DOC_CTRL_005_CONTENT);
+    }
+
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-006') {
+      contentLoadCalls.push(url);
+      return send(DOC_CTRL_006_CONTENT);
     }
 
     if (method === 'POST' && url.endsWith('/diff')) {
@@ -475,7 +526,7 @@ try {
       const badgeUnpinned = await ctx.page.waitForSelector('[data-testid="badge-integrity-DOC-CTRL-002"]');
       assert.equal(await badgeUnpinned.textContent(), 'UNPINNED');
       const unpinnedClasses = (await badgeUnpinned.getAttribute('class')) || '';
-      assert(unpinnedClasses.includes('bg-slate-800') || unpinnedClasses.includes('text-slate-300'), 'UNPINNED uses slate style');
+      assert(unpinnedClasses.includes('bg-slate-100') || unpinnedClasses.includes('text-slate-600') || unpinnedClasses.includes('bg-slate-800'), 'UNPINNED uses slate style');
 
       const badgeEdit = await ctx.page.waitForSelector('[data-testid="badge-editability-DOC-CTRL-002"]');
       assert.equal(await badgeEdit.textContent(), 'CONTROLLED_EDIT');
@@ -1182,6 +1233,94 @@ try {
       assert.strictEqual(editBtnCount, 0, 'Edit unavailable');
 
       assert.strictEqual(ctx.getSaveCalls().length, 1, 'Never retries save');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 15: Rich markdown rendering and light presentation shell verification
+  await runTest('Test 15: Rich markdown rendering and light presentation shell verification', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+
+      // Check light background on repository-docs-shell or controlled-docs-workspace
+      const shell = ctx.page.locator('[data-testid="controlled-docs-workspace"]');
+      await shell.waitFor();
+      const shellClasses = (await shell.getAttribute('class')) || '';
+      assert(
+        !shellClasses.includes('bg-slate-950'),
+        'Outer workspace shell must not use dark background bg-slate-950'
+      );
+      assert(
+        shellClasses.includes('bg-white') || shellClasses.includes('bg-slate-50'),
+        'Outer workspace shell must use light background (bg-white or bg-slate-50)'
+      );
+
+      // Select DOC-CTRL-006 (Rich formatting document)
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-006"]');
+      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      const rendered = ctx.page.locator('[data-testid="doc-content-rendered"]');
+
+      // h1 element is rendered with appropriate styling
+      const h1 = rendered.locator('h1');
+      assert.strictEqual(await h1.count(), 1, 'h1 rendered');
+      assert.strictEqual((await h1.textContent())?.trim(), 'Heading 1');
+      const h1Class = (await h1.getAttribute('class')) || '';
+      assert(h1Class.includes('text-3xl') || h1Class.includes('font-bold'), 'h1 has appropriate styling');
+
+      // h2 element is rendered
+      const h2 = rendered.locator('h2');
+      assert.strictEqual(await h2.count(), 1, 'h2 rendered');
+      assert.strictEqual((await h2.textContent())?.trim(), 'Heading 2');
+
+      // h3 element is rendered
+      const h3 = rendered.locator('h3');
+      assert.strictEqual(await h3.count(), 1, 'h3 rendered');
+      assert.strictEqual((await h3.textContent())?.trim(), 'Heading 3');
+
+      // p element is rendered
+      const p = rendered.locator('p');
+      assert((await p.count()) >= 1, 'p rendered');
+
+      // strong element is rendered
+      const strong = rendered.locator('strong');
+      assert.strictEqual(await strong.count(), 1, 'strong rendered');
+      assert.strictEqual((await strong.textContent())?.trim(), 'bold');
+
+      // ul and li elements are rendered
+      const ul = rendered.locator('ul');
+      assert.strictEqual(await ul.count(), 1, 'ul rendered');
+      const ulLi = ul.locator('li');
+      assert.strictEqual(await ulLi.count(), 2, 'ul li rendered');
+
+      // ol and li elements are rendered
+      const ol = rendered.locator('ol');
+      assert.strictEqual(await ol.count(), 1, 'ol rendered');
+      const olLi = ol.locator('li');
+      assert.strictEqual(await olLi.count(), 2, 'ol li rendered');
+
+      // blockquote element is rendered
+      const blockquote = rendered.locator('blockquote');
+      assert.strictEqual(await blockquote.count(), 1, 'blockquote rendered');
+      assert((await blockquote.textContent())?.includes('Blockquote'));
+
+      // code element is rendered
+      const inlineCode = rendered.locator('code').filter({ hasText: 'inline code' });
+      assert.strictEqual(await inlineCode.count(), 1, 'inline code rendered');
+
+      // pre element is rendered
+      const pre = rendered.locator('pre');
+      assert((await pre.count()) >= 1, 'pre rendered');
+      assert((await pre.textContent())?.includes('echo hello'), 'pre code block content rendered');
+
+      // table, th, and td elements are rendered
+      const table = rendered.locator('table');
+      assert.strictEqual(await table.count(), 1, 'table rendered');
+      const th = table.locator('th');
+      assert.strictEqual(await th.count(), 2, 'th rendered');
+      const td = table.locator('td');
+      assert.strictEqual(await td.count(), 2, 'td rendered');
     } finally {
       await ctx.close();
     }

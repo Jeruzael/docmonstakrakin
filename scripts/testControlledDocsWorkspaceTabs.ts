@@ -368,7 +368,37 @@ try {
   for (const label of projectionTabs) {
     await page.getByRole('button', { name: label, exact: true }).waitFor();
   }
-  pass('Test 11C: Dynamic Projection Baseline (Header, disclaimer, action buttons, 6 projection tabs)');
+
+  // Verify Rendered / Raw toggle and default view in Dynamic Projections
+  const toggleRendered = page.locator('[data-testid="projection-toggle-rendered"]');
+  const toggleRaw = page.locator('[data-testid="projection-toggle-raw"]');
+  await toggleRendered.waitFor();
+  await toggleRaw.waitFor();
+
+  // Default view is Rendered
+  const renderedView = page.locator('[data-testid="dynamic-projection-rendered"]');
+  const rawView = page.locator('[data-testid="dynamic-projection-raw"]');
+  assert.equal(await renderedView.isVisible(), true, 'Dynamic projection defaults to Rendered mode');
+  assert.equal(await rawView.isVisible(), false, 'Raw source view is hidden by default');
+
+  // Click Raw Source toggle
+  await toggleRaw.click();
+  await rawView.waitFor();
+  assert.equal(await rawView.isVisible(), true, 'Raw source view is visible after toggle');
+  assert.equal(await renderedView.isVisible(), false, 'Rendered view is hidden in raw mode');
+  const rawContent = await rawView.textContent();
+  assert(
+    rawContent?.includes('# Product Requirements Document'),
+    'Raw source view contains PRD title'
+  );
+
+  // Click Rendered toggle
+  await toggleRendered.click();
+  await renderedView.waitFor();
+  assert.equal(await renderedView.isVisible(), true, 'Rendered view is visible after toggling back');
+  assert.equal(await rawView.isVisible(), false, 'Raw source view is hidden after toggling back');
+
+  pass('Test 11C: Dynamic Projection Baseline (Header, disclaimer, action buttons, 6 projection tabs, Rendered/Raw toggle)');
 
   // =========================================================================
   // Test 11D — Package Modal

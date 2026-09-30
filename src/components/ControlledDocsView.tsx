@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, type ComponentProps, type FC } from 'react';
-import ReactMarkdown from 'react-markdown';
 import {
   Search,
   Edit3,
@@ -18,10 +17,10 @@ import {
   RefreshCw,
   Check,
   AlertCircle,
-  ExternalLink,
   FileText,
   Layers,
 } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import type {
   ControlledDocumentSummary,
   DocumentContentResponse,
@@ -473,46 +472,6 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     }
   };
 
-  // Safe Link Renderer for ReactMarkdown
-  const markdownComponents = useMemo(
-    () => ({
-      a: ({ href, children, ...props }: any) => {
-        if (!href) return <a className="text-slate-400 underline cursor-not-allowed" {...props}>{children}</a>;
-        const normalized = href.trim().toLowerCase();
-        if (
-          normalized.startsWith('javascript:') ||
-          normalized.startsWith('data:') ||
-          normalized.startsWith('vbscript:')
-        ) {
-          return <a className="text-slate-400 underline cursor-not-allowed" {...props}>{children}</a>;
-        }
-
-        const isExternal = normalized.startsWith('http://') || normalized.startsWith('https://');
-        if (isExternal) {
-          return (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sky-400 hover:text-sky-300 underline inline-flex items-center gap-1"
-              {...props}
-            >
-              {children}
-              <ExternalLink className="w-3 h-3 inline-block" />
-            </a>
-          );
-        }
-
-        return (
-          <a href={href} className="text-sky-400 hover:text-sky-300 underline" {...props}>
-            {children}
-          </a>
-        );
-      },
-    }),
-    []
-  );
-
   // Badge Helpers
   const renderIntegrityBadge = (doc: ControlledDocumentSummary) => {
     switch (doc.integrityStatus) {
@@ -520,7 +479,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return (
           <span
             data-testid={`badge-integrity-${doc.id}`}
-            className="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-950 text-emerald-300 border border-emerald-800"
+            className="px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
           >
             MATCH
           </span>
@@ -529,7 +488,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return (
           <span
             data-testid={`badge-integrity-${doc.id}`}
-            className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-950 text-amber-300 border border-amber-800"
+            className="px-2 py-0.5 text-[10px] font-medium rounded bg-amber-50 text-amber-700 border border-amber-200"
           >
             CHANGED
           </span>
@@ -538,7 +497,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return (
           <span
             data-testid={`badge-integrity-${doc.id}`}
-            className="px-2 py-0.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700"
+            className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600 border border-slate-200"
           >
             UNPINNED
           </span>
@@ -547,7 +506,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return (
           <span
             data-testid={`badge-integrity-${doc.id}`}
-            className="px-2 py-0.5 text-xs font-semibold rounded bg-rose-950 text-rose-300 border border-rose-800"
+            className="px-2 py-0.5 text-[10px] font-medium rounded bg-rose-50 text-rose-700 border border-rose-200"
           >
             MISSING
           </span>
@@ -562,7 +521,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
       return (
         <span
           data-testid={`badge-editability-${doc.id}`}
-          className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-950 text-blue-300 border border-blue-800"
+          className="px-2 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-700 border border-blue-200"
         >
           CONTROLLED_EDIT
         </span>
@@ -571,7 +530,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     return (
       <span
         data-testid={`badge-editability-${doc.id}`}
-        className="px-2 py-0.5 text-xs font-semibold rounded bg-slate-800 text-slate-400 border border-slate-700"
+        className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-500 border border-slate-200"
       >
         READ_ONLY
       </span>
@@ -605,330 +564,340 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     // If no documents available and no list error, show project isolation empty state
     if (!loadingList && !listError && documents.length === 0) {
       return (
-        <div data-testid="controlled-docs-workspace" className="p-8 text-slate-200">
-          <div
-            data-testid="controlled-docs-empty"
-            className="max-w-xl mx-auto p-6 bg-slate-900 border border-slate-800 rounded-lg text-center"
-          >
-            <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-100 mb-2">
-              No Repository Documentation Available
-            </h3>
-            <p className="text-sm text-slate-400">
-              Project <span className="font-mono text-slate-300">{projectId}</span> does not have a
-              repository-controlled documentation registry configured.
-            </p>
+        <div data-testid="repository-docs-shell" className="h-[calc(100vh-120px)] flex flex-col">
+          <div data-testid="controlled-docs-workspace" className="p-8 text-slate-700">
+            <div
+              data-testid="controlled-docs-empty"
+              className="max-w-xl mx-auto p-6 bg-white border border-slate-200 rounded-xl shadow-xs text-center"
+            >
+              <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-900 mb-2">
+                No Repository Documentation Available
+              </h3>
+              <p className="text-sm text-slate-500">
+                Project <span className="font-mono text-slate-700">{projectId}</span> does not have a
+                repository-controlled documentation registry configured.
+              </p>
+            </div>
           </div>
         </div>
       );
     }
 
     return (
-      <div
-        data-testid="controlled-docs-workspace"
-        className="flex h-[calc(100vh-120px)] bg-slate-950 text-slate-100 border border-slate-800 rounded-lg overflow-hidden"
-      >
-      {/* Sidebar: Document Catalog */}
-      <div className="w-80 border-r border-slate-800 bg-slate-900/60 flex flex-col">
-        {/* Search Header */}
-        <div className="p-4 border-b border-slate-800">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <input
-              type="text"
-              data-testid="docs-search-input"
-              placeholder="Search by ID, title, or path..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={isCoordinatedCommit}
-              className="w-full bg-slate-950 border border-slate-700 rounded pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 disabled:opacity-50"
-            />
-          </div>
-        </div>
-
-        {/* Catalog List grouped by kind */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {loadingList && (
-            <div role="status" className="flex items-center justify-center p-6 text-slate-400 text-sm">
-              <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-              Loading catalog...
-            </div>
-          )}
-
-          {listError && (
-            <div
-              data-testid="catalog-error-alert"
-              role="alert"
-              className="p-3 bg-rose-950/80 border border-rose-800 rounded text-rose-300 text-xs space-y-2"
-            >
-              <div>{listError}</div>
-              <button
-                data-testid="btn-retry-catalog"
-                onClick={refreshDocumentList}
-                className="px-2.5 py-1 bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold rounded"
-              >
-                Retry catalog
-              </button>
-            </div>
-          )}
-
-          {Object.entries(filteredAndGroupedDocs).map(([kind, docs]) => (
-            <div key={kind} data-testid={`kind-group-${kind}`} className="space-y-1">
-              <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                <span>{kind}</span>
-                <span className="text-slate-500 text-[11px] font-normal">{docs.length}</span>
+      <div data-testid="repository-docs-shell" className="h-[calc(100vh-120px)] flex flex-col">
+        <div
+          data-testid="controlled-docs-workspace"
+          className="flex flex-1 h-full bg-white text-slate-900 border border-slate-200 rounded-xl shadow-xs overflow-hidden"
+        >
+          {/* Sidebar: Document Catalog */}
+          <div
+            data-testid="repository-docs-catalog"
+            className="w-80 border-r border-slate-200 bg-slate-50 flex flex-col"
+          >
+            {/* Search Header */}
+            <div className="p-4 border-b border-slate-200">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  data-testid="docs-search-input"
+                  placeholder="Search by ID, title, or path..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled={isCoordinatedCommit}
+                  className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                />
               </div>
-              {docs.map((doc) => {
-                const isSelected = doc.id === selectedDocId;
-                return (
+            </div>
+
+            {/* Catalog List grouped by kind */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              {loadingList && (
+                <div role="status" className="flex items-center justify-center p-6 text-slate-400 text-sm">
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  Loading catalog...
+                </div>
+              )}
+
+              {listError && (
+                <div
+                  data-testid="catalog-error-alert"
+                  role="alert"
+                  className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs space-y-2"
+                >
+                  <div>{listError}</div>
                   <button
-                    key={doc.id}
-                    data-testid={`doc-item-${doc.id}`}
-                    disabled={isCoordinatedCommit}
-                    onClick={() => {
-                      if (!isCoordinatedCommit) setSelectedDocId(doc.id);
-                    }}
-                    className={`w-full text-left p-2.5 rounded transition-colors text-sm flex flex-col gap-1.5 disabled:opacity-50 ${
-                      isSelected
-                        ? 'bg-sky-950/80 border border-sky-600/60 text-sky-100'
-                        : 'hover:bg-slate-800/60 text-slate-300 border border-transparent'
-                    }`}
+                    data-testid="btn-retry-catalog"
+                    onClick={refreshDocumentList}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold truncate">{doc.title}</span>
-                    </div>
-                    <div className="text-xs text-slate-400 font-mono truncate">{doc.path}</div>
-                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                      {renderIntegrityBadge(doc)}
-                      {renderEditabilityBadge(doc)}
-                    </div>
+                    Retry catalog
                   </button>
-                );
-              })}
+                </div>
+              )}
+
+              {Object.entries(filteredAndGroupedDocs).map(([kind, docs]) => (
+                <div key={kind} data-testid={`kind-group-${kind}`} className="space-y-1">
+                  <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                    <span>{kind}</span>
+                    <span className="text-slate-400 text-[11px] font-normal">{docs.length}</span>
+                  </div>
+                  {docs.map((doc) => {
+                    const isSelected = doc.id === selectedDocId;
+                    return (
+                      <button
+                        key={doc.id}
+                        data-testid={`doc-item-${doc.id}`}
+                        disabled={isCoordinatedCommit}
+                        onClick={() => {
+                          if (!isCoordinatedCommit) setSelectedDocId(doc.id);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-lg transition-colors text-sm flex flex-col gap-1.5 disabled:opacity-50 cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50/70 border border-emerald-200 text-emerald-950 font-medium'
+                            : 'hover:bg-slate-100/80 text-slate-700 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-slate-900 truncate">{doc.title}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono truncate">{doc.path}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          {renderIntegrityBadge(doc)}
+                          {renderEditabilityBadge(doc)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Main View Area */}
-      <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-        {selectedDoc ? (
-          <>
-            {/* Document Header & Metadata */}
-            <div className="p-4 border-b border-slate-800 bg-slate-900/40 flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h2 data-testid="doc-title" className="text-lg font-bold text-slate-100">
-                    {selectedDoc.title}
-                  </h2>
-                  {renderIntegrityBadge(selectedDoc)}
-                  {renderEditabilityBadge(selectedDoc)}
-                </div>
-                <div className="flex items-center gap-4 text-xs text-slate-400 font-mono flex-wrap">
-                  <span>ID: {selectedDoc.id}</span>
-                  <span>Path: {selectedDoc.path}</span>
-                  <span>Authority: {selectedDoc.authority}</span>
-                  <span>EOL: {selectedDoc.eol || 'LF'}</span>
-                  {selectedDoc.currentSha256 && (
-                    <span title={selectedDoc.currentSha256}>
-                      SHA: {selectedDoc.currentSha256.slice(0, 8)}...{selectedDoc.currentSha256.slice(-8)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* View / Edit Mode Controls */}
-              <div className="flex items-center gap-2">
-                {workflowStep === 'VIEW' && (
-                  <>
-                    <div className="bg-slate-900 border border-slate-700 rounded flex p-0.5 text-xs">
-                      <button
-                        data-testid="btn-toggle-rendered"
-                        onClick={() => setIsRawMode(false)}
-                        className={`px-3 py-1 rounded flex items-center gap-1.5 ${
-                          !isRawMode ? 'bg-sky-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Rendered
-                      </button>
-                      <button
-                        data-testid="btn-toggle-raw"
-                        onClick={() => setIsRawMode(true)}
-                        className={`px-3 py-1 rounded flex items-center gap-1.5 ${
-                          isRawMode ? 'bg-sky-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <FileCode className="w-3.5 h-3.5" />
-                        Raw Source
-                      </button>
+          {/* Main View Area */}
+          <div className="flex-1 flex flex-col bg-white overflow-hidden">
+            {selectedDoc ? (
+              <>
+                {/* Document Header & Metadata */}
+                <div className="p-6 border-b border-slate-200 bg-white flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h2 data-testid="doc-title" className="text-xl font-bold text-slate-900">
+                        {selectedDoc.title}
+                      </h2>
+                      {renderIntegrityBadge(selectedDoc)}
+                      {renderEditabilityBadge(selectedDoc)}
                     </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 font-mono flex-wrap">
+                      <span>ID: {selectedDoc.id}</span>
+                      <span>Path: {selectedDoc.path}</span>
+                      <span>Authority: {selectedDoc.authority}</span>
+                      <span>EOL: {selectedDoc.eol || 'LF'}</span>
+                      {selectedDoc.currentSha256 && (
+                        <span title={selectedDoc.currentSha256}>
+                          SHA: {selectedDoc.currentSha256.slice(0, 8)}...{selectedDoc.currentSha256.slice(-8)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                    {isEditable && (
+                  {/* View / Edit Mode Controls */}
+                  <div className="flex items-center gap-2">
+                    {workflowStep === 'VIEW' && (
+                      <>
+                        <div className="bg-slate-100 border border-slate-200 rounded-lg p-0.5 flex items-center text-xs">
+                          <button
+                            data-testid="btn-toggle-rendered"
+                            onClick={() => setIsRawMode(false)}
+                            className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
+                              !isRawMode ? 'bg-white text-slate-900 font-medium shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Rendered
+                          </button>
+                          <button
+                            data-testid="btn-toggle-raw"
+                            onClick={() => setIsRawMode(true)}
+                            className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
+                              isRawMode ? 'bg-white text-slate-900 font-medium shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                          >
+                            <FileCode className="w-3.5 h-3.5" />
+                            Raw Source
+                          </button>
+                        </div>
+
+                        {isEditable && (
+                          <button
+                            data-testid="btn-edit-document"
+                            onClick={handleStartEdit}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            Edit Document
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Success Banner */}
+                {saveSuccess && (
+                  <div
+                    data-testid="save-success-banner"
+                    role="status"
+                    className="p-3 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-semibold">Document update committed successfully!</span>
+                        <span className="ml-2 font-mono">
+                          Audit ID: {saveSuccess.auditEventId} | State Version: {saveSuccess.stateVersion}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSaveSuccess(null)}
+                      className="text-emerald-700 hover:text-emerald-900 text-xs underline cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
+
+                {/* Canonical Refresh Error Banner with Retry */}
+                {canonicalRefreshError && (
+                  <div
+                    data-testid="canonical-refresh-error"
+                    role="alert"
+                    className="p-3 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>{canonicalRefreshError}</span>
+                    </div>
+                    {canonicalRefreshError.includes('Document changed') ? (
                       <button
-                        data-testid="btn-edit-document"
-                        onClick={handleStartEdit}
-                        className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                        data-testid="btn-reload-canonical"
+                        onClick={handleRetryCanonicalRefresh}
+                        className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md flex items-center gap-1 text-xs cursor-pointer"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        Edit Document
+                        <RefreshCw className="w-3 h-3" />
+                        Reload Canonical Content
                       </button>
+                    ) : (
+                      <button
+                        data-testid="btn-retry-canonical-refresh"
+                        onClick={handleRetryCanonicalRefresh}
+                        className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md flex items-center gap-1 text-xs cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Retry canonical refresh
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Uncertain Save Outcome Notice */}
+                {uncertainSaveNotice && (
+                  <div
+                    data-testid="uncertain-save-warning"
+                    role="alert"
+                    className="p-3 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>{uncertainSaveNotice}</span>
+                    </div>
+                    <button
+                      onClick={() => setUncertainSaveNotice(null)}
+                      className="text-amber-700 hover:text-amber-900 text-xs underline cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
+
+                {/* Mixed-EOL Warning */}
+                {contentResponse?.eol === 'MIXED' && (
+                  <div
+                    data-testid="mixed-eol-warning"
+                    role="alert"
+                    className="p-3 m-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Editing is unavailable because this document has mixed line endings.</span>
+                  </div>
+                )}
+
+                {/* Missing Document State */}
+                {(selectedDoc.integrityStatus === 'MISSING' || contentError) && (
+                  <div
+                    data-testid="missing-doc-state"
+                    role="alert"
+                    className="p-4 m-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-center gap-2"
+                  >
+                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                    <div>
+                      <p className="font-semibold">Document is missing from repository disk (410 Gone).</p>
+                      {contentError && (
+                        <p className="text-xs text-rose-600 font-mono mt-1">{contentError}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Display / 6-Step Workflow Panels */}
+                {loadingContent && (
+                  <div role="status" className="flex-1 flex items-center justify-center p-12 text-slate-400">
+                    <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                    Loading document content...
+                  </div>
+                )}
+
+                {/* STEP 1: VIEW */}
+                {!loadingContent && workflowStep === 'VIEW' && contentResponse && (
+                  <>
+                    {isRawMode ? (
+                      <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                        <pre
+                          data-testid="doc-content-raw"
+                          className="max-w-4xl mx-auto font-mono text-xs text-slate-800 whitespace-pre-wrap bg-white p-6 rounded-xl border border-slate-200/80 leading-relaxed shadow-xs"
+                        >
+                          {contentResponse.content}
+                        </pre>
+                      </div>
+                    ) : (
+                      <div
+                        className="flex-1 overflow-y-auto p-8 bg-slate-50"
+                        data-testid="repository-docs-reader"
+                      >
+                        <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200/80 p-8 shadow-xs">
+                          <MarkdownRenderer
+                            content={contentResponse.content}
+                            testId="doc-content-rendered"
+                          />
+                        </div>
+                      </div>
                     )}
                   </>
                 )}
-              </div>
-            </div>
-
-            {/* Save Success Banner */}
-            {saveSuccess && (
-              <div
-                data-testid="save-success-banner"
-                role="status"
-                className="p-3 bg-emerald-950/70 border-b border-emerald-800 text-emerald-200 text-xs flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <div>
-                    <span className="font-semibold">Document update committed successfully!</span>
-                    <span className="ml-2 font-mono">
-                      Audit ID: {saveSuccess.auditEventId} | State Version: {saveSuccess.stateVersion}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSaveSuccess(null)}
-                  className="text-emerald-400 hover:text-emerald-200 text-xs underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Canonical Refresh Error Banner with Retry */}
-            {canonicalRefreshError && (
-              <div
-                data-testid="canonical-refresh-error"
-                role="alert"
-                className="p-3 bg-amber-950/80 border-b border-amber-800 text-amber-200 text-xs flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>{canonicalRefreshError}</span>
-                </div>
-                {canonicalRefreshError.includes('Document changed') ? (
-                  <button
-                    data-testid="btn-reload-canonical"
-                    onClick={handleRetryCanonicalRefresh}
-                    className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Reload Canonical Content
-                  </button>
-                ) : (
-                  <button
-                    data-testid="btn-retry-canonical-refresh"
-                    onClick={handleRetryCanonicalRefresh}
-                    className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-semibold rounded flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Retry canonical refresh
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Uncertain Save Outcome Notice */}
-            {uncertainSaveNotice && (
-              <div
-                data-testid="uncertain-save-warning"
-                role="alert"
-                className="p-3 bg-amber-950/80 border-b border-amber-800 text-amber-200 text-xs flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>{uncertainSaveNotice}</span>
-                </div>
-                <button
-                  onClick={() => setUncertainSaveNotice(null)}
-                  className="text-amber-400 hover:text-amber-200 text-xs underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Mixed-EOL Warning */}
-            {contentResponse?.eol === 'MIXED' && (
-              <div
-                data-testid="mixed-eol-warning"
-                role="alert"
-                className="p-3 m-4 bg-amber-950/60 border border-amber-800 rounded text-amber-200 text-xs flex items-center gap-2"
-              >
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Editing is unavailable because this document has mixed line endings.</span>
-              </div>
-            )}
-
-            {/* Missing Document State */}
-            {(selectedDoc.integrityStatus === 'MISSING' || contentError) && (
-              <div
-                data-testid="missing-doc-state"
-                role="alert"
-                className="p-4 m-4 bg-rose-950/60 border border-rose-800 rounded text-rose-200 text-sm flex items-center gap-2"
-              >
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                <div>
-                  <p className="font-semibold">Document is missing from repository disk (410 Gone).</p>
-                  {contentError && (
-                    <p className="text-xs text-rose-300 font-mono mt-1">{contentError}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Content Display / 6-Step Workflow Panels */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingContent && (
-                <div role="status" className="flex items-center justify-center p-12 text-slate-400">
-                  <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-                  Loading document content...
-                </div>
-              )}
-
-              {/* STEP 1: VIEW */}
-              {workflowStep === 'VIEW' && contentResponse && (
-                <div>
-                  {isRawMode ? (
-                    <pre
-                      data-testid="doc-content-raw"
-                      className="font-mono text-sm text-slate-200 whitespace-pre-wrap bg-slate-900/60 p-4 rounded border border-slate-800"
-                    >
-                      {contentResponse.content}
-                    </pre>
-                  ) : (
-                    <div
-                      data-testid="doc-content-rendered"
-                      className="prose prose-invert max-w-none text-slate-200"
-                    >
-                      <ReactMarkdown components={markdownComponents}>
-                        {contentResponse.content}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* STEP 2: EDIT_DRAFT */}
               {workflowStep === 'EDIT_DRAFT' && (
-                <div className="space-y-4 h-full flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-4 flex flex-col">
+                  <div className="max-w-4xl w-full mx-auto flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Step 2: Edit Candidate Draft
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setWorkflowStep('VIEW')}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -936,7 +905,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                         data-testid="btn-preview-diff"
                         onClick={handlePreviewDiff}
                         disabled={diffLoading}
-                        className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition cursor-pointer"
                       >
                         {diffLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
                         Preview Diff
@@ -945,7 +914,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   </div>
 
                   {diffError && (
-                    <div role="alert" className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
+                    <div role="alert" className="max-w-4xl w-full mx-auto p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
                       {diffError}
                     </div>
                   )}
@@ -954,7 +923,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                     data-testid="draft-editor-textarea"
                     value={draftContent}
                     onChange={(e) => handleDraftChange(e.target.value)}
-                    className="flex-1 w-full bg-slate-900 border border-slate-700 rounded p-4 font-mono text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 resize-none min-h-[400px]"
+                    className="flex-1 max-w-4xl w-full mx-auto bg-white border border-slate-300 rounded-xl p-4 font-mono text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none min-h-[400px] shadow-xs"
                     placeholder="Enter document markdown or text content..."
                   />
                 </div>
@@ -962,15 +931,15 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
               {/* STEP 3: PREVIEW_DIFF */}
               {workflowStep === 'PREVIEW_DIFF' && diffResponse && (
-                <div data-testid="diff-view" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <div data-testid="diff-view" className="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-4">
+                  <div className="max-w-4xl mx-auto flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Step 3: Preview Structured Diff
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setWorkflowStep('EDIT_DRAFT')}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                       >
                         Back to Editor
                       </button>
@@ -979,7 +948,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                           data-testid="btn-validate"
                           onClick={handleValidate}
                           disabled={validationLoading}
-                          className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition cursor-pointer"
                         >
                           {validationLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
                           Validate Invariants
@@ -993,13 +962,13 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                     <div
                       data-testid="stale-warning"
                       role="alert"
-                      className="p-4 bg-amber-950/80 border border-amber-700 rounded text-amber-200 text-sm flex items-center justify-between"
+                      className="max-w-4xl mx-auto p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm flex items-center justify-between shadow-xs"
                     >
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                         <div>
                           <p className="font-semibold">Document on disk has changed (Base SHA Stale)</p>
-                          <p className="text-xs text-amber-300">
+                          <p className="text-xs text-amber-700">
                             The live file has been updated by another process. Please reload canonical content before saving.
                           </p>
                         </div>
@@ -1007,7 +976,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                       <button
                         data-testid="btn-reload-canonical"
                         onClick={handleReloadFromStaleDiff}
-                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded shrink-0 flex items-center gap-1"
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shrink-0 flex items-center gap-1 cursor-pointer"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
                         Reload Canonical Content
@@ -1019,7 +988,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   {!diffResponse.hasChanges && (
                     <div
                       data-testid="no-changes-detected"
-                      className="p-4 bg-slate-900 border border-slate-800 rounded text-slate-400 text-sm"
+                      className="max-w-4xl mx-auto p-4 bg-white border border-slate-200 rounded-xl text-slate-500 text-sm shadow-xs"
                     >
                       No changes detected.
                     </div>
@@ -1027,33 +996,35 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
                   {/* Diff Stats */}
                   {diffResponse.hasChanges && (
-                    <div className="flex items-center gap-4 text-xs font-mono bg-slate-900/60 p-3 rounded border border-slate-800">
-                      <span className="text-emerald-400 font-bold">+{diffResponse.additions} lines</span>
-                      <span className="text-rose-400 font-bold">-{diffResponse.deletions} lines</span>
-                      <span className="text-slate-400">Total changed: {diffResponse.changedLines} lines</span>
+                    <div className="max-w-4xl mx-auto flex items-center gap-4 text-xs font-mono bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+                      <span className="text-emerald-600 font-bold">+{diffResponse.additions} lines</span>
+                      <span className="text-rose-600 font-bold">-{diffResponse.deletions} lines</span>
+                      <span className="text-slate-500">Total changed: {diffResponse.changedLines} lines</span>
                     </div>
                   )}
 
                   {/* Unified Diff */}
                   {diffResponse.hasChanges && (
-                    <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-200 overflow-x-auto whitespace-pre">
-                      {diffResponse.unifiedDiff}
-                    </pre>
+                    <div className="max-w-4xl mx-auto">
+                      <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-slate-100 overflow-x-auto whitespace-pre leading-relaxed shadow-xs">
+                        {diffResponse.unifiedDiff}
+                      </pre>
+                    </div>
                   )}
                 </div>
               )}
 
               {/* STEP 4: VALIDATE */}
               {workflowStep === 'VALIDATE' && validationResponse && (
-                <div data-testid="validation-view" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <div data-testid="validation-view" className="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-4">
+                  <div className="max-w-4xl mx-auto flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Step 4: Structural & Format Invariant Validation
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setWorkflowStep('PREVIEW_DIFF')}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                       >
                         Back to Diff
                       </button>
@@ -1061,7 +1032,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                         <button
                           data-testid="btn-proceed-to-save"
                           onClick={handleOpenSaveModal}
-                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition cursor-pointer"
                         >
                           <Shield className="w-3.5 h-3.5" />
                           Proceed to Save
@@ -1072,21 +1043,21 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
                   {/* Validation Status */}
                   {validationResponse.valid ? (
-                    <div className="p-4 bg-emerald-950/60 border border-emerald-800 rounded text-emerald-300 text-sm flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div className="max-w-4xl mx-auto p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm flex items-center gap-2 shadow-xs">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                       <span>All format and structural validation checks PASSED cleanly.</span>
                     </div>
                   ) : (
                     <div
                       data-testid="validation-errors"
                       role="alert"
-                      className="p-4 bg-rose-950/70 border border-rose-800 rounded text-rose-200 text-sm space-y-2"
+                      className="max-w-4xl mx-auto p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm space-y-2 shadow-xs"
                     >
-                      <div className="flex items-center gap-2 font-bold text-rose-300">
-                        <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                      <div className="flex items-center gap-2 font-bold text-rose-900">
+                        <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
                         <span>Validation Checks Failed (Save Blocked):</span>
                       </div>
-                      <ul className="list-disc pl-5 space-y-1 text-xs">
+                      <ul className="list-disc pl-5 space-y-1 text-xs text-rose-700">
                         {validationResponse.errors.map((err, i) => (
                           <li key={i}>{err}</li>
                         ))}
@@ -1095,12 +1066,12 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   )}
 
                   {validationResponse.warnings.length > 0 && (
-                    <div className="p-4 bg-amber-950/60 border border-amber-800 rounded text-amber-300 text-xs space-y-1">
-                      <div className="font-semibold flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <div className="max-w-4xl mx-auto p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs space-y-1 shadow-xs">
+                      <div className="font-semibold flex items-center gap-1.5 text-amber-900">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
                         Warnings:
                       </div>
-                      <ul className="list-disc pl-5 space-y-1">
+                      <ul className="list-disc pl-5 space-y-1 text-amber-700">
                         {validationResponse.warnings.map((w, i) => (
                           <li key={i}>{w}</li>
                         ))}
@@ -1109,10 +1080,9 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   )}
                 </div>
               )}
-            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
             Select a document from the catalog to view or edit.
           </div>
         )}
@@ -1122,26 +1092,26 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
       {(workflowStep === 'CONFIRM_SAVE' || workflowStep === 'COORDINATED_COMMIT') && selectedDoc && (
         <div
           data-testid="doc-save-modal"
-          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-save-title"
-            className="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-6 space-y-5 shadow-2xl"
+            className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl text-slate-900"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-sky-400" />
-                <h3 id="modal-save-title" className="font-bold text-slate-100 text-base">
+                <Shield className="w-5 h-5 text-emerald-600" />
+                <h3 id="modal-save-title" className="font-bold text-slate-900 text-base">
                   Confirm Governance Document Update
                 </h3>
               </div>
               {!isCoordinatedCommit && (
                 <button
                   onClick={() => setWorkflowStep('VALIDATE')}
-                  className="text-slate-400 hover:text-slate-200 text-sm"
+                  className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
                 >
                   ✕
                 </button>
@@ -1149,42 +1119,42 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
             </div>
 
             {/* Read-Only Governance Session Info */}
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded space-y-1 text-xs text-slate-300">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 text-xs text-slate-700">
               {sessionLoading ? (
-                <div role="status" className="flex items-center gap-2 text-slate-400">
+                <div role="status" className="flex items-center gap-2 text-slate-500">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   Loading governance session...
                 </div>
               ) : sessionError ? (
-                <div role="alert" className="text-rose-400 font-medium">
+                <div role="alert" className="text-rose-600 font-medium">
                   {sessionError}
                 </div>
               ) : reviewerSession ? (
                 <>
-                  <div data-testid="modal-session-name" className="font-medium text-slate-200">
-                    Signed in as: <span className="text-sky-300">{reviewerSession.name}</span>
+                  <div data-testid="modal-session-name" className="font-medium text-slate-900">
+                    Signed in as: <span className="text-emerald-700">{reviewerSession.name}</span>
                   </div>
-                  <div data-testid="modal-session-roles" className="text-slate-400">
-                    Roles: <span className="text-slate-300">{reviewerSession.roles.join(', ')}</span>
+                  <div data-testid="modal-session-roles" className="text-slate-500">
+                    Roles: <span className="text-slate-700">{reviewerSession.roles.join(', ')}</span>
                   </div>
                 </>
               ) : (
-                <div data-testid="modal-session-name" role="alert" className="text-amber-400 font-medium">
+                <div data-testid="modal-session-name" role="alert" className="text-amber-700 font-medium">
                   No authenticated governance reviewer session.
                 </div>
               )}
             </div>
 
             {/* Target Document */}
-            <div className="text-xs text-slate-400 space-y-0.5">
-              <div>Target: <span className="font-mono text-slate-200">{selectedDoc.path}</span></div>
-              <div>Document ID: <span className="font-mono text-slate-200">{selectedDoc.id}</span></div>
+            <div className="text-xs text-slate-500 space-y-0.5">
+              <div>Target: <span className="font-mono text-slate-800">{selectedDoc.path}</span></div>
+              <div>Document ID: <span className="font-mono text-slate-800">{selectedDoc.id}</span></div>
             </div>
 
             {/* Reason / Change Summary */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Change Justification / Reason <span className="text-rose-400">*</span>
+              <label className="text-xs font-semibold text-slate-700 block">
+                Change Justification / Reason <span className="text-rose-600">*</span>
               </label>
               <textarea
                 data-testid="modal-save-reason"
@@ -1193,7 +1163,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                 value={saveReason}
                 onChange={(e) => setSaveReason(e.target.value)}
                 placeholder="Enter mandatory justification for updating this controlled document..."
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 disabled:opacity-50"
+                className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
               />
             </div>
 
@@ -1206,9 +1176,9 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                 disabled={isCoordinatedCommit}
                 checked={humanConfirmed}
                 onChange={(e) => setHumanConfirmed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded bg-slate-950 border-slate-700 text-sky-600 focus:ring-0 focus:outline-none disabled:opacity-50"
+                className="mt-0.5 h-4 w-4 rounded bg-white border-slate-300 text-emerald-600 focus:ring-0 focus:outline-none disabled:opacity-50"
               />
-              <label htmlFor="human-confirm-checkbox" className="text-xs text-slate-300 select-none">
+              <label htmlFor="human-confirm-checkbox" className="text-xs text-slate-700 select-none cursor-pointer">
                 Confirm this governance document update and append cryptographic audit record
               </label>
             </div>
@@ -1218,26 +1188,26 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
               <div
                 data-testid="saving-indicator"
                 role="status"
-                className="p-3 bg-sky-950/80 border border-sky-800 rounded text-sky-200 text-xs flex items-center gap-2"
+                className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2"
               >
-                <RefreshCw className="w-4 h-4 animate-spin text-sky-400" />
+                <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
                 <span>Executing coordinated document replacement and audit persistence...</span>
               </div>
             )}
 
             {/* Error Message */}
             {saveError && (
-              <div role="alert" className="p-3 bg-rose-950 border border-rose-800 rounded text-rose-300 text-xs">
+              <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
                 {saveError}
               </div>
             )}
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
               <button
                 onClick={() => setWorkflowStep('VALIDATE')}
                 disabled={isCoordinatedCommit}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded transition disabled:opacity-50"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -1251,7 +1221,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
                   isSaving ||
                   isCoordinatedCommit
                 }
-                className="px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded flex items-center gap-1.5 transition"
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition cursor-pointer"
               >
                 {isCoordinatedCommit ? (
                   <>
@@ -1269,9 +1239,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
           </div>
         </div>
       )}
-    </div>
-  );
-};
+        </div>
+      </div>
+    );
+  };
 
   if (!dynamicProjectionsProps) {
     return renderRepositoryWorkspace();
@@ -1283,7 +1254,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
       <div
         role="tablist"
         aria-label="Documentation Workspace Navigation"
-        className="flex border-b border-slate-800 bg-slate-900/60 px-4 pt-2 gap-2"
+        className="flex border-b border-slate-200 bg-white px-6 pt-3 gap-4"
       >
         <button
           id="tab-repository-docs"
@@ -1294,10 +1265,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
           disabled={isCoordinatedCommit}
           onClick={() => !isCoordinatedCommit && setWorkspaceTab('REPOSITORY')}
           onKeyDown={handleTabKeyDown}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
             workspaceTab === 'REPOSITORY'
-              ? 'border-sky-500 text-sky-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed'
+              ? 'border-emerald-600 text-emerald-900 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -1312,10 +1283,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
           disabled={isCoordinatedCommit}
           onClick={() => !isCoordinatedCommit && setWorkspaceTab('PROJECTIONS')}
           onKeyDown={handleTabKeyDown}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
             workspaceTab === 'PROJECTIONS'
-              ? 'border-sky-500 text-sky-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed'
+              ? 'border-emerald-600 text-emerald-900 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed'
           }`}
         >
           <Layers className="w-4 h-4" />
