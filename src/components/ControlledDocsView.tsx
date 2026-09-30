@@ -4,7 +4,7 @@
  * Enforces secure markdown rendering, lockfile conventions, and hardened 6-step edit workflow.
  */
 
-import { useState, useEffect, useMemo, useCallback, type FC } from 'react';
+import { useState, useEffect, useMemo, useCallback, type ComponentProps, type FC } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   Search,
@@ -19,6 +19,8 @@ import {
   Check,
   AlertCircle,
   ExternalLink,
+  FileText,
+  Layers,
 } from 'lucide-react';
 import type {
   ControlledDocumentSummary,
@@ -29,11 +31,17 @@ import type {
   ReviewerSessionInfo,
 } from '../types.js';
 import { createControlledDocsLoader } from '../data/controlledDocsClient.js';
+import { DocumentsView } from './DocumentsView';
+
+type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
 
 export interface ControlledDocsViewProps {
   projectId: string;
   loader?: ReturnType<typeof createControlledDocsLoader>;
+  dynamicProjectionsProps?: DynamicProjectionsProps;
 }
+
+export type DocsWorkspaceTab = 'REPOSITORY' | 'PROJECTIONS';
 
 export type WorkflowStep =
   | 'VIEW'
@@ -46,9 +54,13 @@ export type WorkflowStep =
 export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   projectId,
   loader,
+  dynamicProjectionsProps,
 }) => {
   // Stable API loader
   const api = useMemo(() => loader ?? createControlledDocsLoader(), [loader]);
+
+  // Tab State
+  const [workspaceTab, setWorkspaceTab] = useState<DocsWorkspaceTab>('REPOSITORY');
 
   // Catalog State
   const [documents, setDocuments] = useState<ControlledDocumentSummary[]>([]);
@@ -124,6 +136,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
   // Project switching reset
   useEffect(() => {
+    setWorkspaceTab('REPOSITORY');
     api.invalidate();
     setSelectedDocId(null);
     setContentResponse(null);
@@ -565,34 +578,56 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     );
   };
 
-  // If no documents available and no list error, show project isolation empty state
-  if (!loadingList && !listError && documents.length === 0) {
-    return (
-      <div data-testid="controlled-docs-workspace" className="p-8 text-slate-200">
-        <div
-          data-testid="controlled-docs-empty"
-          className="max-w-xl mx-auto p-6 bg-slate-900 border border-slate-800 rounded-lg text-center"
-        >
-          <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-100 mb-2">
-            No Repository Documentation Available
-          </h3>
-          <p className="text-sm text-slate-400">
-            Project <span className="font-mono text-slate-300">{projectId}</span> does not have a
-            repository-controlled documentation registry configured.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const isCoordinatedCommit = workflowStep === 'COORDINATED_COMMIT';
 
-  return (
-    <div
-      data-testid="controlled-docs-workspace"
-      className="flex h-[calc(100vh-120px)] bg-slate-950 text-slate-100 border border-slate-800 rounded-lg overflow-hidden"
-    >
+  const handleTabKeyDown = (e: React.KeyboardEvent) => {
+    if (isCoordinatedCommit) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWorkspaceTab('PROJECTIONS');
+      document.getElementById('tab-dynamic-projections')?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWorkspaceTab('REPOSITORY');
+      document.getElementById('tab-repository-docs')?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setWorkspaceTab('REPOSITORY');
+      document.getElementById('tab-repository-docs')?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setWorkspaceTab('PROJECTIONS');
+      document.getElementById('tab-dynamic-projections')?.focus();
+    }
+  };
+
+  const renderRepositoryWorkspace = () => {
+    // If no documents available and no list error, show project isolation empty state
+    if (!loadingList && !listError && documents.length === 0) {
+      return (
+        <div data-testid="controlled-docs-workspace" className="p-8 text-slate-200">
+          <div
+            data-testid="controlled-docs-empty"
+            className="max-w-xl mx-auto p-6 bg-slate-900 border border-slate-800 rounded-lg text-center"
+          >
+            <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-100 mb-2">
+              No Repository Documentation Available
+            </h3>
+            <p className="text-sm text-slate-400">
+              Project <span className="font-mono text-slate-300">{projectId}</span> does not have a
+              repository-controlled documentation registry configured.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        data-testid="controlled-docs-workspace"
+        className="flex h-[calc(100vh-120px)] bg-slate-950 text-slate-100 border border-slate-800 rounded-lg overflow-hidden"
+      >
       {/* Sidebar: Document Catalog */}
       <div className="w-80 border-r border-slate-800 bg-slate-900/60 flex flex-col">
         {/* Search Header */}
@@ -1234,6 +1269,79 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+  if (!dynamicProjectionsProps) {
+    return renderRepositoryWorkspace();
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Dual Workspace Tab Bar */}
+      <div
+        role="tablist"
+        aria-label="Documentation Workspace Navigation"
+        className="flex border-b border-slate-800 bg-slate-900/60 px-4 pt-2 gap-2"
+      >
+        <button
+          id="tab-repository-docs"
+          role="tab"
+          aria-selected={workspaceTab === 'REPOSITORY'}
+          aria-controls="panel-repository-docs"
+          tabIndex={workspaceTab === 'REPOSITORY' ? 0 : -1}
+          disabled={isCoordinatedCommit}
+          onClick={() => !isCoordinatedCommit && setWorkspaceTab('REPOSITORY')}
+          onKeyDown={handleTabKeyDown}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            workspaceTab === 'REPOSITORY'
+              ? 'border-sky-500 text-sky-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Repository Documents
+        </button>
+        <button
+          id="tab-dynamic-projections"
+          role="tab"
+          aria-selected={workspaceTab === 'PROJECTIONS'}
+          aria-controls="panel-dynamic-projections"
+          tabIndex={workspaceTab === 'PROJECTIONS' ? 0 : -1}
+          disabled={isCoordinatedCommit}
+          onClick={() => !isCoordinatedCommit && setWorkspaceTab('PROJECTIONS')}
+          onKeyDown={handleTabKeyDown}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            workspaceTab === 'PROJECTIONS'
+              ? 'border-sky-500 text-sky-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Dynamic Projections
+        </button>
+      </div>
+
+      <div
+        id="panel-repository-docs"
+        role="tabpanel"
+        aria-labelledby="tab-repository-docs"
+        hidden={workspaceTab !== 'REPOSITORY'}
+        className={workspaceTab !== 'REPOSITORY' ? 'hidden' : undefined}
+      >
+        {renderRepositoryWorkspace()}
+      </div>
+
+      <div
+        id="panel-dynamic-projections"
+        role="tabpanel"
+        aria-labelledby="tab-dynamic-projections"
+        hidden={workspaceTab !== 'PROJECTIONS'}
+        className={workspaceTab !== 'PROJECTIONS' ? 'hidden' : undefined}
+      >
+        <DocumentsView key={`projections-${dynamicProjectionsProps.project.id}`} {...dynamicProjectionsProps} />
+      </div>
     </div>
   );
 };

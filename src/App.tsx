@@ -13,7 +13,7 @@ import { WorkView } from './components/WorkView';
 import { StandardsView } from './components/StandardsView';
 import { EvidenceView } from './components/EvidenceView';
 import { PromptCompilerView } from './components/PromptCompilerView';
-import { DocumentsView } from './components/DocumentsView';
+import { ControlledDocsView } from './components/ControlledDocsView';
 import { ArchitectureView } from './components/ArchitectureView';
 import { RepositoryView } from './components/RepositoryView';
 import { ApprovalsView } from './components/ApprovalsView';
@@ -597,16 +597,23 @@ export default function App() {
           )}
 
           {currentView === 'documents' && (
-            <DocumentsView
-              project={currentProject}
-              requirements={requirements}
-              risks={risks}
-              workItems={workItems}
-              adrs={adrs}
-              components={components}
-              approvals={approvals}
-              onOpenPackageModal={() => {setPackageMode('export');setIsPackageModalOpen(true);}}
-              onSignoffSuccess={() => fetchProjectData(currentProject.id)}
+            <ControlledDocsView
+              key={`controlled-docs-${currentProject.id}`}
+              projectId={currentProject.id}
+              dynamicProjectionsProps={{
+                project: currentProject,
+                requirements,
+                risks,
+                workItems,
+                adrs,
+                components,
+                approvals,
+                onOpenPackageModal: () => {
+                  setPackageMode('export');
+                  setIsPackageModalOpen(true);
+                },
+                onSignoffSuccess: () => fetchProjectData(currentProject.id),
+              }}
             />
           )}
 
