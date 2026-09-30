@@ -598,6 +598,10 @@ async function startServer() {
   app.post('/api/projects/:id/requirements/:reqId/status', (req, res) => {
     const { status, justification } = req.body;
     if (status === 'APPROVED') return res.status(403).json({error:'Use Request Sign-Off and human quorum to approve a requirement'});
+    const project = store.projects.find((p) => p.id === req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     const reqList = store.requirements[req.params.id] || [];
     const target = reqList.find((r) => r.id === req.params.reqId);
 
@@ -608,6 +612,9 @@ async function startServer() {
     const previousStatus = target.status;
     target.status = status;
     target.updatedAt = new Date().toISOString();
+
+    project.stateVersion++;
+    project.updatedAt = new Date().toISOString();
 
     store.addAuditEvent(
       req.params.id,

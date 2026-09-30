@@ -280,8 +280,182 @@ try {
   );
   pass('Test G: Closing/reopening the drawer shows the same canonical status returned by the server');
 
+  // =========================================================================
+  // StateVersion & Audit Integrity Helpers
+  // =========================================================================
+  const getProjectStateVersion = async (pId: string): Promise<number> => {
+    const res = await fetch(`${base}/api/projects/${pId}`);
+    assert.equal(res.status, 200, 'Project lookup should succeed');
+    const data = await res.json();
+    return data.stateVersion;
+  };
+
+  const getProjectAuditLogs = async (pId: string): Promise<any[]> => {
+    const res = await fetch(`${base}/api/projects/${pId}/audit`);
+    assert.equal(res.status, 200, 'Audit lookup should succeed');
+    return await res.json();
+  };
+
+  // =========================================================================
+  // Test H — Valid PROPOSED -> UNDER_REVIEW transition increments stateVersion exactly once
+  // =========================================================================
+  const createReq3Res = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Mutual TLS Authentication',
+      statement: 'Service-to-service communication must enforce mTLS.',
+      category: 'SECURITY',
+      priority: 'HIGH',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(createReq3Res.status, 201);
+  const req3: Requirement = await createReq3Res.json();
+  assert.equal(req3.status, 'PROPOSED');
+
+  const vBeforeH = await getProjectStateVersion(projectId);
+  const auditsBeforeH = await getProjectAuditLogs(projectId);
+  const aBeforeH = auditsBeforeH.length;
+
+  const transitionHRes = await fetch(`${base}/api/projects/${projectId}/requirements/${req3.id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'UNDER_REVIEW', justification: 'Advancing to review' }),
+  });
+  assert.equal(transitionHRes.status, 200, 'Status transition to UNDER_REVIEW must return 200');
+  const transitionHData = await transitionHRes.json();
+  assert.equal(transitionHData.requirement.status, 'UNDER_REVIEW');
+
+  const vAfterH = await getProjectStateVersion(projectId);
+  const auditsAfterH = await getProjectAuditLogs(projectId);
+  const aAfterH = auditsAfterH.length;
+
+  assert.equal(vAfterH, vBeforeH + 1, `stateVersion must increment by 1 (expected ${vBeforeH + 1}, got ${vAfterH})`);
+  assert.equal(aAfterH, aBeforeH + 1, `audit count must increment by 1 (expected ${aBeforeH + 1}, got ${aAfterH})`);
+
+  const newAuditH = auditsAfterH[0];
+  assert.equal(newAuditH.action, 'REQUIREMENT_STATUS_CHANGED');
+  assert.equal(newAuditH.target, req3.id);
+  assert.equal(newAuditH.details?.previousStatus, 'PROPOSED');
+  assert.equal(newAuditH.details?.newStatus, 'UNDER_REVIEW');
+  pass('Test H: Valid PROPOSED -> UNDER_REVIEW transition increments stateVersion exactly once');
+
+  // =========================================================================
+  // Test I — Second valid transition (UNDER_REVIEW -> DEFERRED) increments stateVersion again
+  // =========================================================================
+  const vBeforeI = await getProjectStateVersion(projectId);
+  const auditsBeforeI = await getProjectAuditLogs(projectId);
+  const aBeforeI = auditsBeforeI.length;
+
+  const transitionIRes = await fetch(`${base}/api/projects/${projectId}/requirements/${req3.id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'DEFERRED', justification: 'Deprioritizing for v1' }),
+  });
+  assert.equal(transitionIRes.status, 200, 'Status transition to DEFERRED must return 200');
+  const transitionIData = await transitionIRes.json();
+  assert.equal(transitionIData.requirement.status, 'DEFERRED');
+
+  const vAfterI = await getProjectStateVersion(projectId);
+  const auditsAfterI = await getProjectAuditLogs(projectId);
+  const aAfterI = auditsAfterI.length;
+
+  assert.equal(vAfterI, vBeforeI + 1, `stateVersion must increment by 1 on second mutation (expected ${vBeforeI + 1}, got ${vAfterI})`);
+  assert.equal(aAfterI, aBeforeI + 1, `audit count must increment by 1 on second mutation (expected ${aBeforeI + 1}, got ${aAfterI})`);
+
+  const newAuditI = auditsAfterI[0];
+  assert.equal(newAuditI.action, 'REQUIREMENT_STATUS_CHANGED');
+  assert.equal(newAuditI.target, req3.id);
+  assert.equal(newAuditI.details?.previousStatus, 'UNDER_REVIEW');
+  assert.equal(newAuditI.details?.newStatus, 'DEFERRED');
+  pass('Test I: Second valid transition (UNDER_REVIEW -> DEFERRED) increments stateVersion again');
+
+  // =========================================================================
+  // Test J — Rejected direct APPROVED status preserves stateVersion, auditCount, and status
+  // =========================================================================
+  const vBeforeJ = await getProjectStateVersion(projectId);
+  const auditsBeforeJ = await getProjectAuditLogs(projectId);
+  const aBeforeJ = auditsBeforeJ.length;
+
+  const rejectedApproveRes = await fetch(`${base}/api/projects/${projectId}/requirements/${req3.id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'APPROVED' }),
+  });
+  assert.equal(rejectedApproveRes.status, 403, 'Direct APPROVED status must return 403');
+
+  const vAfterJ = await getProjectStateVersion(projectId);
+  const auditsAfterJ = await getProjectAuditLogs(projectId);
+  const aAfterJ = auditsAfterJ.length;
+
+  assert.equal(vAfterJ, vBeforeJ, `stateVersion must remain unchanged after rejected status (expected ${vBeforeJ}, got ${vAfterJ})`);
+  assert.equal(aAfterJ, aBeforeJ, `audit count must remain unchanged after rejected status (expected ${aBeforeJ}, got ${aAfterJ})`);
+
+  const req3CheckRes = await fetch(`${base}/api/projects/${projectId}/requirements`);
+  const req3CheckList: Requirement[] = await req3CheckRes.json();
+  const req3Canonical = req3CheckList.find((r) => r.id === req3.id);
+  assert.equal(req3Canonical?.status, 'DEFERRED', 'Requirement status must remain DEFERRED');
+  pass('Test J: Rejected direct APPROVED status preserves stateVersion, auditCount, and status');
+
+  // =========================================================================
+  // Test K — Nonexistent requirement status update returns 404 and preserves stateVersion and auditCount
+  // =========================================================================
+  const vBeforeK = await getProjectStateVersion(projectId);
+  const auditsBeforeK = await getProjectAuditLogs(projectId);
+  const aBeforeK = auditsBeforeK.length;
+
+  const notFoundRes = await fetch(`${base}/api/projects/${projectId}/requirements/NONEXISTENT-REQ-9999/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'UNDER_REVIEW', justification: 'Should fail' }),
+  });
+  assert.equal(notFoundRes.status, 404, 'Status update on nonexistent requirement must return 404');
+
+  const vAfterK = await getProjectStateVersion(projectId);
+  const auditsAfterK = await getProjectAuditLogs(projectId);
+  const aAfterK = auditsAfterK.length;
+
+  assert.equal(vAfterK, vBeforeK, `stateVersion must remain unchanged after 404 (expected ${vBeforeK}, got ${vAfterK})`);
+  assert.equal(aAfterK, aBeforeK, `audit count must remain unchanged after 404 (expected ${aBeforeK}, got ${aAfterK})`);
+  pass('Test K: Nonexistent requirement status update returns 404 and preserves stateVersion and auditCount');
+
+  // =========================================================================
+  // Test L — Server restart persists incremented stateVersion, status, and audit entry
+  // =========================================================================
+  const vBeforeL = await getProjectStateVersion(projectId);
+  const auditsBeforeL = await getProjectAuditLogs(projectId);
+  const aBeforeL = auditsBeforeL.length;
+
+  // Perform another valid status transition to VERIFIED
+  const verifiedRes = await fetch(`${base}/api/projects/${projectId}/requirements/${req3.id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'VERIFIED', justification: 'Automated test suite passed' }),
+  });
+  assert.equal(verifiedRes.status, 200);
+
+  const vAfterLPreRestart = await getProjectStateVersion(projectId);
+  assert.equal(vAfterLPreRestart, vBeforeL + 1, 'stateVersion must increment before restart');
+
+  // Restart server within disposable test directory
+  await stopServer();
+  await startServer();
+
+  const vAfterRestart = await getProjectStateVersion(projectId);
+  const auditsAfterRestart = await getProjectAuditLogs(projectId);
+
+  assert.equal(vAfterRestart, vBeforeL + 1, `Persisted stateVersion must survive restart (expected ${vBeforeL + 1}, got ${vAfterRestart})`);
+  assert.equal(auditsAfterRestart.length, aBeforeL + 1, `Persisted audit count must survive restart (expected ${aBeforeL + 1}, got ${auditsAfterRestart.length})`);
+
+  const req3RestartCheckRes = await fetch(`${base}/api/projects/${projectId}/requirements`);
+  const req3RestartCheckList: Requirement[] = await req3RestartCheckRes.json();
+  const req3RestartCanonical = req3RestartCheckList.find((r) => r.id === req3.id);
+  assert.equal(req3RestartCanonical?.status, 'VERIFIED', 'Persisted status must remain VERIFIED after restart');
+  pass('Test L: Server restart persists incremented stateVersion, status, and audit entry');
+
   console.log('\n================================================================');
-  console.log(`TOTAL TESTS: 7 | PASSED: ${passedCount} | FAILED: 0`);
+  console.log(`TOTAL TESTS: 12 | PASSED: ${passedCount} | FAILED: 0`);
   console.log('================================================================');
 } finally {
   await stopServer();
