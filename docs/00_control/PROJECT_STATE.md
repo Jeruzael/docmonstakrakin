@@ -1,5 +1,41 @@
 # docmonstakrakin current project state
 
+## 2026-10-01 — DMK-195 Human Verification Remediation Complete
+
+DMK-195 Controlled Documentation Workspace implementation and human-verification remediation are technically complete and remain pending final human verification.
+
+### Current governance and task status
+
+- DMK-195: VERIFICATION_PENDING
+- Runtime DMK-195 status: VERIFICATION
+- Human-remediation commit:
+  f8347e9de30886c4cd64140a4d60448aedcc6a2c
+- Controlled-document regression: PASS
+- Projects workspace UI regression: PASS
+- Complete regression: PASS
+- DMK-196 through DMK-199: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Live reconciliation: NOT AUTHORIZED / NOT APPLIED
+- Release status: v0.1.0-rc1; no release promotion authorized
+
+### Latest verified runtime checkpoint
+
+- stateVersion: 74
+- auditCount: 80
+- Audit chain: 80 / 80 valid
+- Controlled document transaction directory: clean
+- Temporary human test text removed through authenticated governed edit
+- Active-project persistence remediation implemented
+- Vite controlled-document reload issue remediated
+
+### Next safe action
+
+Perform final DMK-195 human project-retention verification.
+
+Do not begin DMK-196/197 implementation as part of this update.
+Do not execute Gate 7.
+
 ## 2026-09-28 — DMK-195 Controlled Documentation Workspace Implementation Started
 
 The DMK-195 implementation plan was approved at reviewed baseline:

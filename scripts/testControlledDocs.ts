@@ -260,6 +260,11 @@ async function main() {
       baselineRegisteredDocumentHashes.set(doc.id, h);
     }
   }
+  assert.equal(
+    baselineRegisteredDocumentHashes.size,
+    realManifestData.documents.length,
+    'All registered controlled documents must exist at pre-flight'
+  );
   console.log(`  Live registered docs:  ${baselineRegisteredDocumentHashes.size} / ${realManifestData.documents.length} hashed`);
 
   const projectStateLivingPath = path.resolve(process.cwd(), 'docs', '00_control', 'PROJECT_STATE.md');
