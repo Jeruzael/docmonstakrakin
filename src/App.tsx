@@ -67,9 +67,47 @@ export default function App() {
   const [selectedReqId, setSelectedReqId] = useState<string | undefined>(undefined);
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | undefined>(undefined);
 
+  // URL Project Parameter Helpers
+  const getProjectFromUrl = (): string => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('project') || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const syncProjectUrl = (id: string, replace = false) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      const current = url.searchParams.get('project') || '';
+      if (id) {
+        if (current !== id) {
+          url.searchParams.set('project', id);
+          if (replace) {
+            window.history.replaceState(window.history.state, '', url.toString());
+          } else {
+            window.history.pushState(window.history.state, '', url.toString());
+          }
+        }
+      } else {
+        if (current) {
+          url.searchParams.delete('project');
+          if (replace) {
+            window.history.replaceState(window.history.state, '', url.toString());
+          } else {
+            window.history.pushState(window.history.state, '', url.toString());
+          }
+        }
+      }
+    } catch (_) {}
+  };
+
   // Projects State
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string>('');
+  const [activeProjectId, setActiveProjectId] = useState<string>(() => getProjectFromUrl());
 
   // Synchronize URL search params with drawer state
   const handleOpenCreateWizard = () => {
@@ -94,17 +132,6 @@ export default function App() {
     document.getElementById('topbar-new-project-btn')?.focus();
   };
 
-  // Browser back / forward buttons close or open the drawer accordingly
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const hasDrawer = params.get('drawer') === 'new-project' || params.get('dialog') === 'new-project';
-      setIsWizardOpen(hasDrawer);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
   // Active Project Data
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -123,7 +150,7 @@ export default function App() {
   const [requirementsSubTab, setRequirementsSubTab] = useState<'canonical' | 'features' | 'discovery'>('canonical');
 
   // Selection stays in App. Refs only guard async callbacks and request ordering.
-  const selectedProjectRef = useRef('');
+  const selectedProjectRef = useRef<string>(getProjectFromUrl());
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
   const listSequence = useRef(0);
@@ -149,7 +176,10 @@ export default function App() {
     });
   },[]);
 
-  const handleSelectProject = useCallback((id:string, replaceBaseline=false) => {
+  const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
+    if (syncHistory !== 'none') {
+      syncProjectUrl(id, syncHistory === 'replace');
+    }
     if(id && id===selectedProjectRef.current && !replaceBaseline) {
       setCurrentView(view=>view==='projects'?'overview':view);
       void fetchProjectData(id);
@@ -166,6 +196,26 @@ export default function App() {
     else {setCurrentProject(null);setProjectLoading(false);}
   },[fetchProjectData]);
 
+  // Browser back / forward buttons close or open the drawer accordingly & restore project
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const hasDrawer = params.get('drawer') === 'new-project' || params.get('dialog') === 'new-project';
+      setIsWizardOpen(hasDrawer);
+
+      const projParam = params.get('project');
+      setProjects(currentList => {
+        const targetId = projParam || currentList[0]?.id || '';
+        if (targetId && targetId !== selectedProjectRef.current && currentList.some(p => p.id === targetId)) {
+          handleSelectProject(targetId, false, 'none');
+        }
+        return currentList;
+      });
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleSelectProject]);
+
   // Fetch projects list without falling back to seeded/demo identities.
   const fetchProjects = useCallback(async () => {
     const sequence=++listSequence.current;
@@ -174,7 +224,22 @@ export default function App() {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
       setProjects(data);
-      if(!data.some(p=>p.id===selectedProjectRef.current))handleSelectProject(data[0]?.id || '');
+
+      if (data.length === 0) {
+        handleSelectProject('', false, 'replace');
+        return;
+      }
+
+      // Check URL query param first, then ref
+      const requestedId = getProjectFromUrl() || selectedProjectRef.current;
+      const matched = data.find(p => p.id === requestedId);
+
+      if (matched) {
+        handleSelectProject(matched.id, false, 'replace');
+      } else {
+        // Fall back to first project only when there is no valid requested/remembered project
+        handleSelectProject(data[0]?.id || '', false, 'replace');
+      }
     } catch(error) {
       if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
     } finally {if(sequence===listSequence.current)setProjectsLoading(false);}
