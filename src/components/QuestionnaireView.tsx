@@ -24,7 +24,7 @@ import {
   Settings2,
   Code2,
 } from 'lucide-react';
-import { Question, Project, DiscoveryDomain } from '../types.js';
+import { Question, Project, DiscoveryDomain, DerivationRule } from '../types.js';
 import { DISCOVERY_DOMAINS, getDomainMetadata } from '../data/discoveryCatalog.js';
 
 interface QuestionnaireViewProps {
@@ -1084,7 +1084,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-700 block">Select Solution Strategy:</span>
-                    {activeQuestion.derivationRule && (
+                    {(activeQuestion.derivationRules?.length ?? 0) > 0 && (
                       <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                         <Sparkles className="w-3 h-3" /> Auto-derives proposed artifacts
                       </span>
@@ -1093,11 +1093,46 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
                   {activeQuestion.options?.map((opt) => {
                     const isSelected = activeQuestion.answer === opt.value;
-                    const rule = activeQuestion.derivationRule;
-                    const producesArtifact =
-                      rule &&
-                      rule.triggerAnswerValues?.includes(opt.value) &&
-                      (rule.producesRequirement || rule.producesFeature);
+                    const matchingRules = (activeQuestion.derivationRules ?? []).filter((rule) => {
+                      const condition = rule.conditionValue;
+                      if (condition === undefined) {
+                        return true;
+                      }
+                      if (Array.isArray(condition)) {
+                        return condition.includes(opt.value);
+                      }
+                      return condition === opt.value;
+                    });
+
+                    const artifactRules = matchingRules.filter(
+                      (rule) => rule.outputType !== 'NO_DERIVED_ARTIFACT'
+                    );
+
+                    const formatOutputType = (type: DerivationRule['outputType']): string => {
+                      switch (type) {
+                        case 'REQUIREMENT':
+                          return 'Requirement';
+                        case 'FEATURE':
+                          return 'Feature';
+                        case 'RISK':
+                          return 'Risk';
+                        case 'CONSTRAINT':
+                          return 'Constraint';
+                        case 'ARCHITECTURE_INPUT':
+                          return 'Architecture Input';
+                        default:
+                          return type;
+                      }
+                    };
+
+                    const uniqueOutputTypes = Array.from(
+                      new Set(artifactRules.map((rule) => rule.outputType))
+                    );
+
+                    const derivationBadgeText =
+                      uniqueOutputTypes.length > 0
+                        ? `Generates ${uniqueOutputTypes.map(formatOutputType).join(' & ')}`
+                        : null;
 
                     return (
                       <button
@@ -1128,12 +1163,10 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                             {opt.description && (
                               <p className="text-xs text-slate-500 mt-0.5">{opt.description}</p>
                             )}
-                            {producesArtifact && (
+                            {derivationBadgeText && (
                               <div className="mt-1 flex items-center gap-2 text-[10px] text-emerald-700 font-medium">
                                 <span className="px-1.5 py-0.5 bg-emerald-100/70 rounded">
-                                  Generates {rule.producesRequirement ? 'Requirement (PROPOSED)' : ''}
-                                  {rule.producesRequirement && rule.producesFeature ? ' & ' : ''}
-                                  {rule.producesFeature ? 'Feature' : ''}
+                                  {derivationBadgeText}
                                 </span>
                               </div>
                             )}

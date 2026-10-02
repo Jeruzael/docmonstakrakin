@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
+import { recoverDocumentTransactions } from './server/docs/controlledDocsRecovery.ts';
+import { createControlledDocsRouter } from './server/docs/controlledDocsRouter.ts';
 import { detectSourceControlMode } from './scripts/detectEnvironment.ts';
 import { baselineFeatures, normalizeTechnicalBaseline, emptyAssurance, computeAssurance, validateProjectDraft } from './src/data/projectInitialization.ts';
 import { applicableStandards, applicableStandardLinks } from './src/data/standardsApplicability.ts';
@@ -117,8 +119,18 @@ async function startServer() {
   const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json({ limit: '10mb' }));
+
+  const recoveryReport = recoverDocumentTransactions(process.cwd());
+  if (recoveryReport.locked) {
+    console.error(
+      'Controlled document transaction recovery is locked:',
+      recoveryReport.errors
+    );
+  }
+
   installProjectPersistence(app, store);
   const reviewerAuth = registerSignoffRoutes(app, store);
+  app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman));
   registerProposalRoutes(app, store, reviewerAuth);
   // Never let Git discover and mutate a parent repository outside this workspace.
   app.use('/api/repo', (req,res,next) => {
@@ -586,6 +598,10 @@ async function startServer() {
   app.post('/api/projects/:id/requirements/:reqId/status', (req, res) => {
     const { status, justification } = req.body;
     if (status === 'APPROVED') return res.status(403).json({error:'Use Request Sign-Off and human quorum to approve a requirement'});
+    const project = store.projects.find((p) => p.id === req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     const reqList = store.requirements[req.params.id] || [];
     const target = reqList.find((r) => r.id === req.params.reqId);
 
@@ -596,6 +612,9 @@ async function startServer() {
     const previousStatus = target.status;
     target.status = status;
     target.updatedAt = new Date().toISOString();
+
+    project.stateVersion++;
+    project.updatedAt = new Date().toISOString();
 
     store.addAuditEvent(
       req.params.id,

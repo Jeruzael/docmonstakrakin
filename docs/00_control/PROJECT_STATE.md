@@ -1,5 +1,118 @@
 # docmonstakrakin current project state
 
+## 2026-10-02 — DMK-195 Final Human Verification & Transition Complete
+
+DMK-195 Controlled Documentation Workspace implementation, remediation, automated verification, and final human verification are complete. DMK-195 is transitioned to VERIFIED.
+
+### Current governance and task status
+
+- DMK-195: VERIFIED
+- Runtime DMK-195 status: VERIFIED
+- Canonical WBS DMK-195 status: VERIFIED
+- Human verification result: PASS WITH NON-BLOCKING UX OBSERVATIONS
+- Controlled-document regression: PASS
+- Projects workspace UI regression: PASS
+- Complete regression: PASS
+- DMK-196 through DMK-199: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- Release Gate remediation: OPEN (required before Gate 7)
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Live reconciliation: NOT AUTHORIZED / NOT APPLIED
+- Release status: v0.1.0-rc1; no release promotion authorized
+
+### Human verification outcome
+
+Verified:
+
+- Repository Documents navigation
+- Catalog/search/grouping
+- Integrity badge behavior
+- Read-only document protection
+- Controlled edit/diff/validation workflow
+- Invalid structural modification rejection
+- Reviewer authentication enforcement
+- Mandatory change justification
+- Human confirmation requirement
+- Stale concurrency handling
+- Project switching isolation
+- Dynamic Projections
+- Active project retention after refresh
+- Browser Back/Forward project restoration
+- Portable Package non-mutating behavior
+
+Non-blocking UX observations remain recorded in:
+
+docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md
+
+### Deferred downstream work
+
+- Requirement direct-approve workflow is owned by DMK-196.
+- Approval Inbox canonical synchronization is owned by DMK-197.
+- Authentication / role-delegation module candidate recorded for future consideration (DMK-198 scope evaluation or separate follow-on work item).
+- Release Gate evaluator remediation is logged as candidate DMK-202 (HIGH priority, required before Gate 7, not a blocker for DMK-195 PR merge).
+
+### Next safe action
+
+Prepare DMK-195 pull request and merge review.
+
+Do not automatically merge to master.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
+## 2026-09-28 — DMK-195 Controlled Documentation Workspace Implementation Started
+
+The DMK-195 implementation plan was approved at reviewed baseline:
+
+`140c425161be28b860a309e65beda75b055b3a03`
+
+Task 1, Controlled Dogfooding, completed on branch:
+
+`dmk-195-controlled-docs`
+
+at commit:
+
+`d325787e5a496d913d1536b9ec48926a0cb7c3df`
+
+The canonical WBS and operational runtime now both track DMK-195 as
+`IN_PROGRESS`.
+
+The runtime transition was intentionally performed as a new audited mutation.
+It does not authorize or perform historical DMK-201 reconciliation or recovery.
+
+### Current governance and task status
+
+- **DMK-195:** `IN_PROGRESS` — implementation plan approved and Task 1
+  controlled dogfooding transition complete. Task 2, Persistence Middleware
+  Extension, is the next implementation step.
+
+- **DMK-196 through DMK-199:** remain `BACKLOG`.
+
+- **DMK-201:** `VERIFICATION_PENDING` — historical reconciliation/recovery
+  remains separate from DMK-195 and is `NOT AUTHORIZED / NOT APPLIED`.
+
+- **Gate 7:** `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
+
+- **Live reconciliation:** `NOT AUTHORIZED / NOT APPLIED`.
+
+- **Batch B:** `NOT STARTED`.
+
+- **Release status:** `v0.1.0-rc1`; no release promotion authorized.
+
+- **Next safe action:** Execute DMK-195 Task 2 — Persistence Middleware
+  Extension according to the approved implementation plan.
+
+### DMK-195 Task 1 checkpoint
+
+- Pre-transition runtime status: `PROPOSED`
+- Post-transition runtime status: `IN_PROGRESS`
+- Pre-transition stateVersion: `30`
+- Post-transition stateVersion: `31`
+- Pre-transition audit count: `35`
+- Post-transition audit count: `36`
+- New audit event action: `WORK_ITEM_UPDATED`
+- DMK-201 remained unchanged (`VERIFICATION_PENDING`)
+- Gate 7 remained unchanged (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
+
 ## 2026-09-25 — DMK-194 Human UI Review Complete & PR #16 Merged
 
 Pull request #16 (`dmk-194-projects-workspace`) was merged into `master` at commit `1457ab419c5d2c0e217ef4df4073c1169415b3b0`.
@@ -22,7 +135,7 @@ The human operator conducted the DMK-194 Human UI Review with final outcome: **P
 3. **Formal requirement sign-off UX remains inconsistent** (already owned and scheduled under **DMK-196**).
 4. **Package export JSON is compact/minified rather than human-readable**.
 
-### Current governance and task status
+### Governance and task status at the 2026-09-25 checkpoint
 
 - **DMK-194:** `VERIFIED` (Automated 14 workspace + 10 browser checks passed; human UI review completed).
 - **DMK-201:** `VERIFICATION_PENDING` (Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity; Stage A.6–A.8 candidates SUPERSEDED; Stage A.9 assessment superseded for decision-making by Stage A.10; Stage A.10 package-evidence normalization complete but historical runtime binding is STALE due to snapshot hash advance from 9c4ca9b5... to 68b8252e...; Stage A.11 post-A.10 state-drift review completed and confirmed drift is FULLY EXPLAINED by two audited human governance transactions; recovery pending human review; NOT AUTHORIZED, NOT APPLIED).

@@ -117,15 +117,29 @@ export class ProjectStore {
     action: string,
     target: string,
     reason?: string,
-    details?: any
+    details?: any,
+    eventId?: string
   ): AuditEvent {
     if (!this.auditLogs[projectId]) {
       this.auditLogs[projectId] = [];
     }
+
+    let id: string;
+    if (eventId !== undefined) {
+      if (typeof eventId !== 'string' || eventId.trim().length === 0) {
+        throw new Error('INVALID_AUDIT_EVENT_ID: Event ID must be a non-empty string');
+      }
+      if (this.auditLogs[projectId].some((e) => e.id === eventId)) {
+        throw new Error('DUPLICATE_AUDIT_EVENT_ID: Event ID already exists in project audit log');
+      }
+      id = eventId;
+    } else {
+      id = createAuditEventId();
+    }
+
     const previousEvent = this.auditLogs[projectId][0];
     const previousHash = previousEvent ? previousEvent.stateHash : GENESIS_AUDIT_HASH;
     const timestamp = new Date().toISOString();
-    const id = `AUD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     const rawEvent: AuditEvent = {
       id,
@@ -142,4 +156,11 @@ export class ProjectStore {
     this.auditLogs[projectId].unshift(event);
     return event;
   }
+}
+
+/**
+ * Generates a standard audit event ID preserving historical format AUD-<timestamp-base36>-<4 random chars>.
+ */
+export function createAuditEventId(): string {
+  return `AUD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 }

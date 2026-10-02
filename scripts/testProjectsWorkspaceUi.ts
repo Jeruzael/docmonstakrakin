@@ -18,14 +18,17 @@ const browser=await chromium.launch({headless:true,...(executable?{executablePat
 const output=path.resolve('runtime/dmk-194-remediation/ui');fs.mkdirSync(output,{recursive:true});
 let passed=0,failed=0;
 const results:{name:string;status:string;error?:string}[]=[];
-const projects=['A','B','C'].map(id=>({...structuredClone(INITIAL_PROJECTS[0]),id,name:`Fixture ${id}`}));
+const projects=[
+  ...['A','B','C'].map(id=>({...structuredClone(INITIAL_PROJECTS[0]),id,name:`Fixture ${id}`})),
+  {...structuredClone(INITIAL_PROJECTS[0]),id:'PRJ-DOCMONSTAKRAKIN',name:'docmonstakrakin'},
+];
 const req=(id:string)=>({id:`REQ-${id}`,title:`Requirement ${id}`,statement:'Synthetic requirement',category:'SECURITY',priority:'HIGH',status:'PROPOSED',source:{type:'stakeholder',id:'fixture'},riskLinks:[],threatLinks:[],standardLinks:[],workItems:[],tests:[],evidence:[]});
 const questions=[1,2,3].map(n=>({id:`Q-${n}`,question:`Synthetic question ${n}`,category:'security',domain:'SECURITY',answerType:'FREE_TEXT',state:'UNRESOLVED',importance:'OPTIONAL',contextReason:'Fixture only',standards:[],appliesTo:['WEB_APPLICATION'],derivationRules:[]}));
 const deferred=()=>{let resolve!:()=>void;const promise=new Promise<void>(r=>resolve=r);return {promise,resolve};};
 async function setup(empty=false) {
   const page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(6000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  const state={projects:empty?[]:structuredClone(projects),requirements:{A:[req('A')],B:[req('B')],C:[req('C')]} as Record<string,any[]>,questions:structuredClone(questions),posts:[] as string[],held:new Map<string,ReturnType<typeof deferred>>(),fail:new Set<string>(),reject:false,reads:[] as string[]};
+  const state={projects:empty?[]:structuredClone(projects),requirements:{A:[req('A')],B:[req('B')],C:[req('C')],'PRJ-DOCMONSTAKRAKIN':[req('PRJ-DOCMONSTAKRAKIN')]} as Record<string,any[]>,questions:structuredClone(questions),posts:[] as string[],held:new Map<string,ReturnType<typeof deferred>>(),fail:new Set<string>(),reject:false,reads:[] as string[]};
   // Simulate a transport that ignores aborts so late results really reach the loader.
   const workItems = structuredClone(INITIAL_WORK_ITEMS.slice(0,1));
   await page.addInitScript(()=>{const original=window.fetch;window.fetch=(url,options)=>original(url,options?{...options,signal:undefined}:options);});
@@ -179,6 +182,61 @@ try {
       await f.page.waitForFunction(()=>!(document.querySelector('#portable-package-modal button') as HTMLButtonElement)?.disabled && !document.querySelector('header')?.textContent?.includes('Loading'));
       await f.page.getByRole('button',{name:'Export Sealed Package',exact:true}).click();await f.page.getByRole('button',{name:'Download .docmonstakrakin Package'}).click();await f.page.waitForTimeout(100);assert.deepEqual(f.state.reads.filter(p=>p.endsWith('/package/export')),['/api/projects/A/package/export','/api/projects/B/package/export']);
       await f.page.getByRole('button',{name:'Close dialog',exact:true}).click();await select(f.page,'A');await drawer(f.page);const a=deferred();f.state.held.set('A',a);await f.page.getByRole('button',{name:'Mark Under Review',exact:true}).click();await f.page.getByText('Refreshing selected project…',{exact:true}).waitFor();await f.page.getByRole('button',{name:'Import package',exact:true}).click();assert(await f.page.getByRole('button',{name:'Export Sealed Package',exact:true}).isDisabled());assert.equal(await f.page.getByRole('button',{name:'Download .docmonstakrakin Package'}).count(),0);a.resolve();
+    }finally{await f.close();}
+  });
+  await test('R1 query parameter ?project=PRJ-DOCMONSTAKRAKIN restores docmonstakrakin on startup and survives reload',async()=>{
+    const f=await setup();try{
+      await f.page.goto(`${base}?project=PRJ-DOCMONSTAKRAKIN`,{waitUntil:'domcontentloaded'});
+      await f.page.getByRole('heading',{name:'docmonstakrakin',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/docmonstakrakin/);
+      assert(f.page.url().includes('project=PRJ-DOCMONSTAKRAKIN'));
+      await f.page.reload({waitUntil:'domcontentloaded'});
+      await f.page.getByRole('heading',{name:'docmonstakrakin',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/docmonstakrakin/);
+      assert(f.page.url().includes('project=PRJ-DOCMONSTAKRAKIN'));
+    }finally{await f.close();}
+  });
+  await test('R2 selecting Project B synchronizes URL query param, survives reload, and survives canonical refresh',async()=>{
+    const f=await setup();try{
+      await f.start();
+      await select(f.page,'B');
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert(f.page.url().includes('project=B'));
+      await f.page.reload({waitUntil:'domcontentloaded'});
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture B/);
+      assert(f.page.url().includes('project=B'));
+      // Canonical refresh keeps Project B
+      const gate=deferred();f.state.held.set('B',gate);
+      await f.page.getByRole('button',{name:'Select project',exact:true}).click();
+      await f.page.getByRole('button',{name:/Fixture B/}).click();
+      await f.page.getByText('Refreshing selected project…',{exact:true}).waitFor();
+      gate.resolve();
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture B/);
+      assert(f.page.url().includes('project=B'));
+    }finally{await f.close();}
+  });
+  await test('R3 browser back and forward navigation deterministically updates active project without full navigation',async()=>{
+    const f=await setup();try{
+      await f.start();
+      await select(f.page,'B');
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert(f.page.url().includes('project=B'));
+      await select(f.page,'C');
+      await f.page.getByRole('heading',{name:'Fixture C',exact:true}).waitFor();
+      assert(f.page.url().includes('project=C'));
+      await f.page.goBack();
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture B/);
+      assert(f.page.url().includes('project=B'));
+      await f.page.goBack();
+      await f.page.getByRole('heading',{name:'Fixture A',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture A/);
+      await f.page.goForward();
+      await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
+      assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture B/);
+      assert(f.page.url().includes('project=B'));
     }finally{await f.close();}
   });
 } finally {await browser.close();await vite.close();}
