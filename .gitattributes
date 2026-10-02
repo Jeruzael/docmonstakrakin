@@ -1,0 +1,2 @@
+# Ensure deterministic LF line endings across all platforms for cryptographic hash immutability
+* text=auto eol=lf
