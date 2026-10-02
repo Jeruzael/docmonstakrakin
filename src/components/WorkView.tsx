@@ -54,8 +54,9 @@ interface WorkItemSyncRow {
   runtimeStatus?: string;
   canonicalType?: string;
   runtimeType?: string;
-  category: 'SYNCED' | 'MISSING_RUNTIME' | 'STATUS_DRIFT' | 'METADATA_DRIFT' | 'RUNTIME_ONLY' | 'BLOCKED';
-  action: 'NOOP' | 'CREATE' | 'UPDATE_STATUS' | 'UPDATE_METADATA' | 'BLOCKED' | 'WARN_RUNTIME_ONLY';
+  category: 'SYNCED' | 'MISSING_RUNTIME' | 'STATUS_DRIFT' | 'METADATA_DRIFT' | 'STATUS_AND_METADATA_DRIFT' | 'RUNTIME_ONLY' | 'BLOCKED';
+  differences?: ('STATUS_DRIFT' | 'METADATA_DRIFT')[];
+  action: 'NOOP' | 'CREATE' | 'UPDATE_STATUS' | 'UPDATE_METADATA' | 'UPDATE_STATUS_AND_METADATA' | 'BLOCKED' | 'WARN_RUNTIME_ONLY';
   details?: string;
   proposedResult?: string;
 }
@@ -99,8 +100,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
 
   const [activeSprint, setActiveSprint] = useState<number>(0);
 
-  // Fetch canonical WBS and reconciliation when project is PRJ-DOCMONSTAKRAKIN
-  useEffect(() => {
+  const fetchSyncData = () => {
     if (projectId === 'PRJ-DOCMONSTAKRAKIN') {
       setLoadingRecon(true);
       Promise.all([
@@ -131,6 +131,13 @@ export const WorkView: React.FC<WorkViewProps> = ({
           }
         })
         .finally(() => setLoadingRecon(false));
+    }
+  };
+
+  // Fetch canonical WBS and reconciliation when project is PRJ-DOCMONSTAKRAKIN
+  useEffect(() => {
+    if (projectId === 'PRJ-DOCMONSTAKRAKIN') {
+      fetchSyncData();
     } else {
       // Clear canonical self-project state when switching to any other project (Section 30)
       setWbsSupported(false);
@@ -141,6 +148,10 @@ export const WorkView: React.FC<WorkViewProps> = ({
       setIsReviewOpen(false);
     }
   }, [projectId]);
+
+  const reconciliationById = useMemo(() => {
+    return new Map<string, WorkItemSyncRow>(reconRows.map((r) => [r.id, r]));
+  }, [reconRows]);
 
   const columns: { id: WorkItemStatus; label: string }[] = [
     { id: 'PROPOSED', label: 'Proposed' },
@@ -222,18 +233,32 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   {reconSummary.statusDrift} status drift
                 </span>
                 <span>•</span>
+                <span className={reconSummary.metadataDrift > 0 ? 'font-bold text-blue-700' : 'text-slate-600'}>
+                  {reconSummary.metadataDrift} metadata drift
+                </span>
+                <span>•</span>
                 <span className={reconSummary.blocked > 0 ? 'font-bold text-red-700' : 'text-slate-600'}>
                   {reconSummary.blocked} blocked
                 </span>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setIsReviewOpen(true)}
-            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-2xs transition-colors self-start md:self-auto"
-          >
-            Review Reconciliation
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={fetchSyncData}
+              disabled={loadingRecon}
+              title="Refresh reconciliation projection"
+              className="p-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingRecon ? 'animate-spin text-blue-600' : ''}`} />
+            </button>
+            <button
+              onClick={() => setIsReviewOpen(true)}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-2xs transition-colors"
+            >
+              Review Reconciliation
+            </button>
+          </div>
         </div>
       )}
 
@@ -244,7 +269,9 @@ export const WorkView: React.FC<WorkViewProps> = ({
             Canonical Work & Task Engine
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Single WorkItem source of truth powering Kanban, WBS, Product Backlog, and Verification Checklists.
+            {wbsSupported
+              ? 'Canonical WBS authority with governed runtime execution projection.'
+              : 'Single WorkItem source of truth powering Kanban, WBS, Product Backlog, and Verification Checklists.'}
           </p>
         </div>
 
@@ -392,14 +419,42 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   <div className="divide-y divide-slate-100">
                     {grp.items.map((item) => {
                       const rItem = workItems.find((w) => w.id === item.id);
+                      const reconRow = reconciliationById.get(item.id);
+                      const category = reconRow ? reconRow.category : (!rItem ? 'MISSING_RUNTIME' : 'SYNCED');
+
                       let syncBadge = 'SYNCED';
                       let syncBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                      if (!rItem) {
-                        syncBadge = 'MISSING_RUNTIME';
-                        syncBadgeClass = 'bg-amber-50 text-amber-700 border border-amber-200';
-                      } else if (rItem.status !== item.status) {
-                        syncBadge = 'STATUS_DRIFT';
-                        syncBadgeClass = 'bg-orange-50 text-orange-700 border border-orange-200';
+
+                      switch (category) {
+                        case 'MISSING_RUNTIME':
+                          syncBadge = 'MISSING_RUNTIME';
+                          syncBadgeClass = 'bg-amber-50 text-amber-700 border border-amber-200';
+                          break;
+                        case 'STATUS_DRIFT':
+                          syncBadge = 'STATUS_DRIFT';
+                          syncBadgeClass = 'bg-orange-50 text-orange-700 border border-orange-200';
+                          break;
+                        case 'METADATA_DRIFT':
+                          syncBadge = 'METADATA_DRIFT';
+                          syncBadgeClass = 'bg-blue-50 text-blue-700 border border-blue-200';
+                          break;
+                        case 'STATUS_AND_METADATA_DRIFT':
+                          syncBadge = 'STATUS & METADATA DRIFT';
+                          syncBadgeClass = 'bg-purple-50 text-purple-700 border border-purple-200';
+                          break;
+                        case 'BLOCKED':
+                          syncBadge = 'BLOCKED';
+                          syncBadgeClass = 'bg-red-50 text-red-700 border border-red-200';
+                          break;
+                        case 'RUNTIME_ONLY':
+                          syncBadge = 'RUNTIME_ONLY';
+                          syncBadgeClass = 'bg-slate-100 text-slate-700 border border-slate-300';
+                          break;
+                        case 'SYNCED':
+                        default:
+                          syncBadge = 'SYNCED';
+                          syncBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                          break;
                       }
 
                       return (
@@ -625,22 +680,30 @@ export const WorkView: React.FC<WorkViewProps> = ({
             </div>
 
             <div className="p-5 flex-1 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 font-medium text-slate-700">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 font-medium text-slate-700">
                 <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Canonical Items</span>
+                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Canonical</span>
                   <span className="text-sm font-bold text-slate-900">{reconSummary?.canonicalItems || 0}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Runtime Items</span>
+                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Runtime</span>
                   <span className="text-sm font-bold text-slate-900">{reconSummary?.runtimeItems || 0}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Missing in Runtime</span>
+                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Missing</span>
                   <span className="text-sm font-bold text-amber-700">{reconSummary?.missingRuntime || 0}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 text-[10px] block uppercase font-bold">Status Drift</span>
                   <span className="text-sm font-bold text-orange-700">{reconSummary?.statusDrift || 0}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Meta Drift</span>
+                  <span className="text-sm font-bold text-blue-700">{reconSummary?.metadataDrift || 0}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-[10px] block uppercase font-bold">Blocked</span>
+                  <span className="text-sm font-bold text-red-700">{reconSummary?.blocked || 0}</span>
                 </div>
               </div>
 
@@ -674,6 +737,10 @@ export const WorkView: React.FC<WorkViewProps> = ({
                                 ? 'bg-amber-50 text-amber-700'
                                 : row.category === 'STATUS_DRIFT'
                                 ? 'bg-orange-50 text-orange-700'
+                                : row.category === 'METADATA_DRIFT'
+                                ? 'bg-blue-50 text-blue-700'
+                                : row.category === 'STATUS_AND_METADATA_DRIFT'
+                                ? 'bg-purple-50 text-purple-700'
                                 : row.category === 'BLOCKED'
                                 ? 'bg-red-50 text-red-700'
                                 : 'bg-slate-100 text-slate-600'
@@ -681,6 +748,16 @@ export const WorkView: React.FC<WorkViewProps> = ({
                           >
                             {row.category}
                           </span>
+                          {row.differences && row.differences.length > 0 && (
+                            <span className="block text-[9px] text-slate-500 mt-0.5">
+                              {row.differences.join(' + ')}
+                            </span>
+                          )}
+                          {row.details && (
+                            <span className="block text-[9px] text-slate-400 mt-0.5">
+                              {row.details}
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-[11px] font-semibold text-slate-900">
                           {row.proposedResult || 'NOOP'}
