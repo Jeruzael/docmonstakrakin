@@ -205,7 +205,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-203` — GitHub Actions CI Baseline
 - **WBS Path:** `13.06.16`
 - **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `VERIFICATION_PENDING`
+- **Status:** `VERIFIED` (Evidence: `PR #18 CI verification run: 36995339603 (Quality & Build, Controlled Docs, Complete Regression all PASS), Post-merge master push CI verification run: 37002353193 on commit 46130f66e1f425edb410e22c3f1fd69724fc0186 (Quality & Build, Controlled Docs, Complete Regression all PASS)`)
 - **Dependencies:** `DMK-195`
 - **Requirements:** `REQ-REL-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero developer-local runtime state or production credentials.
