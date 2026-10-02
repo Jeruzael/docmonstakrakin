@@ -1,46 +1,96 @@
 # docmonstakrakin current project state
 
-## 2026-10-02 — DMK-205 Canonical WBS → Runtime Synchronization Implementation Complete
+## 2026-10-03 — DMK-205 V2 Reconciliation Hardening Complete
 
-DMK-205 Canonical WBS → Runtime WorkItem Synchronization has completed implementation and automated regression verification.
+DMK-205 Canonical WBS → Runtime WorkItem Synchronization implementation and
+DMK_SELF_WBS_SYNC_V2 hardening are complete and remain
+VERIFICATION_PENDING pending PR merge and future live reconciliation
+eligibility.
 
 ### Current governance and task status
 
 - DMK-195: VERIFIED / MERGED
 - DMK-203: VERIFIED / MERGED
-- DMK-204: BACKLOG — Master Branch Protection & Required CI Enforcement
-- DMK-205: VERIFICATION_PENDING (Implementation complete; awaiting human plan review for live apply)
+- DMK-204: BACKLOG
+- DMK-205: VERIFICATION_PENDING
 - DMK-196: BACKLOG
 - DMK-197: BACKLOG
 - DMK-201: VERIFICATION_PENDING
 - DMK-202: BACKLOG
-- Release Gate remediation: OPEN (required before Gate 7)
 - Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
-- Live reconciliation: DRY-RUN GENERATED / AWAITING EXPLICIT HUMAN PLAN APPROVAL
-- Release status: v0.1.0-rc1; no release promotion authorized
+- Release: v0.1.0-rc1 / NOT PROMOTED
 
-### DMK-205 implementation & verification evidence
+### DMK-205 V2 state
 
-- Canonical WBS parser & raw SHA-256 computation: PASS
-- Status & type fail-closed mapping matrices: PASS
-- Drift detection (SYNCED, MISSING_RUNTIME, STATUS_DRIFT, METADATA_DRIFT, RUNTIME_ONLY, BLOCKED): PASS
-- Provenance validation for VERIFIED canonical items: PASS
-- Zero-mutation dry-run planning & deterministic planDigest: PASS
-- Anti-TOCTOU validation (WBS and snapshot SHA-256 checks): PASS
-- Atomic apply with single stateVersion bump and single chained audit event: PASS
-- WorkItem extended canonical metadata and generic status guard (HTTP 409): PASS
-- Dynamic Work Management WBS projection (hardcoded arrays removed): PASS
-- Independent reconciliation verifier: PASS
-- Complete regression suite: 42/42 suites, 866/866 assertions PASS
-- Controlled docs matrix: 40/40 Core, 29/29 Security, 11/11 Suites PASS
+Verified implementation includes:
 
-### Live reconciliation apply status
+- canonical WBS authority
+- exact WBS byte parsing
+- one-way WBS → runtime projection
+- dynamic Work Management WBS view
+- missing/status/metadata drift detection
+- canonical-managed status protection
+- recursive canonical V2 plan hashing
+- deterministic operation/plan/audit identities
+- exact candidate snapshot binding
+- explicit reviewed actor identity
+- strict VERIFIED human provenance validation
+- runtime snapshot stale-state protection
+- stale no-change plan protection
+- pre-rename WBS anti-TOCTOU protection
+- idempotent ALREADY_APPLIED handling
+- ALREADY_SYNCHRONIZED zero-write handling
+- independent reconciliation verification
 
-Live operational runtime apply is deliberately withheld pending explicit human review of dry-run plan `runtime/dmk-205-sync/live-plan.json`.
+### Historical governance blockers
+
+Live reconciliation remains BLOCKED.
+
+The following nine historical canonical VERIFIED items lack sufficient
+completed human governance provenance:
+
+DMK-187
+DMK-188
+DMK-189
+DMK-190
+DMK-156
+DMK-157
+DMK-158
+DMK-159
+DMK-165
+
+No missing approval has been fabricated or inferred.
+
+DMK-192 and DMK-193 retain sufficient historical bootstrap provenance.
+
+### Live reconciliation
+
+BLOCKED
+NOT AUTHORIZED
+NOT EXECUTED
+
+Do not enable DMK_WBS_SYNC_EXECUTE.
+
+A read-only reconciliation plan may be generated for inspection but cannot
+be applied while blocked > 0.
+
+### Verification
+
+- npm run wbs:check: PASS (zero drift)
+- npm run lint: PASS (zero TypeScript errors)
+- npm run build: PASS (clean production build)
+- npm run test:self-work-sync: PASS (85/85 scenarios)
+- npm run test:controlled-docs: PASS (Core Matrix 40/40, Additional Security 29/29, Focused Suites 11/11, 324 assertions)
+- npm run test:projects-workspace:ui: PASS (13/13)
+- npm run test:complete: PASS (42/42 suites, 915/915 assertions)
 
 ### Next safe action
 
-Open PR #20 for DMK-205 implementation review, verify GitHub Actions CI, and await human authorization for dry-run plan apply.
+1. Verify PR #20 final HEAD and GitHub Actions.
+2. Human merge PR #20 if all checks remain green.
+3. Verify post-merge master CI.
+4. Address the nine historical governance items separately.
+5. Do not attempt live reconciliation until blocked = 0.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
