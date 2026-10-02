@@ -1259,7 +1259,7 @@ try {
 
       // Select DOC-CTRL-006 (Rich formatting document)
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-006"]');
-      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      await ctx.page.locator('[data-testid="doc-content-rendered"] h1', { hasText: 'Heading 1' }).waitFor();
       const rendered = ctx.page.locator('[data-testid="doc-content-rendered"]');
 
       // h1 element is rendered with appropriate styling

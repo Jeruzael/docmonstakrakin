@@ -68,6 +68,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright Chromium dependencies
+        run: npx playwright install --with-deps chromium
+
       - name: Prepare synthetic CI runtime
         run: npm run ci:prepare
 
@@ -109,6 +112,18 @@ jobs:
 
       - name: Run complete regression suite
         run: npm run test:complete
+
+      - name: Dump failed regression logs
+        if: failure()
+        run: |
+          for f in runtime/rc-regression/*.log; do
+            if [ -f "$f" ] && grep -q -E '(FAIL|Error:)' "$f"; then
+              echo "=========================================="
+              echo "FAILED LOG: $f"
+              echo "=========================================="
+              cat "$f"
+            fi
+          done
 
       - name: Verify repository cleanliness
         run: |
