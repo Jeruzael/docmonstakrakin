@@ -1,41 +1,52 @@
 # docmonstakrakin current project state
 
-## 2026-10-02 — DMK-203 GitHub Actions CI Baseline & Master Protection
+## 2026-10-02 — DMK-203 GitHub Actions CI Baseline Verification
 
-DMK-195 Controlled Documentation Workspace is verified and merged into master via PR #17.
-DMK-203 establishes the automated GitHub Actions CI baseline and master branch protection before beginning DMK-196.
+DMK-195 Controlled Documentation Workspace is VERIFIED and merged.
+
+DMK-203 GitHub Actions CI Baseline implementation is complete and has passed fresh-checkout, Linux, Playwright, controlled-document, and complete regression verification on PR #18.
 
 ### Current governance and task status
 
-- DMK-195: VERIFIED / MERGED (PR #17 merged into master)
-- DMK-203: IN_PROGRESS (GitHub Actions CI Baseline & Master Protection)
+- DMK-195: VERIFIED / MERGED
+- DMK-203: VERIFICATION_PENDING
+- DMK-204: BACKLOG — Master Branch Protection & Required CI Enforcement
 - DMK-196: BACKLOG
 - DMK-197: BACKLOG
 - DMK-201: VERIFICATION_PENDING
-- DMK-202: BACKLOG (Release Gate evaluator remediation, required before Gate 7)
+- DMK-202: BACKLOG
 - Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
-- Live reconciliation: NOT AUTHORIZED / NOT APPLIED
 - Release status: v0.1.0-rc1; no release promotion authorized
 
-### CI Baseline scope and architecture
+### CI verification
 
-- Automated GitHub Actions workflow on PRs to master and pushes to master
-- Three isolated verification jobs: Quality & Build, Controlled Docs, and Complete Regression
-- Zero developer-local `.local/` state, zero operator credentials, and zero API secrets
-- Deterministic synthetic CI runtime fixture (`scripts/prepareCiRuntime.ts`)
-- Linux Chromium support via Playwright runner install
-- Fail-closed execution with repository cleanliness assertions
+PR #18 current CI verification:
 
-### Deferred downstream work
+- Quality & Build: PASS
+- Controlled Docs: PASS
+- Complete Regression: PASS
+- Linux / Playwright execution: PASS
+- Fresh-checkout hermeticity: PASS
+- Zero-secret synthetic runtime: PASS
+- Repository cleanliness verification: PASS
 
-- Requirement direct-approve workflow is owned by DMK-196.
-- Approval Inbox canonical synchronization is owned by DMK-197.
-- Authentication / role-delegation module candidate recorded for future consideration.
-- Release Gate evaluator remediation is logged as candidate DMK-202 (HIGH priority, required before Gate 7, not a blocker for CI baseline).
+### Platform constraint
+
+Master branch protection / required-check enforcement cannot currently be enabled for this private repository under the current GitHub plan.
+
+This enforcement capability is deferred to DMK-204.
+
+The repository must remain private unless an explicit human decision changes that separately.
 
 ### Next safe action
 
-Complete fresh-checkout CI verification, submit DMK-203 pull request, verify green GitHub Actions execution, configure master branch protection, and request human merge review.
+Merge PR #18 after final human review and green latest-head CI.
+
+After merge, verify that the push-to-master GitHub Actions workflow runs automatically and all three CI jobs pass.
+
+If the master run succeeds, DMK-203 may be transitioned from VERIFICATION_PENDING to VERIFIED.
+
+DMK-204 remains BACKLOG until the platform constraint is resolved.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 

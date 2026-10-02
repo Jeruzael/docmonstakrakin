@@ -367,31 +367,63 @@ items:
   - id: "DMK-203"
     wbs_path: "13.06.16"
     parent_id: "EPIC-13"
-    title: "GitHub Actions CI Baseline & Master Protection"
-    description: "Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero secrets and master branch protection."
+    title: "GitHub Actions CI Baseline"
+    description: "Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero developer-local runtime state or production credentials."
     type: "INFRASTRUCTURE"
     phase: "PHASE-12"
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "VERIFIED"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-195"]
     requirements: ["REQ-REL-001"]
     architecture_links: ["CMP-01"]
     security_controls: ["SEC-CTRL-020"]
     acceptance_criteria:
-      - "GitHub Actions runs on every PR targeting master"
-      - "GitHub Actions runs after every push/merge to master"
+      - "GitHub Actions runs automatically on pull requests targeting master"
+      - "Workflow is configured to run on pushes/merges to master"
+      - "workflow_dispatch is available"
       - "CI succeeds from a fresh checkout without developer-local runtime state"
-      - "CI uses no real reviewer credentials, machine tokens, .env secrets, production credentials, or external AI credentials"
-      - "WBS synchronization, lint, build, controlled-document regression, and complete regression are independently visible"
-      - "Playwright browser tests execute successfully in Linux CI"
-      - "CI failures block merge after branch protection is enabled"
+      - "CI requires no real reviewer credentials, machine tokens, .env secrets, production credentials, or external AI credentials"
+      - "WBS synchronization, TypeScript/lint, production build, controlled-document regression, and complete regression are visible"
+      - "Playwright Chromium tests execute successfully on Linux"
       - "CI cannot silently mutate controlled repository evidence"
+      - "Runtime artifacts remain untracked and gitignored"
       - "Gate 7 remains human-controlled and outside CI authority"
-    verification_method: "Fresh-clone CI execution + GitHub Actions PR run + protected-branch required-check verification + successful master post-merge run"
+    verification_method: "Fresh-checkout CI execution; GitHub Actions PR execution on Linux; Quality & Build, Controlled Docs, and Complete Regression checks; repository cleanliness verification; and successful automatic CI execution on master after merge."
     evidence: []
-    planned_by: "Recorded during CI baseline planning"
+    planned_by: "Recorded during CI baseline planning; updated during DMK-203/DMK-204 governance reconciliation"
+
+  - id: "DMK-204"
+    wbs_path: "13.06.17"
+    parent_id: "EPIC-13"
+    title: "Master Branch Protection & Required CI Enforcement"
+    description: "Enforce master-branch governance through GitHub branch protection or repository rulesets so changes require pull requests and the mandatory Quality & Build, Controlled Docs, and Complete Regression CI checks must pass before merge. Currently deferred because the repository is private under a GitHub plan that does not expose required branch-protection / ruleset capability.\n\nPLATFORM CONSTRAINT:\nCurrent GitHub configuration does not permit required branch protection for this private repository. Activation requires one of: a GitHub plan supporting protection/rulesets for this repository, an organizational policy/environment that exposes equivalent controls, or another explicitly approved repository-governance mechanism. Do NOT make the repository public merely to satisfy this WorkItem. Do NOT upgrade any subscription automatically."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-203"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Changes to master require a pull request"
+      - "Required CI checks are configured: Quality & Build, Controlled Docs, Complete Regression"
+      - "Required checks must pass before merge"
+      - "Pending required checks block merge"
+      - "Failed required checks block merge"
+      - "Branch must be current with protected baseline before merge where supported"
+      - "Force pushes are blocked"
+      - "Branch deletion is blocked"
+      - "Protection configuration is verified through GitHub's actual policy state"
+      - "No bypass path is silently introduced"
+      - "Gate 7 remains independent from repository CI enforcement"
+    verification_method: "GitHub ruleset / branch protection inspection; intentionally failing disposable PR test; intentionally pending-check test; and successful-check merge eligibility test upon resolving platform constraint."
+    evidence: []
+    planned_by: "Recorded during DMK-203 governance reconciliation and platform enforcement split"
 
   - id: "DMK-187"
     wbs_path: "13.06.01"
