@@ -430,6 +430,47 @@ items:
     evidence: []
     planned_by: "Recorded during DMK-203 governance reconciliation and platform enforcement split"
 
+  - id: "DMK-205"
+    wbs_path: "13.06.18"
+    parent_id: "EPIC-13"
+    title: "Canonical WBS → Runtime WorkItem Synchronization"
+    description: "Establish a governed one-way synchronization and reconciliation mechanism from the canonical repository WBS into PRJ-DOCMONSTAKRAKIN operational runtime WorkItems, expose canonical WBS data dynamically in Work Management, detect WBS/runtime drift, and eliminate hard-coded self-project WBS views without allowing runtime state to overwrite repository WBS authority."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFICATION_PENDING"
+    dependencies: ["DMK-203"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-002"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "MASTER_WBS.yaml remains repository authority"
+      - "Runtime WorkItems remain an operational projection"
+      - "PRJ-DOCMONSTAKRAKIN WBS/runtime drift can be detected read-only"
+      - "Missing canonical WorkItems are detected"
+      - "Status drift is detected"
+      - "Canonical metadata drift is detected"
+      - "Runtime-only WorkItems are reported but NEVER silently deleted"
+      - "Synchronization requires an exact reviewed plan"
+      - "Synchronization requires explicit human authorization"
+      - "Synchronization is atomic and idempotent"
+      - "Synchronization creates exactly one audit event and exactly one project stateVersion increment per non-empty batch"
+      - "Stale runtime state rejects apply"
+      - "Changed WBS input rejects apply"
+      - "Unknown WBS statuses/types fail closed"
+      - "Runtime-only execution fields are preserved"
+      - "Work Management WBS tab is dynamically driven from canonical WBS data"
+      - "Hard-coded WBS task arrays are removed"
+      - "After approved synchronization, new canonical tasks such as DMK-203, DMK-204 and DMK-205 appear in Work Management"
+      - "Canonical-managed self-project status changes cannot silently drift away from WBS authority"
+      - "Other projects retain existing runtime-only behavior"
+      - "Gate 7 and release state remain untouched"
+    verification_method: "Comprehensive unit, reconciliation, drift-detection, and UI regression test suites; dry-run plan generation and validation."
+    evidence: []
+    planned_by: "Recorded during DMK-205 self-tracking planning"
+
   - id: "DMK-187"
     wbs_path: "13.06.01"
     parent_id: "EPIC-13"
