@@ -633,6 +633,7 @@ export default function App() {
 
           {currentView === 'work' && (
             <WorkView
+              projectId={activeProjectId}
               workItems={workItems}
               onUpdateWorkItem={handleUpdateWorkItem}
               selectedItemId={selectedWorkItemId}
