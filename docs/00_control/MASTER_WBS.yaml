@@ -374,7 +374,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "IN_PROGRESS"
+    status: "VERIFIED"
     dependencies: ["DMK-195"]
     requirements: ["REQ-REL-001"]
     architecture_links: ["CMP-01"]

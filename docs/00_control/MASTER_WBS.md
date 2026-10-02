@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `IN_PROGRESS` (Scoped implementation; Gate 7 pending) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -205,7 +205,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-203` — GitHub Actions CI Baseline & Master Protection
 - **WBS Path:** `13.06.16`
 - **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `IN_PROGRESS`
+- **Status:** `VERIFIED`
 - **Dependencies:** `DMK-195`
 - **Requirements:** `REQ-REL-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero secrets and master branch protection.
