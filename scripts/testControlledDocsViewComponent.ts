@@ -1146,6 +1146,7 @@ try {
       await ctx.page.click('[data-testid="btn-confirm-save"]');
 
       // Modal must close
+      await ctx.page.locator('[data-testid="doc-save-modal"]').waitFor({ state: 'detached' });
       const modalCount = await ctx.page.locator('[data-testid="doc-save-modal"]').count();
       assert.strictEqual(modalCount, 0, 'Save modal closed after DOCUMENT_STALE');
 
