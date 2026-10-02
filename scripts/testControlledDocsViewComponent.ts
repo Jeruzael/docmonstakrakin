@@ -556,7 +556,7 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-001"]');
-      await ctx.page.waitForSelector('[data-testid="doc-title"]');
+      await ctx.page.locator('[data-testid="doc-title"]', { hasText: 'Project Charter' }).waitFor();
       const title = await ctx.page.textContent('[data-testid="doc-title"]');
       assert(title?.includes('Project Charter'));
 
@@ -573,6 +573,7 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.locator('[data-testid="doc-title"]', { hasText: 'Project State & Governance Baseline' }).waitFor();
       await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
 
       const xssTriggered = await ctx.page.evaluate("window.__XSS_TRIGGERED__");
@@ -872,14 +873,12 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-005"]');
-      await ctx.page.waitForSelector('[data-testid="doc-title"]');
-
-      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
-      assert.strictEqual(editBtnCount, 0, 'No edit button for MIXED EOL document');
-
       await ctx.page.waitForSelector('[data-testid="mixed-eol-warning"]');
       const warningText = await ctx.page.textContent('[data-testid="mixed-eol-warning"]');
       assert(warningText?.includes('Editing is unavailable because this document has mixed line endings'));
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MIXED EOL document');
     } finally {
       await ctx.close();
     }
@@ -891,13 +890,12 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-004"]');
-
-      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
-      assert.strictEqual(editBtnCount, 0, 'No edit button for MISSING document');
-
       await ctx.page.waitForSelector('[data-testid="missing-doc-state"]');
       const text = await ctx.page.textContent('[data-testid="missing-doc-state"]');
       assert(text?.includes('missing') || text?.includes('Missing'));
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MISSING document');
     } finally {
       await ctx.close();
     }
