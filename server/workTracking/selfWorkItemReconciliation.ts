@@ -15,6 +15,7 @@ import {
   getScopedCanonicalWbsItems,
   computeMasterWbsSha256,
   readCanonicalWbs,
+  parseCanonicalWbsBytes,
   type CanonicalWbsItem,
 } from './canonicalWbs.ts';
 import {
@@ -167,13 +168,23 @@ export function computePlanDigest(planPayload: Record<string, any>): string {
 
 /**
  * Verifies verification provenance for VERIFIED canonical items.
+ * Fails closed on missing or pending human approvals.
  */
 export function hasValidVerificationProvenance(item: CanonicalWbsItem): boolean {
   if (item.status !== 'VERIFIED') return true;
-  return Boolean(
-    item.verifiedBy &&
-    item.verificationStatus &&
-    item.humanApprovedBy &&
+
+  const verifiedBy = item.verifiedBy?.trim() ?? '';
+  const verificationStatus = item.verificationStatus?.trim().toUpperCase() ?? '';
+  const humanApproval = item.humanApprovedBy?.trim() ?? '';
+
+  const hasCompletedHumanApproval =
+    humanApproval.length > 0 &&
+    !/\bPENDING\b/i.test(humanApproval);
+
+  return (
+    verifiedBy.length > 0 &&
+    verificationStatus === 'VERIFIED' &&
+    hasCompletedHumanApproval &&
     Array.isArray(item.evidence) &&
     item.evidence.length > 0
   );
@@ -235,9 +246,8 @@ export function projectSelfWorkItemReconciliation(params: {
   let scopedItems: CanonicalWbsItem[];
 
   if (params.wbsBytes) {
-    wbsSha256 = crypto.createHash('sha256').update(params.wbsBytes).digest('hex');
-    // Parse using readCanonicalWbs on temp or extract
-    const doc = readCanonicalWbs(root);
+    const doc = parseCanonicalWbsBytes(params.wbsBytes);
+    wbsSha256 = doc.rawSha256;
     scopedItems = doc.items.filter((i) => i.epic === 'EPIC-13' || i.parentId === 'EPIC-13');
   } else {
     const scoped = getScopedCanonicalWbsItems(root, 'EPIC-13');
@@ -566,12 +576,12 @@ export function projectSelfWorkItemReconciliation(params: {
 
 /**
  * Generates a dry-run reconciliation plan between canonical WBS and runtime WorkItems.
- * Performs ZERO writes.
+ * Performs ZERO writes. Requires an explicit reviewed actor identity.
  */
 export function generateReconciliationPlan(params: {
   workspaceRoot?: string;
   projectId?: string;
-  actor?: string;
+  actor: string;
   timestamp?: string;
 }): ReconciliationPlan {
   const root = params.workspaceRoot || process.cwd();
@@ -580,7 +590,8 @@ export function generateReconciliationPlan(params: {
     throw new Error(`Self-project reconciliation is only supported for PRJ-DOCMONSTAKRAKIN; received "${projectId}"`);
   }
 
-  const actor = params.actor || 'Gio (Lead Architect)';
+  validateActor(params.actor);
+  const actor = params.actor.trim();
   const timestamp = params.timestamp || new Date().toISOString();
 
   const result = projectSelfWorkItemReconciliation({

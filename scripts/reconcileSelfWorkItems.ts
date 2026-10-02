@@ -29,11 +29,10 @@ async function main() {
 
   const isDryRun = Boolean(args['dry-run']);
   const isApply = Boolean(args['apply']);
-  const actor = String(args['actor'] || 'Gio (Lead Architect)');
 
   if (!isDryRun && !isApply) {
     console.error('Usage:');
-    console.error('  Dry-run: npm run reconcile:self-work -- --dry-run [--actor <name>] [--output <file>]');
+    console.error('  Dry-run: npm run reconcile:self-work -- --dry-run --actor <name> [--output <file>]');
     console.error('  Apply:   npm run reconcile:self-work -- --apply --plan <plan.json> --confirm-project-id PRJ-DOCMONSTAKRAKIN --confirm-plan-digest <digest> [--actor <name>]');
     process.exit(1);
   }
@@ -41,6 +40,13 @@ async function main() {
   const root = process.cwd();
 
   if (isDryRun) {
+    const rawActor = args['actor'];
+    if (!rawActor || typeof rawActor !== 'string' || !rawActor.trim()) {
+      console.error('INVALID_REVIEW_ACTOR: --actor is required for executable/reviewed reconciliation plans.');
+      process.exit(1);
+    }
+    const actor = rawActor.trim();
+
     console.log(`[Reconciliation CLI] Generating dry-run plan for PRJ-DOCMONSTAKRAKIN (actor: "${actor}")...`);
     const plan = generateReconciliationPlan({
       workspaceRoot: root,

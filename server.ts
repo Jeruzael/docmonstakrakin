@@ -716,6 +716,8 @@ async function startServer() {
       });
     }
     try {
+      // Viewer reconciliation projection is read-only diagnostic state and does
+      // not constitute an operator-reviewed executable reconciliation plan.
       const plan = generateReconciliationPlan({
         workspaceRoot: process.cwd(),
         projectId: 'PRJ-DOCMONSTAKRAKIN',

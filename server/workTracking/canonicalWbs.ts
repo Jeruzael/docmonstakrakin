@@ -53,17 +53,11 @@ export function computeMasterWbsSha256(workspaceRoot: string = process.cwd()): s
 }
 
 /**
- * Reads and parses MASTER_WBS.yaml from disk.
- * Validates uniqueness of IDs and WBS paths.
- * Fails closed on any structural anomaly or duplicates.
+ * Parses raw MASTER_WBS.yaml bytes without performing filesystem reads.
+ * Computes SHA-256, parses YAML, validates root structure and items,
+ * enforces uniqueness of IDs and WBS paths, and normalizes items.
  */
-export function readCanonicalWbs(workspaceRoot: string = process.cwd()): CanonicalWbsDocument {
-  const filePath = resolveMasterWbsPath(workspaceRoot);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`MASTER_WBS.yaml not found at ${filePath}`);
-  }
-
-  const rawBytes = fs.readFileSync(filePath);
+export function parseCanonicalWbsBytes(rawBytes: Buffer): CanonicalWbsDocument {
   const rawSha256 = crypto.createHash('sha256').update(rawBytes).digest('hex');
   const rawText = rawBytes.toString('utf8');
 
@@ -142,6 +136,21 @@ export function readCanonicalWbs(workspaceRoot: string = process.cwd()): Canonic
     items: canonicalItems,
     rawDocument: parsed,
   };
+}
+
+/**
+ * Reads and parses MASTER_WBS.yaml from disk.
+ * Validates uniqueness of IDs and WBS paths.
+ * Fails closed on any structural anomaly or duplicates.
+ */
+export function readCanonicalWbs(workspaceRoot: string = process.cwd()): CanonicalWbsDocument {
+  const filePath = resolveMasterWbsPath(workspaceRoot);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`MASTER_WBS.yaml not found at ${filePath}`);
+  }
+
+  const rawBytes = fs.readFileSync(filePath);
+  return parseCanonicalWbsBytes(rawBytes);
 }
 
 /**
