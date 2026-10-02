@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import YAML from 'yaml';
+import { execSync } from 'node:child_process';
 
 import {
   readCanonicalWbs,
+  parseCanonicalWbsBytes,
   getScopedCanonicalWbsItems,
   computeMasterWbsSha256,
   buildCanonicalWbsTree,
@@ -1635,6 +1636,415 @@ test('Pre-rename WBS anti-TOCTOU: Modifying MASTER_WBS.yaml in beforeRename hook
     );
   } finally {
     delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+// ----------------------------------------------------
+// Provenance & Pending Human Approval Invariant Tests
+// ----------------------------------------------------
+
+test('Provenance: VERIFIED + uppercase PENDING human approval is BLOCKED', () => {
+  const item: any = {
+    id: 'DMK-TEST',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'PENDING - Gio manual retest',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item), false);
+});
+
+test('Provenance: Lowercase "pending" human approval is BLOCKED', () => {
+  const item1: any = {
+    id: 'DMK-TEST-1',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'pending human review',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item1), false);
+
+  const item2: any = {
+    id: 'DMK-TEST-2',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'PENDING - no release authority granted',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item2), false);
+
+  const item3: any = {
+    id: 'DMK-TEST-3',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'pending',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item3), false);
+});
+
+test('Provenance: Missing human approval is BLOCKED', () => {
+  const item: any = {
+    id: 'DMK-TEST',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item), false);
+
+  const itemEmpty: any = { ...item, humanApprovedBy: '   ' };
+  assert.equal(hasValidVerificationProvenance(itemEmpty), false);
+});
+
+test('Provenance: Non-VERIFIED verification_status is BLOCKED', () => {
+  const item1: any = {
+    id: 'DMK-TEST-1',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFICATION_PENDING',
+    humanApprovedBy: 'Gio / authorized human operator',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item1), false);
+
+  const item2: any = {
+    id: 'DMK-TEST-2',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    humanApprovedBy: 'Gio / authorized human operator',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item2), false);
+});
+
+test('Provenance: Missing verified_by is BLOCKED', () => {
+  const item: any = {
+    id: 'DMK-TEST',
+    status: 'VERIFIED',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'Gio / authorized human operator',
+    evidence: ['docs/test.md'],
+  };
+  assert.equal(hasValidVerificationProvenance(item), false);
+
+  const itemEmpty: any = { ...item, verifiedBy: '   ' };
+  assert.equal(hasValidVerificationProvenance(itemEmpty), false);
+});
+
+test('Provenance: Missing or empty evidence is BLOCKED', () => {
+  const item1: any = {
+    id: 'DMK-TEST-1',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'Gio / authorized human operator',
+    evidence: [],
+  };
+  assert.equal(hasValidVerificationProvenance(item1), false);
+
+  const item2: any = {
+    id: 'DMK-TEST-2',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'Gio / authorized human operator',
+  };
+  assert.equal(hasValidVerificationProvenance(item2), false);
+});
+
+test('Provenance: Fully completed verification provenance is eligible for VERIFIED projection', () => {
+  const item: any = {
+    id: 'DMK-TEST',
+    status: 'VERIFIED',
+    verifiedBy: 'Gio / Lead Architect',
+    verificationStatus: 'VERIFIED',
+    humanApprovedBy: 'Gio / authorized human operator',
+    evidence: ['docs/07_verification/report.json'],
+  };
+  assert.equal(hasValidVerificationProvenance(item), true);
+});
+
+test('Provenance: DMK-192 in real MASTER_WBS.yaml satisfies strict provenance rule', () => {
+  const doc = readCanonicalWbs();
+  const dmk192 = doc.items.find((i) => i.id === 'DMK-192');
+  assert.ok(dmk192, 'DMK-192 must exist in MASTER_WBS.yaml');
+  assert.equal(dmk192.status, 'VERIFIED');
+  assert.equal(hasValidVerificationProvenance(dmk192), true);
+});
+
+test('Provenance: DMK-193 in real MASTER_WBS.yaml satisfies strict provenance rule', () => {
+  const doc = readCanonicalWbs();
+  const dmk193 = doc.items.find((i) => i.id === 'DMK-193');
+  assert.ok(dmk193, 'DMK-193 must exist in MASTER_WBS.yaml');
+  assert.equal(dmk193.status, 'VERIFIED');
+  assert.equal(hasValidVerificationProvenance(dmk193), true);
+});
+
+test('Provenance: All 9 historical items in real MASTER_WBS.yaml remain strictly BLOCKED', () => {
+  const doc = readCanonicalWbs();
+  const blockedIds = [
+    'DMK-187', 'DMK-188', 'DMK-189', 'DMK-190',
+    'DMK-156', 'DMK-157', 'DMK-158', 'DMK-159', 'DMK-165',
+  ];
+  for (const id of blockedIds) {
+    const item = doc.items.find((i) => i.id === id);
+    assert.ok(item, `Item ${id} must exist in MASTER_WBS.yaml`);
+    assert.equal(
+      hasValidVerificationProvenance(item),
+      false,
+      `Item ${id} must be BLOCKED by strict provenance rule`
+    );
+  }
+});
+
+// ----------------------------------------------------
+// Reviewer Actor Binding & CLI Validation Tests
+// ----------------------------------------------------
+
+test('Actor: generateReconciliationPlan without actor rejects with INVALID_REVIEW_ACTOR', () => {
+  assert.throws(
+    () => generateReconciliationPlan({ actor: undefined as any }),
+    /INVALID_REVIEW_ACTOR/
+  );
+  assert.throws(
+    () => generateReconciliationPlan({ actor: '' }),
+    /INVALID_REVIEW_ACTOR/
+  );
+  assert.throws(
+    () => generateReconciliationPlan({ actor: '   ' }),
+    /INVALID_REVIEW_ACTOR/
+  );
+});
+
+test('Actor: generateReconciliationPlan with explicit valid actor succeeds', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const plan = generateReconciliationPlan({
+      workspaceRoot: ws.dir,
+      actor: 'Gio (Lead Architect)',
+    });
+    assert.equal(plan.actor, 'Gio (Lead Architect)');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Actor: CLI dry-run without --actor rejects with exit code and error message', () => {
+  try {
+    execSync('npx tsx scripts/reconcileSelfWorkItems.ts --dry-run', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    assert.fail('Expected CLI dry-run without --actor to exit with non-zero code');
+  } catch (err: any) {
+    const stderr = err.stderr ? err.stderr.toString() : '';
+    assert.ok(
+      stderr.includes('INVALID_REVIEW_ACTOR'),
+      `Expected stderr to contain INVALID_REVIEW_ACTOR, got: ${stderr}`
+    );
+  }
+});
+
+// ----------------------------------------------------
+// Pure Canonical WBS Parser & Exact Bytes Tests
+// ----------------------------------------------------
+
+test('Parser: parseCanonicalWbsBytes parses valid WBS bytes and computes exact SHA-256', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const wbsPath = resolveMasterWbsPath(ws.dir);
+    const rawBytes = fs.readFileSync(wbsPath);
+    const expectedSha = crypto.createHash('sha256').update(rawBytes).digest('hex');
+
+    const doc = parseCanonicalWbsBytes(rawBytes);
+    assert.equal(doc.rawSha256, expectedSha);
+    assert.equal(doc.project, 'PRJ-DOCMONSTAKRAKIN');
+    assert.ok(doc.items.length > 0);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Parser: parseCanonicalWbsBytes fails closed on duplicate item ID', () => {
+  const yamlContent = `
+version: "1.0"
+project: PRJ-TEST
+baseline: v0.1
+items:
+  - id: DMK-DUP
+    wbs_path: "01.01"
+    epic: "EPIC-01"
+    title: "First"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "LOW"
+    status: "READY"
+  - id: DMK-DUP
+    wbs_path: "01.02"
+    epic: "EPIC-01"
+    title: "Second"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "LOW"
+    status: "READY"
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(yamlContent, 'utf8')),
+    /Duplicate WBS item ID detected: "DMK-DUP"/
+  );
+});
+
+test('Parser: parseCanonicalWbsBytes fails closed on duplicate WBS path', () => {
+  const yamlContent = `
+version: "1.0"
+project: PRJ-TEST
+baseline: v0.1
+items:
+  - id: DMK-A
+    wbs_path: "01.01"
+    epic: "EPIC-01"
+    title: "Item A"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "LOW"
+    status: "READY"
+  - id: DMK-B
+    wbs_path: "01.01"
+    epic: "EPIC-01"
+    title: "Item B"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "LOW"
+    status: "READY"
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(yamlContent, 'utf8')),
+    /Duplicate WBS path detected: "01.01"/
+  );
+});
+
+test('Parser: parseCanonicalWbsBytes fails closed on invalid YAML syntax', () => {
+  const invalidYaml = `
+items:
+  - id: DMK-1
+    title: [broken unclosed array
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(invalidYaml, 'utf8')),
+    /Failed to parse MASTER_WBS.yaml/
+  );
+});
+
+test('Parser: parseCanonicalWbsBytes fails closed on missing items array', () => {
+  const noItemsYaml = `
+version: "1.0"
+project: PRJ-TEST
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(noItemsYaml, 'utf8')),
+    /Invalid MASTER_WBS.yaml: items must be an array/
+  );
+});
+
+test('Parser: parseCanonicalWbsBytes fails closed on empty item ID or WBS path', () => {
+  const emptyIdYaml = `
+items:
+  - id: ""
+    wbs_path: "01.01"
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(emptyIdYaml, 'utf8')),
+    /missing id/
+  );
+
+  const emptyPathYaml = `
+items:
+  - id: "DMK-VALID"
+    wbs_path: ""
+`;
+  assert.throws(
+    () => parseCanonicalWbsBytes(Buffer.from(emptyPathYaml, 'utf8')),
+    /missing wbs_path/
+  );
+});
+
+test('Parser determinism: same exact bytes produce identical digest and normalized items', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const rawBytes = fs.readFileSync(resolveMasterWbsPath(ws.dir));
+    const doc1 = parseCanonicalWbsBytes(rawBytes);
+    const doc2 = parseCanonicalWbsBytes(rawBytes);
+
+    assert.equal(doc1.rawSha256, doc2.rawSha256);
+    assert.deepEqual(doc1.items, doc2.items);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('WBS Consistency: supplied wbsBytes controls BOTH digest and projection (does not read disk)', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    // Disk WBS has default synthetic content.
+    // Construct distinct version B bytes:
+    const versionBYaml = `
+version: "2.0-custom"
+project: PRJ-DOCMONSTAKRAKIN
+baseline: v0.1
+items:
+  - id: DMK-CUSTOM-999
+    wbs_path: "13.99.99"
+    epic: "EPIC-13"
+    phase: "PHASE-CUSTOM"
+    title: "Distinct Version B Task"
+    description: "Injected purely via wbsBytes memory buffer"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "READY"
+    requirements: []
+    dependencies: []
+    acceptanceCriteria: []
+    evidence: []
+`;
+    const versionBBytes = Buffer.from(versionBYaml, 'utf8');
+    const versionBSha = crypto.createHash('sha256').update(versionBBytes).digest('hex');
+
+    const snapBytes = Buffer.from(serializeSnapshot(readProjectSnapshot(ws.dir)!), 'utf8');
+    const projection = projectSelfWorkItemReconciliation({
+      workspaceRoot: ws.dir,
+      wbsBytes: versionBBytes,
+      snapshotBytes: snapBytes,
+      actor: 'Gio (Lead Architect)',
+      timestamp: '2026-10-02T12:00:00.000Z',
+    });
+
+    // 1. WBS SHA-256 must match version B
+    assert.equal(projection.plan.wbsSha256, versionBSha);
+
+    // 2. Proposed creations must reflect version B item DMK-CUSTOM-999, NOT disk items
+    const creationIds = projection.plan.proposedCreations.map((c) => c.id);
+    assert.ok(
+      creationIds.includes('DMK-CUSTOM-999'),
+      'Plan must project creation of DMK-CUSTOM-999 from supplied wbsBytes'
+    );
+    assert.equal(
+      creationIds.length,
+      1,
+      'Plan must contain only items from supplied wbsBytes, ignoring disk items'
+    );
+
+    // 3. Row title must match version B
+    const customRow = projection.plan.rows.find((r) => r.id === 'DMK-CUSTOM-999');
+    assert.ok(customRow, 'Row for DMK-CUSTOM-999 must exist in projection');
+    assert.equal(customRow.title, 'Distinct Version B Task');
+  } finally {
     ws.cleanup();
   }
 });
