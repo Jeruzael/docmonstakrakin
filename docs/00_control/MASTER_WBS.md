@@ -154,7 +154,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 - **Status:** `BACKLOG`
 - **Dependencies:** `DMK-197`
 - **Requirements:** `REQ-GOV-REVIEWER-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
-- **Description:** Reviewer management and onboarding usability without exposing plaintext credentials. Note: open candidate recorded for user authentication module with designated roles to allow delegation while maintaining trust (evaluate as scope adjustment vs separate follow-on work item DMK-198A; kept distinct from DMK-195).
+- **Description:** Reviewer management and onboarding usability without exposing plaintext credentials. Note: Open candidate for a dedicated Authentication & Role Delegation work item. Final scope and permanent DMK ID remain unassigned pending design review; kept distinct from DMK-195.
 - **Acceptance Criteria:**
   - "No default reviewer credentials; fail closed when reviewer configuration is absent"
 - **Verification Method:** Reviewer provisioning helper test

@@ -265,7 +265,7 @@ items:
     wbs_path: "13.06.12"
     parent_id: "EPIC-13"
     title: "Batch 4 — Reviewer Provisioning / Governance Setup Usability"
-    description: "Reviewer management and onboarding usability without exposing plaintext credentials. Note: open candidate recorded for user authentication module with designated roles to allow delegation while maintaining trust (evaluate as scope adjustment vs separate follow-on work item DMK-198A; kept distinct from DMK-195)."
+    description: "Reviewer management and onboarding usability without exposing plaintext credentials. Note: Open candidate for a dedicated Authentication & Role Delegation work item. Final scope and permanent DMK ID remain unassigned pending design review; kept distinct from DMK-195."
     type: "INFRASTRUCTURE"
     phase: "PHASE-12"
     epic: "EPIC-13"
