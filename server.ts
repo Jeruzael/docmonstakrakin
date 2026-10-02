@@ -98,6 +98,12 @@ import {
 } from './server/release/releaseGateEvaluator.ts';
 import { ProjectStore } from './server/projectStore.ts';
 import { projectQuestionCatalog } from './server/projectQueries.ts';
+import {
+  generateReconciliationPlan,
+} from './server/workTracking/selfWorkItemReconciliation.ts';
+import {
+  getCanonicalWbsHierarchy,
+} from './server/workTracking/canonicalWbs.ts';
 
 const store = new ProjectStore();
 
@@ -677,6 +683,57 @@ async function startServer() {
     res.json(store.standards[req.params.id] || []);
   });
 
+  // Canonical WBS projection (DMK-205)
+  app.get('/api/projects/:id/wbs', (req, res) => {
+    if (req.params.id !== 'PRJ-DOCMONSTAKRAKIN') {
+      return res.json({
+        supported: false,
+        reason: 'NO_CANONICAL_REPOSITORY_WBS',
+        phases: [],
+        items: [],
+      });
+    }
+    try {
+      const hierarchy = getCanonicalWbsHierarchy(process.cwd());
+      res.json({
+        supported: true,
+        canonicalSource: 'MASTER_WBS.yaml',
+        wbsDigest: hierarchy.wbsSha256,
+        phases: hierarchy.phases,
+        items: hierarchy.items,
+      });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to read canonical WBS', details: String(err) });
+    }
+  });
+
+  // Canonical WBS reconciliation review (DMK-205)
+  app.get('/api/projects/:id/work-items/reconciliation', (req, res) => {
+    if (req.params.id !== 'PRJ-DOCMONSTAKRAKIN') {
+      return res.json({
+        supported: false,
+        reason: 'NO_CANONICAL_REPOSITORY_WBS',
+      });
+    }
+    try {
+      const plan = generateReconciliationPlan({
+        workspaceRoot: process.cwd(),
+        projectId: 'PRJ-DOCMONSTAKRAKIN',
+        actor: 'Work Management Viewer',
+      });
+      res.json({
+        supported: true,
+        canonicalSource: 'MASTER_WBS.yaml',
+        wbsDigest: plan.wbsSha256,
+        scope: 'EPIC-13',
+        summary: plan.summary,
+        rows: plan.rows,
+      });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to generate reconciliation preview', details: String(err) });
+    }
+  });
+
   // Work items
   app.get('/api/projects/:id/work-items', (req, res) => {
     res.json(store.workItems[req.params.id] || []);
@@ -699,6 +756,14 @@ async function startServer() {
     if (checklistIndex !== undefined && (!Number.isInteger(checklistIndex) || checklistIndex < 0 ||
       !target.checklist[checklistIndex] || typeof checklistDone !== 'boolean')) {
       return res.status(422).json({error:'Invalid checklist update'});
+    }
+
+    // Protect canonical-managed self-project status (DMK-205)
+    if (req.params.id === 'PRJ-DOCMONSTAKRAKIN' && target.canonicalManaged && status && status !== target.status) {
+      return res.status(409).json({
+        error: 'CANONICAL_WBS_STATUS_OWNED',
+        message: 'Status is owned by the canonical repository WBS. Update canonical WBS through the governed repository workflow, then reconcile runtime.',
+      });
     }
 
     if (status) {

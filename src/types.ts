@@ -464,6 +464,11 @@ export interface WorkItem {
   evidence: string[];
   owner?: string;
   updatedAt: string;
+  canonicalManaged?: boolean;
+  canonicalWbsPath?: string;
+  canonicalWbsStatus?: string;
+  canonicalWbsType?: string;
+  canonicalSource?: 'MASTER_WBS';
 }
 
 export type EvidenceType =
