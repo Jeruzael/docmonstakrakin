@@ -128,6 +128,8 @@ items:
     planned_by: "SELF_BOOTSTRAP_CONTRACT.md"
     implemented_by: "AI Studio /applet"
     verified_by: "npm run test:bootstrap:executor; npm run bootstrap:self -- --dry-run; Human operator Step 4 review sign-off"
+    human_approved_by: "Gio / authorized human operator (Step 4 review sign-off)"
+    verification_status: "VERIFIED"
 
   - id: "DMK-193"
     wbs_path: "13.06.07"
@@ -155,6 +157,7 @@ items:
     implemented_by: "Human operator (trusted execution ceremony)"
     verified_by: "npm run verify:bootstrap:execution; scripts/testSelfBootstrapExecutionVerifier.ts; Step 5B execution review"
     human_approved_by: "Human operator (self-bootstrap execution ceremony and read-only verification)"
+    verification_status: "VERIFIED"
 
   - id: "DMK-194"
     wbs_path: "13.06.08"
