@@ -628,6 +628,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('[data-testid="modal-session-name"]').waitFor();
       const sessionName = await ctx.page.textContent('[data-testid="modal-session-name"]');
       assert(sessionName?.includes('Gio'), 'Reviewer name displayed');
       const sessionRoles = await ctx.page.textContent('[data-testid="modal-session-roles"]');
@@ -674,6 +675,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('[data-testid="modal-session-name"]').waitFor();
       const text = await ctx.page.textContent('[data-testid="modal-session-name"]');
       assert(text?.includes('No authenticated governance reviewer session'), 'Explicit signed-out message');
       assert(!text?.includes('Authorized Operator') && !text?.includes('Reviewer'), 'No fallback fake identity');
@@ -702,6 +704,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('text=Unable to load governance reviewer session').waitFor();
       const text = await ctx.page.textContent('[data-testid="doc-save-modal"]');
       assert(text?.includes('Unable to load governance reviewer session'), 'Explicit session load error displayed');
 
