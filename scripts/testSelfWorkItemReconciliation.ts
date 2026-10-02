@@ -1383,6 +1383,70 @@ test('No-change plan returns ALREADY_SYNCHRONIZED with 0 mutations and 0 disk wr
   }
 });
 
+test('No-change reviewed plan rejects if runtime snapshot changes after review', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    // 1 & 2. Synchronize fixture normally
+    const plan1 = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan: plan1,
+      actor: 'Gio (Lead Architect)',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan1.planDigest,
+    });
+
+    // 3. Generate a fresh no-change plan
+    const plan2 = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+    // 4. Confirm no changes
+    assert.equal(plan2.proposedCreations.length, 0);
+    assert.equal(plan2.proposedUpdates.length, 0);
+    assert.equal(plan2.summary.missingRuntime, 0);
+    assert.equal(plan2.summary.statusDrift, 0);
+    assert.equal(plan2.summary.metadataDrift, 0);
+
+    // 5 & 6. Mutate runtime snapshot after plan generation
+    const snap = readProjectSnapshot(ws.dir)!;
+    const dmk = snap.state.projects.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+    dmk.description = 'Mutated runtime description after no-change review';
+    writeProjectSnapshotAtomic(snap, ws.dir);
+
+    // 7. Capture snapshot bytes, stateVersion, audit count immediately before apply attempt
+    const snapFile = path.join(ws.dir, '.local', 'project-state.json');
+    const bytesBefore = fs.readFileSync(snapFile);
+    const snapBefore = readProjectSnapshot(ws.dir)!;
+    const dmkBefore = snapBefore.state.projects.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+    const stateVersionBefore = dmkBefore.stateVersion;
+    const auditCountBefore = (snapBefore.state.auditLogs?.['PRJ-DOCMONSTAKRAKIN'] || []).length;
+
+    // 8. Attempt apply using the old no-change plan -> expects STALE_SNAPSHOT
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan: plan2,
+          actor: 'Gio (Lead Architect)',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan2.planDigest,
+        }),
+      /STALE_SNAPSHOT/
+    );
+
+    // 9. Verify after rejection: zero mutation
+    const bytesAfter = fs.readFileSync(snapFile);
+    assert.deepEqual(bytesBefore, bytesAfter);
+    const snapAfter = readProjectSnapshot(ws.dir)!;
+    const dmkAfter = snapAfter.state.projects.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+    assert.equal(dmkAfter.stateVersion, stateVersionBefore);
+    const auditCountAfter = (snapAfter.state.auditLogs?.['PRJ-DOCMONSTAKRAKIN'] || []).length;
+    assert.equal(auditCountAfter, auditCountBefore);
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
 test('Actor validation rejects invalid actors', () => {
   assert.throws(() => validateActor(''), /INVALID_REVIEW_ACTOR/);
   assert.throws(() => validateActor(' '), /INVALID_REVIEW_ACTOR/);

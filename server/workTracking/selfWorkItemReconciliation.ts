@@ -678,19 +678,53 @@ export function applyReconciliationPlan(params: {
   const currentSnapshotSha256 = projectSnapshotDigest(root);
 
   // CASE A: Already synchronized (no changes proposed in plan)
-  if (
+  const noChanges =
     params.plan.proposedCreations.length === 0 &&
-    params.plan.proposedUpdates.length === 0
-  ) {
+    params.plan.proposedUpdates.length === 0;
+
+  if (noChanges) {
+    if (currentSnapshotSha256 !== params.plan.beforeSnapshotSha256) {
+      throw new Error(
+        'STALE_SNAPSHOT: No-change reconciliation plan no longer matches current runtime snapshot'
+      );
+    }
+
+    const recomputed = projectSelfWorkItemReconciliation({
+      workspaceRoot: root,
+      actor: params.plan.actor,
+      timestamp: params.plan.timestamp,
+    });
+
+    if (
+      recomputed.plan.planDigest !== params.plan.planDigest ||
+      recomputed.plan.operationId !== params.plan.operationId ||
+      recomputed.plan.candidateSnapshotDigest !== params.plan.candidateSnapshotDigest
+    ) {
+      throw new Error(
+        'INVALID_REVIEW_PLAN: Recomputed no-change reconciliation diverges from reviewed plan'
+      );
+    }
+
+    if (
+      recomputed.plan.proposedCreations.length !== 0 ||
+      recomputed.plan.proposedUpdates.length !== 0 ||
+      recomputed.plan.summary.blocked !== 0
+    ) {
+      throw new Error(
+        'INVALID_REVIEW_PLAN: Reviewed no-change reconciliation is no longer synchronized'
+      );
+    }
+
     const snapshot = readProjectSnapshot(root);
     if (!snapshot) {
       throw new Error('Could not read project snapshot');
     }
     const dmkProject = snapshot.state?.projects?.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+
     return {
       status: 'ALREADY_SYNCHRONIZED',
       mutationCount: 0,
-      newStateVersion: dmkProject.stateVersion,
+      newStateVersion: dmkProject ? dmkProject.stateVersion : params.plan.stateVersion,
       auditEventId: undefined,
       newSnapshotSha256: currentSnapshotSha256,
     };
