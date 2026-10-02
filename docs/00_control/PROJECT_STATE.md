@@ -1,5 +1,44 @@
 # docmonstakrakin current project state
 
+## 2026-10-02 — DMK-203 GitHub Actions CI Baseline & Master Protection
+
+DMK-195 Controlled Documentation Workspace is verified and merged into master via PR #17.
+DMK-203 establishes the automated GitHub Actions CI baseline and master branch protection before beginning DMK-196.
+
+### Current governance and task status
+
+- DMK-195: VERIFIED / MERGED (PR #17 merged into master)
+- DMK-203: IN_PROGRESS (GitHub Actions CI Baseline & Master Protection)
+- DMK-196: BACKLOG
+- DMK-197: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG (Release Gate evaluator remediation, required before Gate 7)
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Live reconciliation: NOT AUTHORIZED / NOT APPLIED
+- Release status: v0.1.0-rc1; no release promotion authorized
+
+### CI Baseline scope and architecture
+
+- Automated GitHub Actions workflow on PRs to master and pushes to master
+- Three isolated verification jobs: Quality & Build, Controlled Docs, and Complete Regression
+- Zero developer-local `.local/` state, zero operator credentials, and zero API secrets
+- Deterministic synthetic CI runtime fixture (`scripts/prepareCiRuntime.ts`)
+- Linux Chromium support via Playwright runner install
+- Fail-closed execution with repository cleanliness assertions
+
+### Deferred downstream work
+
+- Requirement direct-approve workflow is owned by DMK-196.
+- Approval Inbox canonical synchronization is owned by DMK-197.
+- Authentication / role-delegation module candidate recorded for future consideration.
+- Release Gate evaluator remediation is logged as candidate DMK-202 (HIGH priority, required before Gate 7, not a blocker for CI baseline).
+
+### Next safe action
+
+Complete fresh-checkout CI verification, submit DMK-203 pull request, verify green GitHub Actions execution, configure master branch protection, and request human merge review.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
 ## 2026-10-02 — DMK-195 Final Human Verification & Transition Complete
 
 DMK-195 Controlled Documentation Workspace implementation, remediation, automated verification, and final human verification are complete. DMK-195 is transitioned to VERIFIED.
