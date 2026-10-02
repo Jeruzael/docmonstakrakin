@@ -181,9 +181,13 @@ export function hasValidVerificationProvenance(item: CanonicalWbsItem): boolean 
     humanApproval.length > 0 &&
     !/\bPENDING\b/i.test(humanApproval);
 
+  const representsVerified =
+    (verificationStatus === 'VERIFIED' || /^VERIFIED\b/i.test(verificationStatus)) &&
+    !/\bPENDING\b/i.test(verificationStatus);
+
   return (
     verifiedBy.length > 0 &&
-    verificationStatus === 'VERIFIED' &&
+    representsVerified &&
     hasCompletedHumanApproval &&
     Array.isArray(item.evidence) &&
     item.evidence.length > 0
