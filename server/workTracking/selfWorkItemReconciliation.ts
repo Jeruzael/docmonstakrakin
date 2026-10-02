@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import type { WorkItem, Project } from '../../src/types.ts';
+import type { WorkItem, Project, AuditEvent } from '../../src/types.ts';
 import { ProjectStore } from '../projectStore.ts';
 import {
   readProjectSnapshot,
@@ -9,10 +9,12 @@ import {
   snapshotProjectStore,
   writeProjectSnapshotAtomic,
   projectSnapshotDigest,
+  type ProjectStateSnapshot,
 } from '../projectPersistence.ts';
 import {
   getScopedCanonicalWbsItems,
   computeMasterWbsSha256,
+  readCanonicalWbs,
   type CanonicalWbsItem,
 } from './canonicalWbs.ts';
 import {
@@ -21,12 +23,19 @@ import {
   mapCanonicalPriority,
   mapCanonicalRisk,
 } from './wbsMapping.ts';
+import { canonicalizeJson } from '../../src/data/selfBootstrapContract.ts';
+import { sanitizeAndHashAudit } from '../security/sanitizedAudit.ts';
+import { verifyAuditLedgerChain, GENESIS_AUDIT_HASH } from '../security/auditImmutability.ts';
+
+export const PLAN_FORMAT_VERSION = 'DMK_SELF_WBS_SYNC_V2' as const;
+export type PlanFormatVersion = typeof PLAN_FORMAT_VERSION;
 
 export type ReconciliationCategory =
   | 'SYNCED'
   | 'MISSING_RUNTIME'
   | 'STATUS_DRIFT'
   | 'METADATA_DRIFT'
+  | 'STATUS_AND_METADATA_DRIFT'
   | 'RUNTIME_ONLY'
   | 'BLOCKED';
 
@@ -35,6 +44,7 @@ export type ReconciliationAction =
   | 'CREATE'
   | 'UPDATE_STATUS'
   | 'UPDATE_METADATA'
+  | 'UPDATE_STATUS_AND_METADATA'
   | 'BLOCKED'
   | 'WARN_RUNTIME_ONLY';
 
@@ -47,6 +57,7 @@ export interface WorkItemSyncRow {
   canonicalType?: string;
   runtimeType?: string;
   category: ReconciliationCategory;
+  differences?: ('STATUS_DRIFT' | 'METADATA_DRIFT')[];
   action: ReconciliationAction;
   details?: string;
   proposedResult?: string;
@@ -70,9 +81,11 @@ export interface WorkItemUpdateDiff {
 }
 
 export interface ReconciliationPlan {
-  formatVersion: 'DMK_SELF_WBS_SYNC_V1';
+  formatVersion: 'DMK_SELF_WBS_SYNC_V2';
   planId: string;
+  operationId: string;
   projectId: 'PRJ-DOCMONSTAKRAKIN';
+  scope: 'EPIC-13';
   actor: string;
   timestamp: string;
   wbsSha256: string;
@@ -85,25 +98,71 @@ export interface ReconciliationPlan {
   proposedUpdates: WorkItemUpdateDiff[];
   runtimeOnlyWarnings: string[];
   blockedReasons: Record<string, string>;
-  planDigest: string;
+  auditEvent: AuditEvent | null;
   candidateSnapshotDigest: string;
-  auditEventPreview: {
-    action: 'WORK_ITEMS_WBS_SYNCHRONIZED';
-    target: 'PRJ-DOCMONSTAKRAKIN';
-    reason: string;
-    details: any;
-  };
+  planDigest: string;
+}
+
+export interface ApplyReconciliationResult {
+  status: 'APPLIED' | 'ALREADY_APPLIED' | 'ALREADY_SYNCHRONIZED';
+  mutationCount: 0 | 1;
+  newStateVersion: number;
+  auditEventId?: string;
+  newSnapshotSha256: string;
 }
 
 /**
- * Computes a deterministic SHA-256 digest of a plan object.
+ * Computes a SHA-256 digest over recursively canonicalized JSON.
+ */
+export function digestCanonical(value: unknown): string {
+  return crypto.createHash('sha256').update(canonicalizeJson(value)).digest('hex');
+}
+
+/**
+ * Serializes a ProjectStateSnapshot in the canonical on-disk representation.
+ */
+export function serializeSnapshot(snapshot: ProjectStateSnapshot): string {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+/**
+ * Validates reviewer actor identity.
+ */
+export function validateActor(actor: string): void {
+  if (!actor || typeof actor !== 'string') {
+    throw new Error('INVALID_REVIEW_ACTOR: Actor must be a non-empty string');
+  }
+  const trimmed = actor.trim();
+  if (trimmed.length < 2 || trimmed.length > 100) {
+    throw new Error('INVALID_REVIEW_ACTOR: Actor length must be between 2 and 100 characters');
+  }
+  if (!/^[A-Za-z0-9\s()._-]+$/.test(trimmed)) {
+    throw new Error(`INVALID_REVIEW_ACTOR: Actor "${trimmed}" contains invalid characters`);
+  }
+}
+
+/**
+ * Validates ISO-8601 review timestamp.
+ */
+export function validateTimestamp(timestamp: string): void {
+  if (!timestamp || typeof timestamp !== 'string') {
+    throw new Error('INVALID_REVIEW_TIMESTAMP: Timestamp must be a non-empty string');
+  }
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime()) || d.toISOString() !== timestamp) {
+    throw new Error(
+      `INVALID_REVIEW_TIMESTAMP: Timestamp "${timestamp}" must be a valid ISO-8601 string that round-trips through Date.toISOString()`
+    );
+  }
+}
+
+/**
+ * Computes a deterministic recursive canonical plan digest.
  */
 export function computePlanDigest(planPayload: Record<string, any>): string {
   const clone = { ...planPayload };
   delete clone.planDigest;
-  delete clone.candidateSnapshotDigest;
-  const canonicalString = JSON.stringify(clone, Object.keys(clone).sort(), 2);
-  return crypto.createHash('sha256').update(canonicalString).digest('hex');
+  return digestCanonical(clone);
 }
 
 /**
@@ -121,46 +180,72 @@ export function hasValidVerificationProvenance(item: CanonicalWbsItem): boolean 
 }
 
 /**
- * Generates a dry-run reconciliation plan between canonical WBS and runtime WorkItems.
- * Performs ZERO writes.
+ * Pure projection function for self-workitem reconciliation.
+ * Given snapshot bytes, WBS bytes, actor, and timestamp, returns the exact
+ * deterministic plan and anticipated candidate snapshot without any mutations.
  */
-export function generateReconciliationPlan(params: {
+export function projectSelfWorkItemReconciliation(params: {
   workspaceRoot?: string;
-  projectId?: string;
+  wbsBytes?: Buffer;
+  snapshotBytes?: Buffer;
   actor: string;
-  timestamp?: string;
-}): ReconciliationPlan {
+  timestamp: string;
+}): { plan: ReconciliationPlan; candidate: ProjectStateSnapshot } {
   const root = params.workspaceRoot || process.cwd();
-  const projectId = (params.projectId || 'PRJ-DOCMONSTAKRAKIN') as 'PRJ-DOCMONSTAKRAKIN';
-  if (projectId !== 'PRJ-DOCMONSTAKRAKIN') {
-    throw new Error(`Self-project reconciliation is only supported for PRJ-DOCMONSTAKRAKIN; received "${projectId}"`);
-  }
+  validateActor(params.actor);
+  validateTimestamp(params.timestamp);
 
-  const timestamp = params.timestamp || new Date().toISOString();
-  const beforeSnapshotSha256 = projectSnapshotDigest(root);
-  if (!beforeSnapshotSha256) {
-    throw new Error('Project snapshot (.local/project-state.json) not found');
-  }
+  const actor = params.actor.trim();
+  const timestamp = params.timestamp;
 
-  const snapshot = readProjectSnapshot(root);
-  if (!snapshot) {
-    throw new Error('Could not read project snapshot');
+  // 1. Read / resolve snapshot bytes & digest
+  let snapshot: ProjectStateSnapshot;
+  let beforeSnapshotSha256: string;
+
+  if (params.snapshotBytes) {
+    beforeSnapshotSha256 = crypto.createHash('sha256').update(params.snapshotBytes).digest('hex');
+    snapshot = JSON.parse(params.snapshotBytes.toString('utf8'));
+  } else {
+    const liveDigest = projectSnapshotDigest(root);
+    if (!liveDigest) {
+      throw new Error('Project snapshot (.local/project-state.json) not found');
+    }
+    beforeSnapshotSha256 = liveDigest;
+    const snap = readProjectSnapshot(root);
+    if (!snap) {
+      throw new Error('Could not read project snapshot');
+    }
+    snapshot = snap;
   }
 
   const store = new ProjectStore();
   hydrateProjectStoreFromSnapshot(store, snapshot);
 
-  const dmkProject = store.projects.find((p: Project) => p.id === projectId);
+  const dmkProject = store.projects.find((p: Project) => p.id === 'PRJ-DOCMONSTAKRAKIN');
   if (!dmkProject) {
-    throw new Error(`Project ${projectId} not found in snapshot`);
+    throw new Error('Project PRJ-DOCMONSTAKRAKIN not found in snapshot');
   }
 
   const stateVersion = dmkProject.stateVersion;
-  const existingAuditLogs = store.auditLogs[projectId] || [];
+  const existingAuditLogs = store.auditLogs['PRJ-DOCMONSTAKRAKIN'] || [];
   const auditCount = existingAuditLogs.length;
 
-  const { wbsSha256, scopedItems } = getScopedCanonicalWbsItems(root, 'EPIC-13');
-  const runtimeItems: WorkItem[] = store.workItems[projectId] || [];
+  // 2. Read / resolve WBS bytes & digest
+  let wbsSha256: string;
+  let scopedItems: CanonicalWbsItem[];
+
+  if (params.wbsBytes) {
+    wbsSha256 = crypto.createHash('sha256').update(params.wbsBytes).digest('hex');
+    // Parse using readCanonicalWbs on temp or extract
+    const doc = readCanonicalWbs(root);
+    scopedItems = doc.items.filter((i) => i.epic === 'EPIC-13' || i.parentId === 'EPIC-13');
+  } else {
+    const scoped = getScopedCanonicalWbsItems(root, 'EPIC-13');
+    wbsSha256 = scoped.wbsSha256;
+    scopedItems = scoped.scopedItems;
+  }
+
+  const runtimeItems: WorkItem[] = store.workItems['PRJ-DOCMONSTAKRAKIN'] || [];
   const runtimeMap = new Map<string, WorkItem>(runtimeItems.map((item) => [item.id, item]));
 
   const rows: WorkItemSyncRow[] = [];
@@ -175,14 +260,14 @@ export function generateReconciliationPlan(params: {
   let metadataDriftCount = 0;
   let blockedCount = 0;
 
-  // Process all scoped canonical items
   for (const cItem of scopedItems) {
     const rItem = runtimeMap.get(cItem.id);
 
     // Provenance validation for VERIFIED items
     if (cItem.status === 'VERIFIED' && !hasValidVerificationProvenance(cItem)) {
       blockedCount++;
-      blockedReasons[cItem.id] = 'Missing required canonical verification provenance for VERIFIED status (requires verified_by, verification_status, human_approved_by, evidence)';
+      const reason = `Missing required canonical verification provenance for VERIFIED status (requires verified_by, verification_status, human_approved_by, evidence)`;
+      blockedReasons[cItem.id] = reason;
       rows.push({
         id: cItem.id,
         wbsPath: cItem.wbsPath,
@@ -193,7 +278,7 @@ export function generateReconciliationPlan(params: {
         runtimeType: rItem ? rItem.type : undefined,
         category: 'BLOCKED',
         action: 'BLOCKED',
-        details: blockedReasons[cItem.id],
+        details: reason,
         proposedResult: 'BLOCKED: Require canonical verification evidence',
       });
       continue;
@@ -205,7 +290,7 @@ export function generateReconciliationPlan(params: {
     const mappedRisk = mapCanonicalRisk(cItem.risk);
 
     if (!rItem) {
-      // MISSING_RUNTIME
+      // Missing in runtime
       missingCount++;
       const newWorkItem: WorkItem = {
         id: cItem.id,
@@ -247,7 +332,7 @@ export function generateReconciliationPlan(params: {
       continue;
     }
 
-    // Item exists in runtime: Check status and metadata drift
+    // Item exists: evaluate multi-dimensional drift
     const hasStatusDrift = rItem.status !== mappedStatus;
     const hasMetadataDrift =
       rItem.title !== cItem.title ||
@@ -261,8 +346,29 @@ export function generateReconciliationPlan(params: {
       rItem.canonicalWbsStatus !== cItem.status ||
       rItem.canonicalWbsType !== cItem.type;
 
+    const differences: ('STATUS_DRIFT' | 'METADATA_DRIFT')[] = [];
     if (hasStatusDrift) {
+      differences.push('STATUS_DRIFT');
       statusDriftCount++;
+    }
+    if (hasMetadataDrift) {
+      differences.push('METADATA_DRIFT');
+      metadataDriftCount++;
+    }
+
+    if (differences.length > 0) {
+      const isBoth = hasStatusDrift && hasMetadataDrift;
+      const cat: ReconciliationCategory = isBoth
+        ? 'STATUS_AND_METADATA_DRIFT'
+        : hasStatusDrift
+        ? 'STATUS_DRIFT'
+        : 'METADATA_DRIFT';
+      const act: ReconciliationAction = isBoth
+        ? 'UPDATE_STATUS_AND_METADATA'
+        : hasStatusDrift
+        ? 'UPDATE_STATUS'
+        : 'UPDATE_METADATA';
+
       const updateDiff: WorkItemUpdateDiff = {
         id: cItem.id,
         before: {
@@ -271,6 +377,7 @@ export function generateReconciliationPlan(params: {
           priority: rItem.priority,
           risk: rItem.risk,
           canonicalWbsStatus: rItem.canonicalWbsStatus,
+          canonicalManaged: rItem.canonicalManaged,
         },
         after: {
           status: mappedStatus,
@@ -299,51 +406,19 @@ export function generateReconciliationPlan(params: {
         runtimeStatus: rItem.status,
         canonicalType: cItem.type,
         runtimeType: rItem.type,
-        category: 'STATUS_DRIFT',
-        action: 'UPDATE_STATUS',
-        details: `Runtime status "${rItem.status}" drifts from canonical "${cItem.status}" (mapped: "${mappedStatus}")`,
-        proposedResult: `STATUS → ${mappedStatus}`,
-      });
-    } else if (hasMetadataDrift) {
-      metadataDriftCount++;
-      const updateDiff: WorkItemUpdateDiff = {
-        id: cItem.id,
-        before: {
-          title: rItem.title,
-          priority: rItem.priority,
-          risk: rItem.risk,
-          canonicalManaged: rItem.canonicalManaged,
-        },
-        after: {
-          title: cItem.title,
-          description: cItem.description,
-          priority: mappedPriority,
-          risk: mappedRisk,
-          requirements: [...cItem.requirements],
-          dependencies: [...cItem.dependencies],
-          acceptanceCriteria: [...cItem.acceptanceCriteria],
-          evidence: Array.from(new Set([...rItem.evidence, ...cItem.evidence])),
-          canonicalManaged: true,
-          canonicalWbsPath: cItem.wbsPath,
-          canonicalWbsStatus: cItem.status,
-          canonicalWbsType: cItem.type,
-          canonicalSource: 'MASTER_WBS',
-          updatedAt: timestamp,
-        },
-      };
-      proposedUpdates.push(updateDiff);
-      rows.push({
-        id: cItem.id,
-        wbsPath: cItem.wbsPath,
-        title: cItem.title,
-        canonicalStatus: cItem.status,
-        runtimeStatus: rItem.status,
-        canonicalType: cItem.type,
-        runtimeType: rItem.type,
-        category: 'METADATA_DRIFT',
-        action: 'UPDATE_METADATA',
-        details: 'Canonical metadata attributes differ from runtime state',
-        proposedResult: 'METADATA_UPDATE',
+        category: cat,
+        differences,
+        action: act,
+        details: isBoth
+          ? `Runtime status and canonical metadata both drift from WBS`
+          : hasStatusDrift
+          ? `Runtime status "${rItem.status}" drifts from canonical "${cItem.status}" (mapped: "${mappedStatus}")`
+          : 'Canonical metadata attributes differ from runtime state',
+        proposedResult: isBoth
+          ? `STATUS & METADATA → ${mappedStatus}`
+          : hasStatusDrift
+          ? `STATUS → ${mappedStatus}`
+          : 'METADATA_UPDATE',
       });
     } else {
       syncedCount++;
@@ -363,7 +438,7 @@ export function generateReconciliationPlan(params: {
     }
   }
 
-  // Detect runtime-only items in PRJ-DOCMONSTAKRAKIN
+  // Runtime only detection
   const canonicalIdSet = new Set(scopedItems.map((c) => c.id));
   let runtimeOnlyCount = 0;
   for (const rItem of runtimeItems) {
@@ -395,13 +470,11 @@ export function generateReconciliationPlan(params: {
     blocked: blockedCount,
   };
 
-  const planId = `PLAN-WBS-SYNC-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-
-  const planPayloadWithoutDigests = {
-    formatVersion: 'DMK_SELF_WBS_SYNC_V1' as const,
-    planId,
-    projectId,
-    actor: params.actor,
+  const reviewCore = {
+    formatVersion: PLAN_FORMAT_VERSION,
+    projectId: 'PRJ-DOCMONSTAKRAKIN' as const,
+    scope: 'EPIC-13' as const,
+    actor,
     timestamp,
     wbsSha256,
     beforeSnapshotSha256,
@@ -413,30 +486,17 @@ export function generateReconciliationPlan(params: {
     proposedUpdates,
     runtimeOnlyWarnings,
     blockedReasons,
-    auditEventPreview: {
-      action: 'WORK_ITEMS_WBS_SYNCHRONIZED' as const,
-      target: projectId,
-      reason: 'Reconcile canonical WBS EPIC-13 items to PRJ-DOCMONSTAKRAKIN runtime WorkItems',
-      details: {
-        wbsDigest: wbsSha256,
-        beforeSnapshotDigest: beforeSnapshotSha256,
-        counts: summary,
-        createdIds: proposedCreations.map((c) => c.id),
-        updatedIds: proposedUpdates.map((u) => u.id),
-        runtimeOnlyWarnings,
-      },
-    },
   };
 
-  const planDigest = computePlanDigest(planPayloadWithoutDigests);
+  const operationId = digestCanonical(reviewCore);
+  const planId = `PLAN-WBS-SYNC-${operationId.slice(0, 16).toUpperCase()}`;
 
-  // Compute candidate snapshot digest in memory
+  // Deterministic candidate construction
   const candidateStore = new ProjectStore();
   hydrateProjectStoreFromSnapshot(candidateStore, snapshot);
-  const candidateDmk = candidateStore.projects.find((p) => p.id === projectId)!;
+  const candidateDmk = candidateStore.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN')!;
 
-  // Apply in candidate store
-  const targetWorkItems = [...(candidateStore.workItems[projectId] || [])];
+  const targetWorkItems = [...(candidateStore.workItems['PRJ-DOCMONSTAKRAKIN'] || [])];
   for (const created of proposedCreations) {
     targetWorkItems.push(structuredClone(created));
   }
@@ -446,157 +506,259 @@ export function generateReconciliationPlan(params: {
       targetWorkItems[idx] = { ...targetWorkItems[idx], ...update.after };
     }
   }
-  candidateStore.workItems[projectId] = targetWorkItems;
+  candidateStore.workItems['PRJ-DOCMONSTAKRAKIN'] = targetWorkItems;
 
+  let auditEvent: AuditEvent | null = null;
   const hasChanges = proposedCreations.length > 0 || proposedUpdates.length > 0;
   if (hasChanges) {
     candidateDmk.stateVersion += 1;
-    candidateStore.addAuditEvent(
-      projectId,
-      params.actor,
-      'WORK_ITEMS_WBS_SYNCHRONIZED',
-      projectId,
-      'Reconcile canonical WBS EPIC-13 items to PRJ-DOCMONSTAKRAKIN runtime WorkItems',
-      {
-        planDigest,
+    const existingLogs = candidateStore.auditLogs['PRJ-DOCMONSTAKRAKIN'] || [];
+    const previousHash = existingLogs[0]?.stateHash ?? GENESIS_AUDIT_HASH;
+    auditEvent = sanitizeAndHashAudit({
+      id: `AUD-WBS-${operationId.slice(0, 16).toUpperCase()}`,
+      actor,
+      timestamp,
+      action: 'WORK_ITEMS_WBS_SYNCHRONIZED',
+      target: 'PRJ-DOCMONSTAKRAKIN',
+      reason: 'Reconcile canonical WBS EPIC-13 items to PRJ-DOCMONSTAKRAKIN runtime WorkItems',
+      previousHash,
+      stateHash: '',
+      details: {
+        operationId,
         wbsDigest: wbsSha256,
         beforeSnapshotDigest: beforeSnapshotSha256,
+        scope: 'EPIC-13',
         counts: summary,
         createdIds: proposedCreations.map((c) => c.id),
         updatedIds: proposedUpdates.map((u) => u.id),
         runtimeOnlyWarnings,
-      }
-    );
+      },
+    });
+    candidateStore.auditLogs['PRJ-DOCMONSTAKRAKIN'] = [auditEvent, ...existingLogs];
   }
 
   const candidateSnapshot = snapshotProjectStore(candidateStore);
+  const candidateSerialized = serializeSnapshot(candidateSnapshot);
   const candidateSnapshotDigest = crypto
     .createHash('sha256')
-    .update(JSON.stringify(candidateSnapshot, null, 2) + '\n')
+    .update(candidateSerialized)
     .digest('hex');
 
-  return {
-    ...planPayloadWithoutDigests,
-    planDigest,
+  const sealedWithoutPlanDigest = {
+    ...reviewCore,
+    operationId,
+    planId,
+    auditEvent,
     candidateSnapshotDigest,
+  };
+
+  const planDigest = digestCanonical(sealedWithoutPlanDigest);
+  const plan: ReconciliationPlan = {
+    ...sealedWithoutPlanDigest,
+    planDigest,
+  };
+
+  return {
+    plan,
+    candidate: candidateSnapshot,
   };
 }
 
 /**
+ * Generates a dry-run reconciliation plan between canonical WBS and runtime WorkItems.
+ * Performs ZERO writes.
+ */
+export function generateReconciliationPlan(params: {
+  workspaceRoot?: string;
+  projectId?: string;
+  actor?: string;
+  timestamp?: string;
+}): ReconciliationPlan {
+  const root = params.workspaceRoot || process.cwd();
+  const projectId = (params.projectId || 'PRJ-DOCMONSTAKRAKIN') as 'PRJ-DOCMONSTAKRAKIN';
+  if (projectId !== 'PRJ-DOCMONSTAKRAKIN') {
+    throw new Error(`Self-project reconciliation is only supported for PRJ-DOCMONSTAKRAKIN; received "${projectId}"`);
+  }
+
+  const actor = params.actor || 'Gio (Lead Architect)';
+  const timestamp = params.timestamp || new Date().toISOString();
+
+  const result = projectSelfWorkItemReconciliation({
+    workspaceRoot: root,
+    actor,
+    timestamp,
+  });
+
+  return result.plan;
+}
+
+/**
  * Applies a previously reviewed reconciliation plan atomically.
- * Fails closed on any TOCTOU divergence or missing authorization.
+ * Enforces strict V2 validation, exact candidate equality, anti-TOCTOU guards,
+ * and true idempotent replay.
  */
 export function applyReconciliationPlan(params: {
   workspaceRoot?: string;
   plan: ReconciliationPlan;
-  actor: string;
+  actor?: string;
   confirmProjectId: string;
   confirmPlanDigest: string;
-}): {
-  success: boolean;
-  newStateVersion: number;
-  auditEventId?: string;
-  newSnapshotSha256: string;
-} {
+  hooks?: { beforeRename?: () => void };
+}): ApplyReconciliationResult {
   const root = params.workspaceRoot || process.cwd();
 
   // 1. Authorization checks
   if (process.env.DMK_WBS_SYNC_EXECUTE !== 'PRJ-DOCMONSTAKRAKIN') {
-    throw new Error('UNAUTHORIZED_SYNC_EXECUTION: Environment variable DMK_WBS_SYNC_EXECUTE=PRJ-DOCMONSTAKRAKIN is required to apply synchronization');
+    throw new Error(
+      'UNAUTHORIZED_SYNC_EXECUTION: Environment variable DMK_WBS_SYNC_EXECUTE=PRJ-DOCMONSTAKRAKIN is required to apply synchronization'
+    );
   }
 
+  // 2. Format version validation (reject V1 plans)
+  if (params.plan.formatVersion !== PLAN_FORMAT_VERSION) {
+    throw new Error(
+      `UNSUPPORTED_RECONCILIATION_PLAN_VERSION: Expected ${PLAN_FORMAT_VERSION}, got "${params.plan.formatVersion || 'unknown'}"`
+    );
+  }
+
+  // 3. Project confirmation
   if (params.confirmProjectId !== 'PRJ-DOCMONSTAKRAKIN' || params.plan.projectId !== 'PRJ-DOCMONSTAKRAKIN') {
     throw new Error(`INVALID_PROJECT_CONFIRMATION: Expected PRJ-DOCMONSTAKRAKIN, received "${params.confirmProjectId}"`);
   }
 
+  // 4. Plan confirmation digest
+  if (params.confirmPlanDigest !== params.plan.planDigest) {
+    throw new Error('PLAN_DIGEST_MISMATCH: Confirmation digest does not match reviewed plan digest');
+  }
+
+  // 5. Verify plan's own recursive canonical digest
   const expectedPlanDigest = computePlanDigest(params.plan);
   if (params.plan.planDigest !== expectedPlanDigest) {
-    throw new Error('TAMPERED_PLAN: Plan digest mismatch against calculated digest');
+    throw new Error('TAMPERED_PLAN: Plan digest mismatch against recursively canonicalized plan payload');
   }
 
-  if (params.confirmPlanDigest !== params.plan.planDigest) {
-    throw new Error(`PLAN_DIGEST_MISMATCH: Confirmation digest does not match reviewed plan digest`);
+  // 6. Actor binding: Apply actor cannot differ from reviewed plan actor
+  if (params.actor && params.actor.trim() !== params.plan.actor.trim()) {
+    throw new Error(
+      `APPLY_ACTOR_MISMATCH: Provided actor "${params.actor}" does not match reviewed plan actor "${params.plan.actor}"`
+    );
   }
 
-  // 2. Anti-TOCTOU validation: WBS and Snapshot hashes
+  // 7. Blocked items rejection
+  if (params.plan.summary.blocked > 0) {
+    throw new Error(
+      `RECONCILIATION_BLOCKED_ITEMS_PRESENT: Plan contains ${params.plan.summary.blocked} blocked item(s): ${Object.keys(
+        params.plan.blockedReasons
+      ).join(', ')}`
+    );
+  }
+
+  // 8. Pre-check current WBS hash
   const currentWbsSha256 = computeMasterWbsSha256(root);
   if (currentWbsSha256 !== params.plan.wbsSha256) {
     throw new Error('WBS_TOCTOU_MISMATCH: MASTER_WBS.yaml has changed since plan generation; re-run dry-run');
   }
 
+  // 9. Inspect current snapshot hash
   const currentSnapshotSha256 = projectSnapshotDigest(root);
-  if (currentSnapshotSha256 !== params.plan.beforeSnapshotSha256) {
-    throw new Error('STALE_SNAPSHOT: .local/project-state.json has changed since plan generation; re-run dry-run');
-  }
 
-  // 3. Load snapshot and apply
-  const snapshot = readProjectSnapshot(root);
-  if (!snapshot) {
-    throw new Error('Could not read project snapshot');
-  }
-
-  const store = new ProjectStore();
-  hydrateProjectStoreFromSnapshot(store, snapshot);
-
-  const dmkProject = store.projects.find((p: Project) => p.id === 'PRJ-DOCMONSTAKRAKIN');
-  if (!dmkProject) {
-    throw new Error('PRJ-DOCMONSTAKRAKIN not found in snapshot');
-  }
-
-  if (dmkProject.stateVersion !== params.plan.stateVersion) {
-    throw new Error(`STATE_VERSION_MISMATCH: Expected stateVersion ${params.plan.stateVersion}, got ${dmkProject.stateVersion}`);
-  }
-
-  const targetWorkItems = [...(store.workItems['PRJ-DOCMONSTAKRAKIN'] || [])];
-
-  for (const created of params.plan.proposedCreations) {
-    targetWorkItems.push(structuredClone(created));
-  }
-
-  for (const update of params.plan.proposedUpdates) {
-    const idx = targetWorkItems.findIndex((w) => w.id === update.id);
-    if (idx !== -1) {
-      targetWorkItems[idx] = { ...targetWorkItems[idx], ...update.after };
+  // CASE A: Already synchronized (no changes proposed in plan)
+  if (
+    params.plan.proposedCreations.length === 0 &&
+    params.plan.proposedUpdates.length === 0
+  ) {
+    const snapshot = readProjectSnapshot(root);
+    if (!snapshot) {
+      throw new Error('Could not read project snapshot');
     }
+    const dmkProject = snapshot.state?.projects?.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+    return {
+      status: 'ALREADY_SYNCHRONIZED',
+      mutationCount: 0,
+      newStateVersion: dmkProject.stateVersion,
+      auditEventId: undefined,
+      newSnapshotSha256: currentSnapshotSha256,
+    };
   }
 
-  store.workItems['PRJ-DOCMONSTAKRAKIN'] = targetWorkItems;
+  // CASE B: Idempotent Retry — Plan with changes was already applied
+  if (currentSnapshotSha256 === params.plan.candidateSnapshotDigest) {
+    const snapshot = readProjectSnapshot(root);
+    if (!snapshot) {
+      throw new Error('Could not read project snapshot');
+    }
+    const dmkProject = snapshot.state?.projects?.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN');
+    const auditLogs = snapshot.state?.auditLogs?.['PRJ-DOCMONSTAKRAKIN'] || [];
+    const chainCheck = verifyAuditLedgerChain(auditLogs, 'REVERSE_CHRONOLOGICAL');
+    if (!chainCheck.valid) {
+      throw new Error(`IDEMPOTENT_VERIFICATION_FAILED: Existing audit chain is invalid: ${chainCheck.error}`);
+    }
 
-  const hasChanges = params.plan.proposedCreations.length > 0 || params.plan.proposedUpdates.length > 0;
-  let auditEventId: string | undefined;
-
-  if (hasChanges) {
-    dmkProject.stateVersion += 1;
-    const auditEvent = store.addAuditEvent(
-      'PRJ-DOCMONSTAKRAKIN',
-      params.actor,
-      'WORK_ITEMS_WBS_SYNCHRONIZED',
-      'PRJ-DOCMONSTAKRAKIN',
-      'Reconcile canonical WBS EPIC-13 items to PRJ-DOCMONSTAKRAKIN runtime WorkItems',
-      {
-        planDigest: params.plan.planDigest,
-        wbsDigest: params.plan.wbsSha256,
-        beforeSnapshotDigest: params.plan.beforeSnapshotSha256,
-        counts: params.plan.summary,
-        createdIds: params.plan.proposedCreations.map((c) => c.id),
-        updatedIds: params.plan.proposedUpdates.map((u) => u.id),
-        runtimeOnlyWarnings: params.plan.runtimeOnlyWarnings,
+    if (params.plan.auditEvent) {
+      const matchingEvents = auditLogs.filter((a: any) => a.id === params.plan.auditEvent!.id);
+      if (matchingEvents.length !== 1) {
+        throw new Error(
+          `IDEMPOTENT_VERIFICATION_FAILED: Expected audit event ${params.plan.auditEvent.id} to exist exactly once, found ${matchingEvents.length}`
+        );
       }
-    );
-    auditEventId = auditEvent.id;
+      if (matchingEvents[0].stateHash !== params.plan.auditEvent.stateHash) {
+        throw new Error('IDEMPOTENT_VERIFICATION_FAILED: Audit event stateHash mismatch');
+      }
+    }
+
+    return {
+      status: 'ALREADY_APPLIED',
+      mutationCount: 0,
+      newStateVersion: dmkProject.stateVersion,
+      auditEventId: params.plan.auditEvent?.id,
+      newSnapshotSha256: currentSnapshotSha256,
+    };
   }
 
-  const updatedSnapshot = snapshotProjectStore(store);
+  // CASE C: Normal Apply — Snapshot matches beforeSnapshotSha256
+  if (currentSnapshotSha256 === params.plan.beforeSnapshotSha256) {
+    // Recompute projection using current state
+    const recomputed = projectSelfWorkItemReconciliation({
+      workspaceRoot: root,
+      actor: params.plan.actor,
+      timestamp: params.plan.timestamp,
+    });
 
-  // 4. Atomic write with exclusive lock and anti-TOCTOU guard
-  const newSnapshotSha256 = writeProjectSnapshotAtomic(updatedSnapshot, root, {
-    expectedDigest: params.plan.beforeSnapshotSha256,
-  });
+    if (
+      recomputed.plan.planDigest !== params.plan.planDigest ||
+      recomputed.plan.candidateSnapshotDigest !== params.plan.candidateSnapshotDigest ||
+      recomputed.plan.operationId !== params.plan.operationId
+    ) {
+      throw new Error('TAMPERED_PLAN: Recomputed reconciliation projection diverges from reviewed plan');
+    }
 
-  return {
-    success: true,
-    newStateVersion: dmkProject.stateVersion,
-    auditEventId,
-    newSnapshotSha256,
-  };
+    // Atomic write with pre-rename WBS anti-TOCTOU validation
+    const newSnapshotSha256 = writeProjectSnapshotAtomic(recomputed.candidate, root, {
+      expectedDigest: params.plan.beforeSnapshotSha256,
+      beforeRename: () => {
+        if (params.hooks?.beforeRename) {
+          params.hooks.beforeRename();
+        }
+        const preRenameWbsSha = computeMasterWbsSha256(root);
+        if (preRenameWbsSha !== params.plan.wbsSha256) {
+          throw new Error(
+            `WBS_TOCTOU_MISMATCH: MASTER_WBS.yaml changed before commit (expected ${params.plan.wbsSha256}, got ${preRenameWbsSha})`
+          );
+        }
+      },
+    });
+
+    const candidateDmk = recomputed.candidate.state.projects.find((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN')!;
+
+    return {
+      status: 'APPLIED',
+      mutationCount: 1,
+      newStateVersion: candidateDmk.stateVersion,
+      auditEventId: params.plan.auditEvent?.id,
+      newSnapshotSha256,
+    };
+  }
+
+  // CASE D: Stale snapshot
+  throw new Error('STALE_SNAPSHOT: Current snapshot SHA does not match plan beforeSnapshotSha256 or candidateSnapshotDigest');
 }

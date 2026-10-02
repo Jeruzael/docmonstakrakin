@@ -25,6 +25,12 @@ import {
   applyReconciliationPlan,
   computePlanDigest,
   hasValidVerificationProvenance,
+  validateActor,
+  validateTimestamp,
+  PLAN_FORMAT_VERSION,
+  projectSelfWorkItemReconciliation,
+  serializeSnapshot,
+  digestCanonical,
   type ReconciliationPlan,
 } from '../server/workTracking/selfWorkItemReconciliation.ts';
 
@@ -458,18 +464,20 @@ test('Type mapping: Unrecognized type throws UNSUPPORTED_WBS_TYPE', () => {
   assert.throws(() => mapCanonicalType('STORY'), /UNSUPPORTED_WBS_TYPE/);
 });
 
-test('Priority and risk mapping correctly handle standard and fallback values', () => {
+test('Priority and risk mapping correctly handle standard and fold values, and fail closed', () => {
   assert.equal(mapCanonicalPriority('P0'), 'P0');
   assert.equal(mapCanonicalPriority('P1'), 'P1');
   assert.equal(mapCanonicalPriority('P2'), 'P2');
   assert.equal(mapCanonicalPriority('P3'), 'P2'); // Folds to P2
-  assert.equal(mapCanonicalPriority('INVALID'), 'P1'); // Fallback
+  assert.throws(() => mapCanonicalPriority('INVALID'), /UNSUPPORTED_WBS_PRIORITY/);
+  assert.throws(() => mapCanonicalPriority(''), /UNSUPPORTED_WBS_PRIORITY/);
 
   assert.equal(mapCanonicalRisk('CRITICAL'), 'CRITICAL');
   assert.equal(mapCanonicalRisk('HIGH'), 'HIGH');
   assert.equal(mapCanonicalRisk('MEDIUM'), 'MEDIUM');
   assert.equal(mapCanonicalRisk('LOW'), 'LOW');
-  assert.equal(mapCanonicalRisk('UNKNOWN'), 'MEDIUM'); // Fallback
+  assert.throws(() => mapCanonicalRisk('UNKNOWN'), /UNSUPPORTED_WBS_RISK/);
+  assert.throws(() => mapCanonicalRisk(''), /UNSUPPORTED_WBS_RISK/);
 });
 
 // ==========================================
@@ -495,13 +503,47 @@ test('Identifies MISSING_RUNTIME for item in WBS but absent in ProjectStore', ()
 test('Identifies STATUS_DRIFT when runtime status differs from canonical mapped status', () => {
   const ws = createSyntheticWorkspace();
   try {
+    // Keep metadata aligned, drift only status
+    const snap = readProjectSnapshot(ws.dir)!;
+    const item = snap.state.workItems['PRJ-DOCMONSTAKRAKIN'].find((w: any) => w.id === 'DMK-203')!;
+    item.title = 'GitHub Actions CI Baseline';
+    item.description = 'CI baseline implementation';
+    item.priority = 'P0';
+    item.risk = 'HIGH';
+    item.requirements = ['REQ-DATA-001'];
+    item.dependencies = [];
+    item.acceptanceCriteria = ['All CI jobs pass'];
+    item.canonicalWbsType = 'INFRASTRUCTURE';
+    item.canonicalWbsStatus = 'VERIFIED';
+    item.canonicalManaged = true;
+    item.type = 'TASK';
+    writeProjectSnapshotAtomic(snap, ws.dir);
+
     const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
     const drift = plan.rows.find((r) => r.id === 'DMK-203');
     assert.ok(drift);
     assert.equal(drift.category, 'STATUS_DRIFT');
+    assert.deepEqual(drift.differences, ['STATUS_DRIFT']);
     assert.equal(drift.canonicalStatus, 'VERIFIED');
     assert.equal(drift.runtimeStatus, 'VERIFICATION');
     assert.equal(drift.action, 'UPDATE_STATUS');
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Identifies STATUS_AND_METADATA_DRIFT when both status and metadata differ', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    const drift = plan.rows.find((r) => r.id === 'DMK-203');
+    assert.ok(drift);
+    assert.equal(drift.category, 'STATUS_AND_METADATA_DRIFT');
+    assert.ok(drift.differences?.includes('STATUS_DRIFT'));
+    assert.ok(drift.differences?.includes('METADATA_DRIFT'));
+    assert.equal(drift.action, 'UPDATE_STATUS_AND_METADATA');
+    assert.ok(plan.summary.statusDrift > 0);
+    assert.ok(plan.summary.metadataDrift > 0);
   } finally {
     ws.cleanup();
   }
@@ -520,6 +562,7 @@ test('Identifies METADATA_DRIFT when title/description/priority/risk differ but 
     const drift = plan.rows.find((r) => r.id === 'DMK-203');
     assert.ok(drift);
     assert.equal(drift.category, 'METADATA_DRIFT');
+    assert.deepEqual(drift.differences, ['METADATA_DRIFT']);
     assert.equal(drift.action, 'UPDATE_METADATA');
   } finally {
     ws.cleanup();
@@ -809,7 +852,8 @@ test('Atomic apply: updates stateVersion by 1, creates audit event, preserves ru
       confirmPlanDigest: plan.planDigest,
     });
 
-    assert.equal(result.success, true);
+    assert.equal(result.status, 'APPLIED');
+    assert.equal(result.mutationCount, 1);
     assert.equal(result.newStateVersion, beforeStateVersion + 1);
     assert.ok(result.auditEventId);
 
@@ -878,6 +922,7 @@ test('Independent verifier validates post-apply snapshot and confirms audit chai
       beforeSnapshot: beforeSnap,
       afterSnapshot: afterSnap,
       plan,
+      workspaceRoot: ws.dir,
     });
 
     assert.equal(verification.valid, true, `Verification errors: ${verification.errors.join('; ')}`);
@@ -888,6 +933,713 @@ test('Independent verifier validates post-apply snapshot and confirms audit chai
   }
 });
 
+// ==========================================
+// GROUP 5: Protocol Hardening (V2, Digest, Tampering, Idempotency)
+// ==========================================
+
+test('Deterministic plan generation: identical inputs + actor + timestamp produce byte-for-byte identical plan', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const fixedTimestamp = '2026-10-02T12:00:00.000Z';
+    const plan1 = generateReconciliationPlan({
+      workspaceRoot: ws.dir,
+      actor: 'Gio (Lead Architect)',
+      timestamp: fixedTimestamp,
+    });
+    const plan2 = generateReconciliationPlan({
+      workspaceRoot: ws.dir,
+      actor: 'Gio (Lead Architect)',
+      timestamp: fixedTimestamp,
+    });
+
+    assert.equal(plan1.formatVersion, PLAN_FORMAT_VERSION);
+    assert.equal(plan1.operationId, plan2.operationId);
+    assert.equal(plan1.planId, plan2.planId);
+    assert.equal(plan1.planDigest, plan2.planDigest);
+    assert.equal(plan1.candidateSnapshotDigest, plan2.candidateSnapshotDigest);
+    assert.deepEqual(plan1, plan2);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Deterministic operationId and planId format', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const fixedTimestamp = '2026-10-02T12:00:00.000Z';
+    const plan = generateReconciliationPlan({
+      workspaceRoot: ws.dir,
+      actor: 'Gio (Lead Architect)',
+      timestamp: fixedTimestamp,
+    });
+
+    assert.equal(plan.formatVersion, 'DMK_SELF_WBS_SYNC_V2');
+    assert.match(plan.operationId, /^[0-9a-f]{64}$/);
+    assert.equal(plan.planId, `PLAN-WBS-SYNC-${plan.operationId.slice(0, 16).toUpperCase()}`);
+    assert.ok(plan.auditEvent);
+    assert.equal(plan.auditEvent.id, `AUD-WBS-${plan.operationId.slice(0, 16).toUpperCase()}`);
+    assert.equal(plan.auditEvent.action, 'WORK_ITEMS_WBS_SYNCHRONIZED');
+    assert.equal(plan.auditEvent.timestamp, fixedTimestamp);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Candidate snapshot digest is reproducible and matches pure projection output', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const fixedTimestamp = '2026-10-02T12:00:00.000Z';
+    const { plan, candidate } = projectSelfWorkItemReconciliation({
+      workspaceRoot: ws.dir,
+      actor: 'Gio (Lead Architect)',
+      timestamp: fixedTimestamp,
+    });
+
+    const computedDigest = crypto
+      .createHash('sha256')
+      .update(serializeSnapshot(candidate))
+      .digest('hex');
+    assert.equal(plan.candidateSnapshotDigest, computedDigest);
+    assert.ok(plan.candidateSnapshotDigest);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Apply rejects V1 plan format with UNSUPPORTED_RECONCILIATION_PLAN_VERSION', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    (plan as any).formatVersion = 'DMK_SELF_WBS_SYNC_V1';
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /UNSUPPORTED_RECONCILIATION_PLAN_VERSION/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Apply rejects when actor does not match plan actor with APPLY_ACTOR_MISMATCH', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Different Operator',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /APPLY_ACTOR_MISMATCH/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating proposedCreations fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.proposedCreations[0].title = 'Tampered Creation Title';
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating proposedUpdates fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    assert.ok(plan.proposedUpdates.length > 0);
+    plan.proposedUpdates[0].after.description = 'Tampered description';
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating rows fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.rows[0].category = 'SYNCED';
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating summary fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.summary.missingRuntime = 999;
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating auditEvent fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    if (plan.auditEvent) {
+      plan.auditEvent.actor = 'Attacker';
+    }
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating runtimeOnlyWarnings fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.runtimeOnlyWarnings.push('Forged warning');
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan: mutating blockedReasons fails plan digest check', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.blockedReasons['FAKE'] = 'Fake blocked reason';
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Tampered plan with recomputed digest: mutated candidate status to RELEASED is rejected as TAMPERED_PLAN', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    // Mutate proposed update status to RELEASED and recompute planDigest to simulate sophisticated bypass
+    if (plan.proposedUpdates.length > 0) {
+      plan.proposedUpdates[0].after.status = 'RELEASED' as any;
+    }
+    plan.planDigest = computePlanDigest(plan);
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /TAMPERED_PLAN/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Apply fails closed when plan contains blocked items with RECONCILIATION_BLOCKED_ITEMS_PRESENT', () => {
+  const customWbs = `
+version: "1.0"
+project: "PRJ-DOCMONSTAKRAKIN"
+baseline: "v0.1.0-rc1"
+items:
+  - id: "DMK-UNPROVEN"
+    wbs_path: "13.99.01"
+    parent_id: "EPIC-13"
+    epic: "EPIC-13"
+    phase: "PHASE-12"
+    title: "Unproven Item"
+    description: "No evidence"
+    type: "FEATURE"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    requirements: []
+    dependencies: []
+    acceptance_criteria: []
+    evidence: []
+`;
+  const ws = createSyntheticWorkspace({ wbsYamlContent: customWbs });
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    assert.ok(plan.summary.blocked > 0);
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+        }),
+      /RECONCILIATION_BLOCKED_ITEMS_PRESENT/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Idempotency: Re-applying already applied plan returns ALREADY_APPLIED with 0 mutations and 0 added audits', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+
+    // 1st Apply
+    const res1 = applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio (Lead Architect)',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+    assert.equal(res1.status, 'APPLIED');
+    assert.equal(res1.mutationCount, 1);
+
+    const snapAfterFirst = readProjectSnapshot(ws.dir)!;
+    const auditCountAfterFirst = snapAfterFirst.state.auditLogs['PRJ-DOCMONSTAKRAKIN'].length;
+
+    // 2nd Apply with identical plan
+    const res2 = applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio (Lead Architect)',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+    assert.equal(res2.status, 'ALREADY_APPLIED');
+    assert.equal(res2.mutationCount, 0);
+
+    const snapAfterSecond = readProjectSnapshot(ws.dir)!;
+    const auditCountAfterSecond = snapAfterSecond.state.auditLogs['PRJ-DOCMONSTAKRAKIN'].length;
+
+    // Verify 0 writes, 0 added audit events
+    assert.equal(auditCountAfterSecond, auditCountAfterFirst);
+    assert.deepEqual(snapAfterFirst, snapAfterSecond);
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('No-change plan returns ALREADY_SYNCHRONIZED with 0 mutations and 0 disk writes', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    // First synchronize
+    const plan1 = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan: plan1,
+      actor: 'Gio (Lead Architect)',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan1.planDigest,
+    });
+
+    // Now generate a new plan from the fully synchronized state
+    const plan2 = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio (Lead Architect)' });
+    assert.equal(plan2.proposedCreations.length, 0);
+    assert.equal(plan2.proposedUpdates.length, 0);
+    assert.equal(plan2.summary.missingRuntime, 0);
+    assert.equal(plan2.summary.statusDrift, 0);
+    assert.equal(plan2.summary.metadataDrift, 0);
+
+    const snapBefore = readProjectSnapshot(ws.dir)!;
+    const res = applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan: plan2,
+      actor: 'Gio (Lead Architect)',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan2.planDigest,
+    });
+
+    assert.equal(res.status, 'ALREADY_SYNCHRONIZED');
+    assert.equal(res.mutationCount, 0);
+    const snapAfter = readProjectSnapshot(ws.dir)!;
+    assert.deepEqual(snapBefore, snapAfter);
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Actor validation rejects invalid actors', () => {
+  assert.throws(() => validateActor(''), /INVALID_REVIEW_ACTOR/);
+  assert.throws(() => validateActor(' '), /INVALID_REVIEW_ACTOR/);
+  assert.throws(() => validateActor('A'), /INVALID_REVIEW_ACTOR/);
+  assert.throws(() => validateActor('a'.repeat(101)), /INVALID_REVIEW_ACTOR/);
+  assert.throws(() => validateActor('Actor<script>'), /INVALID_REVIEW_ACTOR/);
+  assert.doesNotThrow(() => validateActor('Gio (Lead Architect)'));
+  assert.doesNotThrow(() => validateActor('codex_bot-01'));
+});
+
+test('Timestamp validation rejects invalid timestamps', () => {
+  assert.throws(() => validateTimestamp(''), /INVALID_REVIEW_TIMESTAMP/);
+  assert.throws(() => validateTimestamp('invalid-date'), /INVALID_REVIEW_TIMESTAMP/);
+  assert.throws(() => validateTimestamp('2026-13-45T99:99:99Z'), /INVALID_REVIEW_TIMESTAMP/);
+  assert.doesNotThrow(() => validateTimestamp(new Date().toISOString()));
+  assert.doesNotThrow(() => validateTimestamp('2026-10-02T12:00:00.000Z'));
+});
+
+test('Independent verifier rejects plan with invalid formatVersion', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    (plan as any).formatVersion = 'DMK_SELF_WBS_SYNC_V1';
+
+    const verification = verifyReconciliationOutcome({
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(verification.errors.some((e) => e.includes('Invalid plan formatVersion')));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects plan with tampered planDigest', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+    plan.planDigest = '0000000000000000000000000000000000000000000000000000000000000000';
+
+    const verification = verifyReconciliationOutcome({
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(verification.errors.some((e) => e.includes('Plan digest invalid')));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects outcome when candidateSnapshotDigest does not match after snapshot', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const beforeSnap = readProjectSnapshot(ws.dir)!;
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+
+    const afterSnap = readProjectSnapshot(ws.dir)!;
+    // Mutate afterSnap
+    afterSnap.state.projects[0].description = 'Tampered after apply';
+
+    const verification = verifyReconciliationOutcome({
+      beforeSnapshot: beforeSnap,
+      afterSnapshot: afterSnap,
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(
+      verification.errors.some(
+        (e) => e.includes('After snapshot digest mismatch') || e.includes('candidate snapshot differs')
+      )
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects outcome when audit event ID or action is invalid', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const beforeSnap = readProjectSnapshot(ws.dir)!;
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+
+    const afterSnap = readProjectSnapshot(ws.dir)!;
+    afterSnap.state.auditLogs['PRJ-DOCMONSTAKRAKIN'][0].action = 'FORGED_ACTION';
+
+    const verification = verifyReconciliationOutcome({
+      beforeSnapshot: beforeSnap,
+      afterSnapshot: afterSnap,
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(
+      verification.errors.some(
+        (e) => e.includes('does not match plan.auditEvent') || e.includes('Audit chain invalid')
+      )
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects outcome if audit ledger chain fails', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const beforeSnap = readProjectSnapshot(ws.dir)!;
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+
+    const afterSnap = readProjectSnapshot(ws.dir)!;
+    afterSnap.state.auditLogs['PRJ-DOCMONSTAKRAKIN'][0].hash = '0000000000000000000000000000000000000000000000000000000000000000';
+
+    const verification = verifyReconciliationOutcome({
+      beforeSnapshot: beforeSnap,
+      afterSnapshot: afterSnap,
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(
+      verification.errors.some(
+        (e) => e.includes('Audit chain invalid') || e.includes('does not match plan.auditEvent')
+      )
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects outcome if unrelated project was altered', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const beforeSnap = readProjectSnapshot(ws.dir)!;
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+
+    const afterSnap = readProjectSnapshot(ws.dir)!;
+    afterSnap.state.projects.find((p: any) => p.id === 'PRJ-OTHER').description = 'Drifted unrelated project';
+
+    const verification = verifyReconciliationOutcome({
+      beforeSnapshot: beforeSnap,
+      afterSnapshot: afterSnap,
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(verification.errors.some((e) => e.includes('Unrelated project') || e.includes('Candidate snapshot digest mismatch')));
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Independent verifier rejects outcome if WBS hash changed between plan and verification', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const beforeSnap = readProjectSnapshot(ws.dir)!;
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    applyReconciliationPlan({
+      workspaceRoot: ws.dir,
+      plan,
+      actor: 'Gio',
+      confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+      confirmPlanDigest: plan.planDigest,
+    });
+
+    const afterSnap = readProjectSnapshot(ws.dir)!;
+
+    // Mutate WBS after apply
+    const wbsPath = resolveMasterWbsPath(ws.dir);
+    fs.appendFileSync(wbsPath, '\n# Post-apply WBS mutation\n');
+
+    const verification = verifyReconciliationOutcome({
+      beforeSnapshot: beforeSnap,
+      afterSnapshot: afterSnap,
+      plan,
+      workspaceRoot: ws.dir,
+    });
+    assert.equal(verification.valid, false);
+    assert.ok(verification.errors.some((e) => e.includes('WBS digest mismatch')));
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
+test('Pre-rename WBS anti-TOCTOU: Modifying MASTER_WBS.yaml in beforeRename hook rejects with WBS_TOCTOU_MISMATCH', () => {
+  const ws = createSyntheticWorkspace();
+  try {
+    process.env.DMK_WBS_SYNC_EXECUTE = 'PRJ-DOCMONSTAKRAKIN';
+    const plan = generateReconciliationPlan({ workspaceRoot: ws.dir, actor: 'Gio' });
+
+    assert.throws(
+      () =>
+        applyReconciliationPlan({
+          workspaceRoot: ws.dir,
+          plan,
+          actor: 'Gio',
+          confirmProjectId: 'PRJ-DOCMONSTAKRAKIN',
+          confirmPlanDigest: plan.planDigest,
+          hooks: {
+            beforeRename: () => {
+              const wbsPath = resolveMasterWbsPath(ws.dir);
+              fs.appendFileSync(wbsPath, '\n# Race condition modification during write\n');
+            },
+          },
+        }),
+      /WBS_TOCTOU_MISMATCH/
+    );
+  } finally {
+    delete process.env.DMK_WBS_SYNC_EXECUTE;
+    ws.cleanup();
+  }
+});
+
 console.log(`\n======================================================`);
 console.log(`All ${passedCount} DMK-205 self-tracking test scenarios PASSED cleanly.`);
 console.log(`======================================================`);
+

@@ -125,17 +125,23 @@ async function main() {
     const plan: ReconciliationPlan = JSON.parse(fs.readFileSync(fullPlanPath, 'utf8'));
 
     console.log(`[Reconciliation CLI] Applying plan ${plan.planId}...`);
+    console.log(`Reviewed actor:       ${plan.actor}`);
+    console.log(`Plan operationId:     ${plan.operationId}`);
+    console.log(`Plan digest:          ${plan.planDigest}`);
+
     const result = applyReconciliationPlan({
       workspaceRoot: root,
       plan,
-      actor,
+      actor: plan.actor,
       confirmProjectId,
       confirmPlanDigest,
     });
 
-    console.log('\n--- Synchronization Applied Successfully ---');
+    console.log('\n--- Synchronization Result ---');
+    console.log(`Status:               ${result.status}`);
+    console.log(`Mutation Count:       ${result.mutationCount}`);
     console.log(`New stateVersion:     ${result.newStateVersion}`);
-    console.log(`Audit Event ID:       ${result.auditEventId || 'NONE (No changes)'}`);
+    console.log(`Audit Event ID:       ${result.auditEventId || 'NONE (No changes or already applied)'}`);
     console.log(`New Snapshot SHA-256: ${result.newSnapshotSha256}`);
   }
 }

@@ -46,19 +46,22 @@ export function mapCanonicalType(type: string): WorkItemType {
 }
 
 /**
- * Maps priority safely to runtime priority ('P0' | 'P1' | 'P2').
+ * Maps priority deterministically to runtime priority ('P0' | 'P1' | 'P2').
+ * P0 -> P0, P1 -> P1, P2 -> P2, and P3 -> P2 (explicit operational fold for board display).
+ * Fails closed on any unrecognized priority.
  */
 export function mapCanonicalPriority(priority: string): 'P0' | 'P1' | 'P2' {
   const normalized = String(priority || '').trim().toUpperCase();
   if (normalized === 'P0') return 'P0';
   if (normalized === 'P1') return 'P1';
   if (normalized === 'P2') return 'P2';
-  if (normalized === 'P3') return 'P2'; // Operational fold for board display
-  return 'P1'; // Default fallback
+  if (normalized === 'P3') return 'P2'; // Explicit operational fold for board display
+  throw new Error(`UNSUPPORTED_WBS_PRIORITY: Unrecognized canonical WBS priority "${priority}"`);
 }
 
 /**
- * Maps risk safely to runtime RiskLevel.
+ * Maps risk deterministically to runtime RiskLevel ('CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW').
+ * Fails closed on any unrecognized risk level.
  */
 export function mapCanonicalRisk(risk: string): RiskLevel {
   const normalized = String(risk || '').trim().toUpperCase();
@@ -66,5 +69,6 @@ export function mapCanonicalRisk(risk: string): RiskLevel {
   if (normalized === 'HIGH') return 'HIGH';
   if (normalized === 'MEDIUM') return 'MEDIUM';
   if (normalized === 'LOW') return 'LOW';
-  return 'MEDIUM';
+  throw new Error(`UNSUPPORTED_WBS_RISK: Unrecognized canonical WBS risk "${risk}"`);
 }
+
