@@ -471,7 +471,7 @@ async function setupPage() {
       refreshFailOnce = val;
     },
     async start() {
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector('[data-testid="controlled-docs-workspace"]', { timeout: 10000 });
     },
     async close() {
@@ -556,7 +556,7 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-001"]');
-      await ctx.page.waitForSelector('[data-testid="doc-title"]');
+      await ctx.page.locator('[data-testid="doc-title"]', { hasText: 'Project Charter' }).waitFor();
       const title = await ctx.page.textContent('[data-testid="doc-title"]');
       assert(title?.includes('Project Charter'));
 
@@ -573,6 +573,7 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.locator('[data-testid="doc-title"]', { hasText: 'Project State & Governance Baseline' }).waitFor();
       await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
 
       const xssTriggered = await ctx.page.evaluate("window.__XSS_TRIGGERED__");
@@ -628,6 +629,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('[data-testid="modal-session-name"]').waitFor();
       const sessionName = await ctx.page.textContent('[data-testid="modal-session-name"]');
       assert(sessionName?.includes('Gio'), 'Reviewer name displayed');
       const sessionRoles = await ctx.page.textContent('[data-testid="modal-session-roles"]');
@@ -674,6 +676,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('[data-testid="modal-session-name"]').waitFor();
       const text = await ctx.page.textContent('[data-testid="modal-session-name"]');
       assert(text?.includes('No authenticated governance reviewer session'), 'Explicit signed-out message');
       assert(!text?.includes('Authorized Operator') && !text?.includes('Reviewer'), 'No fallback fake identity');
@@ -702,6 +705,7 @@ try {
       await ctx.page.click('[data-testid="btn-proceed-to-save"]');
 
       await ctx.page.waitForSelector('[data-testid="doc-save-modal"]');
+      await ctx.page.locator('text=Unable to load governance reviewer session').waitFor();
       const text = await ctx.page.textContent('[data-testid="doc-save-modal"]');
       assert(text?.includes('Unable to load governance reviewer session'), 'Explicit session load error displayed');
 
@@ -869,14 +873,12 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-005"]');
-      await ctx.page.waitForSelector('[data-testid="doc-title"]');
-
-      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
-      assert.strictEqual(editBtnCount, 0, 'No edit button for MIXED EOL document');
-
       await ctx.page.waitForSelector('[data-testid="mixed-eol-warning"]');
       const warningText = await ctx.page.textContent('[data-testid="mixed-eol-warning"]');
       assert(warningText?.includes('Editing is unavailable because this document has mixed line endings'));
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MIXED EOL document');
     } finally {
       await ctx.close();
     }
@@ -888,13 +890,12 @@ try {
     try {
       await ctx.start();
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-004"]');
-
-      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
-      assert.strictEqual(editBtnCount, 0, 'No edit button for MISSING document');
-
       await ctx.page.waitForSelector('[data-testid="missing-doc-state"]');
       const text = await ctx.page.textContent('[data-testid="missing-doc-state"]');
       assert(text?.includes('missing') || text?.includes('Missing'));
+
+      const editBtnCount = await ctx.page.locator('[data-testid="btn-edit-document"]').count();
+      assert.strictEqual(editBtnCount, 0, 'No edit button for MISSING document');
     } finally {
       await ctx.close();
     }
@@ -1146,6 +1147,7 @@ try {
       await ctx.page.click('[data-testid="btn-confirm-save"]');
 
       // Modal must close
+      await ctx.page.locator('[data-testid="doc-save-modal"]').waitFor({ state: 'detached' });
       const modalCount = await ctx.page.locator('[data-testid="doc-save-modal"]').count();
       assert.strictEqual(modalCount, 0, 'Save modal closed after DOCUMENT_STALE');
 
@@ -1259,7 +1261,7 @@ try {
 
       // Select DOC-CTRL-006 (Rich formatting document)
       await ctx.page.click('[data-testid="doc-item-DOC-CTRL-006"]');
-      await ctx.page.waitForSelector('[data-testid="doc-content-rendered"]');
+      await ctx.page.locator('[data-testid="doc-content-rendered"] h1', { hasText: 'Heading 1' }).waitFor();
       const rendered = ctx.page.locator('[data-testid="doc-content-rendered"]');
 
       // h1 element is rendered with appropriate styling

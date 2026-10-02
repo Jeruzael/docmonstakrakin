@@ -1,5 +1,55 @@
 # docmonstakrakin current project state
 
+## 2026-10-02 — DMK-203 GitHub Actions CI Baseline Verification
+
+DMK-195 Controlled Documentation Workspace is VERIFIED and merged.
+
+DMK-203 GitHub Actions CI Baseline implementation is complete and has passed fresh-checkout, Linux, Playwright, controlled-document, and complete regression verification on PR #18.
+
+### Current governance and task status
+
+- DMK-195: VERIFIED / MERGED
+- DMK-203: VERIFICATION_PENDING
+- DMK-204: BACKLOG — Master Branch Protection & Required CI Enforcement
+- DMK-196: BACKLOG
+- DMK-197: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Release status: v0.1.0-rc1; no release promotion authorized
+
+### CI verification
+
+PR #18 current CI verification:
+
+- Quality & Build: PASS
+- Controlled Docs: PASS
+- Complete Regression: PASS
+- Linux / Playwright execution: PASS
+- Fresh-checkout hermeticity: PASS
+- Zero-secret synthetic runtime: PASS
+- Repository cleanliness verification: PASS
+
+### Platform constraint
+
+Master branch protection / required-check enforcement cannot currently be enabled for this private repository under the current GitHub plan.
+
+This enforcement capability is deferred to DMK-204.
+
+The repository must remain private unless an explicit human decision changes that separately.
+
+### Next safe action
+
+Merge PR #18 after final human review and green latest-head CI.
+
+After merge, verify that the push-to-master GitHub Actions workflow runs automatically and all three CI jobs pass.
+
+If the master run succeeds, DMK-203 may be transitioned from VERIFICATION_PENDING to VERIFIED.
+
+DMK-204 remains BACKLOG until the platform constraint is resolved.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
 ## 2026-10-02 — DMK-195 Final Human Verification & Transition Complete
 
 DMK-195 Controlled Documentation Workspace implementation, remediation, automated verification, and final human verification are complete. DMK-195 is transitioned to VERIFIED.

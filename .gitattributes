@@ -1,0 +1,5 @@
+# Ensure deterministic LF line endings across all platforms for cryptographic hash immutability
+* text=auto eol=lf
+
+# Retained historical verification artifact pinned to CRLF bytes in canonicalReconciliation
+docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md text eol=crlf

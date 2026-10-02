@@ -31,7 +31,11 @@
     "test:projects-workspace:ui": "tsx scripts/testProjectsWorkspaceUi.ts",
     "test:reconciliation": "tsx scripts/testCanonicalReconciliation.ts && tsx scripts/testWorkItemUpdates.ts",
     "reconcile:canonical": "tsx scripts/reconcileCanonicalState.ts",
-    "verify:reconciliation": "tsx scripts/verifyCanonicalReconciliation.ts"
+    "verify:reconciliation": "tsx scripts/verifyCanonicalReconciliation.ts",
+    "ci:prepare": "tsx scripts/prepareCiRuntime.ts",
+    "ci:quality": "npm run wbs:check && npm run lint && npm run build",
+    "ci:controlled-docs": "npm run ci:prepare && npm run test:controlled-docs",
+    "ci:regression": "npm run ci:prepare && npm run test:complete"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

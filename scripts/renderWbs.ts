@@ -300,7 +300,8 @@ function run() {
       process.exit(1);
     }
     const currentMd = fs.readFileSync(MD_PATH, 'utf8');
-    if (currentMd === generatedMd) {
+    const normalizeEol = (s: string) => s.replace(/\r\n/g, '\n');
+    if (normalizeEol(currentMd) === normalizeEol(generatedMd)) {
       console.log('✓ [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).');
       process.exit(0);
     } else {

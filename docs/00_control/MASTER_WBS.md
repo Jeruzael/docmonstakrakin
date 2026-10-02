@@ -202,6 +202,50 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
   - "Remediation is decoupled from and does not block DMK-195 merge"
 - **Verification Method:** Release gate evaluation regression tests
 
+#### `DMK-203` — GitHub Actions CI Baseline
+- **WBS Path:** `13.06.16`
+- **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `VERIFICATION_PENDING`
+- **Dependencies:** `DMK-195`
+- **Requirements:** `REQ-REL-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero developer-local runtime state or production credentials.
+- **Acceptance Criteria:**
+  - "GitHub Actions runs automatically on pull requests targeting master"
+  - "Workflow is configured to run on pushes/merges to master"
+  - "workflow_dispatch is available"
+  - "CI succeeds from a fresh checkout without developer-local runtime state"
+  - "CI requires no real reviewer credentials, machine tokens, .env secrets, production credentials, or external AI credentials"
+  - "WBS synchronization, TypeScript/lint, production build, controlled-document regression, and complete regression are visible"
+  - "Playwright Chromium tests execute successfully on Linux"
+  - "CI cannot silently mutate controlled repository evidence"
+  - "Runtime artifacts remain untracked and gitignored"
+  - "Gate 7 remains human-controlled and outside CI authority"
+- **Verification Method:** Fresh-checkout CI execution; GitHub Actions PR execution on Linux; Quality & Build, Controlled Docs, and Complete Regression checks; repository cleanliness verification; and successful automatic CI execution on master after merge.
+
+#### `DMK-204` — Master Branch Protection & Required CI Enforcement
+- **WBS Path:** `13.06.17`
+- **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-203`
+- **Requirements:** `REQ-REL-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** Enforce master-branch governance through GitHub branch protection or repository rulesets so changes require pull requests and the mandatory Quality & Build, Controlled Docs, and Complete Regression CI checks must pass before merge. Currently deferred because the repository is private under a GitHub plan that does not expose required branch-protection / ruleset capability.
+
+PLATFORM CONSTRAINT:
+Current GitHub configuration does not permit required branch protection for this private repository. Activation requires one of: a GitHub plan supporting protection/rulesets for this repository, an organizational policy/environment that exposes equivalent controls, or another explicitly approved repository-governance mechanism. Do NOT make the repository public merely to satisfy this WorkItem. Do NOT upgrade any subscription automatically.
+- **Acceptance Criteria:**
+  - "Changes to master require a pull request"
+  - "Required CI checks are configured: Quality & Build, Controlled Docs, Complete Regression"
+  - "Required checks must pass before merge"
+  - "Pending required checks block merge"
+  - "Failed required checks block merge"
+  - "Branch must be current with protected baseline before merge where supported"
+  - "Force pushes are blocked"
+  - "Branch deletion is blocked"
+  - "Protection configuration is verified through GitHub's actual policy state"
+  - "No bypass path is silently introduced"
+  - "Gate 7 remains independent from repository CI enforcement"
+- **Verification Method:** GitHub ruleset / branch protection inspection; intentionally failing disposable PR test; intentionally pending-check test; and successful-check merge eligibility test upon resolving platform constraint.
+
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
