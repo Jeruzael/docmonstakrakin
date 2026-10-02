@@ -1,19 +1,21 @@
 # docmonstakrakin current project state
 
-## 2026-10-02 — DMK-195 Final Human Verification Complete
+## 2026-10-02 — DMK-195 Final Human Verification & Transition Complete
 
-DMK-195 Controlled Documentation Workspace implementation, remediation, automated verification, and final human verification are complete.
+DMK-195 Controlled Documentation Workspace implementation, remediation, automated verification, and final human verification are complete. DMK-195 is transitioned to VERIFIED.
 
 ### Current governance and task status
 
-- DMK-195: VERIFICATION_PENDING
-- Runtime DMK-195 status: VERIFICATION
+- DMK-195: VERIFIED
+- Runtime DMK-195 status: VERIFIED
+- Canonical WBS DMK-195 status: VERIFIED
 - Human verification result: PASS WITH NON-BLOCKING UX OBSERVATIONS
 - Controlled-document regression: PASS
 - Projects workspace UI regression: PASS
 - Complete regression: PASS
 - DMK-196 through DMK-199: BACKLOG
 - DMK-201: VERIFICATION_PENDING
+- Release Gate remediation: OPEN (required before Gate 7)
 - Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
 - Live reconciliation: NOT AUTHORIZED / NOT APPLIED
 - Release status: v0.1.0-rc1; no release promotion authorized
@@ -46,15 +48,14 @@ docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md
 
 - Requirement direct-approve workflow is owned by DMK-196.
 - Approval Inbox canonical synchronization is owned by DMK-197.
-- Release Gate evaluator remediation is separate and must be completed before Gate 7.
+- Authentication / role-delegation module candidate recorded for future consideration (DMK-198 scope evaluation or separate follow-on work item).
+- Release Gate evaluator remediation is logged as candidate DMK-202 (HIGH priority, required before Gate 7, not a blocker for DMK-195 PR merge).
 
 ### Next safe action
 
-DMK-195 is READY FOR EXPLICIT HUMAN VERIFIED TRANSITION.
+Prepare DMK-195 pull request and merge review.
 
-Do not automatically transition DMK-195 to VERIFIED.
-
-Await explicit human authorization.
+Do not automatically merge to master.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 

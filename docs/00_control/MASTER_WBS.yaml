@@ -4,7 +4,7 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-09-25"
+last_updated: "2026-10-02"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
 remediation_status: "READY_FOR_RETEST"
@@ -198,20 +198,28 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "VERIFICATION_PENDING"
+    status: "VERIFIED"
     dependencies: ["DMK-193"]
     requirements: ["REQ-DOC-001"]
     architecture_links: ["CMP-01"]
     security_controls: ["SEC-CTRL-020"]
     acceptance_criteria:
       - "Browse repository-controlled documentation within permitted docs/ boundaries"
-    verification_method: "Documentation viewer test"
+      - "Enforce strict read-only protection for non-editable reference documents"
+      - "Provide governed draft editing, unified diff preview, and structural validation"
+      - "Require authenticated human reviewer approval with mandatory change justification"
+      - "Ensure atomic file persistence, project state version increment, and chained audit logging"
+    verification_method: "Comprehensive controlled docs regression suite (npm run test:controlled-docs), UI tests, and human manual verification (PASS WITH NON-BLOCKING UX OBSERVATIONS)"
     evidence:
       - "docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md"
       - "docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md"
       - "docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md"
       - "docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md"
       - "scripts/testControlledDocs.ts"
+    implemented_by: "Codex"
+    verified_by: "PASS WITH NON-BLOCKING UX OBSERVATIONS"
+    human_approved_by: "Gio / authorized human operator"
+    verification_status: "VERIFIED (Human manual verification: PASS WITH NON-BLOCKING UX OBSERVATIONS; release gates evaluator known issue logged as DMK-202)"
 
   - id: "DMK-196"
     wbs_path: "13.06.10"
@@ -257,7 +265,7 @@ items:
     wbs_path: "13.06.12"
     parent_id: "EPIC-13"
     title: "Batch 4 — Reviewer Provisioning / Governance Setup Usability"
-    description: "Reviewer management and onboarding usability without exposing plaintext credentials."
+    description: "Reviewer management and onboarding usability without exposing plaintext credentials. Note: open candidate recorded for user authentication module with designated roles to allow delegation while maintaining trust (evaluate as scope adjustment vs separate follow-on work item DMK-198A; kept distinct from DMK-195)."
     type: "INFRASTRUCTURE"
     phase: "PHASE-12"
     epic: "EPIC-13"
@@ -332,6 +340,29 @@ items:
     implemented_by: "Codex — Stage A mechanism and WorkItem integrity fix; historical live reconciliation not applied"
     verified_by: "Stage A disposable automated tests and Stage A.5 read-only exact-candidate comparison; complete regression remains FAIL 26/28 with two pre-existing evidence-order failures; no independent-human verification claimed"
     human_approved_by: "Gio — explicit WBS ownership application approval in this task, 2026-09-24; status remains VERIFICATION_PENDING. Live reconciliation, DMK-194 completion, Batch B, DMK-195+ work, Gate 7 and release approval are not authorized."
+
+  - id: "DMK-202"
+    wbs_path: "13.06.15"
+    parent_id: "EPIC-13"
+    title: "Dynamic Release Gate Evaluator Remediation"
+    description: "Remediate dynamic release gate evaluation rules and baseline evaluation logic so Gates 1-5 truthfully evaluate against current project artifacts. Required before Gate 7 can evaluate truthfully; not a blocker for DMK-195 PR merge."
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-195"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Dynamic release gate evaluator accurately evaluates Gate 1 through Gate 5 status without spurious failures"
+      - "Truthful evaluation must be verified prior to Gate 7 human sign-off"
+      - "Remediation is decoupled from and does not block DMK-195 merge"
+    verification_method: "Release gate evaluation regression tests"
+    evidence: []
+    planned_by: "Recorded during DMK-195 final human verification closeout"
 
   - id: "DMK-187"
     wbs_path: "13.06.01"

@@ -114,13 +114,17 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-195` — Controlled Documentation Workspace
 - **WBS Path:** `13.06.09`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md, docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md, docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md, docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md, scripts/testControlledDocs.ts`)
+- **Status:** `VERIFIED` (Evidence: `docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md, docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md, docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md, docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md, scripts/testControlledDocs.ts`)
 - **Dependencies:** `DMK-193`
 - **Requirements:** `REQ-DOC-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
 - **Description:** In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows.
 - **Acceptance Criteria:**
   - "Browse repository-controlled documentation within permitted docs/ boundaries"
-- **Verification Method:** Documentation viewer test
+  - "Enforce strict read-only protection for non-editable reference documents"
+  - "Provide governed draft editing, unified diff preview, and structural validation"
+  - "Require authenticated human reviewer approval with mandatory change justification"
+  - "Ensure atomic file persistence, project state version increment, and chained audit logging"
+- **Verification Method:** Comprehensive controlled docs regression suite (npm run test:controlled-docs), UI tests, and human manual verification (PASS WITH NON-BLOCKING UX OBSERVATIONS)
 
 #### `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
 - **WBS Path:** `13.06.10`
@@ -150,7 +154,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 - **Status:** `BACKLOG`
 - **Dependencies:** `DMK-197`
 - **Requirements:** `REQ-GOV-REVIEWER-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
-- **Description:** Reviewer management and onboarding usability without exposing plaintext credentials.
+- **Description:** Reviewer management and onboarding usability without exposing plaintext credentials. Note: open candidate recorded for user authentication module with designated roles to allow delegation while maintaining trust (evaluate as scope adjustment vs separate follow-on work item DMK-198A; kept distinct from DMK-195).
 - **Acceptance Criteria:**
   - "No default reviewer credentials; fail closed when reviewer configuration is absent"
 - **Verification Method:** Reviewer provisioning helper test
@@ -184,6 +188,19 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
   - "Retain disposable test evidence and an exact human-reviewable mutation inventory; report complete-regression failures and prohibited Git fixtures honestly without weakening expectations."
   - "Keep historical apply and human acceptance pending until separately authorized and verified with new evidence; never imply DMK-194 acceptance, bootstrap re-execution or release approval."
 - **Verification Method:** Read-only candidate/evidence/inventory checks; npm run test:reconciliation; npm run test:projects-workspace:ui; npm run test:projects-workspace; npm test; npm run lint; npm run build; npm run wbs:check; standalone bootstrap suites; separate post-bootstrap reconciliation verifier. Run state/evidence-writing suites only in disposable copies and retain the no-Git restriction.
+
+#### `DMK-202` — Dynamic Release Gate Evaluator Remediation
+- **WBS Path:** `13.06.15`
+- **Type:** `BUG` | **Priority:** `P1` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-195`
+- **Requirements:** `REQ-REL-001` | **Architecture:** `CMP-01` | **Controls:** `SEC-CTRL-020`
+- **Description:** Remediate dynamic release gate evaluation rules and baseline evaluation logic so Gates 1-5 truthfully evaluate against current project artifacts. Required before Gate 7 can evaluate truthfully; not a blocker for DMK-195 PR merge.
+- **Acceptance Criteria:**
+  - "Dynamic release gate evaluator accurately evaluates Gate 1 through Gate 5 status without spurious failures"
+  - "Truthful evaluation must be verified prior to Gate 7 human sign-off"
+  - "Remediation is decoupled from and does not block DMK-195 merge"
+- **Verification Method:** Release gate evaluation regression tests
 
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
