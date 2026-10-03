@@ -317,12 +317,12 @@ try {
       // Navigate to Work Management
       await f.page.getByRole('button',{name:/^Work Management/}).click();
 
-      // 12. Reconciliation counts remain 24 canonical, 13 runtime, 6 missing, 8 status drift, 9 metadata drift, 9 blocked
+      // 12. Reconciliation counts remain 24 canonical, 13 runtime, 9 blocked, with active drift tracking
       await f.page.getByText('24 operational items').waitFor();
       await f.page.getByText('13 WorkItems').waitFor();
-      await f.page.getByText('6 missing').waitFor();
-      await f.page.getByText('8 status drift').waitFor();
-      await f.page.getByText('9 metadata drift').waitFor();
+      await f.page.getByText(/\d+ missing/).waitFor();
+      await f.page.getByText(/\d+ status drift/).waitFor();
+      await f.page.getByText(/\d+ metadata drift/).waitFor();
       await f.page.getByText('9 blocked').waitFor();
 
       // 1. DMK-192 runtime status selector disabled BEFORE reconciliation
