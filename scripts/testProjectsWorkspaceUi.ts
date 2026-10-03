@@ -6,6 +6,9 @@ import {createServer} from 'vite';
 import {INITIAL_PROJECTS, INITIAL_WORK_ITEMS} from '../src/data/initialData.ts';
 import {createPortablePackage} from '../server/package/portablePackage.ts';
 import {startPackageFixture} from './fixtures/projectsWorkspaceUiServer.ts';
+import {getCanonicalWbsHierarchy} from '../server/workTracking/canonicalWbs.ts';
+import {generateReconciliationPlan} from '../server/workTracking/selfWorkItemReconciliation.ts';
+import {readProjectSnapshot} from '../server/projectPersistence.ts';
 
 // Real App, real React children and CSS. Only the API boundary is controlled.
 // Vite serves source only; this harness never connects to the operator's server.
@@ -31,6 +34,10 @@ async function setup(empty=false) {
   const state={projects:empty?[]:structuredClone(projects),requirements:{A:[req('A')],B:[req('B')],C:[req('C')],'PRJ-DOCMONSTAKRAKIN':[req('PRJ-DOCMONSTAKRAKIN')]} as Record<string,any[]>,questions:structuredClone(questions),posts:[] as string[],held:new Map<string,ReturnType<typeof deferred>>(),fail:new Set<string>(),reject:false,reads:[] as string[]};
   // Simulate a transport that ignores aborts so late results really reach the loader.
   const workItems = structuredClone(INITIAL_WORK_ITEMS.slice(0,1));
+  const localSnap = readProjectSnapshot(root);
+  const selfWorkItems = localSnap?.state?.workItems?.['PRJ-DOCMONSTAKRAKIN']
+    ? structuredClone(localSnap.state.workItems['PRJ-DOCMONSTAKRAKIN'])
+    : [];
   await page.addInitScript(()=>{const original=window.fetch;window.fetch=(url,options)=>original(url,options?{...options,signal:undefined}:options);});
   await page.route('**/api/**',async(route:Route)=>{
     const url=new URL(route.request().url()).pathname;const method=route.request().method();
@@ -39,9 +46,14 @@ async function setup(empty=false) {
       state.posts.push(url);const body=route.request().postDataJSON();
       if(url.endsWith('/work-items')) {
         if(state.reject)return send({error:'Fixture rejected work update'},403);
-        if(body.status)workItems[0].status=body.status;
-        if(body.checklistIndex!==undefined)workItems[0].checklist[body.checklistIndex].done=body.checklistDone;
-        return send(workItems[0]);
+        const isSelf = url.includes('PRJ-DOCMONSTAKRAKIN');
+        const targetList = isSelf ? selfWorkItems : workItems;
+        const targetItem = targetList.find((w: any) => w.id === body.itemId) || targetList[0];
+        if(body.status && targetItem) targetItem.status = body.status;
+        if(body.checklistIndex!==undefined && targetItem?.checklist?.[body.checklistIndex]) {
+          targetItem.checklist[body.checklistIndex].done=body.checklistDone;
+        }
+        return send(targetItem || workItems[0]);
       }
       if(url.endsWith('/status')) {if(state.reject)return send({error:'Fixture rejected transition'},403);state.requirements.A[0].status='UNDER_REVIEW';return send({requirement:state.requirements.A[0]});}
       if(url.endsWith('/answers')) {const q=state.questions.find(q=>q.id===body.questionId)!;Object.assign(q,{answer:body.answer,state:'ANSWERED'});return send({ok:true});}
@@ -57,7 +69,38 @@ async function setup(empty=false) {
     if(!suffix)return send(state.projects.find(p=>p.id===id));
     if(suffix==='/requirements')return send(state.requirements[id]||[]);
     if(suffix==='/questions')return send(state.questions);
-    if(suffix==='/work-items')return send(workItems);
+    if(suffix==='/work-items') {
+      if(id==='PRJ-DOCMONSTAKRAKIN')return send(selfWorkItems);
+      return send(workItems);
+    }
+    if(suffix==='/wbs') {
+      if(id==='PRJ-DOCMONSTAKRAKIN') {
+        const hierarchy=getCanonicalWbsHierarchy(root);
+        return send({
+          supported:true,
+          canonicalSource:'MASTER_WBS.yaml',
+          wbsDigest:hierarchy.wbsSha256,
+          phases:hierarchy.phases,
+          items:hierarchy.items,
+        });
+      }
+      return send({supported:false,phases:[],items:[]});
+    }
+    if(suffix==='/work-items/reconciliation') {
+      if(id==='PRJ-DOCMONSTAKRAKIN') {
+        const plan=generateReconciliationPlan({
+          workspaceRoot:root,
+          projectId:'PRJ-DOCMONSTAKRAKIN',
+          actor:'Work Management Viewer',
+        });
+        return send({
+          supported:true,
+          summary:plan.summary,
+          rows:plan.rows,
+        });
+      }
+      return send({supported:false,summary:null,rows:[]});
+    }
     if(suffix==='/next-action')return send({id:'NEXT',title:'Fixture next action',reason:'Fixture',steps:[],blocks:[],blockingItems:[]});
     return send([]);
   });
@@ -237,6 +280,106 @@ try {
       await f.page.getByRole('heading',{name:'Fixture B',exact:true}).waitFor();
       assert.match(await f.page.getByRole('button',{name:'Select project',exact:true}).innerText(),/Fixture B/);
       assert(f.page.url().includes('project=B'));
+    }finally{await f.close();}
+  });
+  await test('V1 PRJ-DOCMONSTAKRAKIN pre-sync canonical status ownership, full-WBS badges, and canonical drawer',async()=>{
+    const f=await setup();try{
+      await f.page.goto(`${base}?project=PRJ-DOCMONSTAKRAKIN`,{waitUntil:'domcontentloaded'});
+      await f.page.getByRole('heading',{name:'docmonstakrakin',exact:true}).waitFor();
+
+      // Navigate to Work Management
+      await f.page.getByRole('button',{name:/^Work Management/}).click();
+
+      // 12. Reconciliation counts remain 24 canonical, 13 runtime, 6 missing, 8 status drift, 9 metadata drift, 9 blocked
+      await f.page.getByText('24 operational items').waitFor();
+      await f.page.getByText('13 WorkItems').waitFor();
+      await f.page.getByText('6 missing').waitFor();
+      await f.page.getByText('8 status drift').waitFor();
+      await f.page.getByText('9 metadata drift').waitFor();
+      await f.page.getByText('9 blocked').waitFor();
+
+      // 1. DMK-192 runtime status selector disabled BEFORE reconciliation
+      await f.page.getByText('Trusted Self-Bootstrap Executor').first().click();
+      const statusSelect = f.page.locator('select').last();
+      assert.equal(await statusSelect.isDisabled(), true, 'DMK-192 status selector must be disabled before sync');
+
+      // 2. Disabled reason references canonical WBS authority
+      await f.page.getByText('Status is owned by the canonical repository WBS').waitFor();
+      await f.page.getByText('Runtime currently differs from canonical state and must be reconciled').waitFor();
+
+      // 3. Checklist remains enabled
+      const checklistCheckbox = f.page.getByRole('checkbox').first();
+      assert.equal(await checklistCheckbox.isDisabled(), false, 'Checklist checkbox must remain enabled');
+
+      // Close runtime drawer (click close button with X)
+      await f.page.locator('button:has(svg.lucide-x)').click();
+
+      // Switch to WBS tab
+      await f.page.getByRole('button',{name:'WBS'}).click();
+      await f.page.getByText('Canonical Projection: MASTER_WBS.yaml').waitFor();
+
+      // 9. EPIC-13 DMK-205 displays MISSING_RUNTIME
+      const dmk205Row = f.page.locator('.divide-y > div').filter({hasText:'DMK-205'}).first();
+      await dmk205Row.waitFor();
+      assert.ok((await dmk205Row.innerText()).includes('MISSING_RUNTIME'), 'DMK-205 row must display MISSING_RUNTIME');
+
+      // 10. EPIC-01 DMK-001 displays CANONICAL ONLY, not MISSING_RUNTIME
+      const dmk001Row = f.page.locator('.divide-y > div').filter({hasText:'DMK-001'}).first();
+      await dmk001Row.waitFor();
+      const dmk001Text = await dmk001Row.innerText();
+      assert.ok(dmk001Text.includes('CANONICAL ONLY'), 'DMK-001 row must display CANONICAL ONLY');
+      assert.ok(!dmk001Text.includes('MISSING_RUNTIME'), 'DMK-001 row must NOT display MISSING_RUNTIME');
+
+      // 11. EPIC-16/17 items display CANONICAL ONLY
+      const epic16Header = f.page.locator('div').filter({hasText:'EPIC-16 Scope'}).first();
+      await epic16Header.waitFor();
+      const epic16Parent = f.page.locator('div.border.border-slate-200').filter({hasText:'EPIC-16 Scope'}).first();
+      assert.ok((await epic16Parent.innerText()).includes('CANONICAL ONLY'), 'EPIC-16 items must display CANONICAL ONLY');
+
+      // 4. DMK-205 canonical row is clickable
+      // 5. Clicking DMK-205 opens canonical read-only drawer
+      await dmk205Row.click();
+
+      // 6. Canonical drawer displays VERIFICATION_PENDING
+      // 7. Canonical drawer displays Runtime: MISSING
+      // 8. Canonical drawer contains no editable status control
+      const cDrawer = f.page.locator('.fixed.inset-y-0.right-0');
+      await cDrawer.getByText('Canonical Record').waitFor();
+      await cDrawer.getByRole('heading',{name:'Canonical WBS → Runtime WorkItem Synchronization'}).waitFor();
+      await cDrawer.getByText('VERIFICATION_PENDING',{exact:true}).waitFor();
+      await cDrawer.getByText('Runtime Status').waitFor();
+      await cDrawer.getByText('MISSING',{exact:true}).waitFor();
+      await cDrawer.getByText('13.06.18').waitFor();
+      await cDrawer.getByText('Canonical repository record. Runtime WorkItem has not yet been projected.').waitFor();
+      assert.equal(await cDrawer.locator('select').count(), 0, 'Canonical drawer must contain NO status select dropdown');
+      assert.equal(await cDrawer.locator('input[type="checkbox"]').count(), 0, 'Canonical drawer must contain NO checklist checkboxes');
+
+      // Close canonical drawer
+      await cDrawer.locator('button:has(svg.lucide-x)').click();
+
+      // 13. When blocked > 0, review modal displays live reconciliation BLOCKED copy
+      await f.page.getByRole('button',{name:'Review Reconciliation'}).click();
+      await f.page.getByRole('heading',{name:'Canonical WBS Reconciliation Review'}).waitFor();
+      await f.page.getByText('Live reconciliation is currently BLOCKED. Nine canonical VERIFIED items lack sufficient completed human governance provenance. No reconciliation plan may be applied while blocked items remain. No direct writes occur from this preview.').waitFor();
+
+      // Close modal
+      await f.page.getByRole('button',{name:'Close Preview'}).click();
+
+      // 14. Switching to PRJ-ATLAS-01 removes self-project reconciliation UI
+      await select(f.page,'A');
+      await f.page.getByRole('button',{name:'Select project',exact:true}).filter({hasText:'Fixture A'}).waitFor();
+      assert.equal(await f.page.getByText('24 operational items').count(), 0, 'Reconciliation banner must disappear for non-self project');
+      assert.equal(await f.page.getByText('Review Reconciliation').count(), 0, 'Review button must disappear for non-self project');
+
+      // 15. Switching back reloads canonical/reconciliation state
+      await f.page.getByRole('button',{name:'Select project',exact:true}).click();
+      await f.page.getByRole('button',{name:/docmonstakrakin/}).first().click();
+      await f.page.getByRole('button',{name:'Select project',exact:true}).filter({hasText:'docmonstakrakin'}).waitFor();
+      await f.page.getByText('24 operational items').waitFor();
+      await f.page.getByText('Review Reconciliation').waitFor();
+
+      // 16. No browser console errors
+      assert.deepEqual(f.errors, [], 'No browser runtime errors');
     }finally{await f.close();}
   });
 } finally {await browser.close();await vite.close();}

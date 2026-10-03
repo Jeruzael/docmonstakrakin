@@ -12,6 +12,8 @@ import {
   computeMasterWbsSha256,
   buildCanonicalWbsTree,
   resolveMasterWbsPath,
+  isCanonicalRuntimeScoped,
+  getCanonicalRuntimeScopeIds,
 } from '../server/workTracking/canonicalWbs.ts';
 
 import {
@@ -2113,7 +2115,40 @@ items:
   }
 });
 
+test('Scope Helper: isCanonicalRuntimeScoped identifies EPIC-13 items by epic or parentId and excludes others', () => {
+  assert.equal(isCanonicalRuntimeScoped({ epic: 'EPIC-13' }), true);
+  assert.equal(isCanonicalRuntimeScoped({ parentId: 'EPIC-13' }), true);
+  assert.equal(isCanonicalRuntimeScoped({ epic: 'EPIC-01', parentId: 'EPIC-01' }), false);
+  assert.equal(isCanonicalRuntimeScoped({ epic: 'EPIC-16' }), false);
+  assert.equal(isCanonicalRuntimeScoped({ epic: 'EPIC-17' }), false);
+  assert.equal(isCanonicalRuntimeScoped({}), false);
+});
+
+test('Scope Helper: getCanonicalRuntimeScopeIds returns exactly the 24 EPIC-13 scoped canonical IDs from MASTER_WBS.yaml', () => {
+  const ids = getCanonicalRuntimeScopeIds(process.cwd(), 'EPIC-13');
+  assert.equal(ids.size, 24);
+  assert.ok(ids.has('DMK-190'));
+  assert.ok(ids.has('DMK-187'));
+  assert.ok(ids.has('DMK-192'));
+  assert.ok(ids.has('DMK-193'));
+  assert.ok(ids.has('DMK-203'));
+  assert.ok(ids.has('DMK-204'));
+  assert.ok(ids.has('DMK-205'));
+  assert.ok(!ids.has('DMK-001'), 'EPIC-01 item must not be in EPIC-13 scope');
+  assert.ok(!ids.has('DMK-173'), 'EPIC-11 item must not be in EPIC-13 scope');
+});
+
+test('Scope Helper: getCanonicalRuntimeScopeIds fails closed when MASTER_WBS.yaml is missing', () => {
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-wbs-scope-test-'));
+  try {
+    assert.throws(() => getCanonicalRuntimeScopeIds(emptyDir, 'EPIC-13'));
+  } finally {
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  }
+});
+
 console.log(`\n======================================================`);
 console.log(`All ${passedCount} DMK-205 self-tracking test scenarios PASSED cleanly.`);
 console.log(`======================================================`);
+
 
