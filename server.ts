@@ -103,6 +103,7 @@ import {
 } from './server/workTracking/selfWorkItemReconciliation.ts';
 import {
   getCanonicalWbsHierarchy,
+  getCanonicalRuntimeScopeIds,
 } from './server/workTracking/canonicalWbs.ts';
 
 const store = new ProjectStore();
@@ -760,12 +761,26 @@ async function startServer() {
       return res.status(422).json({error:'Invalid checklist update'});
     }
 
-    // Protect canonical-managed self-project status (DMK-205)
-    if (req.params.id === 'PRJ-DOCMONSTAKRAKIN' && target.canonicalManaged && status && status !== target.status) {
-      return res.status(409).json({
-        error: 'CANONICAL_WBS_STATUS_OWNED',
-        message: 'Status is owned by the canonical repository WBS. Update canonical WBS through the governed repository workflow, then reconcile runtime.',
-      });
+    // Protect canonical-owned self-project status (DMK-205)
+    if (req.params.id === 'PRJ-DOCMONSTAKRAKIN' && status && status !== target.status) {
+      let canonicalScopeIds: Set<string>;
+      try {
+        canonicalScopeIds = getCanonicalRuntimeScopeIds(process.cwd(), 'EPIC-13');
+      } catch (err: unknown) {
+        return res.status(503).json({
+          error: 'CANONICAL_WBS_UNAVAILABLE',
+          message:
+            'Canonical status authority could not be verified. Status mutation is blocked until canonical WBS is available.',
+        });
+      }
+
+      if (canonicalScopeIds.has(target.id) || target.canonicalManaged) {
+        return res.status(409).json({
+          error: 'CANONICAL_WBS_STATUS_OWNED',
+          message:
+            'Status is owned by the canonical repository WBS. Update canonical WBS through the governed repository workflow, then reconcile runtime.',
+        });
+      }
     }
 
     if (status) {

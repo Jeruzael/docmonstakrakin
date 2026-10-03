@@ -154,6 +154,16 @@ export function readCanonicalWbs(workspaceRoot: string = process.cwd()): Canonic
 }
 
 /**
+ * Checks whether an item belongs to the operational runtime synchronization scope.
+ */
+export function isCanonicalRuntimeScoped(
+  item: { epic?: string; parentId?: string },
+  targetEpic: string = 'EPIC-13'
+): boolean {
+  return item.epic === targetEpic || item.parentId === targetEpic;
+}
+
+/**
  * Returns canonical WBS items scoped for operational runtime tracking.
  * For PRJ-DOCMONSTAKRAKIN v1, this is bounded to EPIC-13.
  */
@@ -162,14 +172,24 @@ export function getScopedCanonicalWbsItems(
   targetEpic: string = 'EPIC-13'
 ): { wbsSha256: string; scopedItems: CanonicalWbsItem[]; allItems: CanonicalWbsItem[] } {
   const doc = readCanonicalWbs(workspaceRoot);
-  const scopedItems = doc.items.filter(
-    (item) => item.epic === targetEpic || item.parentId === targetEpic
-  );
+  const scopedItems = doc.items.filter((item) => isCanonicalRuntimeScoped(item, targetEpic));
   return {
     wbsSha256: doc.rawSha256,
     scopedItems,
     allItems: doc.items,
   };
+}
+
+/**
+ * Returns the set of canonical item IDs that fall within the operational runtime sync scope.
+ * Bounded to EPIC-13 by default for PRJ-DOCMONSTAKRAKIN.
+ */
+export function getCanonicalRuntimeScopeIds(
+  workspaceRoot: string = process.cwd(),
+  targetEpic: string = 'EPIC-13'
+): Set<string> {
+  const { scopedItems } = getScopedCanonicalWbsItems(workspaceRoot, targetEpic);
+  return new Set(scopedItems.map((item) => item.id));
 }
 
 /**
