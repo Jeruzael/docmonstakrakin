@@ -64,7 +64,7 @@ It also coordinates with prerequisite governance infrastructure:
 The following activities are strictly out of scope for this program and this planning PR:
 - **No Immediate Application Implementation**: This PR is planning-only; no application source, API endpoints, or UI widgets are modified.
 - **No Live Reconciliation Execution**: `DMK_WBS_SYNC_EXECUTE` remains disabled; runtime ProjectStore is not mutated.
-- **No Automatic Fabrication of Approvals**: The 9 historical blockers (`DMK-156`..`159`, `DMK-165`, `DMK-187`..`190`) remain blocked.
+- **No Automatic Fabrication of Approvals**: Nine historical canonical VERIFIED items (`DMK-156`..`159`, `DMK-165`, `DMK-187`..`190`) remain reconciliation-blocked because required human-governance provenance is incomplete. Their canonical lifecycle status remains VERIFIED. No missing human approval has been inferred or fabricated.
 - **No Gate 7 Execution**: Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`.
 - **No Release State Mutation**: Release remains frozen at `v0.1.0-rc1`.
 - **No Single Monolithic PR**: Each implementation task will proceed under its own discrete branch, test harness, review, and merge cycle.
@@ -353,14 +353,62 @@ The Next-Action engine must derive safe recommendations from canonical status, g
 
 ---
 
-## 18. Migration of Historical Governance Blockers
+## 18. Historical Governance Items & Reconciliation-Blocked State
 
-The nine historical blockers (`DMK-156`..`159`, `DMK-165`, `DMK-187`..`190`) will be migrated through DMK-206:
+Nine historical canonical VERIFIED items remain reconciliation-blocked because required human-governance provenance is incomplete:
+- `DMK-156`
+- `DMK-157`
+- `DMK-158`
+- `DMK-159`
+- `DMK-165`
+- `DMK-187`
+- `DMK-188`
+- `DMK-189`
+- `DMK-190`
+
+Their canonical lifecycle status remains `VERIFIED`. No missing human approval has been inferred or fabricated.
+
+### 18.1 Terminology
+
+- **`VERIFIED`**: Refers to canonical technical lifecycle status. Acceptance criteria are satisfied and supported by reproducible technical evidence.
+- **`Human Governance: Pending Sign-Off`**: Describes incomplete required independent human oversight/sign-off.
+- **`RECONCILIATION-BLOCKED`**: Describes inability to project canonical state into runtime because governance preconditions are not satisfied.
+
+*(Note: Bare `BLOCKED` is not used for these historical items because `BLOCKED` is not part of the approved DMK-208 v1 canonical lifecycle vocabulary.)*
+
+### 18.2 Migration Through DMK-206
+These nine items will be migrated through DMK-206:
 1. Retained evidence bundles will be compiled for each item.
 2. A formal `VerificationSession` will be initialized.
 3. Authorized independent human reviewers will inspect the evidence.
 4. If evidence is sufficient, legitimate sign-off will be recorded. If insufficient, `REMEDIATION_REQUIRED` will be logged.
 5. Zero approvals will be backdated, fabricated, or bypassed.
+
+### 18.3 DMK-205 Reconciliation Plan Supersession
+
+Adding DMK-206, DMK-207, and DMK-208 expands the canonical EPIC-13 operational scope from 24 to 27 WorkItems and changes the canonical WBS digest.
+
+Therefore, every DMK-205 reconciliation plan generated against the previous 24-item canonical WBS is superseded and must not be applied.
+
+This includes previously generated plans such as:
+- `PLAN-WBS-SYNC-FF027BA0EA328240`
+
+The old plan was valid only for the canonical/runtime state to which it was cryptographically bound. It is now obsolete for current canonical state because canonical input has changed.
+
+Any future reconciliation must generate a fresh `DMK_SELF_WBS_SYNC_V2` read-only plan bound to:
+- The current canonical WBS digest;
+- The current 27-item EPIC-13 scope;
+- The current runtime snapshot;
+- Current `stateVersion`;
+- Current `auditCount` / audit state;
+- Reviewed actor identity;
+- Reviewed timestamp;
+- Deterministic candidate snapshot digest.
+
+After PR #22 is merged, any future reconciliation attempt must create a new read-only V2 plan. No previously reviewed plan may be reused. Do not generate that new plan in this PR; this PR remains planning-only.
+
+Live reconciliation remains:
+**NOT AUTHORIZED / NOT EXECUTED** while reconciliation-blocked items remain.
 
 ---
 
