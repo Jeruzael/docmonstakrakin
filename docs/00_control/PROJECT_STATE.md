@@ -1,5 +1,76 @@
 # docmonstakrakin current project state
 
+## 2026-10-04 — DMK-208 Canonical Lifecycle Contract & Status Audit Complete
+
+DMK-208 Canonical WorkItem Lifecycle & Status Audit implementation is underway on branch
+`dmk-208-lifecycle-status-audit` with explicit human authorization under PLAN-GOV-2026-001.
+
+PR #20 (DMK-205) and PR #22 (PLAN-GOV-2026-001) were merged into master; master baseline
+is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 37150342242 all PASS.
+
+### Current governance and task status
+
+- DMK-195: VERIFIED / MERGED
+- DMK-203: VERIFIED / MERGED
+- DMK-204: BACKLOG
+- DMK-205: VERIFICATION_PENDING (PR #20 merged; live reconciliation pending)
+- DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-208: IN_PROGRESS (Explicit human authorization under PLAN-GOV-2026-001)
+- DMK-196: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
+- DMK-197: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
+- DMK-198: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
+- DMK-199: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Release status: v0.1.0-rc1 / NOT PROMOTED
+
+### DMK-208 implementation state
+
+Verified implementation includes:
+
+- programmatic canonical lifecycle contract in `server/workTracking/canonicalLifecycle.ts` exporting exactly 7 primary statuses: `PROPOSED`, `BACKLOG`, `READY`, `IN_PROGRESS`, `IMPLEMENTED`, `VERIFICATION_PENDING`, `VERIFIED`
+- strict exclusion of non-v1 statuses (`BLOCKED`, `DEFERRED`, `CANCELLED`, `ACCEPTED`, `SUPERSEDED`) from canonical parsing
+- fail-closed validation in `server/workTracking/canonicalWbs.ts` rejecting invalid or blank statuses with `UNSUPPORTED_WBS_STATUS`
+- bidirectional canonical-to-runtime mapping in `server/workTracking/wbsMapping.ts` mapping `IN_PROGRESS` -> `IN_PROGRESS`
+- corrected `MASTER_WBS.yaml` `status_definitions` aligning with the 7 canonical v1 states
+- corrected `scripts/renderWbs.ts` generating the 7-state status standard from the canonical lifecycle contract and updating `VERIFICATION_PENDING` description to `(Technical verification / evidence review pending; Gate 7 pending)`
+- DMK-208 transitioned from `BACKLOG` to `IN_PROGRESS` with explicit authorization rationale
+- comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md`
+- machine-readable candidate transition proposal generated in `docs/07_verification/dmk-208-status-audit-candidate.json` with deterministic candidate digest `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f`
+- independent audit candidate verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) verifying 27 items (24 KEEP, 3 TRANSITION)
+- zero candidate status transitions applied to other WorkItems (awaiting human operator review)
+
+### Historical governance blockers & live reconciliation
+
+Live reconciliation remains strictly:
+BLOCKED
+NOT AUTHORIZED
+NOT EXECUTED
+
+The nine historical items remain canonically `VERIFIED`, human governance pending sign-off, and `RECONCILIATION-BLOCKED`.
+All prior DMK-205 reconciliation plans remain superseded due to canonical WBS digest changes.
+
+### Verification
+
+- npm run wbs:check: PASS (zero drift)
+- npm run lint: PASS (zero TypeScript errors)
+- npm run build: PASS (clean production build)
+- npm run test:canonical-lifecycle: PASS (16/16 scenarios)
+- npm run test:self-work-sync: PASS (89/89 scenarios)
+- npm run verify:dmk-208-status-audit: PASS (27 items verified, candidateDigest validated)
+
+### Next safe action
+
+1. Run full test matrix (`test:projects-workspace:ui`, `test:controlled-docs`, `test:complete`).
+2. Commit and push branch `dmk-208-lifecycle-status-audit`.
+3. Open Draft PR #23 for DMK-208.
+4. Verify PR CI passes on GitHub Actions.
+5. Present Section 46 implementation report and stop for human review of status audit candidate transitions.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
 ## 2026-10-03 — DMK-205 Visual-QA Correction & Pre-Sync Status Protection Complete
 
 DMK-205 Canonical WBS → Runtime WorkItem Synchronization visual-QA corrections,
