@@ -115,15 +115,18 @@ jobs:
 
       - name: Dump failed regression logs
         if: failure()
-        run: |
-          for f in runtime/rc-regression/*.log; do
-            if [ -f "$f" ] && grep -q -E '(FAIL|Error:)' "$f"; then
-              echo "=========================================="
-              echo "FAILED LOG: $f"
-              echo "=========================================="
-              cat "$f"
-            fi
-          done
+        run: npm run regression:dump-failures
+
+      - name: Upload regression failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complete-regression-failure-${{ github.sha }}
+          path: |
+            runtime/rc-regression/results.json
+            runtime/rc-regression/*.log
+            runtime/dmk-194-remediation/ui/
+          if-no-files-found: warn
 
       - name: Verify repository cleanliness
         run: |
