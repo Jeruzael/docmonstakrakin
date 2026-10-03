@@ -1,0 +1,429 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "PRJ-DOCMONSTAKRAKIN",
+  "workItemId": "DMK-208",
+  "baseMasterSha": "2a473df75d45aab2df3f55f37fec2d24ed403811",
+  "canonicalWbsSha256": "ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425",
+  "candidateDigest": "2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f",
+  "generatedAt": "2026-10-04T05:15:00.000Z",
+  "generatedBy": "Gio / authorized human operator (PLAN-GOV-2026-001)",
+  "scopeEpic": "EPIC-13",
+  "scopeCount": 27,
+  "items": [
+    {
+      "id": "DMK-150",
+      "wbsPath": "13.01.01",
+      "title": "Define Google Forms export mapping from internal question types",
+      "currentStatus": "PROPOSED",
+      "candidateStatus": "PROPOSED",
+      "action": "KEEP",
+      "evidenceRefs": [],
+      "rationale": "Candidate work identified but not yet accepted into planned execution. No implementation exists in repository.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Accept into planned backlog or keep as proposed specification candidate."
+    },
+    {
+      "id": "DMK-156",
+      "wbsPath": "13.02.03",
+      "title": "Implement portable .docmonstakrakin project package",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-156",
+        "server/package/portablePackage.ts",
+        "server/package/testPackageServerIntegration.ts"
+      ],
+      "rationale": "Technical verification complete and supported by package roundtrip test evidence (EV-156). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending independent human governance workflow under DMK-206.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Ratify through DMK-206 independent human review session to resolve reconciliation-blocked state."
+    },
+    {
+      "id": "DMK-157",
+      "wbsPath": "13.03.01",
+      "title": "SecretStore Capability & OS Credential Abstraction",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "server/security/secretStore.ts",
+        "scripts/testSecurityBasics.ts"
+      ],
+      "rationale": "Technical verification complete and verified by automated security regression tests. Retains VERIFIED technical lifecycle status; reconciliation-blocked pending independent human governance workflow under DMK-206.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Ratify through DMK-206 independent human review session to resolve reconciliation-blocked state."
+    },
+    {
+      "id": "DMK-158",
+      "wbsPath": "13.03.02",
+      "title": "OS Credential Migration & Key Rotation Ceremony",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "scripts/testSecurityBasics.ts",
+        "server/security/secretStore.ts"
+      ],
+      "rationale": "Technical verification complete for migration procedures. Retains VERIFIED technical lifecycle status; reconciliation-blocked pending independent human governance workflow under DMK-206.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Ratify through DMK-206 independent human review session to resolve reconciliation-blocked state."
+    },
+    {
+      "id": "DMK-159",
+      "wbsPath": "13.04.01",
+      "title": "Security Regression Test Suite",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-159",
+        "scripts/testSecurityBasics.ts"
+      ],
+      "rationale": "Technical verification complete covering path traversal boundaries, command sandboxing, and audit hash chain integrity (EV-159). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending independent human governance workflow under DMK-206.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Ratify through DMK-206 independent human review session to resolve reconciliation-blocked state."
+    },
+    {
+      "id": "DMK-165",
+      "wbsPath": "13.05.01",
+      "title": "v0.1 Definition-of-Done Review & Release Gate",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "scripts/runCompleteRegression.ts"
+      ],
+      "rationale": "Historical definition-of-done review complete. Retains VERIFIED technical lifecycle status; reconciliation-blocked pending independent human governance workflow under DMK-206.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Ratify through DMK-206 independent human review session to resolve reconciliation-blocked state."
+    },
+    {
+      "id": "DMK-187",
+      "wbsPath": "13.06.01",
+      "title": "CryptoDemon project initialization and derivation remediation",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-RC-187",
+        "docs/07_verification/rc-regression/results.json",
+        "scripts/testDiscoveryRemediation.ts"
+      ],
+      "rationale": "Automated regression passes and technical verification complete (EV-RC-187). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending Gio browser retest and independent human sign-off.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Conduct Gio browser retest and submit verification session in DMK-206."
+    },
+    {
+      "id": "DMK-188",
+      "wbsPath": "13.06.02",
+      "title": "External AI review sessions and explicit human sign-off remediation",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-RC-188",
+        "docs/07_verification/rc-regression/results.json",
+        "scripts/testProposalContract.ts"
+      ],
+      "rationale": "Automated regression passes and technical verification complete (EV-RC-188). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending Gio browser retest and independent human sign-off.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Conduct Gio browser retest and submit verification session in DMK-206."
+    },
+    {
+      "id": "DMK-189",
+      "wbsPath": "13.06.03",
+      "title": "CryptoDemon task context and release regression verification",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-RC-189",
+        "docs/07_verification/rc-regression/results.json",
+        "scripts/testCryptoDemonIntegration.ts"
+      ],
+      "rationale": "Automated regression passes and technical verification complete (EV-RC-189). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending Gio browser retest and independent human sign-off.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Conduct Gio browser retest and submit verification session in DMK-206."
+    },
+    {
+      "id": "DMK-190",
+      "wbsPath": "13.06.04",
+      "title": "Explicit external proposal schema 1.1 and MODIFY target validation",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "EV-RC-190",
+        "docs/07_verification/rc-regression/results.json",
+        "scripts/testProposalContract.ts"
+      ],
+      "rationale": "Automated regression passes and technical verification complete (EV-RC-190). Retains VERIFIED technical lifecycle status; reconciliation-blocked pending Gio browser retest and independent human sign-off.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Conduct Gio browser retest and submit verification session in DMK-206."
+    },
+    {
+      "id": "DMK-191",
+      "wbsPath": "13.06.05",
+      "title": "Gio CryptoDemon human browser retest",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [],
+      "rationale": "Accepted planned work that has not started. Dependencies include DMK-199 (full regression cleanup) and required human browser execution; not started.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Schedule and execute manual browser retest when prerequisites are met."
+    },
+    {
+      "id": "DMK-192",
+      "wbsPath": "13.06.06",
+      "title": "Trusted Self-Bootstrap Executor & Read-Only Dry-Run",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md",
+        "docs/07_verification/self-bootstrap-manifest-validation.json",
+        "scripts/testSelfBootstrapExecutor.ts"
+      ],
+      "rationale": "Technical verification and human operator Step 4 dry-run sign-off complete. Full verification provenance present.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "None; already verified and approved."
+    },
+    {
+      "id": "DMK-193",
+      "wbsPath": "13.06.07",
+      "title": "Execute Trusted Self-Bootstrap & Verify Canonical State",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md",
+        "docs/07_verification/self-bootstrap-execution-verification.json",
+        "scripts/testSelfBootstrapExecutionVerifier.ts",
+        "scripts/verifySelfBootstrapExecution.ts"
+      ],
+      "rationale": "Technical verification and human operator execution ceremony review complete. Full verification provenance present.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "None; already verified and approved."
+    },
+    {
+      "id": "DMK-194",
+      "wbsPath": "13.06.08",
+      "title": "Projects Workspace & Reliable Project Switching",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md",
+        "scripts/testProjectsWorkspace.ts",
+        "scripts/testProjectsWorkspaceUi.ts"
+      ],
+      "rationale": "Technical verification and human operator UI review complete (PASS WITH NON-BLOCKING UX OBSERVATIONS). Full verification provenance present.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "None; already verified and approved."
+    },
+    {
+      "id": "DMK-195",
+      "wbsPath": "13.06.09",
+      "title": "Controlled Documentation Workspace",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md",
+        "docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md",
+        "docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md",
+        "docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md",
+        "scripts/testControlledDocs.ts"
+      ],
+      "rationale": "Technical verification and human operator manual verification complete (PASS WITH NON-BLOCKING UX OBSERVATIONS). Merged via PR #17.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "None; already verified and approved."
+    },
+    {
+      "id": "DMK-196",
+      "wbsPath": "13.06.10",
+      "title": "Batch 2 — Formal Requirement Sign-Off UX",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "IN_PROGRESS",
+      "action": "TRANSITION",
+      "evidenceRefs": [
+        "src/components/RequestSignoff.tsx",
+        "src/components/RequirementsView.tsx",
+        "src/components/ArchitectureView.tsx",
+        "scripts/applyRcUiEdits.cjs"
+      ],
+      "rationale": "Codebase implementation is already partially present: RequestSignoff component is created and wired into RequirementsView and ArchitectureView, replacing direct Approve controls. Work has actively begun but acceptance criteria and verification tests remain pending closure. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+    },
+    {
+      "id": "DMK-197",
+      "wbsPath": "13.06.11",
+      "title": "Batch 3 — Approval Inbox & Canonical Quorum Synchronization",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "IN_PROGRESS",
+      "action": "TRANSITION",
+      "evidenceRefs": [
+        "src/components/ApprovalsView.tsx",
+        "server/proposals/signoff.ts",
+        "server/projectStore.ts"
+      ],
+      "rationale": "Substantial codebase implementation already exists: ApprovalsView.tsx (766 lines) and server/proposals/signoff.ts implement approval routing and dual-role quorum enforcement. Work has actively begun but canonical synchronization and full automated test suite are not complete. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+    },
+    {
+      "id": "DMK-198",
+      "wbsPath": "13.06.12",
+      "title": "Batch 4 — Reviewer Provisioning / Governance Setup Usability",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "IN_PROGRESS",
+      "action": "TRANSITION",
+      "evidenceRefs": [
+        "server/proposals/identity.ts"
+      ],
+      "rationale": "Backend implementation already exists in server/proposals/identity.ts implementing DMK_HUMAN_REVIEWERS configuration parsing, password scrypt hashing, brute-force lockout, and fail-closed handling without default credentials. Work has begun but front-end setup/onboarding usability remains unbuilt. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+    },
+    {
+      "id": "DMK-199",
+      "wbsPath": "13.06.13",
+      "title": "Batch 5 — Full Regression & Evidence Cleanup",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [],
+      "rationale": "Accepted planned work that has not started. Scheduled as the final verification batch following completion of Batches 2-4.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Authorize execution upon completion of prerequisite batches."
+    },
+    {
+      "id": "DMK-201",
+      "wbsPath": "13.06.14",
+      "title": "Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity",
+      "currentStatus": "VERIFICATION_PENDING",
+      "candidateStatus": "VERIFICATION_PENDING",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/00_control/BATCH_A_RECONCILIATION_IMPLEMENTATION.md",
+        "docs/07_verification/BATCH_A_RECONCILIATION_REVIEW.md",
+        "docs/07_verification/batch-a-reconciliation-dry-run.json",
+        "docs/07_verification/batch-a-reconciliation-verification.json",
+        "docs/07_verification/STAGE_A5_RECONCILIATION_HUMAN_REVIEW.md",
+        "scripts/testCanonicalReconciliation.ts",
+        "scripts/testWorkItemUpdates.ts"
+      ],
+      "rationale": "Implementation deliverables complete. Formal technical verification and evidence review await final closure; retains VERIFICATION_PENDING status.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Review evidence and close verification session once remaining checks pass."
+    },
+    {
+      "id": "DMK-202",
+      "wbsPath": "13.06.15",
+      "title": "Dynamic Release Gate Evaluator Remediation",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [],
+      "rationale": "Accepted planned work that has not started. Known defect documented in release evaluator; remediation has not begun.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Authorize implementation as a standalone remediation task."
+    },
+    {
+      "id": "DMK-203",
+      "wbsPath": "13.06.16",
+      "title": "GitHub Actions CI Baseline",
+      "currentStatus": "VERIFIED",
+      "candidateStatus": "VERIFIED",
+      "action": "KEEP",
+      "evidenceRefs": [
+        ".github/workflows/ci.yml",
+        "PR #18 CI verification run: 36995339603",
+        "Post-merge master push CI verification run: 37002353193"
+      ],
+      "rationale": "Fully implemented, merged via PR #18, automated CI verification passes on PR and master runs, and human review confirmed green results.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "None; already verified and approved."
+    },
+    {
+      "id": "DMK-204",
+      "wbsPath": "13.06.17",
+      "title": "Master Branch Protection & Required CI Enforcement",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [],
+      "rationale": "Accepted planned work that has not started. Deferred due to platform capability constraint (private repository under plan without native rulesets).",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Determine platform resolution strategy (plan upgrade, organizational ruleset, or alternate control)."
+    },
+    {
+      "id": "DMK-205",
+      "wbsPath": "13.06.18",
+      "title": "Canonical WBS → Runtime WorkItem Synchronization",
+      "currentStatus": "VERIFICATION_PENDING",
+      "candidateStatus": "VERIFICATION_PENDING",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "server/workTracking/canonicalWbs.ts",
+        "server/workTracking/wbsMapping.ts",
+        "server/workTracking/selfWorkItemReconciliation.ts",
+        "scripts/testSelfWorkItemReconciliation.ts",
+        "PR #20 merge commit df9757aaf2580662413ea14194548506a2ea8fa5",
+        "Post-merge CI Run 37136683343"
+      ],
+      "rationale": "Implementation complete and merged to master; automated regression passes cleanly (89/89 tests). Retains VERIFICATION_PENDING because live reconciliation is awaiting resolution of reconciliation-blocked historical governance items.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Authorize live reconciliation ceremony once prerequisite governance items are unblocked."
+    },
+    {
+      "id": "DMK-206",
+      "wbsPath": "13.06.19",
+      "title": "Verification Evidence Submission & Independent Human Sign-Off Workflow",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/06_planning/POST_DMK205_GOVERNANCE_PROGRAM_PLAN.md"
+      ],
+      "rationale": "Accepted planned work that has not started. Architecture and design approved in PLAN-GOV-2026-001; implementation not yet authorized.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Authorize branch creation and implementation following DMK-208 completion."
+    },
+    {
+      "id": "DMK-207",
+      "wbsPath": "13.06.20",
+      "title": "Deterministic Project Health & Progress Projection",
+      "currentStatus": "BACKLOG",
+      "candidateStatus": "BACKLOG",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "docs/06_planning/POST_DMK205_GOVERNANCE_PROGRAM_PLAN.md"
+      ],
+      "rationale": "Accepted planned work that has not started. Architecture and design approved in PLAN-GOV-2026-001; implementation not yet authorized.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Authorize implementation following DMK-206 completion."
+    },
+    {
+      "id": "DMK-208",
+      "wbsPath": "13.06.21",
+      "title": "Canonical WorkItem Lifecycle & Status Audit",
+      "currentStatus": "IN_PROGRESS",
+      "candidateStatus": "IN_PROGRESS",
+      "action": "KEEP",
+      "evidenceRefs": [
+        "server/workTracking/canonicalLifecycle.ts",
+        "server/workTracking/canonicalWbs.ts",
+        "server/workTracking/wbsMapping.ts",
+        "scripts/testCanonicalLifecycle.ts",
+        "docs/00_control/MASTER_WBS.yaml"
+      ],
+      "rationale": "Implementation actively underway on branch dmk-208-lifecycle-status-audit with explicit human authorization under PLAN-GOV-2026-001. Lifecycle contract and mapping complete; status audit candidate prepared for human review.",
+      "confidence": "HIGH",
+      "humanDecisionRequired": "Review and approve candidate transition proposal."
+    }
+  ]
+}
