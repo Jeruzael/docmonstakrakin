@@ -7,8 +7,12 @@ import {INITIAL_PROJECTS, INITIAL_WORK_ITEMS} from '../src/data/initialData.ts';
 import {createPortablePackage} from '../server/package/portablePackage.ts';
 import {startPackageFixture} from './fixtures/projectsWorkspaceUiServer.ts';
 import {getCanonicalWbsHierarchy} from '../server/workTracking/canonicalWbs.ts';
-import {generateReconciliationPlan} from '../server/workTracking/selfWorkItemReconciliation.ts';
+import {
+  generateReconciliationPlan,
+  projectSelfWorkItemReconciliation,
+} from '../server/workTracking/selfWorkItemReconciliation.ts';
 import {readProjectSnapshot} from '../server/projectPersistence.ts';
+import {ProjectStore} from '../server/projectStore.ts';
 
 // Real App, real React children and CSS. Only the API boundary is controlled.
 // Vite serves source only; this harness never connects to the operator's server.
@@ -92,11 +96,30 @@ async function setup(empty=false) {
     }
     if(suffix==='/work-items/reconciliation') {
       if(id==='PRJ-DOCMONSTAKRAKIN') {
-        const plan=generateReconciliationPlan({
-          workspaceRoot:root,
-          projectId:'PRJ-DOCMONSTAKRAKIN',
-          actor:'Work Management Viewer',
-        });
+        let plan;
+        if (localSnap?.state?.workItems?.['PRJ-DOCMONSTAKRAKIN']?.length) {
+          plan = generateReconciliationPlan({
+            workspaceRoot: root,
+            projectId: 'PRJ-DOCMONSTAKRAKIN',
+            actor: 'Work Management Viewer',
+          });
+        } else {
+          const synthSnap = structuredClone(localSnap || { schemaVersion: 1, state: new ProjectStore() });
+          if (!synthSnap.state) synthSnap.state = new ProjectStore();
+          synthSnap.state.projects = synthSnap.state.projects || [projects[3]];
+          if (!synthSnap.state.projects.some((p: any) => p.id === 'PRJ-DOCMONSTAKRAKIN')) {
+            synthSnap.state.projects.push(projects[3]);
+          }
+          synthSnap.state.workItems = synthSnap.state.workItems || {};
+          synthSnap.state.workItems['PRJ-DOCMONSTAKRAKIN'] = selfWorkItems;
+          const { plan: projectedPlan } = projectSelfWorkItemReconciliation({
+            workspaceRoot: root,
+            snapshotBytes: Buffer.from(JSON.stringify(synthSnap)),
+            actor: 'Work Management Viewer',
+            timestamp: new Date().toISOString(),
+          });
+          plan = projectedPlan;
+        }
         return send({
           supported:true,
           summary:plan.summary,
