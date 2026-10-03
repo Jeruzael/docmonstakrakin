@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
+import { CANONICAL_LIFECYCLE_STATUSES } from '../server/workTracking/canonicalLifecycle.ts';
 
 interface WbsItem {
   id: string;
@@ -66,7 +67,7 @@ function computePhaseStatus(phaseId: string, items: WbsItem[]): string {
   }
   if (phaseId === 'PHASE-12') {
     if(statuses.includes('IN_PROGRESS'))return '`IN_PROGRESS` (Scoped implementation; Gate 7 pending)';
-    if(statuses.includes('VERIFICATION_PENDING'))return '`VERIFICATION_PENDING` (Human review pending; Gate 7 pending)';
+    if(statuses.includes('VERIFICATION_PENDING'))return '`VERIFICATION_PENDING` (Technical verification / evidence review pending; Gate 7 pending)';
     return statuses.includes('READY') ? '`VERIFIED` (Automated remediation); human retest `READY`; Gate 7 pending' : '`VERIFIED` (Technical Complete; Gate 7 Sign-off Pending — Release Candidate)';
   }
   if (statuses.includes('READY')) {
@@ -99,7 +100,7 @@ export function generateWbsMarkdown(doc: WbsDocument): string {
   }
   if(doc.manual_qa_status)lines.push(`**Manual QA Status:** \`${doc.manual_qa_status}\`  `);
   if(doc.remediation_status)lines.push(`**Remediation Status:** \`${doc.remediation_status}\`  `);
-  lines.push('**Status Standard:** `PROPOSED` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED` | `DEFERRED` | `CANCELLED`  ');
+  lines.push(`**Status Standard:** ${CANONICAL_LIFECYCLE_STATUSES.map((s) => `\`${s}\``).join(' | ')}  `);
   lines.push('');
   lines.push('---');
   lines.push('');

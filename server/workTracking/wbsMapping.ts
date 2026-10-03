@@ -1,9 +1,11 @@
 import type { WorkItemStatus, WorkItemType, RiskLevel } from '../../src/types.ts';
+import type { CanonicalLifecycleStatus } from './canonicalLifecycle.ts';
 
-export const CANONICAL_STATUS_MAP: Record<string, WorkItemStatus> = {
+export const CANONICAL_STATUS_MAP: Record<CanonicalLifecycleStatus, WorkItemStatus> = {
   PROPOSED: 'PROPOSED',
   BACKLOG: 'BACKLOG',
   READY: 'READY',
+  IN_PROGRESS: 'IN_PROGRESS',
   IMPLEMENTED: 'VERIFICATION',
   VERIFICATION_PENDING: 'VERIFICATION',
   VERIFIED: 'VERIFIED',
