@@ -77,6 +77,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
   const [viewMode, setViewMode] = useState<'BOARD' | 'WBS' | 'BACKLOG' | 'SPRINT' | 'CHECKLIST'>('BOARD');
   const [activeItemId, setActiveItemId] = useState<string | null>(selectedItemId || null);
   const activeItem = workItems.find((w) => w.id === activeItemId) || null;
+  const [activeCanonicalItemId, setActiveCanonicalItemId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const pending = useRef(false);
@@ -90,12 +91,27 @@ export const WorkView: React.FC<WorkViewProps> = ({
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [loadingRecon, setLoadingRecon] = useState(false);
 
+  const activeCanonicalItem = useMemo(() => {
+    return wbsItems.find((item) => item.id === activeCanonicalItemId) || null;
+  }, [wbsItems, activeCanonicalItemId]);
+
   const setActiveItem = (item: WorkItem | null) => {
     setActiveItemId(item?.id || null);
+    if (item) setActiveCanonicalItemId(null);
     setUpdateError(null);
   };
+
+  const setActiveCanonicalItem = (item: CanonicalWbsItemSummary | null) => {
+    setActiveCanonicalItemId(item?.id || null);
+    if (item) setActiveItemId(null);
+    setUpdateError(null);
+  };
+
   useEffect(() => {
-    if (selectedItemId) setActiveItemId(selectedItemId);
+    if (selectedItemId) {
+      setActiveItemId(selectedItemId);
+      setActiveCanonicalItemId(null);
+    }
   }, [selectedItemId]);
 
   const [activeSprint, setActiveSprint] = useState<number>(0);
@@ -146,12 +162,25 @@ export const WorkView: React.FC<WorkViewProps> = ({
       setReconSummary(null);
       setReconRows([]);
       setIsReviewOpen(false);
+      setActiveCanonicalItemId(null);
     }
   }, [projectId]);
 
   const reconciliationById = useMemo(() => {
     return new Map<string, WorkItemSyncRow>(reconRows.map((r) => [r.id, r]));
   }, [reconRows]);
+
+  const activeItemCanonicalStatusOwned = useMemo(() => {
+    if (!activeItem) return false;
+    if (activeItem.canonicalManaged) return true;
+    if (projectId === 'PRJ-DOCMONSTAKRAKIN') {
+      const reconRow = reconciliationById.get(activeItem.id);
+      if (reconRow && reconRow.category !== 'RUNTIME_ONLY') {
+        return true;
+      }
+    }
+    return false;
+  }, [activeItem, projectId, reconciliationById]);
 
   const columns: { id: WorkItemStatus; label: string }[] = [
     { id: 'PROPOSED', label: 'Proposed' },
@@ -419,51 +448,61 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   <div className="divide-y divide-slate-100">
                     {grp.items.map((item) => {
                       const rItem = workItems.find((w) => w.id === item.id);
+                      const inRuntimeSyncScope = item.epic === 'EPIC-13' || item.parentId === 'EPIC-13';
                       const reconRow = reconciliationById.get(item.id);
-                      const category = reconRow ? reconRow.category : (!rItem ? 'MISSING_RUNTIME' : 'SYNCED');
 
                       let syncBadge = 'SYNCED';
                       let syncBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
 
-                      switch (category) {
-                        case 'MISSING_RUNTIME':
-                          syncBadge = 'MISSING_RUNTIME';
-                          syncBadgeClass = 'bg-amber-50 text-amber-700 border border-amber-200';
-                          break;
-                        case 'STATUS_DRIFT':
-                          syncBadge = 'STATUS_DRIFT';
-                          syncBadgeClass = 'bg-orange-50 text-orange-700 border border-orange-200';
-                          break;
-                        case 'METADATA_DRIFT':
-                          syncBadge = 'METADATA_DRIFT';
-                          syncBadgeClass = 'bg-blue-50 text-blue-700 border border-blue-200';
-                          break;
-                        case 'STATUS_AND_METADATA_DRIFT':
-                          syncBadge = 'STATUS & METADATA DRIFT';
-                          syncBadgeClass = 'bg-purple-50 text-purple-700 border border-purple-200';
-                          break;
-                        case 'BLOCKED':
-                          syncBadge = 'BLOCKED';
-                          syncBadgeClass = 'bg-red-50 text-red-700 border border-red-200';
-                          break;
-                        case 'RUNTIME_ONLY':
-                          syncBadge = 'RUNTIME_ONLY';
-                          syncBadgeClass = 'bg-slate-100 text-slate-700 border border-slate-300';
-                          break;
-                        case 'SYNCED':
-                        default:
-                          syncBadge = 'SYNCED';
-                          syncBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                          break;
+                      if (!inRuntimeSyncScope) {
+                        syncBadge = 'CANONICAL ONLY';
+                        syncBadgeClass = 'bg-slate-100 text-slate-600 border border-slate-300';
+                      } else {
+                        const category = reconRow ? reconRow.category : (!rItem ? 'MISSING_RUNTIME' : 'SYNCED');
+                        switch (category) {
+                          case 'MISSING_RUNTIME':
+                            syncBadge = 'MISSING_RUNTIME';
+                            syncBadgeClass = 'bg-amber-50 text-amber-700 border border-amber-200';
+                            break;
+                          case 'STATUS_DRIFT':
+                            syncBadge = 'STATUS_DRIFT';
+                            syncBadgeClass = 'bg-orange-50 text-orange-700 border border-orange-200';
+                            break;
+                          case 'METADATA_DRIFT':
+                            syncBadge = 'METADATA_DRIFT';
+                            syncBadgeClass = 'bg-blue-50 text-blue-700 border border-blue-200';
+                            break;
+                          case 'STATUS_AND_METADATA_DRIFT':
+                            syncBadge = 'STATUS & METADATA DRIFT';
+                            syncBadgeClass = 'bg-purple-50 text-purple-700 border border-purple-200';
+                            break;
+                          case 'BLOCKED':
+                            syncBadge = 'BLOCKED';
+                            syncBadgeClass = 'bg-red-50 text-red-700 border border-red-200';
+                            break;
+                          case 'RUNTIME_ONLY':
+                            syncBadge = 'RUNTIME_ONLY';
+                            syncBadgeClass = 'bg-slate-100 text-slate-700 border border-slate-300';
+                            break;
+                          case 'SYNCED':
+                          default:
+                            syncBadge = 'SYNCED';
+                            syncBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                            break;
+                        }
                       }
 
                       return (
                         <div
                           key={item.id}
-                          onClick={() => rItem && setActiveItem(rItem)}
-                          className={`p-3.5 pl-6 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-slate-50/80 transition-colors ${
-                            rItem ? 'cursor-pointer' : 'cursor-default opacity-85'
-                          }`}
+                          onClick={() => {
+                            if (rItem) {
+                              setActiveItem(rItem);
+                            } else {
+                              setActiveCanonicalItem(item);
+                            }
+                          }}
+                          className="p-3.5 pl-6 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-slate-50/80 transition-colors cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-[10px] text-slate-400 w-16">{item.wbsPath}</span>
@@ -776,7 +815,16 @@ export const WorkView: React.FC<WorkViewProps> = ({
               </div>
 
               <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-[11px] leading-relaxed">
-                <strong>Administrative Governance Note:</strong> Applying reconciliation changes to live runtime state requires explicit plan authorization and administrative execution via CLI (<code>npm run reconcile:self-work -- --apply</code>). No direct writes occur from this preview.
+                <strong>Administrative Governance Note:</strong>{' '}
+                {reconSummary && reconSummary.blocked > 0 ? (
+                  <>
+                    Live reconciliation is currently BLOCKED. {reconSummary.blocked === 9 ? 'Nine' : reconSummary.blocked} canonical VERIFIED items lack sufficient completed human governance provenance. No reconciliation plan may be applied while blocked items remain. No direct writes occur from this preview.
+                  </>
+                ) : (
+                  <>
+                    Applying reconciliation changes to live runtime state requires explicit plan authorization and administrative execution via CLI (<code>npm run reconcile:self-work -- --apply</code>). No direct writes occur from this preview.
+                  </>
+                )}
               </div>
             </div>
 
@@ -804,9 +852,9 @@ export const WorkView: React.FC<WorkViewProps> = ({
                 <span className="text-xs font-bold text-red-700 bg-red-100/70 px-2 py-0.5 rounded">
                   ● {activeItem.risk} Risk
                 </span>
-                {activeItem.canonicalManaged && (
+                {activeItemCanonicalStatusOwned && (
                   <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
-                    Canonical Managed
+                    {activeItem.canonicalManaged ? 'Canonical Managed' : 'Canonical Status Owned'}
                   </span>
                 )}
               </div>
@@ -826,11 +874,11 @@ export const WorkView: React.FC<WorkViewProps> = ({
             <div>
               <label className="text-slate-500 font-semibold block mb-1">Update Execution Status:</label>
               <select
-                disabled={updating || activeItem.canonicalManaged}
+                disabled={updating || activeItemCanonicalStatusOwned}
                 value={activeItem.status}
                 onChange={(e) => handleStatusChange(activeItem.id, e.target.value as WorkItemStatus)}
                 className={`w-full p-2.5 rounded-lg border font-semibold ${
-                  activeItem.canonicalManaged
+                  activeItemCanonicalStatusOwned
                     ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
                     : 'border-slate-200 bg-white text-slate-900'
                 }`}
@@ -841,9 +889,11 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   </option>
                 ))}
               </select>
-              {activeItem.canonicalManaged && (
+              {activeItemCanonicalStatusOwned && (
                 <p className="text-[11px] text-amber-700 mt-1.5 leading-relaxed">
-                  Status is owned by the canonical repository WBS. Update canonical WBS through the governed repository workflow, then reconcile runtime.
+                  {activeItem.canonicalManaged
+                    ? 'Status is owned by the canonical repository WBS. Update canonical WBS through the governed repository workflow, then reconcile runtime.'
+                    : 'Status is owned by the canonical repository WBS. Runtime currently differs from canonical state and must be reconciled through the governed synchronization process.'}
                 </p>
               )}
             </div>
@@ -909,6 +959,141 @@ export const WorkView: React.FC<WorkViewProps> = ({
                   <span className="font-mono font-medium text-blue-700">{activeItem.canonicalWbsPath}</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Canonical Item Detail Drawer (Read-Only) */}
+      {activeCanonicalItem && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col animate-in slide-in-from-right duration-200">
+          <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded">
+                  {activeCanonicalItem.id}
+                </span>
+                <span className="text-xs font-bold text-red-700 bg-red-100/70 px-2 py-0.5 rounded">
+                  ● {activeCanonicalItem.risk} Risk
+                </span>
+                <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                  Canonical Record
+                </span>
+              </div>
+              <h2 className="text-base font-bold text-slate-900 mt-1">{activeCanonicalItem.title}</h2>
+            </div>
+            <button
+              onClick={() => setActiveCanonicalItem(null)}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+            {/* Status & Sync Scope Grid */}
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-slate-400 block font-semibold">Canonical Status</span>
+                  <span className="font-mono font-bold text-slate-800 text-[11px]">{activeCanonicalItem.status}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold">Runtime Status</span>
+                  <span className="font-mono font-bold text-amber-700 text-[11px]">MISSING</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold">Sync State</span>
+                  <span className="font-mono font-bold text-blue-700 text-[11px]">
+                    {activeCanonicalItem.epic === 'EPIC-13' || activeCanonicalItem.parentId === 'EPIC-13'
+                      ? 'MISSING_RUNTIME'
+                      : 'CANONICAL ONLY'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold">WBS Path</span>
+                  <span className="font-mono font-bold text-slate-700 text-[11px]">{activeCanonicalItem.wbsPath}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold">Epic / Phase</span>
+                  <span className="font-mono text-slate-700 text-[11px]">
+                    {activeCanonicalItem.epic || 'N/A'} / {activeCanonicalItem.phase || 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold">Type / Priority</span>
+                  <span className="font-mono text-slate-700 text-[11px]">
+                    {activeCanonicalItem.type} / {activeCanonicalItem.priority}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Read-only Governance Banner */}
+            <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-[11px] leading-relaxed">
+              <p className="font-semibold mb-0.5">Canonical repository record. Runtime WorkItem has not yet been projected.</p>
+              {activeCanonicalItem.epic === 'EPIC-13' || activeCanonicalItem.parentId === 'EPIC-13' ? (
+                <p className="text-blue-700">Runtime synchronization is currently governed by reconciliation status.</p>
+              ) : (
+                <p className="text-blue-700">This canonical WBS item is outside the current EPIC-13 operational runtime synchronization scope.</p>
+              )}
+            </div>
+
+            {/* Proposed Result if available in reconciliationById */}
+            {reconciliationById.get(activeCanonicalItem.id)?.proposedResult && (
+              <div>
+                <label className="text-slate-500 font-semibold block mb-1">Proposed Result:</label>
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs font-semibold text-slate-800">
+                  {reconciliationById.get(activeCanonicalItem.id)!.proposedResult}
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            <div>
+              <label className="text-slate-500 font-semibold block mb-1">Description:</label>
+              <p className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-800 leading-relaxed">
+                {activeCanonicalItem.description}
+              </p>
+            </div>
+
+            {/* Acceptance Criteria */}
+            <div>
+              <label className="text-slate-500 font-semibold block mb-1.5">Acceptance Criteria:</label>
+              <div className="space-y-1.5">
+                {activeCanonicalItem.acceptanceCriteria && activeCanonicalItem.acceptanceCriteria.length > 0 ? (
+                  activeCanonicalItem.acceptanceCriteria.map((ac, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-slate-700 p-2 bg-slate-50 rounded border border-slate-100">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                      <span>{ac}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400 italic">None specified</p>
+                )}
+              </div>
+            </div>
+
+            {/* Traceability Metadata */}
+            <div className="pt-2 border-t border-slate-100 space-y-2 text-[11px]">
+              <div>
+                <span className="text-slate-400">Linked Requirements:</span>{' '}
+                <span className="font-mono font-medium text-emerald-700">
+                  {activeCanonicalItem.requirements?.join(', ') || 'None'}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Dependencies:</span>{' '}
+                <span className="font-mono font-medium text-slate-700">
+                  {activeCanonicalItem.dependencies?.join(', ') || 'None'}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Verification Evidence:</span>{' '}
+                <span className="font-mono font-medium text-purple-700">
+                  {activeCanonicalItem.evidence?.join(', ') || 'None attached'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
