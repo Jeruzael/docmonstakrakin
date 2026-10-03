@@ -12,7 +12,7 @@
 **Gate 7 Status:** `HUMAN_APPROVAL_REQUIRED`  
 **Manual QA Status:** `NOT_READY_FOR_SIGNOFF`  
 **Remediation Status:** `READY_FOR_RETEST`  
-**Status Standard:** `PROPOSED` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED` | `DEFERRED` | `CANCELLED`  
+**Status Standard:** `PROPOSED` | `BACKLOG` | `READY` | `IN_PROGRESS` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED`  
 
 ---
 
@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `IN_PROGRESS` (Scoped implementation; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -347,7 +347,7 @@ Current GitHub configuration does not permit required branch protection for this
 #### `DMK-208` — Canonical WorkItem Lifecycle & Status Audit
 - **WBS Path:** `13.06.21`
 - **Type:** `GOVERNANCE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-205`
 - **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical IN_PROGRESS support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems.
