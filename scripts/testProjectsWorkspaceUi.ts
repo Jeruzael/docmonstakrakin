@@ -35,9 +35,13 @@ async function setup(empty=false) {
   // Simulate a transport that ignores aborts so late results really reach the loader.
   const workItems = structuredClone(INITIAL_WORK_ITEMS.slice(0,1));
   const localSnap = readProjectSnapshot(root);
-  const selfWorkItems = localSnap?.state?.workItems?.['PRJ-DOCMONSTAKRAKIN']
-    ? structuredClone(localSnap.state.workItems['PRJ-DOCMONSTAKRAKIN'])
+  const manifestPath = path.join(root, 'bootstrap/docmonstakrakin.self-bootstrap.json');
+  const manifestWorkItems = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')).workItems ?? []
     : [];
+  const selfWorkItems = (localSnap?.state?.workItems?.['PRJ-DOCMONSTAKRAKIN']?.length)
+    ? structuredClone(localSnap.state.workItems['PRJ-DOCMONSTAKRAKIN'])
+    : structuredClone(manifestWorkItems);
   await page.addInitScript(()=>{const original=window.fetch;window.fetch=(url,options)=>original(url,options?{...options,signal:undefined}:options);});
   await page.route('**/api/**',async(route:Route)=>{
     const url=new URL(route.request().url()).pathname;const method=route.request().method();
