@@ -337,9 +337,11 @@ items:
   - id: DMK-DUP
     wbs_path: "13.01"
     title: First
+    status: "BACKLOG"
   - id: DMK-DUP
     wbs_path: "13.02"
     title: Second
+    status: "BACKLOG"
 `,
   });
   try {
@@ -357,9 +359,11 @@ items:
   - id: DMK-1
     wbs_path: "13.01"
     title: First
+    status: "BACKLOG"
   - id: DMK-2
     wbs_path: "13.01"
     title: Second
+    status: "BACKLOG"
 `,
   });
   try {
@@ -434,10 +438,15 @@ test('Status mapping: VERIFIED maps to VERIFIED', () => {
   assert.equal(mapCanonicalStatus('verified'), 'VERIFIED');
 });
 
+test('Status mapping: IN_PROGRESS maps to IN_PROGRESS', () => {
+  assert.equal(mapCanonicalStatus('IN_PROGRESS'), 'IN_PROGRESS');
+  assert.equal(mapCanonicalStatus('in_progress'), 'IN_PROGRESS');
+});
+
 test('Status mapping: Unrecognized status throws UNSUPPORTED_WBS_STATUS', () => {
   assert.throws(() => mapCanonicalStatus('UNKNOWN_STATUS'), /UNSUPPORTED_WBS_STATUS/);
   assert.throws(() => mapCanonicalStatus(''), /UNSUPPORTED_WBS_STATUS/);
-  assert.throws(() => mapCanonicalStatus('IN_PROGRESS'), /UNSUPPORTED_WBS_STATUS/);
+  assert.throws(() => mapCanonicalStatus('BLOCKED'), /UNSUPPORTED_WBS_STATUS/);
 });
 
 test('Type mapping: FEATURE maps to FEATURE', () => {
