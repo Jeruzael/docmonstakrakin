@@ -1,5 +1,96 @@
 # docmonstakrakin current project state
 
+## 2026-10-03 — DMK-205 Visual-QA Correction & Pre-Sync Status Protection Complete
+
+DMK-205 Canonical WBS → Runtime WorkItem Synchronization visual-QA corrections,
+pre-sync canonical status protection, full-WBS scope semantics, and canonical
+read-only drawer are complete and remain VERIFICATION_PENDING pending PR merge
+and future live reconciliation eligibility.
+
+### Current governance and task status
+
+- DMK-195: VERIFIED / MERGED
+- DMK-203: VERIFIED / MERGED
+- DMK-204: BACKLOG
+- DMK-205: VERIFICATION_PENDING
+- DMK-196: BACKLOG
+- DMK-197: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG
+- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Release: v0.1.0-rc1 / NOT PROMOTED
+
+### DMK-205 visual-QA and governance state
+
+Verified implementation includes:
+
+- pre-sync canonical status ownership: status mutation for PRJ-DOCMONSTAKRAKIN canonical EPIC-13 scope is rejected with HTTP 409 CANONICAL_WBS_STATUS_OWNED prior to live sync
+- fail-closed status protection: returns HTTP 503 CANONICAL_WBS_UNAVAILABLE if canonical WBS cannot be read
+- runtime checklist mutability: item checklists remain interactive and mutable (HTTP 200 OK)
+- non-self project isolation: PRJ-ATLAS-01 status mutations remain fully permitted (HTTP 200 OK)
+- disabled WorkView status selector: UI derives activeItemCanonicalStatusOwned, disables select, and renders "Canonical Status Owned" badge and explanatory banner
+- neutral out-of-scope badges: items outside EPIC-13 runtime sync scope render CANONICAL ONLY rather than MISSING_RUNTIME
+- canonical-only detail drawer: clicking canonical rows opens a dedicated read-only drawer with complete metadata grid and zero mutation controls
+- dynamic reconciliation review modal: explicitly warns when live reconciliation is BLOCKED by historical governance items and omits CLI apply instructions
+- retained DMK_SELF_WBS_SYNC_V2 protections: recursive canonical plan hashing, deterministic operation/plan/audit identities, exact candidate snapshot binding, explicit reviewed actor identity, strict VERIFIED human provenance validation, runtime snapshot stale-state protection, stale no-change plan protection, pre-rename WBS anti-TOCTOU, idempotent ALREADY_APPLIED, and ALREADY_SYNCHRONIZED zero-write handling
+
+### Historical governance blockers
+
+Live reconciliation remains BLOCKED.
+
+The following nine historical canonical VERIFIED items lack sufficient
+completed human governance provenance:
+
+DMK-187
+DMK-188
+DMK-189
+DMK-190
+DMK-156
+DMK-157
+DMK-158
+DMK-159
+DMK-165
+
+No missing approval has been fabricated or inferred.
+
+DMK-192 and DMK-193 retain sufficient historical bootstrap provenance.
+
+### Live reconciliation
+
+BLOCKED
+NOT AUTHORIZED
+NOT EXECUTED
+
+Do not enable DMK_WBS_SYNC_EXECUTE.
+
+A read-only reconciliation plan may be generated for inspection but cannot
+be applied while blocked > 0.
+
+### Verification
+
+- npm run wbs:check: PASS (zero drift)
+- npm run lint: PASS (zero TypeScript errors)
+- npm run build: PASS (clean production build)
+- npm run test:self-work-sync: PASS (88/88 scenarios)
+- npm run test:work-item-updates: PASS (Scenarios A through E, 9 assertions)
+- npm run test:reconciliation: PASS (17 canonical reconciliation tests + 9 work item update assertions)
+- npm run test:controlled-docs: PASS (Core Matrix 40/40, Additional Security 29/29, Focused Suites 11/11, 329 assertions)
+- npm run test:projects-workspace:ui: PASS (14/14, 16 visual/DOM assertions in V1)
+- npm run test:complete: PASS (42/42 suites, 924/924 assertions)
+
+### Next safe action
+
+1. Commit and push visual-QA corrections to PR #20.
+2. Verify PR #20 CI run passes on GitHub Actions.
+3. Generate fresh read-only V2 dry-run plan.
+4. Capture visual-QA screenshots A through I.
+5. Present final comprehensive closeout report for human review.
+6. Human merge PR #20 if all checks remain green.
+7. Address the nine historical governance items separately.
+8. Do not attempt live reconciliation until blocked = 0.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
 ## 2026-10-02 — DMK-203 GitHub Actions CI Baseline Verified
 
 DMK-203 GitHub Actions CI Baseline has completed implementation and verification.

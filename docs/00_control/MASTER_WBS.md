@@ -246,6 +246,37 @@ Current GitHub configuration does not permit required branch protection for this
   - "Gate 7 remains independent from repository CI enforcement"
 - **Verification Method:** GitHub ruleset / branch protection inspection; intentionally failing disposable PR test; intentionally pending-check test; and successful-check merge eligibility test upon resolving platform constraint.
 
+#### `DMK-205` — Canonical WBS → Runtime WorkItem Synchronization
+- **WBS Path:** `13.06.18`
+- **Type:** `INFRASTRUCTURE` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `VERIFICATION_PENDING`
+- **Dependencies:** `DMK-203`
+- **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
+- **Description:** Establish a governed one-way synchronization and reconciliation mechanism from the canonical repository WBS into PRJ-DOCMONSTAKRAKIN operational runtime WorkItems, expose canonical WBS data dynamically in Work Management, detect WBS/runtime drift, and eliminate hard-coded self-project WBS views without allowing runtime state to overwrite repository WBS authority.
+- **Acceptance Criteria:**
+  - "MASTER_WBS.yaml remains repository authority"
+  - "Runtime WorkItems remain an operational projection"
+  - "PRJ-DOCMONSTAKRAKIN WBS/runtime drift can be detected read-only"
+  - "Missing canonical WorkItems are detected"
+  - "Status drift is detected"
+  - "Canonical metadata drift is detected"
+  - "Runtime-only WorkItems are reported but NEVER silently deleted"
+  - "Synchronization requires an exact reviewed plan"
+  - "Synchronization requires explicit human authorization"
+  - "Synchronization is atomic and idempotent"
+  - "Synchronization creates exactly one audit event and exactly one project stateVersion increment per non-empty batch"
+  - "Stale runtime state rejects apply"
+  - "Changed WBS input rejects apply"
+  - "Unknown WBS statuses/types fail closed"
+  - "Runtime-only execution fields are preserved"
+  - "Work Management WBS tab is dynamically driven from canonical WBS data"
+  - "Hard-coded WBS task arrays are removed"
+  - "After approved synchronization, new canonical tasks such as DMK-203, DMK-204 and DMK-205 appear in Work Management"
+  - "Canonical-managed self-project status changes cannot silently drift away from WBS authority"
+  - "Other projects retain existing runtime-only behavior"
+  - "Gate 7 and release state remain untouched"
+- **Verification Method:** Comprehensive unit, reconciliation, drift-detection, and UI regression test suites; dry-run plan generation and validation.
+
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
