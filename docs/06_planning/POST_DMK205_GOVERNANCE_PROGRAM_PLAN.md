@@ -78,6 +78,7 @@ The following activities are strictly out of scope for this program and this pla
 - **Type**: `GOVERNANCE` | **Priority**: `P0` | **Risk**: `HIGH`
 - **Initial Status**: `BACKLOG`
 - **Dependencies**: `DMK-205`
+- **Dependency Boundary**: DMK-208 depends on the merged DMK-205 canonical WBS/runtime architecture being available. It does not depend on execution of DMK-205 live reconciliation. DMK-205 live synchronization may remain BLOCKED / NOT EXECUTED while DMK-208 performs the canonical lifecycle and status audit.
 - **Description**: Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical `IN_PROGRESS` support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems.
 - **Key Deliverables**: Formal lifecycle schema, canonical-to-runtime `IN_PROGRESS` mapping, `DMK_208_CANONICAL_STATUS_AUDIT.md` candidate audit table, and governed human transition review ceremony.
 
@@ -121,6 +122,9 @@ flowchart TD
     DMK202["DMK-202: Gate Evaluator Remediation (Independent)"] -.->|Provides Release Readiness| DMK207
 ```
 
+> [!NOTE]
+> **DMK-208 → DMK-205 Dependency Invariant**: DMK-208 depends on the merged DMK-205 canonical WBS/runtime architecture being available. It does not depend on execution of DMK-205 live reconciliation. DMK-205 live synchronization may remain BLOCKED / NOT EXECUTED while DMK-208 performs the canonical lifecycle and status audit.
+
 ---
 
 ## 7. Execution Order
@@ -153,31 +157,51 @@ The program executes in four disciplined, sequential phases:
 
 ## 8. Canonical Lifecycle Vocabulary
 
-The canonical WorkItem lifecycle is formally defined with strict, mutually exclusive semantics:
+Formal DMK-208 v1 lifecycle contains exactly these seven primary statuses with strict, mutually exclusive semantics:
 
 | Status | Definition | Meaning & Boundaries |
 | :--- | :--- | :--- |
-| `PROPOSED` | Candidate work | Identified or suggested work that has not yet been accepted into planning. |
-| `BACKLOG` | Accepted / planned work | Accepted work prioritized for delivery, but implementation has not commenced. |
-| `READY` | Unblocked & ready to begin | Dependencies and prerequisites are satisfied; work is cleared for active pickup. |
-| `IN_PROGRESS` | Active implementation underway | Code/documentation changes are actively in progress; acceptance criteria not yet complete. |
-| `IMPLEMENTED` | Implementation complete | All code changes and features are complete; technical verification tests are pending or underway. |
-| `VERIFICATION_PENDING` | Active verification / review | Implementation is complete; formal verification suites, evidence bundling, or PR review is awaiting closure. |
-| `VERIFIED` | Technical verification complete | Automated test suites and technical verification prove all acceptance criteria pass. **Does NOT imply human sign-off.** |
-| `BLOCKED` | Work inhibited by external dependency | Work cannot proceed due to an unresolved blocker, defect, or missing prerequisite. |
-| `DEFERRED` | Postponed work | Work deliberately postponed to a later milestone or release scope. |
-| `CANCELLED` | Abandoned work | Work formally rescinded and permanently excluded from execution. |
+| `PROPOSED` | Candidate work | Candidate work identified but not yet accepted into planned execution. |
+| `BACKLOG` | Accepted / planned work | Accepted/planned work that has not started. |
+| `READY` | Unblocked & ready to begin | Accepted work whose required prerequisites are satisfied and which may begin. |
+| `IN_PROGRESS` | Active implementation underway | Actual implementation has begun and acceptance criteria are not yet fully satisfied. |
+| `IMPLEMENTED` | Implementation complete | Implementation deliverables are complete; technical verification remains pending or underway. |
+| `VERIFICATION_PENDING` | Active verification / review | Implementation is complete and formal technical verification / evidence review is awaiting closure. |
+| `VERIFIED` | Technical verification complete | Technical verification is complete and supported by sufficient reproducible technical evidence. **VERIFIED DOES NOT imply human governance approval.** |
+
+### 8.1 Future Lifecycle Extensions & Open Decisions
+The following statuses are deliberately excluded from the formal DMK-208 v1 lifecycle and moved to open governance decisions:
+- `BLOCKED`: Should this be a primary lifecycle state or a separate orthogonal blocker dimension?
+- `DEFERRED`: Should this be a lifecycle state or a release-scope disposition?
+- `CANCELLED`: Does canonical v1 require cancellation semantics, and if so what governance and audit trail is required?
+
+> [!IMPORTANT]
+> `BLOCKED`, `DEFERRED`, and `CANCELLED` must not be implemented or mapped into canonical status parsing in DMK-208 until explicitly approved. Statuses such as `ACCEPTED` or `SUPERSEDED` are not part of the approved DMK-208 v1 lifecycle.
 
 ---
 
 ## 9. Technical Verification Model
 
 Technical verification evaluates whether code satisfies acceptance criteria through verifiable, reproducible evidence:
-- **Not Started / Insufficient Evidence**: `0%`
-- **Verification Actively Underway**: `50%`
-- **Technically Verified with Evidence**: `100%`
+- **Not Verified / Insufficient Evidence**: `0%`
+- **Verification Underway**: `50%`
+- **Verified with Sufficient Technical Evidence**: `100%`
 
-Technical verification is strictly orthogonal to human governance. Automated CI, regression suites, and test assertions cannot grant human governance approval.
+Technical verification is complete and sufficient reproducible technical evidence demonstrates that all applicable acceptance criteria are satisfied.
+
+Technical evidence may include:
+- Automated tests
+- Integration tests
+- Security tests
+- Build / lint results
+- Governed manual test results
+- Screenshots
+- Execution logs
+- Test reports
+- Other reproducible evidence required by the WorkItem, provided provenance is sufficient.
+
+> [!NOTE]
+> **VERIFIED $\neq$ Human Governance Approved**: Technical verification is strictly orthogonal to human governance. Automated CI, regression suites, and test assertions cannot grant human governance approval. Conversely, technical verification reaches 100% purely upon sufficient reproducible technical evidence and does NOT require human sign-off to achieve 100% technical verification.
 
 ---
 
@@ -191,6 +215,9 @@ Human governance represents independent human oversight, authorization, and risk
 - `APPROVED`: All required independent human roles have inspected evidence and signed off (`100%`).
 - `REJECTED`: A reviewer formally rejected the evidence bundle (`0%`).
 - `REMEDIATION_REQUIRED`: A reviewer identified defects requiring remediation before re-inspection (`0%`).
+
+> [!TIP]
+> **User-Facing Terminology**: The preferred user-facing wording is **"Human Governance: Pending Sign-Off"**. Do NOT use "For Human Verification" as the primary label, as "Verification" remains strictly a technical concept.
 
 ---
 
@@ -222,14 +249,20 @@ sequenceDiagram
 
 ## 12. Reviewer Separation-of-Duties Policy
 
-To prevent self-ratification and conflicts of interest:
-1. **Submitter Prohibition**: The tester or implementer who submitted the evidence bundle cannot serve as an approving reviewer ($\text{submitterIdentity} \neq \text{reviewerIdentity}$).
+To prevent self-ratification and conflicts of interest, the following are strict planning invariants:
+1. **Submitter Prohibition**: The tester or implementer who submitted the evidence bundle cannot serve as an approving reviewer ($\text{submitterIdentity} \neq \text{reviewerIdentity}$). No self-ratification.
 2. **Agent Prohibition**: Autonomous agents and AI assistants cannot satisfy human reviewer quorum requirements.
-3. **Distinct Identities**: Where multi-role quorum is required, each role must be satisfied by a unique human identity. One individual holding multiple roles cannot count multiple times toward quorum.
-4. **Deterministic Policy Matrix**:
-   - **LOW / MEDIUM Risk**: $\ge 1$ Independent Authorized Human Reviewer.
-   - **HIGH Risk**: Independent Reviewer + Lead Architect.
-   - **CRITICAL / SECURITY / RELEASE**: Independent Reviewer + Security Officer + Lead Architect.
+3. **Distinct Identities**: Where multi-role quorum is required, each role must be satisfied by a unique human identity. One human identity cannot satisfy multiple quorum slots in the same review when distinct-role quorum is required.
+4. **Exact Evidence Binding**: Evidence approval cryptographically binds the exact immutable evidence bundle and session digest.
+
+### PRELIMINARY POLICY — HUMAN APPROVAL REQUIRED BEFORE IMPLEMENTATION
+Candidate Reviewer Matrix:
+- **LOW / MEDIUM Risk**: At least 1 independent authorized human reviewer.
+- **HIGH Risk**: Independent Reviewer + Lead Architect.
+- **CRITICAL / SECURITY / RELEASE**: Independent Reviewer + Security Officer + Lead Architect.
+
+> [!CAUTION]
+> This reviewer matrix is a preliminary candidate model. Human approval is required before implementation. See Open Decisions (Section 21). Do not implement this matrix yet.
 
 ---
 
@@ -239,30 +272,40 @@ Project Progress measures execution completeness across five orthogonal dimensio
 
 $$\text{Progress} = \{ \text{Implementation}, \text{Technical Verification}, \text{Human Governance}, \text{Security Assurance}, \text{Release Readiness} \}$$
 
-### Preliminary Dimension Contribution Weights:
-1. **Implementation Progress**:
-   - `PROPOSED`: $0\%$
-   - `BACKLOG`: $0\%$
-   - `READY`: $0\%$
-   - `IN_PROGRESS`: $50\%$
-   - `IMPLEMENTED`: $100\%$
-   - `VERIFICATION_PENDING`: $100\%$
-   - `VERIFIED`: $100\%$
-2. **Technical Verification Progress**:
-   - No evidence / Failed: $0\%$
-   - Verification Pending: $50\%$
-   - Verified with evidence: $100\%$
-3. **Human Governance Progress**:
-   - `PENDING_SIGNOFF`: $0\%$
-   - `PARTIAL_QUORUM`: $\frac{\text{collected}}{\text{required}}$
-   - `APPROVED`: $100\%$
-   - `REJECTED` / `REMEDIATION_REQUIRED`: $0\%$
-4. **Security Assurance**:
-   - Ratio of verified required security controls for the release scope.
-   - If security control states are unverified or unmonitored: display `UNAVAILABLE`.
-5. **Release Readiness**:
-   - Evaluated against formal release gates (Gate 1 through Gate 7).
-   - If evaluator has known remediation pending (DMK-202): display `UNAVAILABLE`.
+*(Note: Project Health is not included as a progress dimension; it is an independent assessment.)*
+
+### PRELIMINARY CANDIDATE MODEL — IMPLEMENTATION CONTRIBUTION
+- `PROPOSED`: $0\%$
+- `BACKLOG`: $0\%$
+- `READY`: $0\%$
+- `IN_PROGRESS`: $50\%$
+- `IMPLEMENTED`: $100\%$
+- `VERIFICATION_PENDING`: $100\%$
+- `VERIFIED`: $100\%$
+
+*(Note: Human approval is not part of this implementation percentage. This preliminary candidate formula must not be silently finalized during planning.)*
+
+### Technical Verification Progress:
+- Not Verified / Insufficient Evidence: $0\%$
+- Verification Underway: $50\%$
+- Verified with Sufficient Technical Evidence: $100\%$
+
+*(Note: Do NOT require human approval to make technical verification 100%. Human Governance remains a separate dimension.)*
+
+### Human Governance Progress:
+- `PENDING_SIGNOFF`: $0\%$
+- `PARTIAL_QUORUM`: $\frac{\text{approvalsCollected}}{\text{approvalsRequired}}$
+- `APPROVED`: $100\%$
+- `REJECTED` / `REMEDIATION_REQUIRED`: $0\%$
+
+### Security Assurance:
+- Based on actual required security controls or security-governed items in current release scope.
+- **Fail-Honestly Rule**: If a trustworthy denominator or security control input does not exist, display `UNAVAILABLE`. Do NOT show a fabricated $0\%$.
+
+### Release Readiness:
+- Evaluated against formal release gates (Gate 1 through Gate 7).
+- If evaluator has known remediation pending (DMK-202): display `UNAVAILABLE` (Reason: `DMK-202 pending`).
+- DMK-202 is not a hard dependency of DMK-207; DMK-207 must ship truthful `UNAVAILABLE` handling first.
 
 ---
 
@@ -275,6 +318,9 @@ Project Health is a risk and control assessment, completely separated from perce
 - **`UNKNOWN`**: Core data inputs are missing or unverified; system refuses to guess.
 
 Every health evaluation must expose its **deterministic explanation reasons** and **positive signals**.
+
+> [!NOTE]
+> **Numeric Health Score (0–100) Remains an Open Decision**: Do not finalize a 0–100 health score formula in this planning PR. Categorical health (`HEALTHY`, `AT_RISK`, `BLOCKED`, `UNKNOWN`) plus explanatory reasons is sufficient until a deterministic, explainable, versioned, and input-transparent formula is formally approved.
 
 ---
 
@@ -294,6 +340,7 @@ DMK-202 (Dynamic Release Gate Evaluator Remediation) documents known defects in 
 - The system must display:
   $$\text{Release Readiness: } \textbf{UNAVAILABLE} \quad (\text{Reason: DMK-202 pending})$$
 - Generating an artificial readiness score while the evaluator is unverified is strictly prohibited.
+- DMK-202 remains an independent downstream task and is not a hard prerequisite for DMK-207; DMK-207 must implement truthful `UNAVAILABLE` handling first.
 
 ---
 
@@ -339,9 +386,16 @@ Each phase requires a dedicated regression suite:
 
 ## 21. Open Decisions
 
-1. **Evidence Storage Location**: Determine whether evidence bundles should be persisted under `runtime/evidence/` or within a dedicated controlled docs sub-tree.
-2. **Reviewer Policy Definition**: Decide whether reviewer role matrices should be defined via YAML configuration or deterministic server-side policy rules.
-3. **Health Score Weighting**: Solicit human feedback on whether a single 0–100 health composite is desired alongside categorical health states (`HEALTHY` / `AT_RISK` / `BLOCKED`).
+1. **Reviewer Role Matrix Operational Feasibility**:
+   Confirm whether the preliminary candidate reviewer matrix (Section 12) is acceptable operationally, whether three distinct humans are required for `CRITICAL` / `SECURITY` / `RELEASE` items, and whether the policy belongs in governed configuration (`DMK_HUMAN_REVIEWERS` / YAML) or deterministic server-side logic.
+2. **Numeric Health Score (0–100)**:
+   Should a numeric health score (0–100) be shown in addition to categorical health (`HEALTHY`, `AT_RISK`, `BLOCKED`, `UNKNOWN`)? If implemented later, it must be deterministic, explainable, versioned, and input-transparent. Until then, categorical health + reasons is sufficient.
+3. **Future Lifecycle Extensions**:
+   - `BLOCKED`: Should this be a formal lifecycle state or a separate orthogonal blocker dimension?
+   - `DEFERRED`: Should this be a formal lifecycle state or a release-scope milestone disposition?
+   - `CANCELLED`: Does canonical v1 require formal cancellation semantics, and if so what governance and audit trail is required?
+4. **Evidence Storage Location**:
+   Determine whether evidence bundles should be persisted under `runtime/evidence/` or within a dedicated controlled docs sub-tree.
 
 ---
 
