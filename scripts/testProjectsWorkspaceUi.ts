@@ -317,8 +317,8 @@ try {
       // Navigate to Work Management
       await f.page.getByRole('button',{name:/^Work Management/}).click();
 
-      // 12. Reconciliation counts remain 24 canonical, 13 runtime, 9 blocked, with active drift tracking
-      await f.page.getByText('24 operational items').waitFor();
+      // 12. Reconciliation counts remain canonical, 13 runtime, 9 blocked, with active drift tracking
+      await f.page.getByText('27 operational items').waitFor();
       await f.page.getByText('13 WorkItems').waitFor();
       await f.page.getByText(/\d+ missing/).waitFor();
       await f.page.getByText(/\d+ status drift/).waitFor();
@@ -395,14 +395,14 @@ try {
       // 14. Switching to PRJ-ATLAS-01 removes self-project reconciliation UI
       await select(f.page,'A');
       await f.page.getByRole('button',{name:'Select project',exact:true}).filter({hasText:'Fixture A'}).waitFor();
-      assert.equal(await f.page.getByText('24 operational items').count(), 0, 'Reconciliation banner must disappear for non-self project');
+      assert.equal(await f.page.getByText('27 operational items').count(), 0, 'Reconciliation banner must disappear for non-self project');
       assert.equal(await f.page.getByText('Review Reconciliation').count(), 0, 'Review button must disappear for non-self project');
 
       // 15. Switching back reloads canonical/reconciliation state
       await f.page.getByRole('button',{name:'Select project',exact:true}).click();
       await f.page.getByRole('button',{name:/docmonstakrakin/}).first().click();
       await f.page.getByRole('button',{name:'Select project',exact:true}).filter({hasText:'docmonstakrakin'}).waitFor();
-      await f.page.getByText('24 operational items').waitFor();
+      await f.page.getByText('27 operational items').waitFor();
       await f.page.getByText('Review Reconciliation').waitFor();
 
       // 16. No browser console errors

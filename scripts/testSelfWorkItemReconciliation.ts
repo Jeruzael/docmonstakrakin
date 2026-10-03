@@ -2124,9 +2124,9 @@ test('Scope Helper: isCanonicalRuntimeScoped identifies EPIC-13 items by epic or
   assert.equal(isCanonicalRuntimeScoped({}), false);
 });
 
-test('Scope Helper: getCanonicalRuntimeScopeIds returns exactly the 24 EPIC-13 scoped canonical IDs from MASTER_WBS.yaml', () => {
+test('Scope Helper: getCanonicalRuntimeScopeIds returns all EPIC-13 scoped canonical IDs from MASTER_WBS.yaml', () => {
   const ids = getCanonicalRuntimeScopeIds(process.cwd(), 'EPIC-13');
-  assert.equal(ids.size, 24);
+  assert.equal(ids.size, 27);
   assert.ok(ids.has('DMK-190'));
   assert.ok(ids.has('DMK-187'));
   assert.ok(ids.has('DMK-192'));
@@ -2134,6 +2134,9 @@ test('Scope Helper: getCanonicalRuntimeScopeIds returns exactly the 24 EPIC-13 s
   assert.ok(ids.has('DMK-203'));
   assert.ok(ids.has('DMK-204'));
   assert.ok(ids.has('DMK-205'));
+  assert.ok(ids.has('DMK-206'));
+  assert.ok(ids.has('DMK-207'));
+  assert.ok(ids.has('DMK-208'));
   assert.ok(!ids.has('DMK-001'), 'EPIC-01 item must not be in EPIC-13 scope');
   assert.ok(!ids.has('DMK-173'), 'EPIC-11 item must not be in EPIC-13 scope');
 });

@@ -277,6 +277,100 @@ Current GitHub configuration does not permit required branch protection for this
   - "Gate 7 and release state remain untouched"
 - **Verification Method:** Comprehensive unit, reconciliation, drift-detection, and UI regression test suites; dry-run plan generation and validation.
 
+#### `DMK-206` — Verification Evidence Submission & Independent Human Sign-Off Workflow
+- **WBS Path:** `13.06.19`
+- **Type:** `GOVERNANCE` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-197`, `DMK-198`, `DMK-208`
+- **Requirements:** `REQ-DATA-001`, `REQ-SEC-020` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-020`, `SEC-CTRL-022`
+- **Description:** Provide governed WorkItem verification sessions in which testers submit immutable evidence bundles tied to exact implementation revisions and independent authorized human reviewers inspect, approve, reject, or require remediation without permitting implementers, agents, or evidence submitters to self-ratify.
+- **Acceptance Criteria:**
+  - "Tester can create a verification session for a WorkItem"
+  - "Verification binds exact WorkItem ID"
+  - "Verification binds exact commit/build revision"
+  - "Test environment and execution context are recorded"
+  - "Acceptance criteria are evaluated individually"
+  - "Automated test evidence is attachable"
+  - "Manual evidence is attachable"
+  - "Screenshots/logs/test reports can be represented safely"
+  - "Evidence bytes or references have cryptographic digest/provenance"
+  - "Submitted evidence bundle becomes immutable"
+  - "Submitter cannot approve own evidence"
+  - "Agents cannot satisfy human approval requirements"
+  - "Reviewer identity comes from authenticated human reviewer session"
+  - "Review decisions bind the exact evidence-bundle digest"
+  - "Reviewer may APPROVE"
+  - "Reviewer may REJECT"
+  - "Reviewer may REQUIRE_REMEDIATION"
+  - "Rejection/remediation requires justification"
+  - "New evidence after submission creates a new revision/session"
+  - "Required quorum is deterministic from risk/type"
+  - "Distinct required roles require distinct human identities"
+  - "Approval creates chained audit evidence"
+  - "Technical verification and human governance remain separate"
+  - "Human approval does not directly edit MASTER_WBS"
+  - "Approved evidence may produce a governed canonical transition proposal"
+  - "Gate 7 remains independent"
+- **Verification Method:** Verification session unit and integration tests, submitter/reviewer separation-of-duties tests, tamper-evidence verification, audit ledger chain validation, and UI workflow testing.
+
+#### `DMK-207` — Deterministic Project Health & Progress Projection
+- **WBS Path:** `13.06.20`
+- **Type:** `FEATURE` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-206`, `DMK-208`
+- **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
+- **Description:** Replace stale persisted/bootstrap project-health percentages with deterministic release-scoped projections derived from canonical WorkItem lifecycle, technical verification, human governance, security assurance, evidence, blockers, audit integrity, CI state, and trustworthy release-gate inputs.
+- **Acceptance Criteria:**
+  - "Bootstrap placeholder values are not presented as computed truth"
+  - "Project progress and project health are separate concepts"
+  - "Calculations are deterministic"
+  - "Calculations expose their inputs"
+  - "Calculations expose their version/formula"
+  - "Current-release scope is explicit"
+  - "Future v0.2 work does not reduce v0.1 progress"
+  - "Implementation derives from canonical WorkItem lifecycle"
+  - "Technical Verification is separate"
+  - "Human Governance is a first-class progress dimension"
+  - "Security Assurance uses real security evidence/control state"
+  - "Release Readiness uses trustworthy release-gate inputs only"
+  - "Release Readiness is UNAVAILABLE while DMK-202 prevents trustworthy evaluation"
+  - "Unknown data renders UNKNOWN / UNAVAILABLE rather than false 0%"
+  - "'On track' is not hard-coded"
+  - "'Compliant' is not hard-coded"
+  - "Overall health classification explains its reasons"
+  - "Invalid audit integrity degrades health"
+  - "Failed required CI degrades health"
+  - "Critical unresolved governance may degrade health"
+  - "Other projects remain compatible"
+- **Verification Method:** Deterministic projection unit tests, release-scope boundary tests, health degradation tests, UI dashboard assertion tests, and cross-project isolation tests.
+
+#### `DMK-208` — Canonical WorkItem Lifecycle & Status Audit
+- **WBS Path:** `13.06.21`
+- **Type:** `GOVERNANCE` | **Priority:** `P0` | **Risk:** `HIGH`
+- **Status:** `BACKLOG`
+- **Dependencies:** `DMK-205`
+- **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
+- **Description:** Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical IN_PROGRESS support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems.
+- **Acceptance Criteria:**
+  - "Canonical lifecycle semantics are formally documented"
+  - "IN_PROGRESS is supported in canonical WBS"
+  - "Runtime mapping supports IN_PROGRESS → IN_PROGRESS"
+  - "PROPOSED, BACKLOG, READY, IN_PROGRESS, IMPLEMENTED, VERIFICATION_PENDING and VERIFIED each have unambiguous meanings"
+  - "Partial implementation can be represented without falsely calling work BACKLOG"
+  - "IMPLEMENTED is distinct from technical verification"
+  - "VERIFIED means technical verification only"
+  - "VERIFIED does not imply human governance approval"
+  - "Current EPIC-13 statuses are audited against repository evidence"
+  - "Candidate status transitions are documented before WBS mutation"
+  - "No transition is inferred solely from filenames or code presence"
+  - "Human review approves the exact transition set"
+  - "Runtime board state is not manually edited"
+  - "Runtime projection remains governed by reconciliation"
+  - "Historical evidence is not fabricated"
+  - "Gate 7 remains untouched"
+  - "Release state remains untouched"
+- **Verification Method:** Canonical lifecycle mapping tests, WBS audit review, status transition candidate review, WBS render/check, full regression and human review.
+
 #### `DMK-187` — CryptoDemon project initialization and derivation remediation
 - **WBS Path:** `13.06.01`
 - **Type:** `BUG` | **Priority:** `P0` | **Risk:** `HIGH`
