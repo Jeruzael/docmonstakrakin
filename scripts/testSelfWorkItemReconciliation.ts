@@ -1878,6 +1878,43 @@ test('Provenance: All 9 historical items in real MASTER_WBS.yaml remain strictly
   }
 });
 
+test('Provenance: Real MASTER_WBS.yaml reconciliation-blocked count is 10 (historical 9 + DMK-208)', () => {
+  const { scopedItems, allItems } = getScopedCanonicalWbsItems(process.cwd(), 'EPIC-13');
+  const historicalNine = [
+    'DMK-187', 'DMK-188', 'DMK-189', 'DMK-190',
+    'DMK-156', 'DMK-157', 'DMK-158', 'DMK-159', 'DMK-165',
+  ];
+  const allBlocked = scopedItems.filter(
+    (i) => i.status === 'VERIFIED' && !hasValidVerificationProvenance(i)
+  );
+  assert.equal(allBlocked.length, 10, 'Expected exactly 10 reconciliation-blocked items in real MASTER_WBS.yaml EPIC-13 scope');
+
+  // Verify historical nine are all included
+  for (const id of historicalNine) {
+    const found = allBlocked.some((b) => b.id === id);
+    assert.ok(found, `Historical item ${id} must be in reconciliation-blocked set`);
+  }
+
+  // Verify DMK-208 is included
+  const dmk208 = allItems.find((i) => i.id === 'DMK-208');
+  assert.ok(dmk208, 'DMK-208 must exist in MASTER_WBS.yaml');
+  assert.equal(dmk208.status, 'VERIFIED', 'DMK-208 canonical status must be VERIFIED');
+  assert.equal(dmk208.verificationStatus, 'VERIFIED', 'DMK-208 verificationStatus must be VERIFIED');
+  assert.ok(dmk208.verifiedBy && dmk208.verifiedBy.length > 0, 'DMK-208 verifiedBy must be non-empty');
+  assert.ok(Array.isArray(dmk208.evidence) && dmk208.evidence.length > 0, 'DMK-208 evidence must be non-empty');
+  assert.ok(
+    !dmk208.humanApprovedBy || /\bPENDING\b/i.test(dmk208.humanApprovedBy),
+    'DMK-208 humanApprovedBy must be absent or pending'
+  );
+  assert.equal(
+    hasValidVerificationProvenance(dmk208),
+    false,
+    'DMK-208 must remain BLOCKED for reconciliation due to incomplete human governance provenance'
+  );
+  const foundDmk208 = allBlocked.some((b) => b.id === 'DMK-208');
+  assert.ok(foundDmk208, 'DMK-208 must be in reconciliation-blocked set');
+});
+
 // ----------------------------------------------------
 // Reviewer Actor Binding & CLI Validation Tests
 // ----------------------------------------------------

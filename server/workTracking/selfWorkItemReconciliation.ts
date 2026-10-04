@@ -280,7 +280,7 @@ export function projectSelfWorkItemReconciliation(params: {
     // Provenance validation for VERIFIED items
     if (cItem.status === 'VERIFIED' && !hasValidVerificationProvenance(cItem)) {
       blockedCount++;
-      const reason = `Missing required canonical verification provenance for VERIFIED status (requires verified_by, verification_status, human_approved_by, evidence)`;
+      const reason = `VERIFIED item is not eligible for runtime reconciliation because required technical and/or human-governance projection provenance is incomplete.`;
       blockedReasons[cItem.id] = reason;
       rows.push({
         id: cItem.id,
