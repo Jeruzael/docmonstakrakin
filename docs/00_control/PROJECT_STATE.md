@@ -1,34 +1,38 @@
 # docmonstakrakin current project state
 
-## 2026-10-04 — DMK-208 Verification Checkpoint & Closure Transition Complete
+## 2026-10-04 — DMK-208 Post-Merge Technical Verification Complete
 
-DMK-208 Canonical WorkItem Lifecycle & Status Audit implementation deliverables,
-the 27-item canonical status audit, and approved status-audit transitions are complete.
-With explicit human authorization, DMK-208 is transitioned to `VERIFICATION_PENDING`
-on branch `dmk-208-lifecycle-status-audit`.
+DMK-208 Canonical WorkItem Lifecycle & Status Audit post-merge technical verification closure is complete.
+Following PR #23 merge to master (`9c29280ea6888f9282b1f0a98c01a3c617f32eaf`) and green post-merge master CI
+Run 37207533296 (Attempt 1, Quality & Build: PASS, Controlled Docs: PASS, Complete Regression: PASS), DMK-208
+is transitioned from `VERIFICATION_PENDING` to `VERIFIED` on branch `dmk-208-post-merge-verification`.
 
-PR #20 (DMK-205) and PR #22 (PLAN-GOV-2026-001) were merged into master; master baseline
-is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 37150342242 all PASS.
+Technical verification is complete and documented with immutable post-merge verification receipt.
+Human Governance provenance remains `PENDING_SIGNOFF`; `human_approved_by` is strictly absent.
+DMK-208 is therefore reconciliation-blocked alongside the 9 historical items, bringing the total
+EPIC-13 scoped reconciliation blockers to 10.
 
-### Human Approval & Closure Record
+### Post-Merge Technical Verification Record
 
 - **Human Decision:** `APPROVE`
-- **Decision Authority:** Human operator
-- **Decision Source:** Explicit human approval of DMK-208 closure candidate in the current governance review session
-- **Closure Transition:** `DMK-208`: `IN_PROGRESS` -> `VERIFICATION_PENDING`
-- **Closure Rationale:** Implementation deliverables and approved status-audit application are complete. Branch-level technical verification and evidence are complete. Final PR closure, merge, and post-merge verification remain outstanding. VERIFICATION_PENDING therefore truthfully represents the current canonical lifecycle state.
+- **Decision Authority:** Human operator / Governance authorization
+- **Decision Source:** Post-merge technical verification closure authorization following PR #23 merge and green master CI Run 37207533296
+- **Lifecycle Transition:** `DMK-208`: `VERIFICATION_PENDING` -> `VERIFIED`
+- **Merged PR:** #23 (`c1ce96fe5a42926647468c1dff41515efea98658` -> `9c29280ea6888f9282b1f0a98c01a3c617f32eaf`)
+- **Master CI Run ID:** 37207533296 (Attempt 1, Conclusion: `success`)
+- **Technical Verification Status:** `VERIFIED` (technical verification complete)
+- **Human Governance Status:** `PENDING_SIGNOFF` (not eligible for runtime reconciliation)
 - **Approved Status-Audit Candidate Digest:** `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
-- **Applied Status-Audit Transitions:**
-  - `DMK-196`: `BACKLOG` -> `IN_PROGRESS`
-  - `DMK-197`: `BACKLOG` -> `IN_PROGRESS`
-  - `DMK-198`: `BACKLOG` -> `IN_PROGRESS`
-- **Pre-Closure Canonical WBS SHA-256:** `d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c`
-- **Post-Closure Canonical WBS SHA-256:** `dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe`
+- **Pre-Verification Canonical WBS SHA-256:** `dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe`
+- **Post-Verification Canonical WBS SHA-256:** `974a5d8773902a24655efc3f341a70c38ad840e3738f0be3699c18c6bf690c82`
 - **Runtime WorkItems:** `NOT MUTATED` (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
 - **Live Reconciliation:** `NOT EXECUTED` (`DMK_WBS_SYNC_EXECUTE` disabled)
+- **Total Reconciliation Blockers:** 10 (Historical 9 + DMK-208)
+- **Historical Governance Blockers:** 9
 - **Gate 7:** `UNCHANGED` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
 - **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
-- **Closure Receipt:** `docs/07_verification/dmk-208-closure-transition-receipt.json`
+- **Post-Merge Verification Receipt:** `docs/07_verification/dmk-208-post-merge-verification-receipt.json`
+- **Closure Transition Receipt:** `docs/07_verification/dmk-208-closure-transition-receipt.json`
 - **Audit Application Receipt:** `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
 
 ### Current governance and task status
@@ -39,7 +43,7 @@ is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 3715034
 - DMK-205: VERIFICATION_PENDING (PR #20 merged; live reconciliation pending)
 - DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
-- DMK-208: VERIFICATION_PENDING (Implementation deliverables and approved status audit complete; PR merge and post-merge verification outstanding)
+- DMK-208: VERIFIED (Post-merge technical verification complete; human governance sign-off pending; reconciliation-blocked)
 - DMK-196: IN_PROGRESS (Approved transition applied to canonical WBS)
 - DMK-197: IN_PROGRESS (Approved transition applied to canonical WBS)
 - DMK-198: IN_PROGRESS (Approved transition applied to canonical WBS)
@@ -51,7 +55,7 @@ is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 3715034
 
 ### DMK-208 verification and closure state
 
-Verified implementation includes:
+Verified implementation and closure deliverables include:
 
 - programmatic canonical lifecycle contract in `server/workTracking/canonicalLifecycle.ts` exporting exactly 7 primary statuses: `PROPOSED`, `BACKLOG`, `READY`, `IN_PROGRESS`, `IMPLEMENTED`, `VERIFICATION_PENDING`, `VERIFIED`
 - strict exclusion of non-v1 statuses (`BLOCKED`, `DEFERRED`, `CANCELLED`, `ACCEPTED`, `SUPERSEDED`) from canonical parsing
@@ -59,14 +63,15 @@ Verified implementation includes:
 - one-way canonical-to-runtime lifecycle mapping in `server/workTracking/wbsMapping.ts` mapping `IN_PROGRESS` -> `IN_PROGRESS`
 - corrected `MASTER_WBS.yaml` `status_definitions` aligning with the 7 canonical v1 states
 - corrected `scripts/renderWbs.ts` generating the 7-state status standard from the canonical lifecycle contract and updating `VERIFICATION_PENDING` description to `(Technical verification / evidence review pending; Gate 7 pending)`
-- comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md`
+- comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md` (Sections 1 through 7)
 - machine-readable candidate transition proposal preserved immutably in `docs/07_verification/dmk-208-status-audit-candidate.json` with candidate digest `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
 - machine-readable approval receipt created in `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
 - machine-readable closure receipt created in `docs/07_verification/dmk-208-closure-transition-receipt.json`
-- independent audit verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) evolved to support `POST_CLOSURE_APPROVED` mode
-- dedicated receipt test suite `scripts/testStatusAuditReceipt.ts` covering 24 scenarios A–X
-- zero runtime WorkItem mutations (`runtimeWorkItemMutationCount = 0`)
-- PR #23 remains in draft awaiting final human readiness and merge decision
+- machine-readable post-merge verification receipt created in `docs/07_verification/dmk-208-post-merge-verification-receipt.json`
+- independent audit verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) evolved to support `POST_MERGE_VERIFIED` mode
+- dedicated receipt test suite `scripts/testStatusAuditReceipt.ts` covering 41 scenarios A–AO
+- zero runtime WorkItem mutations (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
+- closure PR opened targeting `master` awaiting final human review
 
 ### Historical governance blockers & live reconciliation
 
@@ -75,7 +80,10 @@ BLOCKED
 NOT AUTHORIZED
 NOT EXECUTED
 
-The nine historical items remain canonically `VERIFIED`, human governance pending sign-off, and `RECONCILIATION-BLOCKED`.
+The following 10 canonical VERIFIED items lack sufficient completed human governance provenance and are RECONCILIATION-BLOCKED:
+- Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190
+- DMK-208: Technically verified via PR #23 & master CI 37207533296; human governance sign-off pending
+
 All prior DMK-205 reconciliation plans remain superseded due to canonical WBS digest changes.
 
 ### Verification
@@ -83,18 +91,19 @@ All prior DMK-205 reconciliation plans remain superseded due to canonical WBS di
 - npm run wbs:render: PASS (synchronized)
 - npm run wbs:check: PASS (zero drift)
 - npm run test:canonical-lifecycle: PASS (16/16 scenarios)
-- npm run test:self-work-sync: PASS (89/89 scenarios)
-- npm run verify:dmk-208-status-audit: PASS (Mode: POST_CLOSURE_APPROVED)
-- npx tsx scripts/testStatusAuditReceipt.ts: PASS (24/24 scenarios A–X)
+- npm run test:self-work-sync: PASS (90/90 scenarios)
+- npm run verify:dmk-208-status-audit: PASS (Mode: POST_MERGE_VERIFIED)
+- npx tsx scripts/testStatusAuditReceipt.ts: PASS (41/41 scenarios A–AO)
+- npm run test:projects-workspace:ui: PASS (14/14 scenarios)
 
 ### Next safe action
 
-1. Complete final PR #23 verification on exact closure HEAD.
-2. Present PR #23 for human readiness/merge decision.
-3. Keep DMK-208 at VERIFICATION_PENDING until merge and post-merge verification complete.
-4. Do not mark DMK-208 VERIFIED before post-merge verification.
-5. Do not begin DMK-206 or DMK-207.
-6. Do not execute live reconciliation.
+1. Review and merge the DMK-208 post-merge verification closure PR.
+2. Verify closure merge on master and closure-PR push CI.
+3. Treat DMK-208 as technically VERIFIED while Human Governance remains separate and pending.
+4. Do not execute live reconciliation while blocker count > 0.
+5. Continue PLAN-GOV-2026-001 execution sequence only after DMK-208 closure is published to master.
+6. Do not start DMK-207 before its prerequisites.
 7. Keep Gate 7 untouched.
 8. Keep release v0.1.0-rc1 / NOT PROMOTED.
 
