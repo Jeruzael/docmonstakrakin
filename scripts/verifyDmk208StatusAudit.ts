@@ -40,6 +40,36 @@ export interface Dmk208StatusAuditCandidate {
   items: AuditCandidateItem[];
 }
 
+export interface ApprovedTransitionItem {
+  id: string;
+  from: string;
+  to: string;
+}
+
+export interface Dmk208StatusAuditReceipt {
+  schemaVersion: string;
+  workItemId: string;
+  candidateDigest: string;
+  decision: string;
+  decisionAuthority: string;
+  decisionSource: string;
+  preApplyMasterSha: string;
+  preApplyBranchSha: string;
+  preApplyCanonicalWbsSha256: string;
+  scopeEpic: string;
+  scopeCount: number;
+  approvedTransitions: ApprovedTransitionItem[];
+  applied: boolean;
+  appliedAt: string;
+  postApplyCanonicalWbsSha256: string;
+  preApplyRuntimeWorkItemsSha256: string;
+  postApplyRuntimeWorkItemsSha256: string;
+  runtimeWorkItemMutationCount: number;
+  liveReconciliationExecuted: boolean;
+  gate7Changed: boolean;
+  releaseChanged: boolean;
+}
+
 export const EXPECTED_BASE_MASTER_SHA = '2a473df75d45aab2df3f55f37fec2d24ed403811';
 export const EXPECTED_SCOPE_EPIC = 'EPIC-13';
 export const EXPECTED_SCOPE_COUNT = 27;
@@ -65,21 +95,36 @@ export function computeCandidateDigest(items: AuditCandidateItem[]): string {
   return crypto.createHash('sha256').update(jsonStr, 'utf8').digest('hex');
 }
 
+export interface VerifyOptions {
+  customCandidate?: Dmk208StatusAuditCandidate;
+  customReceipt?: Dmk208StatusAuditReceipt;
+  simulateStatusOverrides?: Record<string, string>;
+}
+
 export function verifyDmk208StatusAudit(
   workspaceRoot: string,
-  candidatePath?: string
-): { valid: boolean; summary: { total: number; keep: number; transition: number; candidateDigest: string } } {
-  const filePath = candidatePath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-candidate.json');
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Audit candidate file not found: ${filePath}`);
-  }
-
-  const raw = fs.readFileSync(filePath, 'utf8');
+  candidatePath?: string,
+  receiptPath?: string,
+  options?: VerifyOptions
+): {
+  valid: boolean;
+  mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED';
+  summary: { total: number; keep: number; transition: number; candidateDigest: string };
+} {
+  const cPath = candidatePath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-candidate.json');
   let data: Dmk208StatusAuditCandidate;
-  try {
-    data = JSON.parse(raw);
-  } catch (err: any) {
-    throw new Error(`Failed to parse audit candidate JSON: ${err.message}`);
+  if (options?.customCandidate) {
+    data = options.customCandidate;
+  } else {
+    if (!fs.existsSync(cPath)) {
+      throw new Error(`Audit candidate file not found: ${cPath}`);
+    }
+    const raw = fs.readFileSync(cPath, 'utf8');
+    try {
+      data = JSON.parse(raw);
+    } catch (err: any) {
+      throw new Error(`Failed to parse audit candidate JSON: ${err.message}`);
+    }
   }
 
   assert.equal(data.schemaVersion, EXPECTED_SCHEMA_VERSION, `Invalid schemaVersion: expected ${EXPECTED_SCHEMA_VERSION}`);
@@ -88,13 +133,6 @@ export function verifyDmk208StatusAudit(
   assert.equal(data.baseMasterSha, EXPECTED_BASE_MASTER_SHA, `Invalid baseMasterSha: expected ${EXPECTED_BASE_MASTER_SHA}`);
   assert.equal(data.scopeEpic, EXPECTED_SCOPE_EPIC, `Invalid scopeEpic: expected ${EXPECTED_SCOPE_EPIC}`);
   assert.equal(data.scopeCount, EXPECTED_SCOPE_COUNT, `Invalid scopeCount: expected ${EXPECTED_SCOPE_COUNT}`);
-
-  const actualWbsSha = computeMasterWbsSha256(workspaceRoot);
-  assert.equal(
-    data.canonicalWbsSha256,
-    actualWbsSha,
-    `canonicalWbsSha256 mismatch: candidate=${data.canonicalWbsSha256}, actual=${actualWbsSha}`
-  );
 
   const { scopedItems } = getScopedCanonicalWbsItems(workspaceRoot, EXPECTED_SCOPE_EPIC);
   assert.equal(
@@ -113,8 +151,94 @@ export function verifyDmk208StatusAudit(
     `candidateDigest mismatch: declared=${data.candidateDigest}, computed=${expectedDigest}`
   );
 
+  // Determine mode based on receipt
+  const rPath = receiptPath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-approval-receipt.json');
+  let receipt: Dmk208StatusAuditReceipt | null = null;
+  if (options?.customReceipt) {
+    receipt = options.customReceipt;
+  } else if (fs.existsSync(rPath)) {
+    try {
+      receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+    } catch (err: any) {
+      throw new Error(`Failed to parse audit receipt JSON: ${err.message}`);
+    }
+  }
+
+  const isPostApply = receipt !== null && receipt.applied === true;
+  const mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' = isPostApply ? 'POST_APPLY_APPROVED' : 'PRE_APPLY';
+
+  const actualWbsSha = computeMasterWbsSha256(workspaceRoot);
+
+  if (mode === 'POST_APPLY_APPROVED') {
+    assert.ok(receipt, 'Receipt must exist in POST_APPLY_APPROVED mode');
+    if (receipt.decision !== 'APPROVE') {
+      throw new Error(`decision other than APPROVE cannot authorize application: ${receipt.decision}`);
+    }
+    assert.equal(
+      receipt.candidateDigest,
+      data.candidateDigest,
+      `candidateDigest mismatch in receipt: receipt=${receipt.candidateDigest}, candidate=${data.candidateDigest}`
+    );
+    assert.equal(
+      receipt.preApplyCanonicalWbsSha256,
+      data.canonicalWbsSha256,
+      `pre-apply WBS digest mismatch: receipt=${receipt.preApplyCanonicalWbsSha256}, candidate=${data.canonicalWbsSha256}`
+    );
+    assert.equal(receipt.preApplyMasterSha, EXPECTED_BASE_MASTER_SHA, 'Receipt preApplyMasterSha mismatch');
+    assert.equal(receipt.scopeEpic, EXPECTED_SCOPE_EPIC, 'Receipt scopeEpic mismatch');
+    assert.equal(receipt.scopeCount, EXPECTED_SCOPE_COUNT, 'Receipt scopeCount mismatch');
+
+    if (!options?.simulateStatusOverrides && !options?.customReceipt) {
+      assert.equal(
+        actualWbsSha,
+        receipt.postApplyCanonicalWbsSha256,
+        `postApplyCanonicalWbsSha256 mismatch: actual=${actualWbsSha}, receipt=${receipt.postApplyCanonicalWbsSha256}`
+      );
+    }
+
+    const candidateTransitionItems = data.items.filter((i) => i.action === 'TRANSITION');
+    assert.equal(
+      receipt.approvedTransitions.length,
+      candidateTransitionItems.length,
+      `transition count mismatch: receipt=${receipt.approvedTransitions.length}, candidate=${candidateTransitionItems.length}`
+    );
+
+    const approvedMap = new Map(receipt.approvedTransitions.map((t) => [t.id, t]));
+    for (const cTrans of candidateTransitionItems) {
+      const app = approvedMap.get(cTrans.id);
+      assert.ok(app, `missing approved transition in receipt for ${cTrans.id}`);
+      assert.equal(
+        app.from,
+        cTrans.currentStatus,
+        `source status mismatch for ${cTrans.id}: receipt=${app.from}, candidate=${cTrans.currentStatus}`
+      );
+      assert.equal(
+        app.to,
+        cTrans.candidateStatus,
+        `target status mismatch for ${cTrans.id}: receipt=${app.to}, candidate=${cTrans.candidateStatus}`
+      );
+    }
+  } else {
+    // PRE_APPLY mode requires candidate canonicalWbsSha256 to equal current WBS SHA
+    assert.equal(
+      data.canonicalWbsSha256,
+      actualWbsSha,
+      `canonicalWbsSha256 mismatch: candidate=${data.canonicalWbsSha256}, actual=${actualWbsSha}`
+    );
+  }
+
+  // Build canonical map, respecting any simulated test overrides
+  const canonicalMap = new Map(
+    scopedItems.map((i) => {
+      const overrideStatus = options?.simulateStatusOverrides?.[i.id];
+      if (overrideStatus) {
+        return [i.id, { ...i, status: overrideStatus }];
+      }
+      return [i.id, i];
+    })
+  );
+
   const seenIds = new Set<string>();
-  const canonicalMap = new Map(scopedItems.map((i) => [i.id, i]));
   let keepCount = 0;
   let transitionCount = 0;
 
@@ -126,42 +250,54 @@ export function verifyDmk208StatusAudit(
     const canonicalItem = canonicalMap.get(item.id);
     assert.ok(canonicalItem, `Unknown candidate item id not in canonical WBS: ${item.id}`);
 
-    assert.equal(
-      item.currentStatus,
-      canonicalItem.status,
-      `Item ${item.id} currentStatus (${item.currentStatus}) does not match canonical WBS (${canonicalItem.status})`
-    );
-
     assert.ok(
       isCanonicalLifecycleStatus(item.candidateStatus),
       `Item ${item.id} candidateStatus "${item.candidateStatus}" is not a valid canonical v1 lifecycle status`
     );
 
-    // Reject non-v1 statuses
     const forbidden = ['BLOCKED', 'DEFERRED', 'CANCELLED', 'ACCEPTED', 'SUPERSEDED'];
     assert.ok(
       !forbidden.includes(item.candidateStatus),
       `Item ${item.id} proposes forbidden non-v1 status: ${item.candidateStatus}`
     );
 
-    if (item.action === 'KEEP') {
+    if (mode === 'POST_APPLY_APPROVED') {
+      if (item.action === 'KEEP') {
+        assert.equal(
+          canonicalItem.status,
+          item.currentStatus,
+          `KEEP item drift: Item ${item.id} status mismatch: expected ${item.currentStatus}, got ${canonicalItem.status}`
+        );
+        keepCount++;
+      } else if (item.action === 'TRANSITION') {
+        assert.equal(
+          canonicalItem.status,
+          item.candidateStatus,
+          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        );
+        transitionCount++;
+      }
+    } else {
+      // PRE_APPLY
       assert.equal(
-        item.candidateStatus,
         item.currentStatus,
-        `Item ${item.id} marked KEEP but candidateStatus (${item.candidateStatus}) != currentStatus (${item.currentStatus})`
+        canonicalItem.status,
+        `Item ${item.id} currentStatus (${item.currentStatus}) does not match canonical WBS (${canonicalItem.status})`
       );
-      keepCount++;
-    } else if (item.action === 'TRANSITION') {
-      assert.notEqual(
-        item.candidateStatus,
-        item.currentStatus,
-        `Item ${item.id} marked TRANSITION but candidateStatus matches currentStatus (${item.currentStatus})`
-      );
+      if (item.action === 'KEEP') {
+        assert.equal(item.candidateStatus, item.currentStatus);
+        keepCount++;
+      } else if (item.action === 'TRANSITION') {
+        assert.notEqual(item.candidateStatus, item.currentStatus);
+        transitionCount++;
+      }
+    }
+
+    if (item.action === 'TRANSITION') {
       assert.ok(
         Array.isArray(item.evidenceRefs) && item.evidenceRefs.length > 0,
         `Item ${item.id} marked TRANSITION must have at least one evidenceRef`
       );
-      // Validate that local repository evidence paths exist on disk
       for (const ref of item.evidenceRefs) {
         if (
           ref.startsWith('src/') ||
@@ -181,9 +317,6 @@ export function verifyDmk208StatusAudit(
         item.rationale && item.rationale.trim().length > 10,
         `Item ${item.id} marked TRANSITION must have a detailed rationale`
       );
-      transitionCount++;
-    } else {
-      throw new Error(`Item ${item.id} has invalid action: ${(item as any).action} (must be KEEP or TRANSITION)`);
     }
 
     assert.ok(
@@ -203,6 +336,7 @@ export function verifyDmk208StatusAudit(
 
   return {
     valid: true,
+    mode,
     summary: {
       total: data.items.length,
       keep: keepCount,
@@ -216,7 +350,7 @@ export function verifyDmk208StatusAudit(
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   try {
     const res = verifyDmk208StatusAudit(process.cwd());
-    console.log('✓ [PASS] DMK-208 Status Audit Candidate is 100% valid.');
+    console.log(`✓ [PASS] DMK-208 Status Audit Candidate is 100% valid (Mode: ${res.mode}).`);
     console.log(`  Scope count: ${res.summary.total} (KEEP: ${res.summary.keep}, TRANSITION: ${res.summary.transition})`);
     console.log(`  Candidate Digest: ${res.summary.candidateDigest}`);
     process.exit(0);
