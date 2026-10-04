@@ -1,6 +1,6 @@
 # docmonstakrakin current project state
 
-## 2026-10-04 — DMK-208 Canonical Lifecycle Contract & Status Audit Complete
+## 2026-10-04 — DMK-208 Lifecycle Implementation & Status Audit Review Checkpoint
 
 DMK-208 Canonical WorkItem Lifecycle & Status Audit implementation is underway on branch
 `dmk-208-lifecycle-status-audit` with explicit human authorization under PLAN-GOV-2026-001.
@@ -33,13 +33,13 @@ Verified implementation includes:
 - programmatic canonical lifecycle contract in `server/workTracking/canonicalLifecycle.ts` exporting exactly 7 primary statuses: `PROPOSED`, `BACKLOG`, `READY`, `IN_PROGRESS`, `IMPLEMENTED`, `VERIFICATION_PENDING`, `VERIFIED`
 - strict exclusion of non-v1 statuses (`BLOCKED`, `DEFERRED`, `CANCELLED`, `ACCEPTED`, `SUPERSEDED`) from canonical parsing
 - fail-closed validation in `server/workTracking/canonicalWbs.ts` rejecting invalid or blank statuses with `UNSUPPORTED_WBS_STATUS`
-- bidirectional canonical-to-runtime mapping in `server/workTracking/wbsMapping.ts` mapping `IN_PROGRESS` -> `IN_PROGRESS`
+- one-way canonical-to-runtime lifecycle mapping in `server/workTracking/wbsMapping.ts` mapping `IN_PROGRESS` -> `IN_PROGRESS`
 - corrected `MASTER_WBS.yaml` `status_definitions` aligning with the 7 canonical v1 states
 - corrected `scripts/renderWbs.ts` generating the 7-state status standard from the canonical lifecycle contract and updating `VERIFICATION_PENDING` description to `(Technical verification / evidence review pending; Gate 7 pending)`
 - DMK-208 transitioned from `BACKLOG` to `IN_PROGRESS` with explicit authorization rationale
 - comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md`
-- machine-readable candidate transition proposal generated in `docs/07_verification/dmk-208-status-audit-candidate.json` with deterministic candidate digest `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f`
-- independent audit candidate verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) verifying 27 items (24 KEEP, 3 TRANSITION)
+- machine-readable candidate transition proposal generated in `docs/07_verification/dmk-208-status-audit-candidate.json` with deterministic candidate digest `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b` (previous digest `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f` superseded due to DMK-196 evidence correction)
+- independent audit candidate verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) verifying 27 items (24 KEEP, 3 TRANSITION) and enforcing tracked evidence path existence
 - zero candidate status transitions applied to other WorkItems (awaiting human operator review)
 
 ### Historical governance blockers & live reconciliation
@@ -63,11 +63,14 @@ All prior DMK-205 reconciliation plans remain superseded due to canonical WBS di
 
 ### Next safe action
 
-1. Run full test matrix (`test:projects-workspace:ui`, `test:controlled-docs`, `test:complete`).
-2. Commit and push branch `dmk-208-lifecycle-status-audit`.
-3. Open Draft PR #23 for DMK-208.
-4. Verify PR CI passes on GitHub Actions.
-5. Present Section 46 implementation report and stop for human review of status audit candidate transitions.
+1. Human-review the corrected DMK-208 status-audit candidate.
+2. Do not apply any candidate transition until the corrected candidate digest is explicitly approved.
+3. Keep DMK-208 IN_PROGRESS.
+4. Keep DMK-206 and DMK-207 NOT STARTED.
+5. Keep DMK-196, DMK-197, and DMK-198 at their current canonical BACKLOG statuses until explicit approval applies the candidate.
+6. Do not execute live reconciliation.
+7. Keep Gate 7 HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+8. Keep release v0.1.0-rc1 / NOT PROMOTED.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
