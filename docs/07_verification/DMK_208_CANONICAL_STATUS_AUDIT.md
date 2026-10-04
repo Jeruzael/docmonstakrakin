@@ -565,3 +565,21 @@ which guarantees that any drift in `MASTER_WBS.yaml` or candidate items invalida
 - **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
 - **Approval Receipt:** `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
 
+---
+
+## 6. DMK-208 Closure Decision
+
+- **Decision:** `APPROVE`
+- **Transition:** `DMK-208`: `IN_PROGRESS` -> `VERIFICATION_PENDING`
+- **Decision Authority:** Human operator
+- **Decision Source:** Explicit human approval of DMK-208 closure candidate in the current governance review session
+- **Rationale:** Implementation deliverables and approved audit application are complete. Branch-level technical verification and evidence are complete. Final PR closure, merge, and post-merge verification remain outstanding. VERIFICATION_PENDING therefore truthfully represents the current canonical lifecycle state.
+- **Application Status:** `APPLIED TO CANONICAL WBS`
+- **Pre-Closure Canonical WBS SHA-256:** `d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c`
+- **Post-Closure Canonical WBS SHA-256:** `dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe`
+- **Runtime WorkItems:** `NOT MUTATED` (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
+- **Live Reconciliation:** `NOT EXECUTED` (`DMK_WBS_SYNC_EXECUTE` disabled)
+- **Gate 7:** `UNCHANGED` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
+- **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
+- **Closure Receipt:** `docs/07_verification/dmk-208-closure-transition-receipt.json`
+
