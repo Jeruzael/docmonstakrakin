@@ -129,7 +129,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
 - **WBS Path:** `13.06.10`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-194`
 - **Requirements:** `REQ-GOV-SIGNOFF-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.
@@ -140,7 +140,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-197` — Batch 3 — Approval Inbox & Canonical Quorum Synchronization
 - **WBS Path:** `13.06.11`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-196`
 - **Requirements:** `REQ-GOV-QUORUM-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Approval Inbox UI with distinct human dual-signoff quorum verification.
@@ -151,7 +151,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-198` — Batch 4 — Reviewer Provisioning / Governance Setup Usability
 - **WBS Path:** `13.06.12`
 - **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-197`
 - **Requirements:** `REQ-GOV-REVIEWER-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Reviewer management and onboarding usability without exposing plaintext credentials. Note: Open candidate for a dedicated Authentication & Role Delegation work item. Final scope and permanent DMK ID remain unassigned pending design review; kept distinct from DMK-195.

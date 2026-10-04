@@ -232,7 +232,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-194"]
     requirements: ["REQ-GOV-SIGNOFF-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -252,7 +252,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-196"]
     requirements: ["REQ-GOV-QUORUM-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -272,7 +272,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-197"]
     requirements: ["REQ-GOV-REVIEWER-001"]
     architecture_links: ["CMP-01", "CMP-04"]
