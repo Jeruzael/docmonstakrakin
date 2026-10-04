@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "workItemId": "DMK-208",
+  "decision": "APPROVE",
+  "decisionAuthority": "Human operator",
+  "decisionSource": "Explicit human approval of DMK-208 closure candidate in the current governance review session",
+  "fromStatus": "IN_PROGRESS",
+  "toStatus": "VERIFICATION_PENDING",
+  "approvedCandidateDigest": "9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b",
+  "statusAuditApplicationReceipt": "docs/07_verification/dmk-208-status-audit-approval-receipt.json",
+  "preClosureBranchSha": "68bd19f85f1b6da7a081fce28e778813669a2ca8",
+  "preClosureMasterSha": "2a473df75d45aab2df3f55f37fec2d24ed403811",
+  "preClosureCanonicalWbsSha256": "d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c",
+  "applied": true,
+  "appliedAt": "2026-10-04T13:24:20Z",
+  "postClosureCanonicalWbsSha256": "dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe",
+  "preClosureRuntimeWorkItemsSha256": "7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c",
+  "postClosureRuntimeWorkItemsSha256": "7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c",
+  "runtimeWorkItemMutationCount": 0,
+  "liveReconciliationExecuted": false,
+  "gate7Changed": false,
+  "releaseChanged": false
+}

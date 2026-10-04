@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
+import {
+  type CanonicalLifecycleStatus,
+  assertCanonicalLifecycleStatus,
+} from './canonicalLifecycle.ts';
 
 export interface CanonicalWbsItem {
   id: string;
@@ -14,7 +18,7 @@ export interface CanonicalWbsItem {
   type: string;
   priority: string;
   risk: string;
-  status: string;
+  status: CanonicalLifecycleStatus;
   requirements: string[];
   dependencies: string[];
   acceptanceCriteria: string[];
@@ -104,6 +108,9 @@ export function parseCanonicalWbsBytes(rawBytes: Buffer): CanonicalWbsDocument {
     }
     seenPaths.add(wbsPath);
 
+    assertCanonicalLifecycleStatus(raw.status, id);
+    const status = String(raw.status).trim().toUpperCase() as CanonicalLifecycleStatus;
+
     canonicalItems.push({
       id,
       wbsPath,
@@ -115,7 +122,7 @@ export function parseCanonicalWbsBytes(rawBytes: Buffer): CanonicalWbsDocument {
       type: String(raw.type || '').trim(),
       priority: String(raw.priority || '').trim(),
       risk: String(raw.risk || '').trim(),
-      status: String(raw.status || '').trim(),
+      status,
       requirements: Array.isArray(raw.requirements) ? raw.requirements.map(String) : [],
       dependencies: Array.isArray(raw.dependencies) ? raw.dependencies.map(String) : [],
       acceptanceCriteria: Array.isArray(raw.acceptance_criteria) ? raw.acceptance_criteria.map(String) : [],

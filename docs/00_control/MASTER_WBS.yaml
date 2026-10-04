@@ -4,21 +4,19 @@ baseline: "v0.1.0-rc1"
 baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
 release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
 gate_7_status: "HUMAN_APPROVAL_REQUIRED"
-last_updated: "2026-10-02"
+last_updated: "2026-10-04"
 authoritative: true
 manual_qa_status: "NOT_READY_FOR_SIGNOFF"
 remediation_status: "READY_FOR_RETEST"
 
 status_definitions:
-  - PROPOSED: "Work is identified but not yet approved or fully specified."
-  - READY: "Requirements, dependencies, and acceptance criteria are sufficient to begin."
-  - IN_PROGRESS: "Implementation is actively occurring."
-  - BLOCKED: "Cannot continue because of an explicit dependency or unresolved decision."
-  - IMPLEMENTED: "Code or documentation exists, but independent verification is incomplete."
-  - VERIFICATION_PENDING: "Implementation is awaiting required verification/review."
-  - VERIFIED: "Acceptance criteria have been satisfied with recorded evidence."
-  - DEFERRED: "Valid work intentionally postponed."
-  - CANCELLED: "Work intentionally removed from scope."
+  - PROPOSED: "Candidate work identified but not yet accepted into planned execution."
+  - BACKLOG: "Accepted/planned work that has not started."
+  - READY: "Accepted work whose required prerequisites are satisfied and which may begin."
+  - IN_PROGRESS: "Actual implementation has begun and acceptance criteria are not yet fully satisfied."
+  - IMPLEMENTED: "Implementation deliverables are complete; technical verification remains pending or underway."
+  - VERIFICATION_PENDING: "Implementation is complete and formal technical verification / evidence review is awaiting closure."
+  - VERIFIED: "Technical verification is complete and sufficient reproducible technical evidence demonstrates that applicable acceptance criteria are satisfied. (VERIFIED does NOT imply Human Governance Approved.)"
 
 phases:
   - id: "PHASE-0"
@@ -234,7 +232,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-194"]
     requirements: ["REQ-GOV-SIGNOFF-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -254,7 +252,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-196"]
     requirements: ["REQ-GOV-QUORUM-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -274,7 +272,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "BACKLOG"
+    status: "IN_PROGRESS"
     dependencies: ["DMK-197"]
     requirements: ["REQ-GOV-REVIEWER-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -571,7 +569,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "BACKLOG"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-205"]
     requirements: ["REQ-DATA-001", "REQ-DATA-002"]
     architecture_links: ["CMP-01", "CMP-02"]
@@ -595,8 +593,12 @@ items:
       - "Gate 7 remains untouched"
       - "Release state remains untouched"
     verification_method: "Canonical lifecycle mapping tests, WBS audit review, status transition candidate review, WBS render/check, full regression and human review."
-    evidence: []
-    planned_by: "Recorded during post-DMK-205 governance program planning"
+    evidence:
+      - "docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md"
+      - "docs/07_verification/dmk-208-status-audit-candidate.json"
+      - "docs/07_verification/dmk-208-status-audit-approval-receipt.json"
+      - "docs/07_verification/dmk-208-closure-transition-receipt.json"
+    planned_by: "Explicit human authorization to begin DMK-208 implementation under PLAN-GOV-2026-001."
 
   - id: "DMK-187"
     wbs_path: "13.06.01"

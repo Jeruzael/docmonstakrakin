@@ -12,7 +12,7 @@
 **Gate 7 Status:** `HUMAN_APPROVAL_REQUIRED`  
 **Manual QA Status:** `NOT_READY_FOR_SIGNOFF`  
 **Remediation Status:** `READY_FOR_RETEST`  
-**Status Standard:** `PROPOSED` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED` | `DEFERRED` | `CANCELLED`  
+**Status Standard:** `PROPOSED` | `BACKLOG` | `READY` | `IN_PROGRESS` | `IMPLEMENTED` | `VERIFICATION_PENDING` | `VERIFIED`  
 
 ---
 
@@ -41,7 +41,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 | **10** | Phase 9 | `EPIC-10` | Evidence, Audit & Traceability | `IMPLEMENTED` / `VERIFIED` |
 | **11** | Phase 10 | `EPIC-11` | Standards Update & Migration | `IMPLEMENTED` / `VERIFIED` |
 | **12** | Phase 11 | `EPIC-12` | Dashboard & Next Safe Action | `IMPLEMENTED` |
-| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `VERIFICATION_PENDING` (Human review pending; Gate 7 pending) |
+| **13** | Phase 12 | `EPIC-13` | Forms, Export, Secrets & Release | `IN_PROGRESS` (Scoped implementation; Gate 7 pending) |
 | **14** | Phase 13 | `EPIC-14` | Multi-Agent Collaboration & Peer Trust | `PROPOSED` (Planning Milestone) |
 | **15** | Phase 14 | `EPIC-15` | Encrypted Sync Gateway & Transport Abstraction | `PROPOSED` (Planning Milestone) |
 | **16** | Phase 15 | `EPIC-16` | Post-MVP Integrations & Extensibility | `PROPOSED` (Planning Milestone) |
@@ -129,7 +129,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
 - **WBS Path:** `13.06.10`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-194`
 - **Requirements:** `REQ-GOV-SIGNOFF-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.
@@ -140,7 +140,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-197` — Batch 3 — Approval Inbox & Canonical Quorum Synchronization
 - **WBS Path:** `13.06.11`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-196`
 - **Requirements:** `REQ-GOV-QUORUM-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Approval Inbox UI with distinct human dual-signoff quorum verification.
@@ -151,7 +151,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-198` — Batch 4 — Reviewer Provisioning / Governance Setup Usability
 - **WBS Path:** `13.06.12`
 - **Type:** `INFRASTRUCTURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `IN_PROGRESS`
 - **Dependencies:** `DMK-197`
 - **Requirements:** `REQ-GOV-REVIEWER-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Reviewer management and onboarding usability without exposing plaintext credentials. Note: Open candidate for a dedicated Authentication & Role Delegation work item. Final scope and permanent DMK ID remain unassigned pending design review; kept distinct from DMK-195.
@@ -347,7 +347,7 @@ Current GitHub configuration does not permit required branch protection for this
 #### `DMK-208` — Canonical WorkItem Lifecycle & Status Audit
 - **WBS Path:** `13.06.21`
 - **Type:** `GOVERNANCE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `BACKLOG`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md, docs/07_verification/dmk-208-status-audit-candidate.json, docs/07_verification/dmk-208-status-audit-approval-receipt.json, docs/07_verification/dmk-208-closure-transition-receipt.json`)
 - **Dependencies:** `DMK-205`
 - **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical IN_PROGRESS support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems.

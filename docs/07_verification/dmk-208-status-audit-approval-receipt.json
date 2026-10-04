@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0",
+  "workItemId": "DMK-208",
+  "candidateDigest": "9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b",
+  "decision": "APPROVE",
+  "decisionAuthority": "Human operator",
+  "decisionSource": "Explicit approval in the current DMK-208 governance review session",
+  "preApplyMasterSha": "2a473df75d45aab2df3f55f37fec2d24ed403811",
+  "preApplyBranchSha": "c662202de6551eb90871212f16ae8b7c1b58f4d7",
+  "preApplyCanonicalWbsSha256": "ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425",
+  "scopeEpic": "EPIC-13",
+  "scopeCount": 27,
+  "approvedTransitions": [
+    {
+      "id": "DMK-196",
+      "from": "BACKLOG",
+      "to": "IN_PROGRESS"
+    },
+    {
+      "id": "DMK-197",
+      "from": "BACKLOG",
+      "to": "IN_PROGRESS"
+    },
+    {
+      "id": "DMK-198",
+      "from": "BACKLOG",
+      "to": "IN_PROGRESS"
+    }
+  ],
+  "applied": true,
+  "appliedAt": "2026-10-04T12:00:20Z",
+  "postApplyCanonicalWbsSha256": "d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c",
+  "preApplyRuntimeWorkItemsSha256": "7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c",
+  "postApplyRuntimeWorkItemsSha256": "7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c",
+  "runtimeWorkItemMutationCount": 0,
+  "liveReconciliationExecuted": false,
+  "gate7Changed": false,
+  "releaseChanged": false
+}
