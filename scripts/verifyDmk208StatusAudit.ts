@@ -70,7 +70,32 @@ export interface Dmk208StatusAuditReceipt {
   releaseChanged: boolean;
 }
 
+export interface Dmk208ClosureReceipt {
+  schemaVersion: string;
+  workItemId: string;
+  decision: string;
+  decisionAuthority: string;
+  decisionSource: string;
+  fromStatus: string;
+  toStatus: string;
+  approvedCandidateDigest: string;
+  statusAuditApplicationReceipt: string;
+  preClosureBranchSha: string;
+  preClosureMasterSha: string;
+  preClosureCanonicalWbsSha256: string;
+  applied: boolean;
+  appliedAt: string;
+  postClosureCanonicalWbsSha256: string;
+  preClosureRuntimeWorkItemsSha256: string;
+  postClosureRuntimeWorkItemsSha256: string;
+  runtimeWorkItemMutationCount: number;
+  liveReconciliationExecuted: boolean;
+  gate7Changed: boolean;
+  releaseChanged: boolean;
+}
+
 export const EXPECTED_BASE_MASTER_SHA = '2a473df75d45aab2df3f55f37fec2d24ed403811';
+export const EXPECTED_PRE_CLOSURE_BRANCH_SHA = '68bd19f85f1b6da7a081fce28e778813669a2ca8';
 export const EXPECTED_SCOPE_EPIC = 'EPIC-13';
 export const EXPECTED_SCOPE_COUNT = 27;
 export const EXPECTED_PROJECT_ID = 'PRJ-DOCMONSTAKRAKIN';
@@ -98,6 +123,8 @@ export function computeCandidateDigest(items: AuditCandidateItem[]): string {
 export interface VerifyOptions {
   customCandidate?: Dmk208StatusAuditCandidate;
   customReceipt?: Dmk208StatusAuditReceipt;
+  customClosureReceipt?: Dmk208ClosureReceipt;
+  forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
   simulateStatusOverrides?: Record<string, string>;
 }
 
@@ -108,7 +135,7 @@ export function verifyDmk208StatusAudit(
   options?: VerifyOptions
 ): {
   valid: boolean;
-  mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED';
+  mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
   summary: { total: number; keep: number; transition: number; candidateDigest: string };
 } {
   const cPath = candidatePath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-candidate.json');
@@ -151,59 +178,120 @@ export function verifyDmk208StatusAudit(
     `candidateDigest mismatch: declared=${data.candidateDigest}, computed=${expectedDigest}`
   );
 
-  // Determine mode based on receipt
+  // Check audit application receipt
   const rPath = receiptPath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-approval-receipt.json');
-  let receipt: Dmk208StatusAuditReceipt | null = null;
+  let appReceipt: Dmk208StatusAuditReceipt | null = null;
   if (options?.customReceipt) {
-    receipt = options.customReceipt;
+    appReceipt = options.customReceipt;
   } else if (fs.existsSync(rPath)) {
     try {
-      receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+      appReceipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
     } catch (err: any) {
       throw new Error(`Failed to parse audit receipt JSON: ${err.message}`);
     }
   }
 
-  const isPostApply = receipt !== null && receipt.applied === true;
-  const mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' = isPostApply ? 'POST_APPLY_APPROVED' : 'PRE_APPLY';
+  // Check closure receipt
+  const clPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-closure-transition-receipt.json');
+  let closureReceipt: Dmk208ClosureReceipt | null = null;
+  if (options?.customClosureReceipt) {
+    closureReceipt = options.customClosureReceipt;
+  } else if (fs.existsSync(clPath)) {
+    try {
+      closureReceipt = JSON.parse(fs.readFileSync(clPath, 'utf8'));
+    } catch (err: any) {
+      throw new Error(`Failed to parse closure receipt JSON: ${err.message}`);
+    }
+  }
+
+  let mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
+  if (options?.forceMode) {
+    mode = options.forceMode;
+  } else if (closureReceipt !== null && closureReceipt.applied === true) {
+    mode = 'POST_CLOSURE_APPROVED';
+  } else if (appReceipt !== null && appReceipt.applied === true) {
+    mode = 'POST_APPLY_APPROVED';
+  } else {
+    mode = 'PRE_APPLY';
+  }
 
   const actualWbsSha = computeMasterWbsSha256(workspaceRoot);
 
-  if (mode === 'POST_APPLY_APPROVED') {
-    assert.ok(receipt, 'Receipt must exist in POST_APPLY_APPROVED mode');
-    if (receipt.decision !== 'APPROVE') {
-      throw new Error(`decision other than APPROVE cannot authorize application: ${receipt.decision}`);
+  if (mode === 'POST_CLOSURE_APPROVED') {
+    assert.ok(closureReceipt, 'Closure receipt must exist in POST_CLOSURE_APPROVED mode');
+    assert.ok(appReceipt, 'Audit application receipt must exist in POST_CLOSURE_APPROVED mode');
+
+    // 1. Verify audit application receipt
+    assert.equal(appReceipt.decision, 'APPROVE', 'Audit application receipt decision must be APPROVE');
+    assert.equal(appReceipt.candidateDigest, data.candidateDigest, 'Application receipt candidateDigest mismatch');
+    assert.equal(appReceipt.preApplyCanonicalWbsSha256, data.canonicalWbsSha256, 'Application receipt preApplyCanonicalWbsSha256 mismatch');
+
+    // 2. Verify closure receipt
+    assert.equal(closureReceipt.schemaVersion, EXPECTED_SCHEMA_VERSION, 'Closure receipt schemaVersion mismatch');
+    if (closureReceipt.workItemId !== EXPECTED_WORK_ITEM_ID) {
+      throw new Error(`closure receipt workItemId mismatch: expected ${EXPECTED_WORK_ITEM_ID}, got ${closureReceipt.workItemId}`);
+    }
+    if (closureReceipt.decision !== 'APPROVE') {
+      throw new Error(`decision other than APPROVE cannot authorize closure: ${closureReceipt.decision}`);
+    }
+    if (closureReceipt.fromStatus !== 'IN_PROGRESS') {
+      throw new Error(`closure receipt source status mismatch: expected IN_PROGRESS, got ${closureReceipt.fromStatus}`);
+    }
+    if (closureReceipt.toStatus !== 'VERIFICATION_PENDING') {
+      throw new Error(`closure receipt target status mismatch: expected VERIFICATION_PENDING, got ${closureReceipt.toStatus}`);
+    }
+    if (closureReceipt.approvedCandidateDigest !== data.candidateDigest) {
+      throw new Error(`closure receipt candidateDigest mismatch: expected ${data.candidateDigest}, got ${closureReceipt.approvedCandidateDigest}`);
+    }
+    if (closureReceipt.preClosureCanonicalWbsSha256 !== appReceipt.postApplyCanonicalWbsSha256) {
+      throw new Error(`closure receipt preClosureCanonicalWbsSha256 mismatch: expected ${appReceipt.postApplyCanonicalWbsSha256}, got ${closureReceipt.preClosureCanonicalWbsSha256}`);
+    }
+    if (closureReceipt.statusAuditApplicationReceipt !== 'docs/07_verification/dmk-208-status-audit-approval-receipt.json') {
+      throw new Error(`closure receipt statusAuditApplicationReceipt linkage mismatch`);
+    }
+    assert.equal(closureReceipt.preClosureBranchSha, EXPECTED_PRE_CLOSURE_BRANCH_SHA, 'Closure receipt preClosureBranchSha mismatch');
+    assert.equal(closureReceipt.preClosureMasterSha, EXPECTED_BASE_MASTER_SHA, 'Closure receipt preClosureMasterSha mismatch');
+
+    if (!options?.simulateStatusOverrides) {
+      if (actualWbsSha !== closureReceipt.postClosureCanonicalWbsSha256) {
+        throw new Error(`postClosureCanonicalWbsSha256 mismatch: actual=${actualWbsSha}, receipt=${closureReceipt.postClosureCanonicalWbsSha256}`);
+      }
+    }
+  } else if (mode === 'POST_APPLY_APPROVED') {
+    assert.ok(appReceipt, 'Receipt must exist in POST_APPLY_APPROVED mode');
+    if (appReceipt.decision !== 'APPROVE') {
+      throw new Error(`decision other than APPROVE cannot authorize application: ${appReceipt.decision}`);
     }
     assert.equal(
-      receipt.candidateDigest,
+      appReceipt.candidateDigest,
       data.candidateDigest,
-      `candidateDigest mismatch in receipt: receipt=${receipt.candidateDigest}, candidate=${data.candidateDigest}`
+      `candidateDigest mismatch in receipt: receipt=${appReceipt.candidateDigest}, candidate=${data.candidateDigest}`
     );
     assert.equal(
-      receipt.preApplyCanonicalWbsSha256,
+      appReceipt.preApplyCanonicalWbsSha256,
       data.canonicalWbsSha256,
-      `pre-apply WBS digest mismatch: receipt=${receipt.preApplyCanonicalWbsSha256}, candidate=${data.canonicalWbsSha256}`
+      `pre-apply WBS digest mismatch: receipt=${appReceipt.preApplyCanonicalWbsSha256}, candidate=${data.canonicalWbsSha256}`
     );
-    assert.equal(receipt.preApplyMasterSha, EXPECTED_BASE_MASTER_SHA, 'Receipt preApplyMasterSha mismatch');
-    assert.equal(receipt.scopeEpic, EXPECTED_SCOPE_EPIC, 'Receipt scopeEpic mismatch');
-    assert.equal(receipt.scopeCount, EXPECTED_SCOPE_COUNT, 'Receipt scopeCount mismatch');
+    assert.equal(appReceipt.preApplyMasterSha, EXPECTED_BASE_MASTER_SHA, 'Receipt preApplyMasterSha mismatch');
+    assert.equal(appReceipt.scopeEpic, EXPECTED_SCOPE_EPIC, 'Receipt scopeEpic mismatch');
+    assert.equal(appReceipt.scopeCount, EXPECTED_SCOPE_COUNT, 'Receipt scopeCount mismatch');
 
     if (!options?.simulateStatusOverrides && !options?.customReceipt) {
       assert.equal(
         actualWbsSha,
-        receipt.postApplyCanonicalWbsSha256,
-        `postApplyCanonicalWbsSha256 mismatch: actual=${actualWbsSha}, receipt=${receipt.postApplyCanonicalWbsSha256}`
+        appReceipt.postApplyCanonicalWbsSha256,
+        `postApplyCanonicalWbsSha256 mismatch: actual=${actualWbsSha}, receipt=${appReceipt.postApplyCanonicalWbsSha256}`
       );
     }
 
     const candidateTransitionItems = data.items.filter((i) => i.action === 'TRANSITION');
     assert.equal(
-      receipt.approvedTransitions.length,
+      appReceipt.approvedTransitions.length,
       candidateTransitionItems.length,
-      `transition count mismatch: receipt=${receipt.approvedTransitions.length}, candidate=${candidateTransitionItems.length}`
+      `transition count mismatch: receipt=${appReceipt.approvedTransitions.length}, candidate=${candidateTransitionItems.length}`
     );
 
-    const approvedMap = new Map(receipt.approvedTransitions.map((t) => [t.id, t]));
+    const approvedMap = new Map(appReceipt.approvedTransitions.map((t) => [t.id, t]));
     for (const cTrans of candidateTransitionItems) {
       const app = approvedMap.get(cTrans.id);
       assert.ok(app, `missing approved transition in receipt for ${cTrans.id}`);
@@ -261,7 +349,30 @@ export function verifyDmk208StatusAudit(
       `Item ${item.id} proposes forbidden non-v1 status: ${item.candidateStatus}`
     );
 
-    if (mode === 'POST_APPLY_APPROVED') {
+    if (mode === 'POST_CLOSURE_APPROVED') {
+      if (item.id === 'DMK-208') {
+        assert.equal(
+          canonicalItem.status,
+          'VERIFICATION_PENDING',
+          `DMK-208 status mismatch in POST_CLOSURE_APPROVED mode: expected VERIFICATION_PENDING, got ${canonicalItem.status}`
+        );
+        keepCount++;
+      } else if (item.action === 'KEEP') {
+        assert.equal(
+          canonicalItem.status,
+          item.currentStatus,
+          `KEEP item drift: Item ${item.id} status mismatch: expected ${item.currentStatus}, got ${canonicalItem.status}`
+        );
+        keepCount++;
+      } else if (item.action === 'TRANSITION') {
+        assert.equal(
+          canonicalItem.status,
+          item.candidateStatus,
+          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        );
+        transitionCount++;
+      }
+    } else if (mode === 'POST_APPLY_APPROVED') {
       if (item.action === 'KEEP') {
         assert.equal(
           canonicalItem.status,
