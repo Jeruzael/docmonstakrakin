@@ -1,12 +1,31 @@
 # docmonstakrakin current project state
 
-## 2026-10-04 — DMK-208 Lifecycle Implementation & Status Audit Review Checkpoint
+## 2026-10-04 — DMK-208 Approved Status-Audit Application Complete
 
-DMK-208 Canonical WorkItem Lifecycle & Status Audit implementation is underway on branch
-`dmk-208-lifecycle-status-audit` with explicit human authorization under PLAN-GOV-2026-001.
+DMK-208 Canonical WorkItem Lifecycle & Status Audit approved transitions were applied
+to canonical MASTER_WBS.yaml under human approval on branch `dmk-208-lifecycle-status-audit`.
 
 PR #20 (DMK-205) and PR #22 (PLAN-GOV-2026-001) were merged into master; master baseline
 is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 37150342242 all PASS.
+
+### Human Approval & Application Record
+
+- **Approved Candidate Digest:** `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
+- **Previous Candidate Digest:** `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f` (SUPERSEDED)
+- **Human Decision:** `APPROVE`
+- **Decision Authority:** Human operator
+- **Decision Source:** Explicit approval in the current DMK-208 governance review session
+- **Exact Applied Transitions:**
+  - `DMK-196`: `BACKLOG` -> `IN_PROGRESS`
+  - `DMK-197`: `BACKLOG` -> `IN_PROGRESS`
+  - `DMK-198`: `BACKLOG` -> `IN_PROGRESS`
+- **Pre-Apply Canonical WBS SHA-256:** `ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425`
+- **Post-Apply Canonical WBS SHA-256:** `d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c`
+- **Runtime WorkItems:** `NOT MUTATED` (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
+- **Live Reconciliation:** `NOT EXECUTED` (`DMK_WBS_SYNC_EXECUTE` disabled)
+- **Gate 7:** `UNCHANGED` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
+- **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
+- **Approval Receipt:** `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
 
 ### Current governance and task status
 
@@ -17,16 +36,16 @@ is verified at `2a473df75d45aab2df3f55f37fec2d24ed403811` with CI Run ID 3715034
 - DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-208: IN_PROGRESS (Explicit human authorization under PLAN-GOV-2026-001)
-- DMK-196: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
-- DMK-197: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
-- DMK-198: BACKLOG (Audit candidate recommends IN_PROGRESS; transition not applied)
+- DMK-196: IN_PROGRESS (Approved transition applied to canonical WBS)
+- DMK-197: IN_PROGRESS (Approved transition applied to canonical WBS)
+- DMK-198: IN_PROGRESS (Approved transition applied to canonical WBS)
 - DMK-199: BACKLOG
 - DMK-201: VERIFICATION_PENDING
 - DMK-202: BACKLOG
 - Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
 - Release status: v0.1.0-rc1 / NOT PROMOTED
 
-### DMK-208 implementation state
+### DMK-208 implementation and audit application state
 
 Verified implementation includes:
 
@@ -38,9 +57,12 @@ Verified implementation includes:
 - corrected `scripts/renderWbs.ts` generating the 7-state status standard from the canonical lifecycle contract and updating `VERIFICATION_PENDING` description to `(Technical verification / evidence review pending; Gate 7 pending)`
 - DMK-208 transitioned from `BACKLOG` to `IN_PROGRESS` with explicit authorization rationale
 - comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md`
-- machine-readable candidate transition proposal generated in `docs/07_verification/dmk-208-status-audit-candidate.json` with deterministic candidate digest `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b` (previous digest `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f` superseded due to DMK-196 evidence correction)
-- independent audit candidate verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) verifying 27 items (24 KEEP, 3 TRANSITION) and enforcing tracked evidence path existence
-- zero candidate status transitions applied to other WorkItems (awaiting human operator review)
+- machine-readable candidate transition proposal preserved immutably in `docs/07_verification/dmk-208-status-audit-candidate.json` with candidate digest `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
+- machine-readable approval receipt created in `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
+- independent audit verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) evolved to support `POST_APPLY_APPROVED` mode
+- dedicated receipt test suite `scripts/testStatusAuditReceipt.ts` covering scenarios A–L
+- zero candidate status transitions applied to other WorkItems
+- zero runtime WorkItem mutations (`runtimeWorkItemMutationCount = 0`)
 
 ### Historical governance blockers & live reconciliation
 
@@ -54,23 +76,23 @@ All prior DMK-205 reconciliation plans remain superseded due to canonical WBS di
 
 ### Verification
 
+- npm run wbs:render: PASS (synchronized)
 - npm run wbs:check: PASS (zero drift)
-- npm run lint: PASS (zero TypeScript errors)
-- npm run build: PASS (clean production build)
 - npm run test:canonical-lifecycle: PASS (16/16 scenarios)
 - npm run test:self-work-sync: PASS (89/89 scenarios)
-- npm run verify:dmk-208-status-audit: PASS (27 items verified, candidateDigest validated)
+- npm run verify:dmk-208-status-audit: PASS (Mode: POST_APPLY_APPROVED)
+- npx tsx scripts/testStatusAuditReceipt.ts: PASS (12/12 scenarios A–L)
 
 ### Next safe action
 
-1. Human-review the corrected DMK-208 status-audit candidate.
-2. Do not apply any candidate transition until the corrected candidate digest is explicitly approved.
-3. Keep DMK-208 IN_PROGRESS.
-4. Keep DMK-206 and DMK-207 NOT STARTED.
-5. Keep DMK-196, DMK-197, and DMK-198 at their current canonical BACKLOG statuses until explicit approval applies the candidate.
-6. Do not execute live reconciliation.
-7. Keep Gate 7 HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
-8. Keep release v0.1.0-rc1 / NOT PROMOTED.
+1. Verify the exact approved three-transition WBS application.
+2. Verify no runtime WorkItem mutation occurred.
+3. Complete PR #23 technical verification.
+4. Prepare a DMK-208 closure/status recommendation.
+5. Do not change DMK-208 beyond IN_PROGRESS without the next explicit governance decision.
+6. Do not begin DMK-206 or DMK-207.
+7. Do not execute live reconciliation.
+8. Keep Gate 7 and release unchanged.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
