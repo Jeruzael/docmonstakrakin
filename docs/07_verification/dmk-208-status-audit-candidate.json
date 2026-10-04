@@ -4,7 +4,7 @@
   "workItemId": "DMK-208",
   "baseMasterSha": "2a473df75d45aab2df3f55f37fec2d24ed403811",
   "canonicalWbsSha256": "ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425",
-  "candidateDigest": "2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f",
+  "candidateDigest": "9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b",
   "generatedAt": "2026-10-04T05:15:00.000Z",
   "generatedBy": "Gio / authorized human operator (PLAN-GOV-2026-001)",
   "scopeEpic": "EPIC-13",
@@ -252,11 +252,11 @@
         "src/components/RequestSignoff.tsx",
         "src/components/RequirementsView.tsx",
         "src/components/ArchitectureView.tsx",
-        "scripts/applyRcUiEdits.cjs"
+        "server.ts"
       ],
-      "rationale": "Codebase implementation is already partially present: RequestSignoff component is created and wired into RequirementsView and ArchitectureView, replacing direct Approve controls. Work has actively begun but acceptance criteria and verification tests remain pending closure. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
+      "rationale": "Implementation has clearly begun: the governed RequestSignoff workflow and server-side approval protection exist. However, the legacy direct approval control remains in the Requirement drawer and dedicated end-to-end sign-off verification remains incomplete. BACKLOG therefore understates the actual implementation state, while IMPLEMENTED or VERIFIED would overstate it. IN_PROGRESS is the truthful canonical lifecycle status.",
       "confidence": "HIGH",
-      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+      "humanDecisionRequired": "Approve candidate transition to IN_PROGRESS."
     },
     {
       "id": "DMK-197",
@@ -272,7 +272,7 @@
       ],
       "rationale": "Substantial codebase implementation already exists: ApprovalsView.tsx (766 lines) and server/proposals/signoff.ts implement approval routing and dual-role quorum enforcement. Work has actively begun but canonical synchronization and full automated test suite are not complete. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
       "confidence": "HIGH",
-      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+      "humanDecisionRequired": "Approve candidate transition to IN_PROGRESS."
     },
     {
       "id": "DMK-198",
@@ -282,11 +282,12 @@
       "candidateStatus": "IN_PROGRESS",
       "action": "TRANSITION",
       "evidenceRefs": [
-        "server/proposals/identity.ts"
+        "server/proposals/identity.ts",
+        "docs/07_verification/REVIEWER_SESSION_SETUP.md"
       ],
       "rationale": "Backend implementation already exists in server/proposals/identity.ts implementing DMK_HUMAN_REVIEWERS configuration parsing, password scrypt hashing, brute-force lockout, and fail-closed handling without default credentials. Work has begun but front-end setup/onboarding usability remains unbuilt. Truthful representation requires transition from BACKLOG to IN_PROGRESS.",
       "confidence": "HIGH",
-      "humanDecisionRequired": "Review and approve candidate transition to IN_PROGRESS."
+      "humanDecisionRequired": "Approve candidate transition to IN_PROGRESS."
     },
     {
       "id": "DMK-199",

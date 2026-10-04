@@ -6,10 +6,15 @@
 **Authorization:** Explicit Human Authorization under `PLAN-GOV-2026-001`  
 **Base Master SHA:** `2a473df75d45aab2df3f55f37fec2d24ed403811`  
 **Canonical WBS SHA-256:** `ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425`  
-**Candidate Digest:** `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f`  
+**Candidate Digest:** `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`  
 **Audit Scope:** `EPIC-13` (Exactly 27 Operational WorkItems)  
 **Audit Date:** 2026-10-04  
 **Audit Actor:** Gio / authorized human operator context  
+
+> [!NOTE] Candidate Digest Supersession History
+> **Previous candidate digest:** `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f`  
+> **Status:** `SUPERSEDED`  
+> **Reason:** DMK-196 evidence wording incorrectly stated that direct approval UX had been removed. Corrected in this pass to reflect that legacy direct approval control remains in the Requirement drawer while server-side rejection enforces governed sign-off.
 
 ---
 
@@ -327,14 +332,14 @@ This canonical status audit was conducted under explicit human authorization as 
 ### 3.16 `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
 - **WBS Path:** `13.06.10`
 - **Current Canonical Status:** `BACKLOG`
-- **Work Started Evidence:** Substantial code exists in `src/components/RequestSignoff.tsx`, `src/components/RequirementsView.tsx`, `src/components/ArchitectureView.tsx`, and `scripts/applyRcUiEdits.cjs`. Direct requirement approval was removed and replaced with `<RequestSignoff>`.
-- **Implementation Complete Evidence:** Incomplete. Dedicated sign-off request workflow tests, duplicate prevention verification, and complete acceptance criteria verification are missing.
+- **Work Started Evidence:** Partial implementation is present. `RequestSignoff` is implemented and wired into requirement and architecture workflows (`src/components/RequestSignoff.tsx`, `src/components/RequirementsView.tsx`, `src/components/ArchitectureView.tsx`). Server-side requirement status mutation rejects direct `APPROVED` transitions with HTTP 403 and requires the governed Request Sign-Off / human quorum workflow (`server.ts`). However, the legacy "Approve Requirement" control remains visible in the Requirement drawer, so the acceptance criterion to remove direct approval UX is not yet satisfied.
+- **Implementation Complete Evidence:** Incomplete. Dedicated sign-off request workflow tests, removal of the legacy direct approval UI control from the Requirement drawer, and complete acceptance criteria verification are missing.
 - **Technical Verification Evidence:** Incomplete.
-- **Human Governance Provenance:** None.
+- **Human Governance Provenance:** None / not yet applicable for completion.
 - **Known Blockers / Dependencies:** Depends on `DMK-194` (satisfied).
 - **Recommended Status:** `IN_PROGRESS`
 - **Recommended Action:** `TRANSITION`
-- **Rationale:** Implementation deliverables exist in the repository tree, demonstrating active partial implementation. Keeping this WorkItem labeled as `BACKLOG` ("work that has not started") is factually untruthful under the canonical lifecycle definitions. It should transition to `IN_PROGRESS`.
+- **Rationale:** Implementation has clearly begun: the governed RequestSignoff workflow and server-side approval protection exist. However, the legacy direct approval control remains in the Requirement drawer and dedicated end-to-end sign-off verification remains incomplete. BACKLOG therefore understates the actual implementation state, while IMPLEMENTED or VERIFIED would overstate it. IN_PROGRESS is the truthful canonical lifecycle status.
 - **Confidence:** `HIGH`
 - **Human Decision Required:** Approve candidate transition to `IN_PROGRESS`.
 
@@ -343,7 +348,7 @@ This canonical status audit was conducted under explicit human authorization as 
 ### 3.17 `DMK-197` — Batch 3 — Approval Inbox & Canonical Quorum Synchronization
 - **WBS Path:** `13.06.11`
 - **Current Canonical Status:** `BACKLOG`
-- **Work Started Evidence:** Substantial code exists in `src/components/ApprovalsView.tsx` (766 lines) and backend routes in `server/proposals/signoff.ts` implementing distinct dual-signoff quorum verification (`Security Officer` and `Lead Architect`).
+- **Work Started Evidence:** Substantial code exists in `src/components/ApprovalsView.tsx` (766 lines) and backend routes in `server/proposals/signoff.ts` implementing distinct dual-signoff quorum verification (`Security Officer` and `Lead Architect`). Integrates with `server/projectStore.ts`.
 - **Implementation Complete Evidence:** Incomplete. Full canonical quorum synchronization with living documents and formal end-to-end tests are incomplete.
 - **Technical Verification Evidence:** Incomplete.
 - **Human Governance Provenance:** None.
@@ -359,7 +364,7 @@ This canonical status audit was conducted under explicit human authorization as 
 ### 3.18 `DMK-198` — Batch 4 — Reviewer Provisioning / Governance Setup Usability
 - **WBS Path:** `13.06.12`
 - **Current Canonical Status:** `BACKLOG`
-- **Work Started Evidence:** Backend logic is implemented in `server/proposals/identity.ts`, including `DMK_HUMAN_REVIEWERS` parsing, scrypt password hashing, session tokens, brute-force lockout, and fail-closed handling when configuration is absent.
+- **Work Started Evidence:** Backend logic is implemented in `server/proposals/identity.ts`, including `DMK_HUMAN_REVIEWERS` parsing, scrypt password hashing, session tokens, brute-force lockout, and fail-closed handling when configuration is absent. Operational reviewer session setup is documented in `docs/07_verification/REVIEWER_SESSION_SETUP.md`.
 - **Implementation Complete Evidence:** Incomplete. Reviewer management/onboarding front-end usability remains unbuilt; dedicated test suite pending.
 - **Technical Verification Evidence:** Incomplete.
 - **Human Governance Provenance:** None.
@@ -525,7 +530,7 @@ This canonical status audit was conducted under explicit human authorization as 
   "workItemId": "DMK-208",
   "baseMasterSha": "2a473df75d45aab2df3f55f37fec2d24ed403811",
   "canonicalWbsSha256": "ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425",
-  "candidateDigest": "2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f",
+  "candidateDigest": "9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b",
   "scopeEpic": "EPIC-13",
   "scopeCount": 27
 }
