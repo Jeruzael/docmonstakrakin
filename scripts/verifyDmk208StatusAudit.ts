@@ -161,6 +161,22 @@ export function verifyDmk208StatusAudit(
         Array.isArray(item.evidenceRefs) && item.evidenceRefs.length > 0,
         `Item ${item.id} marked TRANSITION must have at least one evidenceRef`
       );
+      // Validate that local repository evidence paths exist on disk
+      for (const ref of item.evidenceRefs) {
+        if (
+          ref.startsWith('src/') ||
+          ref.startsWith('server/') ||
+          ref.startsWith('scripts/') ||
+          ref.startsWith('docs/') ||
+          ref === 'server.ts'
+        ) {
+          const resolvedPath = path.resolve(workspaceRoot, ref);
+          assert.ok(
+            fs.existsSync(resolvedPath),
+            `Item ${item.id} TRANSITION evidenceRef file does not exist on disk: ${ref}`
+          );
+        }
+      }
       assert.ok(
         item.rationale && item.rationale.trim().length > 10,
         `Item ${item.id} marked TRANSITION must have a detailed rationale`
