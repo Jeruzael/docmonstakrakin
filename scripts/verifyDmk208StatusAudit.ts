@@ -94,6 +94,38 @@ export interface Dmk208ClosureReceipt {
   releaseChanged: boolean;
 }
 
+export interface Dmk208PostMergeVerificationReceipt {
+  schemaVersion: string;
+  workItemId: string;
+  decision: string;
+  decisionAuthority: string;
+  decisionSource: string;
+  fromStatus: string;
+  toStatus: string;
+  mergedPullRequest: number;
+  prHeadSha: string;
+  mergeCommitSha: string;
+  masterShaAtVerification: string;
+  masterCiRunId: number;
+  masterCiAttempt: number;
+  masterCiConclusion: string;
+  masterCiJobs: Record<string, string>;
+  approvedCandidateDigest: string;
+  statusAuditApplicationReceipt: string;
+  closureTransitionReceipt: string;
+  preVerificationCanonicalWbsSha256: string;
+  postVerificationCanonicalWbsSha256: string;
+  preVerificationRuntimeWorkItemsSha256: string;
+  postVerificationRuntimeWorkItemsSha256: string;
+  runtimeWorkItemMutationCount: number;
+  technicalVerificationStatus: string;
+  humanGovernanceStatus: string;
+  liveReconciliationExecuted: boolean;
+  gate7Changed: boolean;
+  releaseChanged: boolean;
+  verifiedAt: string;
+}
+
 export const EXPECTED_BASE_MASTER_SHA = '2a473df75d45aab2df3f55f37fec2d24ed403811';
 export const EXPECTED_PRE_CLOSURE_BRANCH_SHA = '68bd19f85f1b6da7a081fce28e778813669a2ca8';
 export const EXPECTED_SCOPE_EPIC = 'EPIC-13';
@@ -101,6 +133,15 @@ export const EXPECTED_SCOPE_COUNT = 27;
 export const EXPECTED_PROJECT_ID = 'PRJ-DOCMONSTAKRAKIN';
 export const EXPECTED_WORK_ITEM_ID = 'DMK-208';
 export const EXPECTED_SCHEMA_VERSION = '1.0';
+
+export const EXPECTED_MERGED_PR = 23;
+export const EXPECTED_PR_HEAD_SHA = 'c1ce96fe5a42926647468c1dff41515efea98658';
+export const EXPECTED_MERGE_COMMIT_SHA = '9c29280ea6888f9282b1f0a98c01a3c617f32eaf';
+export const EXPECTED_MASTER_SHA_AT_VERIFICATION = '9c29280ea6888f9282b1f0a98c01a3c617f32eaf';
+export const EXPECTED_MASTER_CI_RUN_ID = 37207533296;
+export const EXPECTED_MASTER_CI_CONCLUSION = 'success';
+export const EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256 = 'dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe';
+export const EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256 = '974a5d8773902a24655efc3f341a70c38ad840e3738f0be3699c18c6bf690c82';
 
 export function computeCandidateDigest(items: AuditCandidateItem[]): string {
   const canonicalItems = items.map((i) => ({
@@ -124,8 +165,10 @@ export interface VerifyOptions {
   customCandidate?: Dmk208StatusAuditCandidate;
   customReceipt?: Dmk208StatusAuditReceipt;
   customClosureReceipt?: Dmk208ClosureReceipt;
-  forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
+  customPostMergeReceipt?: Dmk208PostMergeVerificationReceipt;
+  forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
+  simulateCanonicalItemOverrides?: Record<string, any>;
 }
 
 export function verifyDmk208StatusAudit(
@@ -135,7 +178,7 @@ export function verifyDmk208StatusAudit(
   options?: VerifyOptions
 ): {
   valid: boolean;
-  mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
+  mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   summary: { total: number; keep: number; transition: number; candidateDigest: string };
 } {
   const cPath = candidatePath ?? path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-candidate.json');
@@ -204,9 +247,24 @@ export function verifyDmk208StatusAudit(
     }
   }
 
-  let mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED';
+  // Check post-merge verification receipt
+  const pmPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-post-merge-verification-receipt.json');
+  let postMergeReceipt: Dmk208PostMergeVerificationReceipt | null = null;
+  if (options?.customPostMergeReceipt) {
+    postMergeReceipt = options.customPostMergeReceipt;
+  } else if (fs.existsSync(pmPath)) {
+    try {
+      postMergeReceipt = JSON.parse(fs.readFileSync(pmPath, 'utf8'));
+    } catch (err: any) {
+      throw new Error(`Failed to parse post-merge verification receipt JSON: ${err.message}`);
+    }
+  }
+
+  let mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   if (options?.forceMode) {
     mode = options.forceMode;
+  } else if (postMergeReceipt !== null && postMergeReceipt.decision === 'APPROVE') {
+    mode = 'POST_MERGE_VERIFIED';
   } else if (closureReceipt !== null && closureReceipt.applied === true) {
     mode = 'POST_CLOSURE_APPROVED';
   } else if (appReceipt !== null && appReceipt.applied === true) {
@@ -217,7 +275,74 @@ export function verifyDmk208StatusAudit(
 
   const actualWbsSha = computeMasterWbsSha256(workspaceRoot);
 
-  if (mode === 'POST_CLOSURE_APPROVED') {
+  if (mode === 'POST_MERGE_VERIFIED') {
+    assert.ok(postMergeReceipt, 'Post-merge verification receipt must exist in POST_MERGE_VERIFIED mode');
+    assert.ok(closureReceipt, 'Closure receipt must exist in POST_MERGE_VERIFIED mode');
+    assert.ok(appReceipt, 'Audit application receipt must exist in POST_MERGE_VERIFIED mode');
+
+    // 1. Verify audit application receipt
+    assert.equal(appReceipt.decision, 'APPROVE', 'Audit application receipt decision must be APPROVE');
+    assert.equal(appReceipt.candidateDigest, data.candidateDigest, 'Application receipt candidateDigest mismatch');
+    assert.equal(appReceipt.preApplyCanonicalWbsSha256, data.canonicalWbsSha256, 'Application receipt preApplyCanonicalWbsSha256 mismatch');
+
+    // 2. Verify closure receipt
+    assert.equal(closureReceipt.decision, 'APPROVE', 'Closure receipt decision must be APPROVE');
+    assert.equal(closureReceipt.workItemId, EXPECTED_WORK_ITEM_ID, 'Closure receipt workItemId mismatch');
+    assert.equal(closureReceipt.fromStatus, 'IN_PROGRESS', 'Closure receipt fromStatus mismatch');
+    assert.equal(closureReceipt.toStatus, 'VERIFICATION_PENDING', 'Closure receipt toStatus mismatch');
+    assert.equal(closureReceipt.approvedCandidateDigest, data.candidateDigest, 'Closure receipt candidateDigest mismatch');
+
+    // 3. Verify post-merge verification receipt
+    assert.equal(postMergeReceipt.schemaVersion, EXPECTED_SCHEMA_VERSION, 'Post-merge receipt schemaVersion mismatch');
+    if (postMergeReceipt.workItemId !== EXPECTED_WORK_ITEM_ID) {
+      throw new Error(`post-merge receipt workItemId mismatch: expected ${EXPECTED_WORK_ITEM_ID}, got ${postMergeReceipt.workItemId}`);
+    }
+    if (postMergeReceipt.decision !== 'APPROVE') {
+      throw new Error(`decision other than APPROVE cannot authorize verification: ${postMergeReceipt.decision}`);
+    }
+    if (postMergeReceipt.fromStatus !== 'VERIFICATION_PENDING') {
+      throw new Error(`post-merge receipt source status mismatch: expected VERIFICATION_PENDING, got ${postMergeReceipt.fromStatus}`);
+    }
+    if (postMergeReceipt.toStatus !== 'VERIFIED') {
+      throw new Error(`post-merge receipt target status mismatch: expected VERIFIED, got ${postMergeReceipt.toStatus}`);
+    }
+    if (postMergeReceipt.mergedPullRequest !== EXPECTED_MERGED_PR) {
+      throw new Error(`post-merge receipt mergedPullRequest mismatch: expected ${EXPECTED_MERGED_PR}, got ${postMergeReceipt.mergedPullRequest}`);
+    }
+    if (postMergeReceipt.prHeadSha !== EXPECTED_PR_HEAD_SHA) {
+      throw new Error(`post-merge receipt prHeadSha mismatch: expected ${EXPECTED_PR_HEAD_SHA}, got ${postMergeReceipt.prHeadSha}`);
+    }
+    if (postMergeReceipt.mergeCommitSha !== EXPECTED_MERGE_COMMIT_SHA) {
+      throw new Error(`post-merge receipt mergeCommitSha mismatch: expected ${EXPECTED_MERGE_COMMIT_SHA}, got ${postMergeReceipt.mergeCommitSha}`);
+    }
+    if (postMergeReceipt.masterShaAtVerification !== EXPECTED_MASTER_SHA_AT_VERIFICATION) {
+      throw new Error(`post-merge receipt masterShaAtVerification mismatch: expected ${EXPECTED_MASTER_SHA_AT_VERIFICATION}, got ${postMergeReceipt.masterShaAtVerification}`);
+    }
+    if (postMergeReceipt.masterCiRunId !== EXPECTED_MASTER_CI_RUN_ID) {
+      throw new Error(`post-merge receipt masterCiRunId mismatch: expected ${EXPECTED_MASTER_CI_RUN_ID}, got ${postMergeReceipt.masterCiRunId}`);
+    }
+    if (postMergeReceipt.masterCiConclusion !== EXPECTED_MASTER_CI_CONCLUSION) {
+      throw new Error(`post-merge receipt masterCiConclusion mismatch: expected ${EXPECTED_MASTER_CI_CONCLUSION}, got ${postMergeReceipt.masterCiConclusion}`);
+    }
+    if (postMergeReceipt.approvedCandidateDigest !== data.candidateDigest) {
+      throw new Error(`post-merge receipt candidateDigest mismatch: expected ${data.candidateDigest}, got ${postMergeReceipt.approvedCandidateDigest}`);
+    }
+    if (postMergeReceipt.statusAuditApplicationReceipt !== 'docs/07_verification/dmk-208-status-audit-approval-receipt.json') {
+      throw new Error(`post-merge receipt statusAuditApplicationReceipt linkage mismatch`);
+    }
+    if (postMergeReceipt.closureTransitionReceipt !== 'docs/07_verification/dmk-208-closure-transition-receipt.json') {
+      throw new Error(`post-merge receipt closureTransitionReceipt linkage mismatch`);
+    }
+    if (postMergeReceipt.preVerificationCanonicalWbsSha256 !== closureReceipt.postClosureCanonicalWbsSha256) {
+      throw new Error(`preVerificationCanonicalWbsSha256 mismatch: expected ${closureReceipt.postClosureCanonicalWbsSha256}, got ${postMergeReceipt.preVerificationCanonicalWbsSha256}`);
+    }
+    const expectedVerificationWbsSha = options?.simulateStatusOverrides
+      ? EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256
+      : actualWbsSha;
+    if (postMergeReceipt.postVerificationCanonicalWbsSha256 !== expectedVerificationWbsSha) {
+      throw new Error(`postVerificationCanonicalWbsSha256 mismatch: expected=${expectedVerificationWbsSha}, receipt=${postMergeReceipt.postVerificationCanonicalWbsSha256}`);
+    }
+  } else if (mode === 'POST_CLOSURE_APPROVED') {
     assert.ok(closureReceipt, 'Closure receipt must exist in POST_CLOSURE_APPROVED mode');
     assert.ok(appReceipt, 'Audit application receipt must exist in POST_CLOSURE_APPROVED mode');
 
@@ -252,10 +377,11 @@ export function verifyDmk208StatusAudit(
     assert.equal(closureReceipt.preClosureBranchSha, EXPECTED_PRE_CLOSURE_BRANCH_SHA, 'Closure receipt preClosureBranchSha mismatch');
     assert.equal(closureReceipt.preClosureMasterSha, EXPECTED_BASE_MASTER_SHA, 'Closure receipt preClosureMasterSha mismatch');
 
-    if (!options?.simulateStatusOverrides) {
-      if (actualWbsSha !== closureReceipt.postClosureCanonicalWbsSha256) {
-        throw new Error(`postClosureCanonicalWbsSha256 mismatch: actual=${actualWbsSha}, receipt=${closureReceipt.postClosureCanonicalWbsSha256}`);
-      }
+    const expectedClosureWbsSha = options?.simulateStatusOverrides
+      ? EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256
+      : actualWbsSha;
+    if (closureReceipt.postClosureCanonicalWbsSha256 !== expectedClosureWbsSha) {
+      throw new Error(`postClosureCanonicalWbsSha256 mismatch: expected=${expectedClosureWbsSha}, receipt=${closureReceipt.postClosureCanonicalWbsSha256}`);
     }
   } else if (mode === 'POST_APPLY_APPROVED') {
     assert.ok(appReceipt, 'Receipt must exist in POST_APPLY_APPROVED mode');
@@ -318,11 +444,16 @@ export function verifyDmk208StatusAudit(
   // Build canonical map, respecting any simulated test overrides
   const canonicalMap = new Map(
     scopedItems.map((i) => {
+      let item = { ...i };
       const overrideStatus = options?.simulateStatusOverrides?.[i.id];
       if (overrideStatus) {
-        return [i.id, { ...i, status: overrideStatus }];
+        item.status = overrideStatus as any;
       }
-      return [i.id, i];
+      const overrideFields = options?.simulateCanonicalItemOverrides?.[i.id];
+      if (overrideFields) {
+        item = { ...item, ...overrideFields };
+      }
+      return [i.id, item];
     })
   );
 
@@ -349,7 +480,48 @@ export function verifyDmk208StatusAudit(
       `Item ${item.id} proposes forbidden non-v1 status: ${item.candidateStatus}`
     );
 
-    if (mode === 'POST_CLOSURE_APPROVED') {
+    if (mode === 'POST_MERGE_VERIFIED') {
+      if (item.id === 'DMK-208') {
+        assert.equal(
+          canonicalItem.status,
+          'VERIFIED',
+          `DMK-208 status mismatch in POST_MERGE_VERIFIED mode: expected VERIFIED, got ${canonicalItem.status}`
+        );
+        assert.equal(
+          canonicalItem.verificationStatus,
+          'VERIFIED',
+          `DMK-208 verificationStatus mismatch: expected VERIFIED, got ${canonicalItem.verificationStatus}`
+        );
+        assert.ok(
+          canonicalItem.verifiedBy && canonicalItem.verifiedBy.trim().length > 0,
+          'DMK-208 verifiedBy must be non-empty'
+        );
+        assert.ok(
+          Array.isArray(canonicalItem.evidence) &&
+            canonicalItem.evidence.includes('docs/07_verification/dmk-208-post-merge-verification-receipt.json'),
+          'DMK-208 evidence must contain post-merge receipt'
+        );
+        assert.ok(
+          !canonicalItem.humanApprovedBy || /\bPENDING\b/i.test(canonicalItem.humanApprovedBy),
+          'DMK-208 humanApprovedBy must be absent or pending'
+        );
+        keepCount++;
+      } else if (item.action === 'KEEP') {
+        assert.equal(
+          canonicalItem.status,
+          item.currentStatus,
+          `KEEP item drift: Item ${item.id} status mismatch: expected ${item.currentStatus}, got ${canonicalItem.status}`
+        );
+        keepCount++;
+      } else if (item.action === 'TRANSITION') {
+        assert.equal(
+          canonicalItem.status,
+          item.candidateStatus,
+          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        );
+        transitionCount++;
+      }
+    } else if (mode === 'POST_CLOSURE_APPROVED') {
       if (item.id === 'DMK-208') {
         assert.equal(
           canonicalItem.status,
