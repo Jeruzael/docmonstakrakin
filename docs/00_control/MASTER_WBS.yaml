@@ -569,7 +569,7 @@ items:
     epic: "EPIC-13"
     priority: "P0"
     risk: "HIGH"
-    status: "IN_PROGRESS"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-205"]
     requirements: ["REQ-DATA-001", "REQ-DATA-002"]
     architecture_links: ["CMP-01", "CMP-02"]
@@ -593,7 +593,11 @@ items:
       - "Gate 7 remains untouched"
       - "Release state remains untouched"
     verification_method: "Canonical lifecycle mapping tests, WBS audit review, status transition candidate review, WBS render/check, full regression and human review."
-    evidence: []
+    evidence:
+      - "docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md"
+      - "docs/07_verification/dmk-208-status-audit-candidate.json"
+      - "docs/07_verification/dmk-208-status-audit-approval-receipt.json"
+      - "docs/07_verification/dmk-208-closure-transition-receipt.json"
     planned_by: "Explicit human authorization to begin DMK-208 implementation under PLAN-GOV-2026-001."
 
   - id: "DMK-187"
