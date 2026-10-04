@@ -541,3 +541,27 @@ This audit candidate document is cryptographically verified by:
 npm run verify:dmk-208-status-audit
 ```
 which guarantees that any drift in `MASTER_WBS.yaml` or candidate items invalidates the candidate digest.
+
+---
+
+## 5. Human Decision & Application
+
+- **Decision:** `APPROVE`
+- **Approved Candidate Digest:** `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
+- **Previous Candidate Digest:** `2bf9cb016bb8e8c4a4802705cf7335069c9686f91af06e3b1ea1ead8b58f088f` (SUPERSEDED)
+- **Approved Transition Set:**
+  - `DMK-196`: `BACKLOG` -> `IN_PROGRESS`
+  - `DMK-197`: `BACKLOG` -> `IN_PROGRESS`
+  - `DMK-198`: `BACKLOG` -> `IN_PROGRESS`
+- **Scope:** `EPIC-13` / 27 items (KEEP: 24, TRANSITION: 3)
+- **Decision Authority:** Human operator
+- **Decision Source:** Explicit approval in the current DMK-208 governance review session
+- **Application Status:** `APPLIED TO CANONICAL WBS`
+- **Pre-Apply Canonical WBS SHA-256:** `ccb743020873462180bc6f05f7241e1096c3e4ce8e331e8dca8229a31da2b425`
+- **Post-Apply Canonical WBS SHA-256:** `d1b7787116b6483ef5e61d74beed9a8e1e7165f826f36eee192beac565aeb72c`
+- **Runtime WorkItems:** `NOT MUTATED` (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
+- **Live Reconciliation:** `NOT EXECUTED` (`DMK_WBS_SYNC_EXECUTE` disabled)
+- **Gate 7:** `UNCHANGED` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
+- **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
+- **Approval Receipt:** `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
+
