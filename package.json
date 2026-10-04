@@ -22,6 +22,7 @@
     "test": "npm run qa && npm run test:remediation && npm run test:tech && npm run test:cryptodemon && npm run test:proposal && npm run test:req-sync && npm run test:projects-workspace:ui",
     "test:proposal": "tsx scripts/testProposalContract.ts",
     "test:req-sync": "tsx scripts/testRequirementStatusSync.ts",
+    "test:req-signoff": "tsx scripts/testRequirementSignoff.ts",
     "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts",
     "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts",
     "test:bootstrap:executor": "tsx scripts/testSelfBootstrapExecutor.ts",
