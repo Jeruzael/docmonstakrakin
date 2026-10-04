@@ -347,7 +347,7 @@ Current GitHub configuration does not permit required branch protection for this
 #### `DMK-208` — Canonical WorkItem Lifecycle & Status Audit
 - **WBS Path:** `13.06.21`
 - **Type:** `GOVERNANCE` | **Priority:** `P0` | **Risk:** `HIGH`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md, docs/07_verification/dmk-208-status-audit-candidate.json, docs/07_verification/dmk-208-status-audit-approval-receipt.json, docs/07_verification/dmk-208-closure-transition-receipt.json`)
+- **Status:** `VERIFIED` (Evidence: `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md, docs/07_verification/dmk-208-status-audit-candidate.json, docs/07_verification/dmk-208-status-audit-approval-receipt.json, docs/07_verification/dmk-208-closure-transition-receipt.json, docs/07_verification/dmk-208-post-merge-verification-receipt.json`)
 - **Dependencies:** `DMK-205`
 - **Requirements:** `REQ-DATA-001`, `REQ-DATA-002` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical IN_PROGRESS support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems.
