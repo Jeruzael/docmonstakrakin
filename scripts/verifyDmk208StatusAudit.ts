@@ -12,6 +12,7 @@ import {
   isCanonicalLifecycleStatus,
   type CanonicalLifecycleStatus,
 } from '../server/workTracking/canonicalLifecycle.ts';
+import { validateDmk196ClosureReceipt } from './verifyDmk196Closure.ts';
 
 export interface AuditCandidateItem {
   id: string;
@@ -166,6 +167,7 @@ export interface VerifyOptions {
   customReceipt?: Dmk208StatusAuditReceipt;
   customClosureReceipt?: Dmk208ClosureReceipt;
   customPostMergeReceipt?: Dmk208PostMergeVerificationReceipt;
+  customDmk196ClosureReceipt?: any;
   forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
   simulateCanonicalItemOverrides?: Record<string, any>;
@@ -510,13 +512,39 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
-          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
-          : [item.candidateStatus];
-        assert.ok(
-          allowedStatuses.includes(canonicalItem.status),
-          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
-        );
+        if (item.id === 'DMK-196') {
+          if (canonicalItem.status === 'VERIFICATION_PENDING') {
+            let receipt = options?.customDmk196ClosureReceipt;
+            if (receipt === undefined) {
+              const rPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-196-closure-transition-receipt.json');
+              if (fs.existsSync(rPath)) {
+                try {
+                  receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+                } catch (e: any) {
+                  throw new Error(`DMK-196 closure receipt JSON parse failed: ${e.message}`);
+                }
+              } else {
+                throw new Error(`DMK-196 is in VERIFICATION_PENDING but closure receipt is missing at ${rPath}`);
+              }
+            } else if (receipt === null) {
+              throw new Error(`DMK-196 is in VERIFICATION_PENDING but closure receipt is missing`);
+            }
+            const validation = validateDmk196ClosureReceipt(receipt);
+            if (!validation.valid) {
+              throw new Error(`DMK-196 closure receipt validation failed: ${validation.errors.join('; ')}`);
+            }
+          } else if (canonicalItem.status === 'IN_PROGRESS') {
+            // Permitted if simulated as historical in_progress
+          } else {
+            throw new Error(`TRANSITION item DMK-196 status mismatch: expected IN_PROGRESS or authorized VERIFICATION_PENDING, got ${canonicalItem.status}`);
+          }
+        } else {
+          assert.equal(
+            canonicalItem.status,
+            item.candidateStatus,
+            `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+          );
+        }
         transitionCount++;
       }
     } else if (mode === 'POST_CLOSURE_APPROVED') {
@@ -535,12 +563,10 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
-          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
-          : [item.candidateStatus];
-        assert.ok(
-          allowedStatuses.includes(canonicalItem.status),
-          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
+        assert.equal(
+          canonicalItem.status,
+          item.candidateStatus,
+          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
         );
         transitionCount++;
       }
@@ -553,12 +579,10 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
-          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
-          : [item.candidateStatus];
-        assert.ok(
-          allowedStatuses.includes(canonicalItem.status),
-          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
+        assert.equal(
+          canonicalItem.status,
+          item.candidateStatus,
+          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
         );
         transitionCount++;
       }
