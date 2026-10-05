@@ -31,11 +31,11 @@ PR #25 is open, clean, and in `READY FOR HUMAN REVIEW` state. Pull request merge
 - **DMK-208 Status:** `VERIFIED` (Reconciliation-blocked)
 - **Verification Evidence:** `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md` (CORRECTED / PASS)
 - **Dedicated Regression Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
-- **Closure Verifier Suite:** `scripts/verifyDmk196Closure.ts` & `scripts/testDmk196Closure.ts` (10/10 PASS)
+- **Closure Verifier Suite:** `scripts/verifyDmk196Closure.ts` & `scripts/testDmk196Closure.ts` (18/18 PASS)
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (46/46 suites PASS)
+- **Complete Regression Suite:** `npm run test:complete` (46/46 suites PASS, 1024/1024 assertions PASS)
 
 ### Current governance and task status
 
