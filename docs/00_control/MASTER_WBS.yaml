@@ -232,7 +232,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "IN_PROGRESS"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-194"]
     requirements: ["REQ-GOV-SIGNOFF-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -240,7 +240,8 @@ items:
     acceptance_criteria:
       - "Remove direct Approve Requirement UX; replace with Request Sign-Off"
     verification_method: "Sign-off request workflow test"
-    evidence: []
+    evidence:
+      - "docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md"
 
   - id: "DMK-197"
     wbs_path: "13.06.11"

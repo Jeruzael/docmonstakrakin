@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "workItemId": "DMK-196",
+  "decision": "APPROVE",
+  "decisionAuthority": "Human operator",
+  "decisionSource": "Explicit human approval following corrected DMK-196 verification evidence review",
+  "fromStatus": "IN_PROGRESS",
+  "toStatus": "VERIFICATION_PENDING",
+  "baseMasterSha": "970c6cdbef21c3cc4cd9701c180d849b9ea69e41",
+  "preClosureBranchSha": "808bcff954c226f7e2f4fc2795d95bf814711e0d",
+  "acceptanceCriterion": "Remove direct Approve Requirement UX; replace with Request Sign-Off",
+  "verificationEvidence": "docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md",
+  "implementationChangedDuringClosure": false,
+  "preClosureCanonicalWbsSha256": "974a5d8773902a24655efc3f341a70c38ad840e3738f0be3699c18c6bf690c82",
+  "postClosureCanonicalWbsSha256": "d5adaec2b4d05ccabf08c00a3ce608fb3503d2ef0391f3bb114f1d4faea38c26",
+  "liveReconciliationExecuted": false,
+  "runtimeWorkItemMutationCount": 0,
+  "gate7Changed": false,
+  "releaseChanged": false,
+  "applied": true,
+  "appliedAt": "2026-10-05T08:02:30Z"
+}

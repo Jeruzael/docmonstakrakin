@@ -1,39 +1,41 @@
 # docmonstakrakin current project state
 
-## 2026-10-04 — DMK-208 Post-Merge Technical Verification Complete
+## 2026-10-05 — DMK-196 Formal Requirement Sign-Off UX Verification Pending Checkpoint
 
-DMK-208 Canonical WorkItem Lifecycle & Status Audit post-merge technical verification closure is complete.
-Following PR #23 merge to master (`9c29280ea6888f9282b1f0a98c01a3c617f32eaf`) and green post-merge master CI
-Run 37207533296 (Attempt 1, Quality & Build: PASS, Controlled Docs: PASS, Complete Regression: PASS), DMK-208
-is transitioned from `VERIFICATION_PENDING` to `VERIFIED` on branch `dmk-208-post-merge-verification`.
+DMK-196 Formal Requirement Sign-Off UX implementation and hardened verification evidence are complete on branch `dmk-196-formal-requirement-signoff-ux`.
+Following explicit human authorization, DMK-196 canonical lifecycle status is transitioned from `IN_PROGRESS` to `VERIFICATION_PENDING`.
+The obsolete direct `Approve Requirement` button has been removed from the requirements drawer in `src/components/RequirementsView.tsx`,
+and replaced with governed `<RequestSignoff />` for all non-APPROVED requirements.
+Server-side defense-in-depth (`server.ts:607`) remains intact and strictly denies direct `status: 'APPROVED'` mutations with HTTP 403.
+Request Sign-Off is now the only legitimate requirement approval path exposed in the UI.
 
-Technical verification is complete and documented with immutable post-merge verification receipt.
-Human Governance provenance remains `PENDING_SIGNOFF`; `human_approved_by` is strictly absent.
-DMK-208 is therefore reconciliation-blocked alongside the 9 historical items, bringing the total
-EPIC-13 scoped reconciliation blockers to 10.
+PR #25 is open, clean, and in `READY FOR HUMAN REVIEW` state. Pull request merge and post-merge technical verification remain outstanding.
 
-### Post-Merge Technical Verification Record
+### Implementation and Verification Record
 
-- **Human Decision:** `APPROVE`
-- **Decision Authority:** Human operator / Governance authorization
-- **Decision Source:** Post-merge technical verification closure authorization following PR #23 merge and green master CI Run 37207533296
-- **Lifecycle Transition:** `DMK-208`: `VERIFICATION_PENDING` -> `VERIFIED`
-- **Merged PR:** #23 (`c1ce96fe5a42926647468c1dff41515efea98658` -> `9c29280ea6888f9282b1f0a98c01a3c617f32eaf`)
-- **Master CI Run ID:** 37207533296 (Attempt 1, Conclusion: `success`)
-- **Technical Verification Status:** `VERIFIED` (technical verification complete)
-- **Human Governance Status:** `PENDING_SIGNOFF` (not eligible for runtime reconciliation)
-- **Approved Status-Audit Candidate Digest:** `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
-- **Pre-Verification Canonical WBS SHA-256:** `dfedba8e16bf7e41ae3a4df9d9ba81920821a6e850a053cb1386f369a51c8fbe`
-- **Post-Verification Canonical WBS SHA-256:** `974a5d8773902a24655efc3f341a70c38ad840e3738f0be3699c18c6bf690c82`
-- **Runtime WorkItems:** `NOT MUTATED` (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
-- **Live Reconciliation:** `NOT EXECUTED` (`DMK_WBS_SYNC_EXECUTE` disabled)
-- **Total Reconciliation Blockers:** 10 (Historical 9 + DMK-208)
-- **Historical Governance Blockers:** 9
-- **Gate 7:** `UNCHANGED` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
-- **Release:** `UNCHANGED` (`v0.1.0-rc1 / NOT PROMOTED`)
-- **Post-Merge Verification Receipt:** `docs/07_verification/dmk-208-post-merge-verification-receipt.json`
-- **Closure Transition Receipt:** `docs/07_verification/dmk-208-closure-transition-receipt.json`
-- **Audit Application Receipt:** `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
+- **WorkItem:** DMK-196 (WBS: 13.06.10, Title: Batch 2 — Formal Requirement Sign-Off UX)
+- **Branch:** `dmk-196-formal-requirement-signoff-ux`
+- **Canonical Acceptance Criterion:** "Remove direct Approve Requirement UX; replace with Request Sign-Off" (SATISFIED)
+- **Direct Approve Requirement UX:** REMOVED from requirement drawer
+- **Governed Request Sign-Off:** ACTIVE in drawer and list views
+- **Server Defense-in-Depth:** RETAINED (`server.ts:607` returns HTTP 403 `Use Request Sign-Off and human quorum to approve a requirement`)
+- **Canonical Status:** `VERIFICATION_PENDING` (zero WBS drift, `wbs:check` PASS)
+- **Closure Transition Receipt:** `docs/07_verification/dmk-196-closure-transition-receipt.json` (VALID)
+- **PR #25 Status:** READY FOR HUMAN REVIEW (`draft = false`, mergeable = clean)
+- **Merge Status:** NOT YET EXECUTED
+- **Post-Merge Verification:** OUTSTANDING
+- **DMK-197 Status:** `IN_PROGRESS` (Unchanged in this pass)
+- **DMK-198 Status:** `IN_PROGRESS` (Unchanged in this pass)
+- **DMK-206 Status:** `BACKLOG` (Not started)
+- **DMK-207 Status:** `BACKLOG` (Not started)
+- **DMK-208 Status:** `VERIFIED` (Reconciliation-blocked)
+- **Verification Evidence:** `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md` (CORRECTED / PASS)
+- **Dedicated Regression Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
+- **Closure Verifier Suite:** `scripts/verifyDmk196Closure.ts` & `scripts/testDmk196Closure.ts` (18/18 PASS)
+- **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
+- **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
+- **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
+- **Complete Regression Suite:** `npm run test:complete` (46/46 suites PASS, 1024/1024 assertions PASS)
 
 ### Current governance and task status
 
@@ -43,35 +45,15 @@ EPIC-13 scoped reconciliation blockers to 10.
 - DMK-205: VERIFICATION_PENDING (PR #20 merged; live reconciliation pending)
 - DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
-- DMK-208: VERIFIED (Post-merge technical verification complete; human governance sign-off pending; reconciliation-blocked)
-- DMK-196: IN_PROGRESS (Approved transition applied to canonical WBS)
-- DMK-197: IN_PROGRESS (Approved transition applied to canonical WBS)
-- DMK-198: IN_PROGRESS (Approved transition applied to canonical WBS)
+- DMK-208: VERIFIED (Published on master via PR #24; human governance sign-off pending; reconciliation-blocked)
+- DMK-196: VERIFICATION_PENDING (Implementation complete; verification evidence corrected; closure receipt recorded; merge pending)
+- DMK-197: IN_PROGRESS (Unmodified in this pass)
+- DMK-198: IN_PROGRESS (Unmodified in this pass)
 - DMK-199: BACKLOG
 - DMK-201: VERIFICATION_PENDING
 - DMK-202: BACKLOG
-- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Gate 7: UNCHANGED (HUMAN_APPROVAL_REQUIRED / NOT EXECUTED)
 - Release status: v0.1.0-rc1 / NOT PROMOTED
-
-### DMK-208 verification and closure state
-
-Verified implementation and closure deliverables include:
-
-- programmatic canonical lifecycle contract in `server/workTracking/canonicalLifecycle.ts` exporting exactly 7 primary statuses: `PROPOSED`, `BACKLOG`, `READY`, `IN_PROGRESS`, `IMPLEMENTED`, `VERIFICATION_PENDING`, `VERIFIED`
-- strict exclusion of non-v1 statuses (`BLOCKED`, `DEFERRED`, `CANCELLED`, `ACCEPTED`, `SUPERSEDED`) from canonical parsing
-- fail-closed validation in `server/workTracking/canonicalWbs.ts` rejecting invalid or blank statuses with `UNSUPPORTED_WBS_STATUS`
-- one-way canonical-to-runtime lifecycle mapping in `server/workTracking/wbsMapping.ts` mapping `IN_PROGRESS` -> `IN_PROGRESS`
-- corrected `MASTER_WBS.yaml` `status_definitions` aligning with the 7 canonical v1 states
-- corrected `scripts/renderWbs.ts` generating the 7-state status standard from the canonical lifecycle contract and updating `VERIFICATION_PENDING` description to `(Technical verification / evidence review pending; Gate 7 pending)`
-- comprehensive canonical status audit of all 27 EPIC-13 operational WorkItems documented in `docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md` (Sections 1 through 7)
-- machine-readable candidate transition proposal preserved immutably in `docs/07_verification/dmk-208-status-audit-candidate.json` with candidate digest `9d20952e862a036275a67b5faf6a1f64e03b4801f8dc96769d14ce6d2c26216b`
-- machine-readable approval receipt created in `docs/07_verification/dmk-208-status-audit-approval-receipt.json`
-- machine-readable closure receipt created in `docs/07_verification/dmk-208-closure-transition-receipt.json`
-- machine-readable post-merge verification receipt created in `docs/07_verification/dmk-208-post-merge-verification-receipt.json`
-- independent audit verifier `scripts/verifyDmk208StatusAudit.ts` (`npm run verify:dmk-208-status-audit`) evolved to support `POST_MERGE_VERIFIED` mode
-- dedicated receipt test suite `scripts/testStatusAuditReceipt.ts` covering 41 scenarios A–AO
-- zero runtime WorkItem mutations (`runtimeWorkItemMutationCount = 0`, digest `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`)
-- closure PR opened targeting `master` awaiting final human review
 
 ### Historical governance blockers & live reconciliation
 
@@ -80,34 +62,34 @@ BLOCKED
 NOT AUTHORIZED
 NOT EXECUTED
 
-The following 10 canonical VERIFIED items lack sufficient completed human governance provenance and are RECONCILIATION-BLOCKED:
+Total reconciliation blockers remain 10:
 - Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190
-- DMK-208: Technically verified via PR #23 & master CI 37207533296; human governance sign-off pending
+- DMK-208: Technically verified on master; human governance sign-off pending
 
 All prior DMK-205 reconciliation plans remain superseded due to canonical WBS digest changes.
 
-### Verification
-
-- npm run wbs:render: PASS (synchronized)
-- npm run wbs:check: PASS (zero drift)
-- npm run test:canonical-lifecycle: PASS (16/16 scenarios)
-- npm run test:self-work-sync: PASS (90/90 scenarios)
-- npm run verify:dmk-208-status-audit: PASS (Mode: POST_MERGE_VERIFIED)
-- npx tsx scripts/testStatusAuditReceipt.ts: PASS (41/41 scenarios A–AO)
-- npm run test:projects-workspace:ui: PASS (14/14 scenarios)
-
 ### Next safe action
 
-1. Review and merge the DMK-208 post-merge verification closure PR.
-2. Verify closure merge on master and closure-PR push CI.
-3. Treat DMK-208 as technically VERIFIED while Human Governance remains separate and pending.
-4. Do not execute live reconciliation while blocker count > 0.
-5. Continue PLAN-GOV-2026-001 execution sequence only after DMK-208 closure is published to master.
-6. Do not start DMK-207 before its prerequisites.
-7. Keep Gate 7 untouched.
-8. Keep release v0.1.0-rc1 / NOT PROMOTED.
+1. Review PR #25 exact closure HEAD.
+2. Confirm fresh PR CI passes.
+3. Human-merge PR #25 if approved.
+4. Verify exact merge SHA on master.
+5. Verify fresh push-to-master CI.
+6. After post-merge verification, prepare DMK-196 VERIFICATION_PENDING -> VERIFIED recommendation.
+7. Do not begin DMK-197 completion pass until DMK-196 merge/publication checkpoint is complete.
+8. Do not execute live reconciliation.
+9. Keep Gate 7 and release unchanged.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
+## 2026-10-04 — DMK-208 Published on Master (PR #24 Merged)
+
+DMK-208 Canonical WorkItem Lifecycle & Status Audit is published on master (`970c6cdbef21c3cc4cd9701c180d849b9ea69e41`)
+following successful merge of PR #24 and clean post-merge master CI Run 37227767699 (Attempt 1, Quality & Build: PASS, Controlled Docs: PASS, Complete Regression: PASS).
+DMK-208 is published with canonical status `VERIFIED`.
+Human Governance provenance remains `PENDING_SIGNOFF`; `human_approved_by` is strictly absent.
+DMK-208 is therefore reconciliation-blocked alongside the 9 historical items, bringing the total
+EPIC-13 scoped reconciliation blockers to 10.
 
 ## 2026-10-03 — DMK-205 Visual-QA Correction & Pre-Sync Status Protection Complete
 

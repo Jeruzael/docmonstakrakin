@@ -21,11 +21,14 @@ const rawAppReceipt: Dmk208StatusAuditReceipt = JSON.parse(fs.readFileSync(liveA
 const rawClosureReceipt: Dmk208ClosureReceipt = JSON.parse(fs.readFileSync(liveClosureReceiptPath, 'utf8'));
 const rawPostMergeReceipt: Dmk208PostMergeVerificationReceipt = JSON.parse(fs.readFileSync(livePostMergeReceiptPath, 'utf8'));
 
-console.log('--- Running Status Audit & Closure Receipt Test Suite (Scenarios A - AO) ---');
+console.log('--- Running Status Audit & Closure Receipt Test Suite (Scenarios A - AW) ---');
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
+
+const historicalPostApplyOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'IN_PROGRESS' };
+const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'VERIFICATION_PENDING' };
 
 // ==========================================
 // Part 1: Application Receipt Scenarios A - L
@@ -35,7 +38,7 @@ function clone<T>(obj: T): T {
 {
   const res = verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
     forceMode: 'POST_APPLY_APPROVED',
-    simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+    simulateStatusOverrides: historicalPostApplyOverrides,
   });
   assert.equal(res.valid, true, 'Scenario A failed: valid must be true');
   assert.equal(res.mode, 'POST_APPLY_APPROVED', 'Scenario A failed: mode must be POST_APPLY_APPROVED');
@@ -53,7 +56,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /candidateDigest mismatch/i,
@@ -71,7 +74,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /transition count mismatch|missing approved transition/i,
@@ -93,7 +96,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /transition count mismatch|extra approved transition/i,
@@ -115,7 +118,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /source status mismatch/i,
@@ -137,7 +140,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /target status mismatch/i,
@@ -155,7 +158,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /pre-apply WBS digest mismatch/i,
@@ -170,7 +173,7 @@ function clone<T>(obj: T): T {
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
-        simulateStatusOverrides: { 'DMK-199': 'IN_PROGRESS', 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: { ...historicalPostApplyOverrides, 'DMK-199': 'IN_PROGRESS' },
       });
     },
     /KEEP item drift|status mismatch/i,
@@ -188,7 +191,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customCandidate: badCandidate,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /candidateDigest mismatch/i,
@@ -203,7 +206,7 @@ function clone<T>(obj: T): T {
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
-        simulateStatusOverrides: { 'DMK-191': 'IN_PROGRESS', 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: { ...historicalPostApplyOverrides, 'DMK-191': 'IN_PROGRESS' },
       });
     },
     /KEEP item drift|status mismatch/i,
@@ -222,7 +225,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customCandidate: badCandidate,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /Invalid scopeCount/i,
@@ -240,7 +243,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
         customReceipt: badReceipt,
-        simulateStatusOverrides: { 'DMK-208': 'IN_PROGRESS' },
+        simulateStatusOverrides: historicalPostApplyOverrides,
       });
     },
     /decision other than APPROVE cannot authorize application/i,
@@ -257,7 +260,7 @@ function clone<T>(obj: T): T {
 {
   const res = verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
     forceMode: 'POST_CLOSURE_APPROVED',
-    simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+    simulateStatusOverrides: historicalPostClosureOverrides,
   });
   assert.equal(res.valid, true, 'Scenario M failed: valid must be true');
   assert.equal(res.mode, 'POST_CLOSURE_APPROVED', 'Scenario M failed: mode must be POST_CLOSURE_APPROVED');
@@ -275,7 +278,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt source status mismatch/i,
@@ -293,7 +296,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt target status mismatch/i,
@@ -311,7 +314,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt candidateDigest mismatch/i,
@@ -329,7 +332,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt statusAuditApplicationReceipt linkage mismatch/i,
@@ -347,7 +350,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt preClosureCanonicalWbsSha256 mismatch/i,
@@ -365,7 +368,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /postClosureCanonicalWbsSha256 mismatch/i,
@@ -383,7 +386,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt workItemId mismatch/i,
@@ -416,7 +419,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /decision other than APPROVE cannot authorize closure/i,
@@ -434,7 +437,7 @@ function clone<T>(obj: T): T {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_CLOSURE_APPROVED',
         customClosureReceipt: badClosure,
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /closure receipt target status mismatch/i,
@@ -449,7 +452,7 @@ function clone<T>(obj: T): T {
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         forceMode: 'POST_APPLY_APPROVED',
-        simulateStatusOverrides: { 'DMK-208': 'VERIFICATION_PENDING' },
+        simulateStatusOverrides: historicalPostClosureOverrides,
       });
     },
     /postApplyCanonicalWbsSha256 mismatch|KEEP item drift: Item DMK-208 status mismatch/i,
@@ -640,7 +643,7 @@ function clone<T>(obj: T): T {
   console.log('✓ [Scenario AK] Unexpected completed human_approved_by fails.');
 }
 
-// Scenario AL: DMK-196/197/198 drift fails
+// Scenario AL: DMK-196 backward drift to BACKLOG fails
 {
   assert.throws(
     () => {
@@ -651,7 +654,7 @@ function clone<T>(obj: T): T {
     /TRANSITION item DMK-196 status mismatch/i,
     'Scenario AL failed'
   );
-  console.log('✓ [Scenario AL] DMK-196/197/198 drift fails.');
+  console.log('✓ [Scenario AL] DMK-196 backward drift to BACKLOG fails.');
 }
 
 // Scenario AM: Wrong pre-verification WBS digest fails
@@ -696,4 +699,115 @@ function clone<T>(obj: T): T {
   console.log('✓ [Scenario AO] Target other than VERIFIED fails.');
 }
 
-console.log('--- All 41 Status Audit & Post-Merge Closure Scenarios (A - AO) Passed! ---');
+
+// Scenario AP: Current DMK-196 VERIFICATION_PENDING + valid DMK-196 closure receipt passes
+{
+  const res = verifyDmk208StatusAudit(workspaceRoot);
+  assert.equal(res.valid, true, 'Scenario AP failed: valid must be true');
+  assert.equal(res.mode, 'POST_MERGE_VERIFIED', 'Scenario AP failed: mode must be POST_MERGE_VERIFIED');
+  console.log('✓ [Scenario AP] DMK-196 VERIFICATION_PENDING with valid closure receipt passes.');
+}
+
+// Scenario AQ: DMK-196 VERIFICATION_PENDING with missing closure receipt fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196ClosureReceipt: null,
+      });
+    },
+    /closure receipt is missing/i,
+    'Scenario AQ failed'
+  );
+  console.log('✓ [Scenario AQ] DMK-196 VERIFICATION_PENDING with missing closure receipt fails.');
+}
+
+// Scenario AR: DMK-196 VERIFICATION_PENDING with invalid closure receipt fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196ClosureReceipt: {
+          schemaVersion: '1.0',
+          workItemId: 'DMK-196',
+          decision: 'REJECT',
+        },
+      });
+    },
+    /DMK-196 closure receipt validation failed/i,
+    'Scenario AR failed'
+  );
+  console.log('✓ [Scenario AR] DMK-196 VERIFICATION_PENDING with invalid closure receipt fails.');
+}
+
+// Scenario AS: DMK-196 VERIFIED fails because no post-merge DMK-196 verification exists yet
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-196': 'VERIFIED' },
+      });
+    },
+    /TRANSITION item DMK-196 status mismatch/i,
+    'Scenario AS failed'
+  );
+  console.log('✓ [Scenario AS] DMK-196 VERIFIED fails.');
+}
+
+// Scenario AT: DMK-197 VERIFICATION_PENDING fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-197': 'VERIFICATION_PENDING' },
+      });
+    },
+    /TRANSITION item DMK-197 status mismatch/i,
+    'Scenario AT failed'
+  );
+  console.log('✓ [Scenario AT] DMK-197 VERIFICATION_PENDING fails.');
+}
+
+// Scenario AU: DMK-197 VERIFIED fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-197': 'VERIFIED' },
+      });
+    },
+    /TRANSITION item DMK-197 status mismatch/i,
+    'Scenario AU failed'
+  );
+  console.log('✓ [Scenario AU] DMK-197 VERIFIED fails.');
+}
+
+// Scenario AV: DMK-198 VERIFICATION_PENDING fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-198': 'VERIFICATION_PENDING' },
+      });
+    },
+    /TRANSITION item DMK-198 status mismatch/i,
+    'Scenario AV failed'
+  );
+  console.log('✓ [Scenario AV] DMK-198 VERIFICATION_PENDING fails.');
+}
+
+// Scenario AW: DMK-198 VERIFIED fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-198': 'VERIFIED' },
+      });
+    },
+    /TRANSITION item DMK-198 status mismatch/i,
+    'Scenario AW failed'
+  );
+  console.log('✓ [Scenario AW] DMK-198 VERIFIED fails.');
+}
+
+console.log('--- All 49 Status Audit & Post-Merge Closure Scenarios (A - AW) Passed! ---');

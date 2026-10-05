@@ -15,7 +15,6 @@ import {
   Code2,
   ExternalLink,
   ChevronRight,
-  Check,
   AlertCircle,
   Sparkles,
 } from 'lucide-react';
@@ -313,7 +312,7 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
 
       {/* Side Drawer for Selected Requirement */}
       {activeDrawerReq && (
-        <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col animate-in slide-in-from-right duration-200">
+        <div id="requirement-drawer" className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col animate-in slide-in-from-right duration-200">
           <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
             <div>
               <div className="flex items-center gap-2">
@@ -550,13 +549,13 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      {activeDrawerReq.status !== 'APPROVED' && (
-                        <button
-                          onClick={() => handleStatusChange(activeDrawerReq.id, 'APPROVED')}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" /> Approve Requirement
-                        </button>
+                      {project && activeDrawerReq.status !== 'APPROVED' && (
+                        <RequestSignoff
+                          projectId={project.id}
+                          targetEntityId={activeDrawerReq.id}
+                          targetEntityType="REQUIREMENT"
+                          requestedBy={project.owner}
+                        />
                       )}
                       {activeDrawerReq.status !== 'UNDER_REVIEW' && (
                         <button

@@ -178,7 +178,7 @@ try {
     }finally{await f.close();}
   });
   await test('A2 rejected status leaves canonical status and visible error in the same drawer',async()=>{
-    const f=await setup();try{await f.start();await drawer(f.page);f.state.reject=true;await f.page.getByRole('button',{name:'Approve Requirement',exact:true}).click();await f.page.getByText('Fixture rejected transition',{exact:true}).waitFor();await preserved(f.page);assert((await f.page.locator('main').textContent())!.includes('PROPOSED'));assert.equal(f.state.posts.length,1);}finally{await f.close();}
+    const f=await setup();try{await f.start();await drawer(f.page);assert.equal(await f.page.locator('#requirement-drawer').getByRole('button',{name:'Approve Requirement'}).count(),0,'Direct Approve Requirement button must not exist in drawer');assert.equal(await f.page.locator('#requirement-drawer').getByRole('button',{name:'REQUEST SIGN-OFF',exact:true}).count(),1,'REQUEST SIGN-OFF button must exist in drawer');f.state.reject=true;await f.page.locator('#requirement-drawer').getByRole('button',{name:'Mark Under Review',exact:true}).click();await f.page.getByText('Fixture rejected transition',{exact:true}).waitFor();await preserved(f.page);assert((await f.page.locator('main').textContent())!.includes('PROPOSED'));assert.equal(f.state.posts.length,1);}finally{await f.close();}
   });
   await test('A3 later question and selected domain survive answer refresh',async()=>{
     const f=await setup();try{await f.start();await f.page.getByRole('button',{name:/^Requirements(?: |$)/}).click();await f.page.getByRole('button',{name:/Adaptive Discovery Questionnaire/}).click();

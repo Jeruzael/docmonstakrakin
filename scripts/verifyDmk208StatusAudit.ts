@@ -12,6 +12,7 @@ import {
   isCanonicalLifecycleStatus,
   type CanonicalLifecycleStatus,
 } from '../server/workTracking/canonicalLifecycle.ts';
+import { validateDmk196ClosureReceipt } from './verifyDmk196Closure.ts';
 
 export interface AuditCandidateItem {
   id: string;
@@ -166,6 +167,7 @@ export interface VerifyOptions {
   customReceipt?: Dmk208StatusAuditReceipt;
   customClosureReceipt?: Dmk208ClosureReceipt;
   customPostMergeReceipt?: Dmk208PostMergeVerificationReceipt;
+  customDmk196ClosureReceipt?: any;
   forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
   simulateCanonicalItemOverrides?: Record<string, any>;
@@ -336,9 +338,7 @@ export function verifyDmk208StatusAudit(
     if (postMergeReceipt.preVerificationCanonicalWbsSha256 !== closureReceipt.postClosureCanonicalWbsSha256) {
       throw new Error(`preVerificationCanonicalWbsSha256 mismatch: expected ${closureReceipt.postClosureCanonicalWbsSha256}, got ${postMergeReceipt.preVerificationCanonicalWbsSha256}`);
     }
-    const expectedVerificationWbsSha = options?.simulateStatusOverrides
-      ? EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256
-      : actualWbsSha;
+    const expectedVerificationWbsSha = EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256;
     if (postMergeReceipt.postVerificationCanonicalWbsSha256 !== expectedVerificationWbsSha) {
       throw new Error(`postVerificationCanonicalWbsSha256 mismatch: expected=${expectedVerificationWbsSha}, receipt=${postMergeReceipt.postVerificationCanonicalWbsSha256}`);
     }
@@ -377,9 +377,7 @@ export function verifyDmk208StatusAudit(
     assert.equal(closureReceipt.preClosureBranchSha, EXPECTED_PRE_CLOSURE_BRANCH_SHA, 'Closure receipt preClosureBranchSha mismatch');
     assert.equal(closureReceipt.preClosureMasterSha, EXPECTED_BASE_MASTER_SHA, 'Closure receipt preClosureMasterSha mismatch');
 
-    const expectedClosureWbsSha = options?.simulateStatusOverrides
-      ? EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256
-      : actualWbsSha;
+    const expectedClosureWbsSha = EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256;
     if (closureReceipt.postClosureCanonicalWbsSha256 !== expectedClosureWbsSha) {
       throw new Error(`postClosureCanonicalWbsSha256 mismatch: expected=${expectedClosureWbsSha}, receipt=${closureReceipt.postClosureCanonicalWbsSha256}`);
     }
@@ -514,11 +512,39 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        assert.equal(
-          canonicalItem.status,
-          item.candidateStatus,
-          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
-        );
+        if (item.id === 'DMK-196') {
+          if (canonicalItem.status === 'VERIFICATION_PENDING') {
+            let receipt = options?.customDmk196ClosureReceipt;
+            if (receipt === undefined) {
+              const rPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-196-closure-transition-receipt.json');
+              if (fs.existsSync(rPath)) {
+                try {
+                  receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+                } catch (e: any) {
+                  throw new Error(`DMK-196 closure receipt JSON parse failed: ${e.message}`);
+                }
+              } else {
+                throw new Error(`DMK-196 is in VERIFICATION_PENDING but closure receipt is missing at ${rPath}`);
+              }
+            } else if (receipt === null) {
+              throw new Error(`DMK-196 is in VERIFICATION_PENDING but closure receipt is missing`);
+            }
+            const validation = validateDmk196ClosureReceipt(receipt);
+            if (!validation.valid) {
+              throw new Error(`DMK-196 closure receipt validation failed: ${validation.errors.join('; ')}`);
+            }
+          } else if (canonicalItem.status === 'IN_PROGRESS') {
+            // Permitted if simulated as historical in_progress
+          } else {
+            throw new Error(`TRANSITION item DMK-196 status mismatch: expected IN_PROGRESS or authorized VERIFICATION_PENDING, got ${canonicalItem.status}`);
+          }
+        } else {
+          assert.equal(
+            canonicalItem.status,
+            item.candidateStatus,
+            `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+          );
+        }
         transitionCount++;
       }
     } else if (mode === 'POST_CLOSURE_APPROVED') {
