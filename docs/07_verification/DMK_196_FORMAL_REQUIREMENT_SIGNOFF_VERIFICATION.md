@@ -5,12 +5,17 @@
 - **WorkItem:** DMK-196
 - **WBS Path:** 13.06.10
 - **Title:** Batch 2 — Formal Requirement Sign-Off UX
-- **Canonical Status:** `IN_PROGRESS` (Not marked VERIFIED; Human Governance sign-off pending)
+- **Canonical Status:** `VERIFICATION_PENDING`
+- **Closure Transition:** APPROVED / APPLIED
+- **Closure Receipt:** `docs/07_verification/dmk-196-closure-transition-receipt.json`
 - **Baseline Master Commit:** `970c6cdbef21c3cc4cd9701c180d849b9ea69e41`
 - **Branch:** `dmk-196-formal-requirement-signoff-ux`
 - **Verification Timestamp:** 2026-10-05T03:43:00Z
 - **Canonical Acceptance Criterion:** "Remove direct Approve Requirement UX; replace with Request Sign-Off"
 - **Verification Method:** Sign-off request workflow test
+- **PR #25 State:** READY FOR HUMAN REVIEW (`draft = false`, mergeable = clean)
+- **Merge Status:** PENDING (awaiting explicit human approval)
+- **Post-Merge Verification:** OUTSTANDING
 
 ---
 
@@ -25,7 +30,7 @@ In this work item:
 3. Backend HTTP 403 fail-closed rejection on direct `status: 'APPROVED'` mutations remains strictly preserved in `server.ts:607`.
 4. Dedicated regression test suite `scripts/testRequirementSignoff.ts` covering Scenarios A through O was created, added to `package.json` as `test:req-signoff`, and verified.
 5. Existing UI test `scripts/testProjectsWorkspaceUi.ts` (test A2) was updated to assert the absence of the direct button and presence of governed `<RequestSignoff />`.
-6. Canonical WBS status remains `IN_PROGRESS` with zero drift.
+6. Historical implementation pass was executed while DMK-196 was `IN_PROGRESS`. Following explicit human approval of closure transition receipt `docs/07_verification/dmk-196-closure-transition-receipt.json`, canonical WBS status was transitioned from `IN_PROGRESS` to `VERIFICATION_PENDING` with zero drift. Pull request merge and post-merge verification remain outstanding.
 
 ---
 
@@ -93,6 +98,14 @@ To ensure claims do not exceed executable test evidence, the 15 verification sce
    - This verification evidence document.
 6. `docs/00_control/PROJECT_STATE.md`:
    - Governed update via Controlled Docs API (`DOC-CTRL-002`).
+7. `scripts/verifyDmk196Closure.ts`:
+   - Dedicated closure transition verifier exporting `validateDmk196ClosureReceipt` pure validator and asserting canonical WBS state.
+8. `scripts/testDmk196Closure.ts`:
+   - Regression suite covering 15 negative & boundary scenarios (A through O) for DMK-196 closure.
+9. `scripts/verifyDmk208StatusAudit.ts`:
+   - Historical verifier hardened to strictly require exact `candidateStatus` for transitioned items, special-casing DMK-196 forward transition to `VERIFICATION_PENDING` only through verified closure receipt provenance.
+10. `scripts/testStatusAuditReceipt.ts`:
+    - Strengthened with 49 scenarios (A through AW) verifying historical modes and rejecting unauthorized forward drift for DMK-197 and DMK-198.
 
 ---
 
@@ -100,22 +113,28 @@ To ensure claims do not exceed executable test evidence, the 15 verification sce
 
 | Test Command | Exit Code | Checks Passed | Description |
 |---|---|---|---|
-| `npm.cmd run test:req-signoff` | 0 | 15 / 15 | Dedicated DMK-196 sign-off workflow regression suite |
-| `npm.cmd run test:req-sync` | 0 | 12 / 12 | Requirement canonical state sync & backend 403 test |
-| `npm.cmd run test:projects-workspace:ui` | 0 | 14 / 14 | Projects Workspace Playwright UI suite |
-| `npm.cmd run wbs:check` | 0 | Zero drift | Canonical WBS integrity and markdown projection check |
-| `npm.cmd run lint` | 0 | Clean | TypeScript typechecking across repository (`tsc --noEmit`) |
-| `npm.cmd run build` | 0 | Clean | Production Vite & esbuild bundle compilation |
-| `npm.cmd run test:controlled-docs` | 0 | 40/40 Core, 29/29 Security, 11/11 Subsystems | Controlled documents integrity suite |
-| `npm.cmd run test:complete` | 0 | 45 / 45 suites (100%) | Complete automated regression test suite |
+| `npm run test:req-signoff` | 0 | 15 / 15 | Dedicated DMK-196 sign-off workflow regression suite |
+| `npm run test:req-sync` | 0 | 12 / 12 | Requirement canonical state sync & backend 403 test |
+| `npm run test:projects-workspace:ui` | 0 | 14 / 14 | Projects Workspace Playwright UI suite |
+| `npm run verify:dmk-196-closure` | 0 | 1 / 1 (PASS) | Dedicated DMK-196 closure transition verifier |
+| `npx tsx scripts/testDmk196Closure.ts` | 0 | 15 / 15 | DMK-196 closure negative and boundary test suite |
+| `npm run verify:dmk-208-status-audit` | 0 | 1 / 1 (PASS) | Historical DMK-208 status audit candidate verifier |
+| `npx tsx scripts/testStatusAuditReceipt.ts` | 0 | 49 / 49 | Historical status audit & closure receipt test suite (Scenarios A–AW) |
+| `npm run wbs:check` | 0 | Zero drift | Canonical WBS integrity and markdown projection check |
+| `npm run lint` | 0 | Clean | TypeScript typechecking across repository (`tsc --noEmit`) |
+| `npm run build` | 0 | Clean | Production Vite & esbuild bundle compilation |
+| `npm run test:controlled-docs` | 0 | 40/40 Core, 29/29 Security, 11/11 Subsystems | Controlled documents integrity suite |
+| `npm run test:complete` | 0 | 46 / 46 suites (1021 assertions) | Complete automated regression test suite |
 
 ---
 
 ## 5. Scope & Governance Boundaries
 
-- **DMK-196 Canonical Status:** Remains `IN_PROGRESS` throughout this pass. A transition to `VERIFICATION_PENDING` is recommended for explicit human approval upon PR review.
-- **DMK-197 Boundary:** DMK-197 (Approval Inbox) implementation was NOT started or modified.
-- **DMK-198 Boundary:** DMK-198 (Reviewer Identity & Provisioning) was NOT started or modified.
+- **DMK-196 Canonical Status:** `VERIFICATION_PENDING` (Authorized and applied via `dmk-196-closure-transition-receipt.json`).
+- **PR #25 Merge:** PENDING explicit human approval at the merge gate; NOT merged.
+- **Post-Merge Verification:** OUTSTANDING until PR #25 is merged to master.
+- **DMK-197 Boundary:** `IN_PROGRESS` (Implementation untouched in this PR; unauthorized forward drift strictly rejected).
+- **DMK-198 Boundary:** `IN_PROGRESS` (Implementation untouched in this PR; unauthorized forward drift strictly rejected).
 - **DMK-206 / DMK-207 Boundary:** Not started; remain in `BACKLOG`.
 - **Reconciliation Boundary:** Zero live reconciliation executed (`DMK_WBS_SYNC_EXECUTE` disabled); runtime WorkItems remain untouched; total reconciliation blockers remain 10 (9 historical + 1 DMK-208).
 - **Release / Gate 7 Boundary:** Gate 7 remains `HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`; release remains `v0.1.0-rc1 / NOT PROMOTED`.
