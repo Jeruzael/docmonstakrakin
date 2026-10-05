@@ -16,7 +16,7 @@ const rawReceipt = JSON.parse(fs.readFileSync(liveReceiptPath, 'utf8'));
 console.log('================================================================');
 console.log('   DMK-196 CLOSURE TRANSITION VERIFIER REGRESSION SUITE');
 console.log('   Evaluates Invariant: Fail-closed enforcement on closure receipt & WBS');
-console.log('   Coverage: Scenarios A through J (Negative & positive boundary checks)');
+console.log('   Coverage: Scenarios A through O (Negative & positive boundary checks)');
 console.log('================================================================\n');
 
 function clone<T>(obj: T): T {
@@ -181,8 +181,70 @@ try {
   fail('J: liveReconciliationExecuted=true fails closed', err);
 }
 
+// Scenario K: Wrong preClosureCanonicalWbsSha256 fails
+try {
+  const bad = clone(rawReceipt);
+  bad.preClosureCanonicalWbsSha256 = '0000000000000000000000000000000000000000000000000000000000000000';
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('receipt.preClosureCanonicalWbsSha256 must match')));
+  pass('K: Wrong preClosureCanonicalWbsSha256 fails closed');
+} catch (err) {
+  fail('K: Wrong preClosureCanonicalWbsSha256 fails closed', err);
+}
+
+// Scenario L: applied=false fails
+try {
+  const bad = clone(rawReceipt);
+  bad.applied = false;
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('receipt.applied must be true')));
+  pass('L: applied=false fails closed');
+} catch (err) {
+  fail('L: applied=false fails closed', err);
+}
+
+// Scenario M: Wrong verificationEvidence path fails
+try {
+  const bad = clone(rawReceipt);
+  bad.verificationEvidence = 'docs/07_verification/wrong-evidence.md';
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('receipt.verificationEvidence must be')));
+  pass('M: Wrong verificationEvidence path fails closed');
+} catch (err) {
+  fail('M: Wrong verificationEvidence path fails closed', err);
+}
+
+// Scenario N: DMK-207 status drift fails
+try {
+  const customWbs = createCustomWbs((doc) => {
+    const it = findWbsItem(doc.items, 'DMK-207');
+    if (it) it.status = 'IN_PROGRESS';
+  });
+  const res = verifyDmk196Closure({ customWbsYamlContent: customWbs });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('DMK-207 status must remain "BACKLOG"')));
+  pass('N: DMK-207 status drift fails closed');
+} catch (err) {
+  fail('N: DMK-207 status drift fails closed', err);
+}
+
+// Scenario O: implementationChangedDuringClosure=true fails
+try {
+  const bad = clone(rawReceipt);
+  bad.implementationChangedDuringClosure = true;
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('receipt.implementationChangedDuringClosure must be false')));
+  pass('O: implementationChangedDuringClosure=true fails closed');
+} catch (err) {
+  fail('O: implementationChangedDuringClosure=true fails closed', err);
+}
+
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 10 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 15 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================\n');
 
 if (failedCount > 0) {
