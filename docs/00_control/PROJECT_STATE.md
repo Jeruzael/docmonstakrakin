@@ -1,15 +1,15 @@
 # docmonstakrakin current project state
 
-## 2026-10-05 — DMK-196 Formal Requirement Sign-Off UX Implementation Checkpoint
+## 2026-10-05 — DMK-196 Formal Requirement Sign-Off UX Verification Pending Checkpoint
 
-DMK-196 Formal Requirement Sign-Off UX implementation and verification are complete on branch `dmk-196-formal-requirement-signoff-ux`.
+DMK-196 Formal Requirement Sign-Off UX implementation and hardened verification evidence are complete on branch `dmk-196-formal-requirement-signoff-ux`.
+Following explicit human authorization, DMK-196 canonical lifecycle status is transitioned from `IN_PROGRESS` to `VERIFICATION_PENDING`.
 The obsolete direct `Approve Requirement` button has been removed from the requirements drawer in `src/components/RequirementsView.tsx`,
 and replaced with governed `<RequestSignoff />` for all non-APPROVED requirements.
 Server-side defense-in-depth (`server.ts:607`) remains intact and strictly denies direct `status: 'APPROVED'` mutations with HTTP 403.
 Request Sign-Off is now the only legitimate requirement approval path exposed in the UI.
 
-DMK-196 canonical WBS status remains `IN_PROGRESS` throughout this implementation pass; no premature lifecycle transitions were applied.
-Formal closure recommendation (`IN_PROGRESS -> VERIFICATION_PENDING`) is prepared for human operator decision.
+PR #25 is open, clean, and in `READY FOR HUMAN REVIEW` state. Pull request merge and post-merge technical verification remain outstanding.
 
 ### Implementation and Verification Record
 
@@ -19,18 +19,23 @@ Formal closure recommendation (`IN_PROGRESS -> VERIFICATION_PENDING`) is prepare
 - **Direct Approve Requirement UX:** REMOVED from requirement drawer
 - **Governed Request Sign-Off:** ACTIVE in drawer and list views
 - **Server Defense-in-Depth:** RETAINED (`server.ts:607` returns HTTP 403 `Use Request Sign-Off and human quorum to approve a requirement`)
-- **Canonical Status:** `IN_PROGRESS` (zero WBS drift, `wbs:check` PASS)
-- **Closure Decision:** PENDING (awaiting human authorization gate)
-- **DMK-197 Status:** `IN_PROGRESS` (no new implementation in this pass)
-- **DMK-198 Status:** `IN_PROGRESS` (no new implementation in this pass)
-- **DMK-206 Status:** `BACKLOG` (not started)
-- **DMK-207 Status:** `BACKLOG` (not started)
-- **Verification Evidence:** `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md`
+- **Canonical Status:** `VERIFICATION_PENDING` (zero WBS drift, `wbs:check` PASS)
+- **Closure Transition Receipt:** `docs/07_verification/dmk-196-closure-transition-receipt.json` (VALID)
+- **PR #25 Status:** READY FOR HUMAN REVIEW (`draft = false`, mergeable = clean)
+- **Merge Status:** NOT YET EXECUTED
+- **Post-Merge Verification:** OUTSTANDING
+- **DMK-197 Status:** `IN_PROGRESS` (Unchanged in this pass)
+- **DMK-198 Status:** `IN_PROGRESS` (Unchanged in this pass)
+- **DMK-206 Status:** `BACKLOG` (Not started)
+- **DMK-207 Status:** `BACKLOG` (Not started)
+- **DMK-208 Status:** `VERIFIED` (Reconciliation-blocked)
+- **Verification Evidence:** `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md` (CORRECTED / PASS)
 - **Dedicated Regression Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
+- **Closure Verifier Suite:** `scripts/verifyDmk196Closure.ts` & `scripts/testDmk196Closure.ts` (10/10 PASS)
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (45/45 suites PASS)
+- **Complete Regression Suite:** `npm run test:complete` (46/46 suites PASS)
 
 ### Current governance and task status
 
@@ -41,13 +46,13 @@ Formal closure recommendation (`IN_PROGRESS -> VERIFICATION_PENDING`) is prepare
 - DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-208: VERIFIED (Published on master via PR #24; human governance sign-off pending; reconciliation-blocked)
-- DMK-196: IN_PROGRESS (Implementation complete; verification evidence created; closure review pending)
+- DMK-196: VERIFICATION_PENDING (Implementation complete; verification evidence corrected; closure receipt recorded; merge pending)
 - DMK-197: IN_PROGRESS (Unmodified in this pass)
 - DMK-198: IN_PROGRESS (Unmodified in this pass)
 - DMK-199: BACKLOG
 - DMK-201: VERIFICATION_PENDING
 - DMK-202: BACKLOG
-- Gate 7: HUMAN_APPROVAL_REQUIRED / NOT EXECUTED
+- Gate 7: UNCHANGED (HUMAN_APPROVAL_REQUIRED / NOT EXECUTED)
 - Release status: v0.1.0-rc1 / NOT PROMOTED
 
 ### Historical governance blockers & live reconciliation
@@ -65,14 +70,15 @@ All prior DMK-205 reconciliation plans remain superseded due to canonical WBS di
 
 ### Next safe action
 
-1. Review DMK-196 implementation and verification evidence.
-2. Confirm acceptance criterion "Remove direct Approve Requirement UX; replace with Request Sign-Off" is satisfied.
-3. If satisfied, prepare DMK-196 IN_PROGRESS -> VERIFICATION_PENDING recommendation.
-4. Do not apply that transition without explicit human approval.
-5. Do not begin DMK-197 completion pass until DMK-196 closure decision.
-6. Do not begin DMK-206.
-7. Do not execute live reconciliation.
-8. Keep Gate 7 and release unchanged.
+1. Review PR #25 exact closure HEAD.
+2. Confirm fresh PR CI passes.
+3. Human-merge PR #25 if approved.
+4. Verify exact merge SHA on master.
+5. Verify fresh push-to-master CI.
+6. After post-merge verification, prepare DMK-196 VERIFICATION_PENDING -> VERIFIED recommendation.
+7. Do not begin DMK-197 completion pass until DMK-196 merge/publication checkpoint is complete.
+8. Do not execute live reconciliation.
+9. Keep Gate 7 and release unchanged.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
