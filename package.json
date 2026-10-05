@@ -39,6 +39,7 @@
     "reconcile:self-work": "tsx scripts/reconcileSelfWorkItems.ts",
     "verify:self-work-sync": "tsx scripts/verifySelfWorkItemReconciliation.ts",
     "verify:dmk-208-status-audit": "tsx scripts/verifyDmk208StatusAudit.ts",
+    "verify:dmk-196-closure": "tsx scripts/verifyDmk196Closure.ts",
     "ci:prepare": "tsx scripts/prepareCiRuntime.ts",
     "ci:quality": "npm run wbs:check && npm run lint && npm run build",
     "ci:controlled-docs": "npm run ci:prepare && npm run test:controlled-docs",
