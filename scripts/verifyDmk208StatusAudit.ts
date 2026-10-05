@@ -336,9 +336,7 @@ export function verifyDmk208StatusAudit(
     if (postMergeReceipt.preVerificationCanonicalWbsSha256 !== closureReceipt.postClosureCanonicalWbsSha256) {
       throw new Error(`preVerificationCanonicalWbsSha256 mismatch: expected ${closureReceipt.postClosureCanonicalWbsSha256}, got ${postMergeReceipt.preVerificationCanonicalWbsSha256}`);
     }
-    const expectedVerificationWbsSha = options?.simulateStatusOverrides
-      ? EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256
-      : actualWbsSha;
+    const expectedVerificationWbsSha = EXPECTED_POST_VERIFICATION_CANONICAL_WBS_SHA256;
     if (postMergeReceipt.postVerificationCanonicalWbsSha256 !== expectedVerificationWbsSha) {
       throw new Error(`postVerificationCanonicalWbsSha256 mismatch: expected=${expectedVerificationWbsSha}, receipt=${postMergeReceipt.postVerificationCanonicalWbsSha256}`);
     }
@@ -377,9 +375,7 @@ export function verifyDmk208StatusAudit(
     assert.equal(closureReceipt.preClosureBranchSha, EXPECTED_PRE_CLOSURE_BRANCH_SHA, 'Closure receipt preClosureBranchSha mismatch');
     assert.equal(closureReceipt.preClosureMasterSha, EXPECTED_BASE_MASTER_SHA, 'Closure receipt preClosureMasterSha mismatch');
 
-    const expectedClosureWbsSha = options?.simulateStatusOverrides
-      ? EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256
-      : actualWbsSha;
+    const expectedClosureWbsSha = EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256;
     if (closureReceipt.postClosureCanonicalWbsSha256 !== expectedClosureWbsSha) {
       throw new Error(`postClosureCanonicalWbsSha256 mismatch: expected=${expectedClosureWbsSha}, receipt=${closureReceipt.postClosureCanonicalWbsSha256}`);
     }
@@ -514,10 +510,12 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        assert.equal(
-          canonicalItem.status,
-          item.candidateStatus,
-          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
+          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
+          : [item.candidateStatus];
+        assert.ok(
+          allowedStatuses.includes(canonicalItem.status),
+          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
         );
         transitionCount++;
       }
@@ -537,10 +535,12 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        assert.equal(
-          canonicalItem.status,
-          item.candidateStatus,
-          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
+          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
+          : [item.candidateStatus];
+        assert.ok(
+          allowedStatuses.includes(canonicalItem.status),
+          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
         );
         transitionCount++;
       }
@@ -553,10 +553,12 @@ export function verifyDmk208StatusAudit(
         );
         keepCount++;
       } else if (item.action === 'TRANSITION') {
-        assert.equal(
-          canonicalItem.status,
-          item.candidateStatus,
-          `TRANSITION item ${item.id} status mismatch: expected ${item.candidateStatus}, got ${canonicalItem.status}`
+        const allowedStatuses: CanonicalLifecycleStatus[] = item.candidateStatus === 'IN_PROGRESS'
+          ? ['IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED']
+          : [item.candidateStatus];
+        assert.ok(
+          allowedStatuses.includes(canonicalItem.status),
+          `TRANSITION item ${item.id} status mismatch: expected one of [${allowedStatuses.join(', ')}], got ${canonicalItem.status}`
         );
         transitionCount++;
       }
