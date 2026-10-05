@@ -31,23 +31,48 @@ In this work item:
 
 ## 2. Acceptance Criteria Evaluation
 
-| Criterion / Behavior | Old Implementation | DMK-196 Implementation | Verification Status |
-|---|---|---|---|
-| Direct Approve Button in Drawer | `<button onClick={() => handleStatusChange(..., 'APPROVED')}> Approve Requirement</button>` present | Completely removed from drawer | **PASS** (Scenario A) |
-| UI Direct 'APPROVED' Mutation Calls | Direct call to `handleStatusChange(..., 'APPROVED')` | No call to `handleStatusChange` with `'APPROVED'` exists | **PASS** (Scenario B) |
-| Drawer Request Sign-Off Exposure | None in drawer (only list had RequestSignoff) | `<RequestSignoff />` rendered in drawer for non-APPROVED requirements | **PASS** (Scenario C) |
-| Target Entity Type Binding | N/A | Binds `targetEntityType: 'REQUIREMENT'` | **PASS** (Scenario D) |
-| Target Entity ID Binding | N/A | Binds exact requirement ID (`REQ-101`) | **PASS** (Scenario E) |
-| Governed Approval Creation | Bypassed / Rejected | Dispatches `/api/projects/:id/approvals`, creates PENDING request with required roles & audit log | **PASS** (Scenario F) |
-| User Feedback & Inbox Surfacing | N/A | UI renders status text confirming request is in Approval Inbox | **PASS** (Scenario G) |
-| Duplicate Request Handling | N/A | Re-requesting unchanged target deduplicates to existing PENDING approval | **PASS** (Scenario H) |
-| Server Defense-in-Depth | HTTP 403 on direct status POST | Retained intact (`server.ts:607`); returns HTTP 403 | **PASS** (Scenario I) |
-| State Immutability on Direct POST | Status not modified | Canonical and runtime state remain unchanged upon direct approval rejection | **PASS** (Scenario J) |
-| Unauthorized Request Surfacing | N/A | UI displays error in `role="status"` element | **PASS** (Scenario K) |
-| Non-Approval Transitions | Mark Under Review, Defer, Reject | All non-approval actions remain fully functional in drawer | **PASS** (Scenario L) |
-| List Request Sign-Off Regression | `<RequestSignoff />` in list row | List button remains functional and intact | **PASS** (Scenario M) |
-| ADR Approval Semantics Boundary | `ArchitectureView.tsx` | Untouched; ADR approval workflows unmodified | **PASS** (Scenario N) |
-| Reviewer Provisioning Boundary | `server/proposals/` | Untouched; reviewer identities and quorum policies unmodified | **PASS** (Scenario O) |
+| Criterion / Behavior | Old Implementation | DMK-196 Implementation | Evidence Taxonomy | Verification Status |
+|---|---|---|---|---|
+| Direct Approve Button in Drawer | `<button onClick={() => handleStatusChange(..., 'APPROVED')}> Approve Requirement</button>` present | Completely removed from drawer | Source & Playwright UI | **PASS** (Scenario A) |
+| UI Direct 'APPROVED' Mutation Calls | Direct call to `handleStatusChange(..., 'APPROVED')` | No call to `handleStatusChange` with `'APPROVED'` exists | Source Invariant | **PASS** (Scenario B) |
+| Drawer Request Sign-Off Exposure | None in drawer (only list had RequestSignoff) | `<RequestSignoff />` rendered in drawer for non-APPROVED requirements | Playwright UI Interaction | **PASS** (Scenario C) |
+| Target Entity Type Binding | N/A | Binds `targetEntityType: 'REQUIREMENT'` | Playwright UI & Intercept | **PASS** (Scenario D) |
+| Target Entity ID Binding | N/A | Binds exact requirement ID (`REQ-101`) | Playwright UI & Intercept | **PASS** (Scenario E) |
+| Governed Approval Creation | Bypassed / Rejected | Dispatches `/api/projects/:id/approvals`, creates PENDING request with required roles & audit log | Real Backend Integration (`registerSignoffRoutes`) | **PASS** (Scenario F) |
+| User Feedback & Inbox Surfacing | N/A | UI renders status text confirming request is in Approval Inbox | Playwright UI Interaction | **PASS** (Scenario G) |
+| Duplicate Request Handling | N/A | Re-requesting unchanged target deduplicates to existing PENDING approval | Real Backend Integration (`registerSignoffRoutes`) | **PASS** (Scenario H) |
+| Server Defense-in-Depth | HTTP 403 on direct status POST | Retained intact (`server.ts:607`); returns HTTP 403 | Authoritative Integration (`testRequirementStatusSync.ts`) & Mock Server | **PASS** (Scenario I) |
+| State Immutability on Direct POST | Status not modified | Canonical and runtime state remain unchanged upon direct approval rejection | Authoritative Integration (`testRequirementStatusSync.ts`) | **PASS** (Scenario J) |
+| Unauthorized Request Surfacing | N/A | UI displays error in `role="status"` element | Playwright UI Interaction | **PASS** (Scenario K) |
+| Non-Approval Transitions | Mark Under Review, Defer, Reject | All non-approval actions remain fully functional in drawer | Playwright UI Interaction | **PASS** (Scenario L) |
+| List Request Sign-Off Regression | `<RequestSignoff />` in list row | List button remains functional and intact | Playwright UI Interaction | **PASS** (Scenario M) |
+| ADR Approval Semantics Boundary | `ArchitectureView.tsx` | Untouched; ADR approval workflows unmodified | Scope Isolation (Git Diff) | **PASS** (Scenario N [Scope Isolation]) |
+| Reviewer Provisioning Boundary | `server/proposals/` | Untouched; reviewer identities and quorum policies unmodified | Scope Isolation (Git Diff & Policy Route) | **PASS** (Scenario O [Scope Isolation]) |
+
+### 2.1 Evidence Map & Verification Taxonomy
+
+To ensure claims do not exceed executable test evidence, the 15 verification scenarios are divided into strict categories:
+
+#### A. Behavioral Verification (13 Scenarios)
+1. **Source Code Invariants (Scenarios A & B):**
+   - AST / regex validation of `src/components/RequirementsView.tsx` confirming removal of direct `Approve Requirement` text and absence of any `handleStatusChange(..., 'APPROVED')` invocation.
+2. **Real Backend Integration (Scenarios F & H):**
+   - Executed against real Express `registerSignoffRoutes` handler.
+   - Scenario F configures a real scrypt-verified reviewer in `DMK_HUMAN_REVIEWERS`, authenticates via `POST /api/governance/session`, captures `dmk_reviewer` cookie, and dispatches authenticated `POST /api/projects/:id/approvals`. Asserts HTTP 201, `APV-` ID prefix, requirement digest match, store mutation (`approvals.length === 1`), and `APPROVAL_REQUESTED` audit event with actor, timestamp, and entity details.
+   - Scenario H tests duplicate-pending deduplication by re-submitting an identical approval request, asserting HTTP 201 returns existing approval ID without duplicate creation, state version increment, or duplicate audit events.
+3. **Defense-in-Depth & Immutability (Scenarios I & J):**
+   - Verified against `server.ts:607` fail-closed 403 defense. Authoritatively proven in `scripts/testRequirementStatusSync.ts` (12/12 passing against live server) and mirrored in `scripts/testRequirementSignoff.ts`.
+4. **End-to-End Browser UI Flow (Scenarios C, D, E, G, K, L, M):**
+   - Executed via Playwright Chromium against live Vite preview.
+   - Tests drawer opening, `<RequestSignoff />` presence, request payload binding (`REQUIREMENT` / `REQ-101`), success status banner ("in Approval Inbox"), simulated auth failure rendering, and drawer non-approval button operations (`Mark Under Review`). Also confirms list-level Request Sign-Off remains intact.
+
+#### B. Scope-Isolation Verification (2 Scenarios)
+1. **ADR Approval Scope Isolation (Scenario N):**
+   - Git diff inspection against base master (`970c6cdbef21c3cc4cd9701c180d849b9ea69e41...HEAD`) asserting `src/components/ArchitectureView.tsx` is completely untouched by this PR.
+2. **Quorum & Identity Provisioning Scope Isolation (Scenario O):**
+   - Git diff inspection asserting `server/proposals/signoff.ts`, `server/proposals/identity.ts`, and `src/components/ApprovalsView.tsx` are completely untouched by this PR.
+   - Route verification querying `GET /api/projects/:id/governance-policy` to assert production quorum roles (`['Security Officer', 'Lead Architect']`) are intact.
+
 
 ---
 
