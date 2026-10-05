@@ -22,6 +22,9 @@ export const EXPECTED_ACCEPTANCE_CRITERION = 'Remove direct Approve Requirement 
 export const EXPECTED_EVIDENCE_DOC = 'docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md';
 export const EXPECTED_PRE_CLOSURE_CANONICAL_WBS_SHA256 = '974a5d8773902a24655efc3f341a70c38ad840e3738f0be3699c18c6bf690c82';
 export const EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256 = 'd5adaec2b4d05ccabf08c00a3ce608fb3503d2ef0391f3bb114f1d4faea38c26';
+export const EXPECTED_DECISION_AUTHORITY = 'Human operator';
+export const EXPECTED_DECISION_SOURCE = 'Explicit human approval following corrected DMK-196 verification evidence review';
+export const EXPECTED_APPLIED_AT = '2026-10-05T08:02:30Z';
 
 export function validateDmk196ClosureReceipt(receipt: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -80,6 +83,15 @@ export function validateDmk196ClosureReceipt(receipt: any): { valid: boolean; er
   }
   if (receipt.applied !== true) {
     errors.push(`receipt.applied must be true, found ${receipt.applied}`);
+  }
+  if (receipt.decisionAuthority !== EXPECTED_DECISION_AUTHORITY) {
+    errors.push(`receipt.decisionAuthority must be "${EXPECTED_DECISION_AUTHORITY}", found "${receipt.decisionAuthority}"`);
+  }
+  if (receipt.decisionSource !== EXPECTED_DECISION_SOURCE) {
+    errors.push(`receipt.decisionSource must match authorized closure decision source ("${EXPECTED_DECISION_SOURCE}"), found "${receipt.decisionSource}"`);
+  }
+  if (receipt.appliedAt !== EXPECTED_APPLIED_AT) {
+    errors.push(`receipt.appliedAt must match immutable applied timestamp "${EXPECTED_APPLIED_AT}", found "${receipt.appliedAt}"`);
   }
 
   return {

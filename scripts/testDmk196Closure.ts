@@ -16,7 +16,7 @@ const rawReceipt = JSON.parse(fs.readFileSync(liveReceiptPath, 'utf8'));
 console.log('================================================================');
 console.log('   DMK-196 CLOSURE TRANSITION VERIFIER REGRESSION SUITE');
 console.log('   Evaluates Invariant: Fail-closed enforcement on closure receipt & WBS');
-console.log('   Coverage: Scenarios A through O (Negative & positive boundary checks)');
+console.log('   Coverage: Scenarios A through R (Negative & positive boundary checks)');
 console.log('================================================================\n');
 
 function clone<T>(obj: T): T {
@@ -243,8 +243,44 @@ try {
   fail('O: implementationChangedDuringClosure=true fails closed', err);
 }
 
+// Scenario P: wrong decisionAuthority fails closed
+try {
+  const bad = clone(rawReceipt);
+  bad.decisionAuthority = 'Automated Agent';
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('decisionAuthority')));
+  pass('P: wrong decisionAuthority fails closed');
+} catch (err) {
+  fail('P: wrong decisionAuthority fails closed', err);
+}
+
+// Scenario Q: wrong decisionSource fails closed
+try {
+  const bad = clone(rawReceipt);
+  bad.decisionSource = 'Automated approval';
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('decisionSource')));
+  pass('Q: wrong decisionSource fails closed');
+} catch (err) {
+  fail('Q: wrong decisionSource fails closed', err);
+}
+
+// Scenario R: wrong appliedAt fails closed
+try {
+  const bad = clone(rawReceipt);
+  bad.appliedAt = '2026-10-05T08:02:31Z';
+  const res = verifyDmk196Closure({ customReceipt: bad });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('appliedAt')));
+  pass('R: wrong appliedAt fails closed');
+} catch (err) {
+  fail('R: wrong appliedAt fails closed', err);
+}
+
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 15 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 18 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================\n');
 
 if (failedCount > 0) {
@@ -252,3 +288,4 @@ if (failedCount > 0) {
 } else {
   process.exit(0);
 }
+
