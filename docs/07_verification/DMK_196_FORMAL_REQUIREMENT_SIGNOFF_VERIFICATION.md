@@ -99,9 +99,9 @@ To ensure claims do not exceed executable test evidence, the 15 verification sce
 6. `docs/00_control/PROJECT_STATE.md`:
    - Governed update via Controlled Docs API (`DOC-CTRL-002`).
 7. `scripts/verifyDmk196Closure.ts`:
-   - Dedicated closure transition verifier exporting `validateDmk196ClosureReceipt` pure validator and asserting canonical WBS state.
+   - Dedicated closure transition verifier exporting `validateDmk196ClosureReceipt` pure validator and asserting canonical WBS state. Hardened to validate immutable receipt authority provenance (`decisionAuthority`, `decisionSource`, `appliedAt`).
 8. `scripts/testDmk196Closure.ts`:
-   - Regression suite covering 15 negative & boundary scenarios (A through O) for DMK-196 closure.
+   - Regression suite covering 18 negative & boundary scenarios (A through R) for DMK-196 closure, including receipt authority and timestamp tampering.
 9. `scripts/verifyDmk208StatusAudit.ts`:
    - Historical verifier hardened to strictly require exact `candidateStatus` for transitioned items, special-casing DMK-196 forward transition to `VERIFICATION_PENDING` only through verified closure receipt provenance.
 10. `scripts/testStatusAuditReceipt.ts`:
@@ -117,14 +117,14 @@ To ensure claims do not exceed executable test evidence, the 15 verification sce
 | `npm run test:req-sync` | 0 | 12 / 12 | Requirement canonical state sync & backend 403 test |
 | `npm run test:projects-workspace:ui` | 0 | 14 / 14 | Projects Workspace Playwright UI suite |
 | `npm run verify:dmk-196-closure` | 0 | 1 / 1 (PASS) | Dedicated DMK-196 closure transition verifier |
-| `npx tsx scripts/testDmk196Closure.ts` | 0 | 15 / 15 | DMK-196 closure negative and boundary test suite |
+| `npx tsx scripts/testDmk196Closure.ts` | 0 | 18 / 18 | DMK-196 closure negative and boundary test suite (Scenarios A–R) |
 | `npm run verify:dmk-208-status-audit` | 0 | 1 / 1 (PASS) | Historical DMK-208 status audit candidate verifier |
 | `npx tsx scripts/testStatusAuditReceipt.ts` | 0 | 49 / 49 | Historical status audit & closure receipt test suite (Scenarios A–AW) |
 | `npm run wbs:check` | 0 | Zero drift | Canonical WBS integrity and markdown projection check |
 | `npm run lint` | 0 | Clean | TypeScript typechecking across repository (`tsc --noEmit`) |
 | `npm run build` | 0 | Clean | Production Vite & esbuild bundle compilation |
 | `npm run test:controlled-docs` | 0 | 40/40 Core, 29/29 Security, 11/11 Subsystems | Controlled documents integrity suite |
-| `npm run test:complete` | 0 | 46 / 46 suites (1021 assertions) | Complete automated regression test suite |
+| `npm run test:complete` | 0 | 46 / 46 suites (1024 assertions) | Complete automated regression test suite |
 
 ---
 
