@@ -174,8 +174,45 @@ To ensure airtight governance provenance, the exact final content of `docs/00_co
 
 ---
 
-## 8. Next Safe Action
+## 8. Applied Lifecycle Transition
 
-1. Submit post-merge technical verification draft PR for human operator review.
-2. Human operator reviews this verification report, the candidate JSON, and CI evidence.
-3. Upon human operator approval, execute the authorized lifecycle transition `DMK-196: VERIFICATION_PENDING -> VERIFIED`.
+Following explicit human authorization, the machine-readable post-merge technical verification candidate (`efc0462ee9326e35ca05e3da95cfbae0cb911f8a79723f551c7fe390e0db24ce`) was formally applied to canonical project governance:
+
+### 8.1 Authorization Scope
+- **Decision Authority:** Human operator
+- **Decision Source:** Explicit human authorization of approved DMK-196 post-merge technical verification candidate
+- **Authorized Lifecycle Transition:** `DMK-196: VERIFICATION_PENDING -> VERIFIED`
+- **Scope Boundary:** TECHNICAL LIFECYCLE AUTHORIZATION ONLY. Human Governance remains strictly `PENDING_SIGNOFF`. Dual-role quorum, Gate 7, release promotion, and runtime reconciliation remain unapproved and blocked.
+
+### 8.2 Canonical WBS Mutation
+- **WorkItem:** `DMK-196` (Batch 2 — Formal Requirement Sign-Off UX)
+- **Status (Before → After):** `VERIFICATION_PENDING` → `VERIFIED`
+- **Verification Status:** `VERIFIED`
+- **Verified By:** `PR #25 merged to master at 2eb763b936327629a809d05fc9f198f541ca0ab2; GitHub Actions master CI 37318919644 attempt 1 passed Quality & Build, Controlled Docs, and Complete Regression; DMK-196 post-merge verification receipt.`
+- **Human Approved By:** `ABSENT` (unpopulated; human governance pending)
+- **Evidence References:**
+  1. `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md`
+  2. `docs/07_verification/dmk-196-closure-transition-receipt.json`
+  3. `docs/07_verification/DMK_196_POST_MERGE_VERIFICATION.md`
+  4. `docs/07_verification/dmk-196-post-merge-verification-candidate.json`
+  5. `docs/07_verification/dmk-196-post-merge-verification-receipt.json`
+- **Canonical WBS SHA-256 Before:** `d5adaec2b4d05ccabf08c00a3ce608fb3503d2ef0391f3bb114f1d4faea38c26`
+- **Canonical WBS SHA-256 After:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
+
+### 8.3 Invariants & Blocker Accounting
+- **Runtime WorkItem Snapshot Digest Before:** `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`
+- **Runtime WorkItem Snapshot Digest After:** `7efb4945bbc439e3211965f70a97f650b424367769dcc4afb3912f12ff9c5b6c`
+- **Runtime WorkItem Mutations:** `0` (Zero mutations)
+- **Reconciliation Blockers:** Incremented from `10` to `11` (Historical 9 + DMK-208 + DMK-196 due to pending human governance sign-off)
+- **Live Reconciliation:** `BLOCKED / NOT AUTHORIZED / NOT EXECUTED`
+- **Gate 7 & Release:** Untouched (`false` / `false`)
+- **Immutable Application Receipt:** `docs/07_verification/dmk-196-post-merge-verification-receipt.json`
+
+---
+
+## 9. Next Safe Action
+
+1. Complete Controlled Docs republish of `PROJECT_STATE.md` (`DOC-CTRL-002`) binding committed state to governed audit event.
+2. Mark candidate PR #26 as Ready for Review (`draft = false`) and update PR description.
+3. Observe fresh candidate PR CI run to green across Quality & Build, Controlled Docs, and Complete Regression.
+4. Stop at PR #26 Merge Gate for human operator review and merge authorization. Do NOT merge PR #26.
