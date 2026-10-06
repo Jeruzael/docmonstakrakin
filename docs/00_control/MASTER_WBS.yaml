@@ -232,7 +232,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "MEDIUM"
-    status: "VERIFICATION_PENDING"
+    status: "VERIFIED"
     dependencies: ["DMK-194"]
     requirements: ["REQ-GOV-SIGNOFF-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -242,6 +242,12 @@ items:
     verification_method: "Sign-off request workflow test"
     evidence:
       - "docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md"
+      - "docs/07_verification/dmk-196-closure-transition-receipt.json"
+      - "docs/07_verification/DMK_196_POST_MERGE_VERIFICATION.md"
+      - "docs/07_verification/dmk-196-post-merge-verification-candidate.json"
+      - "docs/07_verification/dmk-196-post-merge-verification-receipt.json"
+    verification_status: "VERIFIED"
+    verified_by: "PR #25 merged to master at 2eb763b936327629a809d05fc9f198f541ca0ab2; GitHub Actions master CI 37318919644 attempt 1 passed Quality & Build, Controlled Docs, and Complete Regression; DMK-196 post-merge verification receipt."
 
   - id: "DMK-197"
     wbs_path: "13.06.11"

@@ -129,7 +129,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-196` — Batch 2 — Formal Requirement Sign-Off UX
 - **WBS Path:** `13.06.10`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `MEDIUM`
-- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md`)
+- **Status:** `VERIFIED` (Evidence: `docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md, docs/07_verification/dmk-196-closure-transition-receipt.json, docs/07_verification/DMK_196_POST_MERGE_VERIFICATION.md, docs/07_verification/dmk-196-post-merge-verification-candidate.json, docs/07_verification/dmk-196-post-merge-verification-receipt.json`)
 - **Dependencies:** `DMK-194`
 - **Requirements:** `REQ-GOV-SIGNOFF-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Interactive requirement sign-off requesting workflow routing through formal Approval Inbox.
