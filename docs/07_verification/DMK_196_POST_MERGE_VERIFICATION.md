@@ -158,7 +158,23 @@ All verification commands executed locally against commit `2eb763b936327629a809d
 
 ---
 
-## 7. Next Safe Action
+## 7. PROJECT_STATE Governed Republishing
+
+To ensure airtight governance provenance, the exact final content of `docs/00_control/PROJECT_STATE.md` was republished through the Controlled Documents transaction pipeline (`DOC-CTRL-002`):
+
+- **Reason for Republish:** Republish exact final DMK-196 post-merge verification checkpoint through Controlled Docs to bind committed PROJECT_STATE bytes to governed audit provenance.
+- **Desired PROJECT_STATE SHA-256:** `3731b8fe08a7c4e0252606e34e7d92eb098f94753fefbcd9807810e77029219d`
+- **Governed PROJECT_STATE SHA-256:** `3731b8fe08a7c4e0252606e34e7d92eb098f94753fefbcd9807810e77029219d`
+- **Byte Equality:** **PASS** (`governedProjectStateSha256 == desiredProjectStateSha256`)
+- **State Version (Before → After):** `95` → `96`
+- **Audit Count (Before → After):** `101` → `102`
+- **Authoritative Audit Event ID:** `AUD-MUWGJBSI-YOWR`
+- **Audit Chain Verification:** **PASS** (102 / 102 valid, `REVERSE_CHRONOLOGICAL`)
+- **Post-Save Direct Modification Policy:** Strictly enforced. `docs/00_control/PROJECT_STATE.md` received zero manual or out-of-band edits following the governed transaction. The exact file written by the Controlled Docs pipeline is the final committed document.
+
+---
+
+## 8. Next Safe Action
 
 1. Submit post-merge technical verification draft PR for human operator review.
 2. Human operator reviews this verification report, the candidate JSON, and CI evidence.
