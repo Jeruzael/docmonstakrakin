@@ -13,6 +13,7 @@ import {
   type CanonicalLifecycleStatus,
 } from '../server/workTracking/canonicalLifecycle.ts';
 import { validateDmk196ClosureReceipt } from './verifyDmk196Closure.ts';
+import { validateDmk196PostMergeReceipt } from './verifyDmk196PostMergeCandidate.ts';
 
 export interface AuditCandidateItem {
   id: string;
@@ -168,6 +169,7 @@ export interface VerifyOptions {
   customClosureReceipt?: Dmk208ClosureReceipt;
   customPostMergeReceipt?: Dmk208PostMergeVerificationReceipt;
   customDmk196ClosureReceipt?: any;
+  customDmk196PostMergeReceipt?: any;
   forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
   simulateCanonicalItemOverrides?: Record<string, any>;
@@ -513,7 +515,30 @@ export function verifyDmk208StatusAudit(
         keepCount++;
       } else if (item.action === 'TRANSITION') {
         if (item.id === 'DMK-196') {
-          if (canonicalItem.status === 'VERIFICATION_PENDING') {
+          if (canonicalItem.status === 'VERIFIED') {
+            let pmReceipt = options?.customDmk196PostMergeReceipt;
+            if (pmReceipt === undefined) {
+              const rPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-196-post-merge-verification-receipt.json');
+              if (fs.existsSync(rPath)) {
+                try {
+                  pmReceipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+                } catch (e: any) {
+                  throw new Error(`DMK-196 post-merge receipt JSON parse failed: ${e.message}`);
+                }
+              } else {
+                throw new Error(`DMK-196 is in VERIFIED but post-merge verification receipt is missing at ${rPath}`);
+              }
+            } else if (pmReceipt === null) {
+              throw new Error(`DMK-196 is in VERIFIED but post-merge verification receipt is missing`);
+            }
+            const validation = validateDmk196PostMergeReceipt(pmReceipt);
+            if (!validation.valid) {
+              throw new Error(`DMK-196 post-merge verification receipt validation failed: ${validation.errors.join('; ')}`);
+            }
+            if (canonicalItem.humanApprovedBy && !/\bPENDING\b/i.test(canonicalItem.humanApprovedBy)) {
+              throw new Error(`DMK-196 has completed human approval without authorization: ${canonicalItem.humanApprovedBy}`);
+            }
+          } else if (canonicalItem.status === 'VERIFICATION_PENDING') {
             let receipt = options?.customDmk196ClosureReceipt;
             if (receipt === undefined) {
               const rPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-196-closure-transition-receipt.json');
@@ -536,7 +561,7 @@ export function verifyDmk208StatusAudit(
           } else if (canonicalItem.status === 'IN_PROGRESS') {
             // Permitted if simulated as historical in_progress
           } else {
-            throw new Error(`TRANSITION item DMK-196 status mismatch: expected IN_PROGRESS or authorized VERIFICATION_PENDING, got ${canonicalItem.status}`);
+            throw new Error(`TRANSITION item DMK-196 status mismatch: expected IN_PROGRESS, VERIFICATION_PENDING, or authorized VERIFIED, got ${canonicalItem.status}`);
           }
         } else {
           assert.equal(

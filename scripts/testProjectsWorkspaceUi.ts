@@ -317,13 +317,13 @@ try {
       // Navigate to Work Management
       await f.page.getByRole('button',{name:/^Work Management/}).click();
 
-      // 12. Reconciliation counts remain canonical, 13 runtime, 10 blocked, with active drift tracking
+      // 12. Reconciliation counts remain canonical, 13 runtime, 11 blocked, with active drift tracking
       await f.page.getByText('27 operational items').waitFor();
       await f.page.getByText('13 WorkItems').waitFor();
       await f.page.getByText(/\d+ missing/).waitFor();
       await f.page.getByText(/\d+ status drift/).waitFor();
       await f.page.getByText(/\d+ metadata drift/).waitFor();
-      await f.page.getByText('10 blocked').waitFor();
+      await f.page.getByText('11 blocked').waitFor();
 
       // 1. DMK-192 runtime status selector disabled BEFORE reconciliation
       await f.page.getByText('Trusted Self-Bootstrap Executor').first().click();
@@ -387,7 +387,7 @@ try {
       // 13. When blocked > 0, review modal displays live reconciliation BLOCKED copy
       await f.page.getByRole('button',{name:'Review Reconciliation'}).click();
       await f.page.getByRole('heading',{name:'Canonical WBS Reconciliation Review'}).waitFor();
-      await f.page.getByText('Live reconciliation is currently BLOCKED. 10 canonical VERIFIED items lack sufficient completed human governance provenance. No reconciliation plan may be applied while blocked items remain. No direct writes occur from this preview.').waitFor();
+      await f.page.getByText('Live reconciliation is currently BLOCKED. 11 canonical VERIFIED items lack sufficient completed human governance provenance. No reconciliation plan may be applied while blocked items remain. No direct writes occur from this preview.').waitFor();
 
       // Close modal
       await f.page.getByRole('button',{name:'Close Preview'}).click();

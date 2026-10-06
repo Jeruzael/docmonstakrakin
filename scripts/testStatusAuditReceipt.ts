@@ -15,13 +15,15 @@ const liveCandidatePath = path.join(workspaceRoot, 'docs', '07_verification', 'd
 const liveAppReceiptPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-status-audit-approval-receipt.json');
 const liveClosureReceiptPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-closure-transition-receipt.json');
 const livePostMergeReceiptPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-208-post-merge-verification-receipt.json');
+const liveDmk196PostMergeReceiptPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-196-post-merge-verification-receipt.json');
 
 const rawCandidate: Dmk208StatusAuditCandidate = JSON.parse(fs.readFileSync(liveCandidatePath, 'utf8'));
 const rawAppReceipt: Dmk208StatusAuditReceipt = JSON.parse(fs.readFileSync(liveAppReceiptPath, 'utf8'));
 const rawClosureReceipt: Dmk208ClosureReceipt = JSON.parse(fs.readFileSync(liveClosureReceiptPath, 'utf8'));
 const rawPostMergeReceipt: Dmk208PostMergeVerificationReceipt = JSON.parse(fs.readFileSync(livePostMergeReceiptPath, 'utf8'));
+const rawDmk196PostMergeReceipt = JSON.parse(fs.readFileSync(liveDmk196PostMergeReceiptPath, 'utf8'));
 
-console.log('--- Running Status Audit & Closure Receipt Test Suite (Scenarios A - AW) ---');
+console.log('--- Running Status Audit & Closure Receipt Test Suite (Scenarios A - BD) ---');
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
@@ -700,9 +702,11 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
 }
 
 
-// Scenario AP: Current DMK-196 VERIFICATION_PENDING + valid DMK-196 closure receipt passes
+// Scenario AP: DMK-196 VERIFICATION_PENDING + valid DMK-196 closure receipt passes
 {
-  const res = verifyDmk208StatusAudit(workspaceRoot);
+  const res = verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+    simulateStatusOverrides: { 'DMK-196': 'VERIFICATION_PENDING' },
+  });
   assert.equal(res.valid, true, 'Scenario AP failed: valid must be true');
   assert.equal(res.mode, 'POST_MERGE_VERIFIED', 'Scenario AP failed: mode must be POST_MERGE_VERIFIED');
   console.log('✓ [Scenario AP] DMK-196 VERIFICATION_PENDING with valid closure receipt passes.');
@@ -713,6 +717,7 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
   assert.throws(
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-196': 'VERIFICATION_PENDING' },
         customDmk196ClosureReceipt: null,
       });
     },
@@ -727,6 +732,7 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
   assert.throws(
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-196': 'VERIFICATION_PENDING' },
         customDmk196ClosureReceipt: {
           schemaVersion: '1.0',
           workItemId: 'DMK-196',
@@ -740,18 +746,19 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
   console.log('✓ [Scenario AR] DMK-196 VERIFICATION_PENDING with invalid closure receipt fails.');
 }
 
-// Scenario AS: DMK-196 VERIFIED fails because no post-merge DMK-196 verification exists yet
+// Scenario AS: DMK-196 VERIFIED without receipt fails
 {
   assert.throws(
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         simulateStatusOverrides: { 'DMK-196': 'VERIFIED' },
+        customDmk196PostMergeReceipt: null,
       });
     },
-    /TRANSITION item DMK-196 status mismatch/i,
+    /DMK-196 is in VERIFIED but post-merge verification receipt is missing/i,
     'Scenario AS failed'
   );
-  console.log('✓ [Scenario AS] DMK-196 VERIFIED fails.');
+  console.log('✓ [Scenario AS] DMK-196 VERIFIED without post-merge receipt fails.');
 }
 
 // Scenario AT: DMK-197 VERIFICATION_PENDING fails
@@ -810,4 +817,119 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
   console.log('✓ [Scenario AW] DMK-198 VERIFIED fails.');
 }
 
-console.log('--- All 49 Status Audit & Post-Merge Closure Scenarios (A - AW) Passed! ---');
+// ==========================================
+// Part 6: DMK-196 Post-Merge Scenarios AX - BD
+// ==========================================
+
+// Scenario AX: DMK-196 VERIFIED with valid post-merge verification receipt passes
+{
+  const res = verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+    forceMode: 'POST_MERGE_VERIFIED',
+  });
+  assert.equal(res.valid, true, 'Scenario AX failed: valid must be true');
+  assert.equal(res.mode, 'POST_MERGE_VERIFIED', 'Scenario AX failed: mode must be POST_MERGE_VERIFIED');
+  console.log('✓ [Scenario AX] DMK-196 VERIFIED with valid post-merge verification receipt passes.');
+}
+
+// Scenario AY: DMK-196 VERIFIED with invalid post-merge receipt fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196PostMergeReceipt: { invalidReceipt: true },
+      });
+    },
+    /DMK-196 post-merge verification receipt validation failed/i,
+    'Scenario AY failed'
+  );
+  console.log('✓ [Scenario AY] DMK-196 VERIFIED with invalid post-merge receipt fails.');
+}
+
+// Scenario AZ: DMK-196 VERIFIED with tampered candidateDigest in post-merge receipt fails
+{
+  const badReceipt = clone(rawDmk196PostMergeReceipt);
+  badReceipt.candidateDigest = '0000000000000000000000000000000000000000000000000000000000000000';
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196PostMergeReceipt: badReceipt,
+      });
+    },
+    /DMK-196 post-merge verification receipt validation failed/i,
+    'Scenario AZ failed'
+  );
+  console.log('✓ [Scenario AZ] DMK-196 VERIFIED with tampered candidateDigest in post-merge receipt fails.');
+}
+
+// Scenario BA: DMK-196 VERIFIED with unauthorized completed human approval fails
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateCanonicalItemOverrides: {
+          'DMK-196': { humanApprovedBy: 'Gio / Lead Architect - Approved' },
+        },
+      });
+    },
+    /DMK-196 has completed human approval without authorization/i,
+    'Scenario BA failed'
+  );
+  console.log('✓ [Scenario BA] DMK-196 VERIFIED with unauthorized completed human approval fails.');
+}
+
+// Scenario BB: DMK-196 VERIFIED with wrong reconciliation blocker count in receipt fails
+{
+  const badReceipt = clone(rawDmk196PostMergeReceipt);
+  badReceipt.reconciliationBlockerCountAfter = 10;
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196PostMergeReceipt: badReceipt,
+      });
+    },
+    /DMK-196 post-merge verification receipt validation failed/i,
+    'Scenario BB failed'
+  );
+  console.log('✓ [Scenario BB] DMK-196 VERIFIED with wrong reconciliation blocker count in receipt fails.');
+}
+
+// Scenario BC: DMK-196 VERIFIED with runtime mutation count > 0 in receipt fails
+{
+  const badReceipt = clone(rawDmk196PostMergeReceipt);
+  badReceipt.runtimeWorkItemMutationCount = 1;
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        customDmk196PostMergeReceipt: badReceipt,
+      });
+    },
+    /DMK-196 post-merge verification receipt validation failed/i,
+    'Scenario BC failed'
+  );
+  console.log('✓ [Scenario BC] DMK-196 VERIFIED with runtime mutation count > 0 in receipt fails.');
+}
+
+// Scenario BD: DMK-197 / DMK-198 drift still fail closed when DMK-196 is VERIFIED
+{
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-197': 'VERIFIED' },
+      });
+    },
+    /TRANSITION item DMK-197 status mismatch/i,
+    'Scenario BD failed'
+  );
+  assert.throws(
+    () => {
+      verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
+        simulateStatusOverrides: { 'DMK-198': 'VERIFIED' },
+      });
+    },
+    /TRANSITION item DMK-198 status mismatch/i,
+    'Scenario BD failed'
+  );
+  console.log('✓ [Scenario BD] DMK-197 / DMK-198 drift still fail closed when DMK-196 is VERIFIED.');
+}
+
+console.log('--- All 56 Status Audit & Post-Merge Closure Scenarios (A - BD) Passed! ---');
