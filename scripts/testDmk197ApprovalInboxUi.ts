@@ -279,6 +279,13 @@ let delayProjectARefresh = false;
 let holdDecisionResponse: (() => void) | null = null;
 let delayDecision = false;
 
+let holdProjectADecision: (() => void) | null = null;
+let delayProjectADecision = false;
+
+let holdProjectBRequest: (() => void) | null = null;
+let delayProjectBRequest = false;
+let countProjectBRequests = 0;
+
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(8000);
@@ -311,10 +318,36 @@ try {
       return route.fulfill({ status: 200, json: mockApprovalsAlt });
     }
 
+    if (url === `/api/projects/${testProject2.id}/approvals` && method === 'POST') {
+      countProjectBRequests++;
+      if (delayProjectBRequest) {
+        delayProjectBRequest = false;
+        await new Promise<void>((r) => { holdProjectBRequest = r; });
+      }
+      return route.fulfill({
+        status: 201,
+        json: {
+          id: 'APV-NEW-B-01',
+          projectId: testProject2.id,
+          title: 'Project B Formal Sign-Off',
+          type: 'REQUIREMENT_BASELINE',
+          status: 'PENDING',
+          requiredRoles: ['Security Officer', 'Lead Architect'],
+          approvalsCollected: [],
+          policyVersion: 'LOCAL_SESSION_V1',
+          targetDigest: 'b'.repeat(64),
+        },
+      });
+    }
+
     if (url.includes('/decide') && method === 'POST') {
       if (delayDecision) {
         delayDecision = false;
         await new Promise<void>((r) => { holdDecisionResponse = r; });
+      }
+      if (delayProjectADecision) {
+        delayProjectADecision = false;
+        await new Promise<void>((r) => { holdProjectADecision = r; });
       }
       return route.fulfill({
         status: 200,
@@ -769,6 +802,265 @@ try {
     pass('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project');
   } catch (e) {
     fail('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project', e);
+  }
+
+  // UI-16: Project B remains usable after delayed Project A decision
+  try {
+    // 1. Open Project A
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    // 2. Select a pending approval
+    const cardA = page.getByTestId('approval-card-APV-PARTIAL-02');
+    await cardA.waitFor();
+    await cardA.click();
+
+    const signBtn = cardA.getByRole('button', { name: 'Sign Decision' });
+    await signBtn.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+
+    const confirmCheckbox = page.getByRole('checkbox');
+    await confirmCheckbox.check();
+
+    // 3 & 4. Begin valid decision POST and hold response
+    delayProjectADecision = true;
+    const submitBtn = page.getByRole('button', { name: /Record APPROVED Decision/i });
+    await submitBtn.click();
+
+    // 5. Confirm submission becomes busy
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('button[type="submit"]');
+      return btn && (btn.hasAttribute('disabled') || btn.textContent?.includes('Recording...'));
+    });
+
+    // 6. Switch to Project B while Project A decision is held
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    // 7. Verify Project A's decision modal closes and Project B cards load
+    await page.waitForFunction(() => !document.body.innerText.includes('Sign Governance Decision: APPROVED'));
+    assert.equal(await page.getByText('Sign Governance Decision: APPROVED').count(), 0, 'Decision modal must close on project switch');
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // 8. Open Project B's request modal and verify submission controls are enabled
+    const reqBtnB = page.getByRole('button', { name: 'Request Sign-Off' });
+    await reqBtnB.click();
+    await page.getByText('Submit Formal Sign-Off Request', { exact: true }).waitFor();
+
+    const bSubmitBtn = page.getByRole('button', { name: 'Submit Sign-Off Request' });
+    assert.equal(await bSubmitBtn.isDisabled(), false, 'Project B submit button must be enabled initially');
+    assert.equal(await bSubmitBtn.innerText(), 'Submit Sign-Off Request', 'Button must not display submitting state');
+
+    // 9. Release the Project A response
+    if (holdProjectADecision) {
+      holdProjectADecision();
+      holdProjectADecision = null;
+    }
+    await page.waitForTimeout(200);
+
+    // 10. Verify Project B remains usable after Project A completes
+    assert.equal(await bSubmitBtn.isDisabled(), false, 'Project B submit button must remain enabled after Project A response resolves');
+    assert.equal(await bSubmitBtn.innerText(), 'Submit Sign-Off Request', 'Button text must remain normal');
+
+    // 11 & 12. Fill and submit in Project B
+    const titleInput = page.getByPlaceholder('e.g. Ratify REQ-AI-008');
+    await titleInput.fill('Project B Formal Sign-Off');
+    const targetInput = page.getByPlaceholder('e.g. REQ-SEC-019 or ADR-004');
+    await targetInput.fill('REQ-B-001');
+    const descInput = page.getByPlaceholder('Detailed rationale and requirements for sign-off...');
+    await descInput.fill('Detailed rationale for Project B');
+
+    const prevReqCount = countProjectBRequests;
+    await bSubmitBtn.click();
+
+    // 13. Verify the Project B POST is actually issued and succeeds
+    await page.waitForFunction(() => !document.body.innerText.includes('Submit Formal Sign-Off Request'));
+    assert.ok(countProjectBRequests > prevReqCount, 'Project B request must actually be issued to server');
+
+    // 14. Verify there is no stale Project A error, modal, or loading state
+    assert.equal(await page.getByRole('alert').count(), 0, 'No alert should appear on Project B');
+    assert.equal(await page.getByText('Sign Governance Decision: APPROVED').count(), 0, 'No stale modal');
+
+    pass('UI-16: Project B remains usable after delayed Project A decision');
+  } catch (e) {
+    fail('UI-16: Project B remains usable after delayed Project A decision', e);
+  }
+
+  // UI-17: Old completion cannot interrupt a newer submission
+  try {
+    // 1. Start delayed Project A submission
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    const cardA = page.getByTestId('approval-card-APV-PARTIAL-02');
+    await cardA.waitFor();
+    await cardA.click();
+
+    const signBtn = cardA.getByRole('button', { name: 'Sign Decision' });
+    await signBtn.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+    await page.getByRole('checkbox').check();
+
+    delayProjectADecision = true;
+    const submitBtnA = page.getByRole('button', { name: /Record APPROVED Decision/i });
+    await submitBtnA.click();
+
+    // 2. Switch to Project B
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // 3. Begin Project B's valid submission
+    const reqBtnB = page.getByRole('button', { name: 'Request Sign-Off' });
+    await reqBtnB.click();
+    await page.getByText('Submit Formal Sign-Off Request', { exact: true }).waitFor();
+
+    const titleInput = page.getByPlaceholder('e.g. Ratify REQ-AI-008');
+    await titleInput.fill('Project B Overlapping Request');
+    const targetInput = page.getByPlaceholder('e.g. REQ-SEC-019 or ADR-004');
+    await targetInput.fill('REQ-B-002');
+    const descInput = page.getByPlaceholder('Detailed rationale and requirements for sign-off...');
+    await descInput.fill('Detailed rationale for Project B overlapping request');
+
+    // 4. Arm delay on Project B response and submit
+    delayProjectBRequest = true;
+    const bSubmitBtn = page.getByRole('button', { name: 'Submit Sign-Off Request' });
+    await bSubmitBtn.click();
+
+    // Verify Project B is in submitting state
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('button[type="submit"]');
+      return btn && btn.textContent?.includes('Submitting...');
+    });
+
+    // 5. Release Project A's old response first
+    if (holdProjectADecision) {
+      holdProjectADecision();
+      holdProjectADecision = null;
+    }
+    await page.waitForTimeout(200);
+
+    // 6 & 7. Verify Project B remains in its own active submitting state!
+    const pendingSubmitBtn = page.locator('button[type="submit"]');
+    assert.equal(await pendingSubmitBtn.isDisabled(), true, 'Project B submit button must stay disabled while Project B POST is pending');
+    assert.equal(await pendingSubmitBtn.innerText(), 'Submitting...', 'Project B submit button must still show Submitting...');
+
+    // 8. Release Project B's response
+    if (holdProjectBRequest) {
+      holdProjectBRequest();
+      holdProjectBRequest = null;
+    }
+    await page.waitForTimeout(200);
+
+    // 9. Verify Project B completes normally
+    await page.waitForFunction(() => !document.body.innerText.includes('Submit Formal Sign-Off Request'));
+
+    // 10. Verify submitting resets and controls become usable
+    const freshReqBtn = page.getByRole('button', { name: 'Request Sign-Off' });
+    await freshReqBtn.click();
+    await page.getByText('Submit Formal Sign-Off Request', { exact: true }).waitFor();
+    const freshSubmitBtn = page.getByRole('button', { name: 'Submit Sign-Off Request' });
+    assert.equal(await freshSubmitBtn.isDisabled(), false, 'Submit button must be enabled again');
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    pass('UI-17: Old completion cannot interrupt a newer submission');
+  } catch (e) {
+    fail('UI-17: Old completion cannot interrupt a newer submission', e);
+  }
+
+  // UI-18: A → B → A operation invalidation
+  try {
+    // 1. Begin delayed submission in Project A (e.g. on APV-PARTIAL-02)
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    const cardA = page.getByTestId('approval-card-APV-PARTIAL-02');
+    await cardA.waitFor();
+    await cardA.click();
+
+    const signBtn = cardA.getByRole('button', { name: 'Sign Decision' });
+    await signBtn.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+    await page.getByRole('checkbox').check();
+
+    delayProjectADecision = true;
+    const submitBtnA = page.getByRole('button', { name: /Record APPROVED Decision/i });
+    await submitBtnA.click();
+
+    // 2. Switch to Project B
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // 3. Switch back to Project A
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    // 4. Establish a new valid operation or new project UI state in Project A
+    const pendingCard = page.getByTestId('approval-card-APV-PENDING-01');
+    await pendingCard.waitFor();
+    await pendingCard.click();
+
+    const signBtn2 = pendingCard.getByRole('button', { name: 'Sign Decision' });
+    await signBtn2.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+
+    // Verify modal is open for APV-PENDING-01
+    const reviewerCtx = page.getByText(/Reviewer:\s*secOfficer/);
+    assert.ok((await reviewerCtx.count()) >= 1);
+
+    // 5. Release original outdated Project A response (from APV-PARTIAL-02)
+    if (holdProjectADecision) {
+      holdProjectADecision();
+      holdProjectADecision = null;
+    }
+    await page.waitForTimeout(200);
+
+    // 6. Verify that stale response does NOT close modal, mutate selection, or trigger stale reload
+    assert.ok((await page.getByText('Sign Governance Decision: APPROVED').count()) >= 1, 'Decision modal must remain open');
+    assert.ok((await page.locator('div').filter({ hasText: 'APV-PENDING-01' }).count()) >= 1, 'Focus must remain on APV-PENDING-01');
+    assert.equal(await page.getByRole('alert').count(), 0, 'No alert error from stale response');
+
+    // Cleanly cancel modal
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    pass('UI-18: A → B → A operation invalidation');
+  } catch (e) {
+    fail('UI-18: A → B → A operation invalidation', e);
   }
 
   await page.close();
