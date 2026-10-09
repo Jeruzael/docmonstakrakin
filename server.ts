@@ -1515,13 +1515,8 @@ async function startServer() {
   });
 
   // ==========================================
-  // Approvals & Governance Inbox (Sprint 6)
+  // Approvals & Governance Inbox (Sprint 6) registered via registerSignoffRoutes
   // ==========================================
-
-  app.get('/api/projects/:id/approvals', (req, res) => {
-    const list = store.approvals[req.params.id] || [];
-    res.json(list);
-  });
 
   // Agent Center & Autonomous Roles (Sprint 6)
   // ==========================================

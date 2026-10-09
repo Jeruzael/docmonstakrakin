@@ -15,7 +15,45 @@ export function registerSignoffRoutes(app: Express, store: any) {
     OVERRIDE: ['overrides', 'SECURITY_OVERRIDE'],
   };
 
+  function validateOverrideEligibility(target: any): { valid: boolean; status: number; error: string } {
+    const gateOrControl = String(target.gateOrControl || '');
+    if (gateOrControl.includes('Gate 7') || gateOrControl.toLowerCase().includes('release')) {
+      return { valid: false, status: 403, error: 'Direct bypass or override of Gate 7 or release ceremony is strictly forbidden' };
+    }
+    if (!target.expiresAt || isNaN(new Date(target.expiresAt).getTime())) {
+      return { valid: false, status: 422, error: 'Override must possess a valid expiration timestamp' };
+    }
+    if (new Date(target.expiresAt).getTime() <= Date.now()) {
+      return { valid: false, status: 422, error: 'Cannot approve expired security override' };
+    }
+    if (target.riskAcknowledged !== true) {
+      return { valid: false, status: 422, error: 'Risk must be acknowledged before requesting or approving override' };
+    }
+    return { valid: true, status: 200, error: '' };
+  }
+
   app.get('/api/projects/:id/governance-policy', (req, res) => res.json({ requiredRoles: roles }));
+
+  app.get('/api/projects/:id/approvals', (req, res) => {
+    const list = store.approvals[req.params.id] || [];
+    const projected = list.map((item: any) => {
+      const spec = mapping[item.targetEntityType];
+      const target = spec ? (store[spec[0]]?.[req.params.id] || []).find((t: any) => t.id === item.targetEntityId) : null;
+      const currentTargetDigest = target ? digest(target) : undefined;
+      const quorum = evaluateQuorum(item, currentTargetDigest);
+      return {
+        ...item,
+        quorum: {
+          status: quorum.status,
+          hasQuorum: quorum.hasQuorum,
+          satisfiedRoles: quorum.satisfiedRoles,
+          pendingRoles: quorum.pendingRoles,
+          ...(quorum.reason ? { reason: quorum.reason } : {}),
+        },
+      };
+    });
+    res.json(projected);
+  });
 
   app.post('/api/projects/:id/approvals', (req, res) => {
     const identity = requireHuman(req, res);
@@ -47,15 +85,9 @@ export function registerSignoffRoutes(app: Express, store: any) {
     if (!target) return res.status(404).json({ error: 'Canonical target not found in this project' });
 
     if (targetEntityType === 'OVERRIDE') {
-      const gateOrControl = String(target.gateOrControl || '');
-      if (gateOrControl.includes('Gate 7') || gateOrControl.toLowerCase().includes('release')) {
-        return res.status(403).json({ error: 'Direct bypass or override of Gate 7 or release ceremony is strictly forbidden' });
-      }
-      if (target.expiresAt && new Date(target.expiresAt).getTime() <= Date.now()) {
-        return res.status(422).json({ error: 'Cannot request approval for expired override' });
-      }
-      if (target.riskAcknowledged !== true) {
-        return res.status(422).json({ error: 'Risk must be acknowledged before requesting override approval' });
+      const ovrCheck = validateOverrideEligibility(target);
+      if (!ovrCheck.valid) {
+        return res.status(ovrCheck.status).json({ error: ovrCheck.error });
       }
     }
 
@@ -147,8 +179,24 @@ export function registerSignoffRoutes(app: Express, store: any) {
     const item = (store.approvals[req.params.id] || []).find((a: any) => a.id === req.params.apvId);
     if (!item) return res.status(404).json({ error: 'Approval request not found' });
 
+    // Validate approval policy version
     if (item.policyVersion !== 'LOCAL_SESSION_V1') {
-      return res.status(409).json({ error: 'Historical approval policy; request fresh authenticated sign-off' });
+      return res.status(409).json({ error: 'Historical or unsupported approval policy; request fresh authenticated sign-off' });
+    }
+
+    // Validate canonical required roles policy
+    if (
+      !Array.isArray(item.requiredRoles) ||
+      item.requiredRoles.length !== roles.length ||
+      item.requiredRoles[0] !== roles[0] ||
+      item.requiredRoles[1] !== roles[1]
+    ) {
+      return res.status(409).json({ error: 'Invalid requiredRoles policy; request fresh authenticated sign-off' });
+    }
+
+    // Validate target digest metadata
+    if (typeof item.targetDigest !== 'string' || !item.targetDigest.trim()) {
+      return res.status(409).json({ error: 'Invalid or missing targetDigest; request fresh authenticated sign-off' });
     }
 
     if (item.status !== 'PENDING') {
@@ -176,6 +224,14 @@ export function registerSignoffRoutes(app: Express, store: any) {
     const collection = mapping[item.targetEntityType]?.[0];
     const target = collection ? (store[collection]?.[req.params.id] || []).find((a: any) => a.id === item.targetEntityId) : null;
     if (!target) return res.status(404).json({ error: 'Target entity not found' });
+
+    // Revalidate Security Override eligibility at decision time
+    if (item.targetEntityType === 'OVERRIDE') {
+      const ovrCheck = validateOverrideEligibility(target);
+      if (!ovrCheck.valid) {
+        return res.status(ovrCheck.status).json({ error: ovrCheck.error });
+      }
+    }
 
     if (digest(target) !== item.targetDigest) {
       return res.status(409).json({ error: 'Target changed; request fresh sign-off' });
@@ -213,6 +269,7 @@ export function registerSignoffRoutes(app: Express, store: any) {
           target.status = 'APPROVED';
           target.authorizedBy = item.id;
         }
+        item.postRatificationDigest = digest(target);
       }
     }
 

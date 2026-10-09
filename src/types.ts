@@ -646,9 +646,17 @@ export interface ApprovalItem {
   }[];
   policyVersion?: string;
   targetDigest?: string;
+  postRatificationDigest?: string;
   resolvedAt?: string;
   resolvedBy?: string;
   resolutionNotes?: string;
+  quorum?: {
+    status: 'PENDING' | 'PARTIAL' | 'SATISFIED' | 'REJECTED' | 'STALE' | 'INVALID';
+    hasQuorum: boolean;
+    satisfiedRoles: string[];
+    pendingRoles: string[];
+    reason?: string;
+  };
 }
 
 export interface AgentRole {
