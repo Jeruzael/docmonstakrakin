@@ -636,12 +636,16 @@ export interface ApprovalItem {
     timestamp: string;
     decision: 'APPROVED' | 'REJECTED';
     comment?: string;
+    identityId?: string;
+    roleSource?: string;
   }[];
   policyGates: {
     gateName: string;
     passed: boolean;
     details: string;
   }[];
+  policyVersion?: string;
+  targetDigest?: string;
   resolvedAt?: string;
   resolvedBy?: string;
   resolutionNotes?: string;
