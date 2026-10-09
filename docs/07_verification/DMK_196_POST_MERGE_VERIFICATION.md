@@ -212,7 +212,38 @@ Following explicit human authorization, the machine-readable post-merge technica
 
 ## 9. Next Safe Action
 
-1. Complete Controlled Docs republish of `PROJECT_STATE.md` (`DOC-CTRL-002`) binding committed state to governed audit event.
-2. Mark candidate PR #26 as Ready for Review (`draft = false`) and update PR description.
-3. Observe fresh candidate PR CI run to green across Quality & Build, Controlled Docs, and Complete Regression.
-4. Stop at PR #26 Merge Gate for human operator review and merge authorization. Do NOT merge PR #26.
+1. Human-review PR #26 at its exact final HEAD.
+2. Confirm the latest PR CI passes all required jobs.
+3. Obtain explicit human merge approval.
+4. Merge PR #26 only after approval.
+5. Verify the exact resulting master SHA and push-to-master CI.
+6. Confirm DMK-196 `VERIFIED` is published on master.
+7. Preserve Human Governance `PENDING_SIGNOFF` and the absence of `human_approved_by`.
+8. Keep live reconciliation blocked at 11.
+9. Proceed to DMK-197 only after PR #26 publication is verified.
+10. Keep Gate 7 and release unchanged.
+
+---
+
+## 10. Final Documentation Currentness Correction
+
+- **Original PR #26 HEAD:** `8c3d67762d80c17c7edec1ffbb4cd52fe4dd7b6e`
+- **Reason for Documentation Cleanup:** Correct stale complete-regression assertion total (`1045` -> `1069`), clarify that DMK-196 `VERIFIED` is applied on the PR #26 branch pending master publication upon human merge approval (distinguishing from PR #25 which published `VERIFICATION_PENDING` on master), and refresh Next Safe Action instructions to reflect completion of Ready for Review and PR CI.
+- **Corrected Project-State Publication Wording:**
+  > "DMK-196 implementation and its `VERIFICATION_PENDING` lifecycle checkpoint were published on master through PR #25 at commit `2eb763b936327629a809d05fc9f198f541ca0ab2`. The separately authorized technical verification transition to `VERIFIED` has been applied on PR #26, with publication to master pending human merge approval. Human Governance remains `PENDING_SIGNOFF`."
+  > Summary: `DMK-196: VERIFIED on PR #26 branch; publication to master pending.`
+- **Corrected Complete-Regression Count:** `47/47 suites PASS, 1069/1069 assertions PASS` (was `1045/1045`)
+- **New Controlled Docs Audit Event ID:** `AUD-MV0OWDH2-ICKK`
+- **State Version Before / After:** `97` -> `98`
+- **Audit Count Before / After:** `103` -> `104` (Audit chain: 104/104 valid reverse-chronological)
+- **Desired PROJECT_STATE SHA-256:** `8310b0f2deb5828939a885a883534d161146a73802d9e0f188ddabb764fcc95e`
+- **Governed PROJECT_STATE SHA-256:** `8310b0f2deb5828939a885a883534d161146a73802d9e0f188ddabb764fcc95e`
+- **Final PROJECT_STATE SHA-256:** `8310b0f2deb5828939a885a883534d161146a73802d9e0f188ddabb764fcc95e`
+- **Confirmation of Byte Equality:** `desiredProjectStateSha256 == governedProjectStateSha256 == finalProjectStateSha256` (100% byte identical, 0 manual edits)
+- **Immutable Boundaries Preserved:**
+  - Candidate JSON (`docs/07_verification/dmk-196-post-merge-verification-candidate.json`): unchanged, digest `efc0462ee9326e35ca05e3da95cfbae0cb911f8a79723f551c7fe390e0db24ce`.
+  - Canonical WBS (`docs/00_control/MASTER_WBS.yaml`): unchanged, digest `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`.
+  - Post-merge receipt (`docs/07_verification/dmk-196-post-merge-verification-receipt.json`): unchanged.
+  - Closure receipt (`docs/07_verification/dmk-196-closure-transition-receipt.json`): unchanged.
+  - Feature implementation, verifiers, tests, and lifecycle statuses: completely unchanged.
+
