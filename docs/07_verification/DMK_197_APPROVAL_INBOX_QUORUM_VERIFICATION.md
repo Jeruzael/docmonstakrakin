@@ -8,23 +8,23 @@
 **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)  
 **Base Master CI Run:** `37909221729` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
 **Branch:** `dmk-197-approval-inbox-quorum`  
-**Canonical WBS Status:** `IN_PROGRESS` (Strictly retained; no forward lifecycle transition in WBS)  
+**Canonical WBS Status:** `IN_PROGRESS` (Strictly retained; zero forward lifecycle drift in WBS)  
 **Human Governance Status:** `PENDING_SIGNOFF`  
-**Active Reconciliation Blockers:** 11 (Historical 9 + DMK-208 + DMK-196)  
+**Active Reconciliation Blockers:** 11 (Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190 + DMK-208 + DMK-196)  
 **Live Reconciliation:** BLOCKED / NOT AUTHORIZED / NOT EXECUTED  
 
 ---
 
 ## 1. Executive Summary
 
-This verification record establishes the technical implementation and verification evidence for work item **DMK-197** (*Approval Inbox & Canonical Quorum Synchronization*).
+This verification record establishes the technical implementation, integrity hardening, and verification evidence for work item **DMK-197** (*Approval Inbox & Canonical Quorum Synchronization*).
 
 DMK-197 enforces that formal sign-off on canonical proposed artifacts (Requirements, ADRs, Risks, and eligible Security Overrides) requires a dual-role quorum comprised of distinct human identities for **Security Officer** and **Lead Architect**.
 
 In accordance with explicit governance instructions:
 1. DMK-197 WBS status remains strictly `IN_PROGRESS` throughout this pass; no transition to `VERIFICATION_PENDING` or `VERIFIED` has been applied to `docs/00_control/MASTER_WBS.yaml` or `MASTER_WBS.md`.
 2. Human Governance remains strictly `PENDING_SIGNOFF`; `human_approved_by` remains absent.
-3. Active reconciliation blockers remain strictly at 11.
+3. Active reconciliation blockers remain strictly at 11 (Historical 9 + DMK-208 + DMK-196).
 4. Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
 5. Work stops at the **DMK-197 Implementation Review Gate** pending human operator review.
 
@@ -34,10 +34,18 @@ In accordance with explicit governance instructions:
 
 ### 2.1 Authoritative Server Quorum Evaluator (`server/proposals/quorum.ts`)
 The server defines `evaluateQuorum(item: ApprovalItem, currentTargetDigest?: string): QuorumEvaluation`, enforcing:
-- **Required Roles:** `['Security Officer', 'Lead Architect']`.
+- **Canonical Policy Version:** Strictly requires `policyVersion === 'LOCAL_SESSION_V1'`. Any missing, empty, or legacy version fails closed with `status = 'INVALID'`, `hasQuorum = false`.
+- **Exact Required Roles:** Strictly requires `requiredRoles` to be an array of length 2 matching `['Security Officer', 'Lead Architect']`. Shortened, duplicated, missing, unknown, or extra roles fail closed with `status = 'INVALID'`.
+- **Strict Target Digest:** Non-empty string `targetDigest` required. If missing or malformed, evaluates to `status = 'INVALID'`.
+- **Strict Signature Provenance:** Signatures count toward quorum if and only if:
+  - `decision === 'APPROVED'`
+  - Non-empty string `identityId`
+  - Exact `roleSource === 'LOCAL_SERVER_ROSTER'`
+  - Role matches an unsatisfied required role
 - **Distinct Human Identities:** A single human identity possessing both roles (`REV-DUAL-01`) cannot satisfy both slots. The second decision attempt is rejected with HTTP 409.
-- **Valid Signatures:** Only signatures with `decision === 'APPROVED'`, non-empty `identityId`, `roleSource === 'LOCAL_SERVER_ROSTER'`, matching a required role, and `policyVersion === 'LOCAL_SESSION_V1'` count toward quorum.
-- **Stale Digests:** If the canonical target artifact is mutated after sign-off initiation, `currentTargetDigest !== item.targetDigest` evaluates to `STALE`, preventing quorum ratification.
+- **Stale Digests & Post-Ratification Digest:**
+  - For pending requests, if the canonical target artifact is mutated after sign-off initiation, `currentTargetDigest !== item.targetDigest` evaluates to `STALE`, preventing quorum ratification.
+  - For ratified requests (`item.status === 'APPROVED'`), `evaluateQuorum` verifies against `item.postRatificationDigest || item.targetDigest`, ensuring legitimate approved artifacts are not falsely marked `STALE` when their status mutation updates their hash.
 - **Rejection Termination:** A single authorized human rejection transitions the request status to `REJECTED`, requiring a meaningful justification note.
 
 ### 2.2 Hardened Sign-Off Routes (`server/proposals/signoff.ts`)
@@ -45,36 +53,60 @@ The server defines `evaluateQuorum(item: ApprovalItem, currentTargetDigest?: str
   - Authenticated session check via `requireHuman`.
   - Rejection of agent identities (`actorType === 'AGENT'`) with HTTP 403.
   - Rejection of release promotion and Gate 7 ceremonies with HTTP 422 (explaining dedicated ceremonies).
-  - Validation of Security Overrides: expired overrides (HTTP 422), unacknowledged risks (HTTP 422), and attempts to override Gate 7 or release (HTTP 403) are strictly denied.
-  - Deduplication: checks `projectId`, `targetEntityType`, `targetEntityId`, `targetDigest`, `policyVersion`, and `status === 'PENDING'` without duplicate audit events or stateVersion increments.
+  - Validation of Security Overrides via shared `validateOverrideEligibility`: expired overrides (HTTP 422), unacknowledged risks (HTTP 422), and attempts to override Gate 7 or release (HTTP 403) are strictly denied.
+  - Deduplication: checks `projectId`, `targetEntityType`, `targetEntityId`, `targetDigest`, `policyVersion`, and `status === 'PENDING'`. Returns HTTP 201 with the existing approval record without duplicate audit events or stateVersion increments.
+  - Persistence: transactional writes to `.local/project-state.json` via `installProjectPersistence`.
+- **Authoritative Quorum Projection (`GET /api/projects/:id/approvals`):**
+  - Projects server-derived read-only `quorum` object (`status`, `hasQuorum`, `satisfiedRoles`, `pendingRoles`, `reason`) using `evaluateQuorum`.
 - **Decision Submission (`POST /api/projects/:id/approvals/:apvId/decide`):**
   - Caller-supplied identity claims (`approver`, `role`, `reviewerName`, `reviewerRole`, `authorizedRole`, `actorType === 'AGENT'`) in the request body are rejected with HTTP 403 before any item lookup.
   - Requires `humanConfirmed === true` (HTTP 403 if omitted/false).
-  - Server assigns reviewer role based on unsatisfied required roles matching authenticated session roles.
-  - Enforces distinct human identity check (HTTP 409 if identity has already signed).
+  - Request Pre-validation before mutation: rejects malformed stored requests (`policyVersion !== 'LOCAL_SESSION_V1'`, invalid `requiredRoles`, missing `targetDigest`, missing target entity, mismatched target digest, or ineligible override) with HTTP 409 fail-closed without mutating state, incrementing stateVersion, or adding audit events.
+  - Security Override Re-validation: verifies override has not expired between signatures or been disavowed.
+  - Distinct Human Identity Check: HTTP 409 if identity has already signed.
   - Rejection without comment rejected with HTTP 422.
   - Upon quorum ratification:
     - Requirement transitions to `APPROVED`.
     - ADR transitions to `ACCEPTED`.
     - Eligible Security Override transitions to `APPROVED` and records `authorizedBy`.
     - Risk schema and treatment remain unmutated (no invalid `status` property added).
-  - Atomic audit log generation (`GOVERNANCE_SIGNATURE`) and project `stateVersion` increments only on valid state change; failed decisions cause zero mutations.
+    - Post-ratification digest is recorded in `item.postRatificationDigest = digest(target)`.
+  - Atomic audit log generation (`APPROVAL_REQUESTED` on creation, `GOVERNANCE_SIGNATURE` on decisions) and project `stateVersion` increments only on valid state change; failed decisions cause zero mutations.
 
 ### 2.3 Approval Inbox UI (`src/components/ApprovalsView.tsx`)
-- Replaces naive length check with authoritative dual-role quorum status.
+- Consumes authoritative server-derived `item.quorum` projection.
 - Renders dual-role status pills on approval cards: `Security Officer: ✓ RATIFIED` / `Lead Architect: ⏳ PENDING`.
-- Renders detailed inspector breakdown: satisfied roles, pending roles, distinct human identities rule, and active session identity banner.
+- Visual cues for invalid or stale requests:
+  - `INVALID POLICY` red badge and warning pill; decision action buttons suppressed.
+  - `STALE TARGET` amber badge and warning pill; decision action buttons suppressed.
+- Project-Switch Isolation:
+  - On `project.id` change, clears `selectedItem`, resets `error`, closes decision & request modals, resets confirmation, and discards stale in-flight responses via cancellation flag.
+  - Verifies `selectedItem.projectId === project.id` on decision submission.
 - Excludes `GATE_TRANSITION` and `RELEASE_SIGNOFF` from creation modal dropdown.
 - Requires explicit Target Entity ID without silent fallback.
 
 ---
 
-## 3. Verification Test Matrix
+## 3. Targeted Integrity Remediation Pass
+
+Following implementation review, a targeted remediation pass was executed to resolve security and verification gaps:
+- **Correction A:** Canonical Quorum Policy & Roles Hardening in `server/proposals/quorum.ts` (enforces `LOCAL_SESSION_V1`, exact roles `['Security Officer', 'Lead Architect']`).
+- **Correction B:** Strict Signature Provenance in `server/proposals/quorum.ts` (enforces `identityId`, `roleSource === 'LOCAL_SERVER_ROSTER'`, `decision === 'APPROVED'`).
+- **Correction C:** Rejection of Malformed Requests Before Mutation in `server/proposals/signoff.ts` (HTTP 409 fail-closed).
+- **Correction D:** Server-Authoritative Derived Quorum Projection in UI & API (`GET /api/projects/:id/approvals`, `ApprovalsView.tsx`).
+- **Correction E:** Decision-Time Security Override Eligibility Revalidation in `server/proposals/signoff.ts`.
+- **Correction F:** Approval Inbox Project-Switch Isolation in `src/components/ApprovalsView.tsx`.
+- **Correction G:** Real Persistence Integration Verification in `scripts/testDmk197Persistence.ts` (`.local/project-state.json`, restart recovery and failed write rollback).
+
+---
+
+## 4. Verification Test Matrix
 
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
-| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–30 (Canonical acceptance criteria) | **30/30 PASS** |
-| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-8 | **8/8 PASS** |
+| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–44 (Quorum invariants & integrity remediation) | **44/44 PASS** |
+| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-13 | **13/13 PASS** |
+| **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback | **2/2 PASS** |
 | **DMK-196 Historical Suite** | `scripts/testRequirementSignoff.ts` | `npm run test:req-signoff` | Scenarios A–O (PR #25 pinned historical range) | **15/15 PASS** |
 | **Requirement Sync Suite** | `scripts/testRequirementStatusSync.ts` | `npm run test:req-sync` | Tests A–L (Direct APPROVED prevention) | **12/12 PASS** |
 | **Closure Verifier Suite** | `scripts/verifyDmk196Closure.ts` | `npm run verify:dmk-196-closure` | DMK-196 closure receipt verification | **18/18 PASS** |
@@ -86,32 +118,32 @@ The server defines `evaluateQuorum(item: ApprovalItem, currentTargetDigest?: str
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
 | **Controlled Docs Suite** | `scripts/testControlledDocsSuite.ts` | `npm run test:controlled-docs` | Controlled documents integrity | **PASS** |
-| **Complete Regression** | `scripts/runAllTests.ts` | `npm run test:complete` | Full system regression suite | **49/49 suites PASS, 1107/1107 assertions PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **50/50 suites PASS, 1128/1128 assertions PASS** |
 
 ---
 
-## 4. Controlled Docs Audit & Governance Checkpoint
+## 5. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV0U3OP0-LETG`
+- **AuditEventId:** `AUD-MV0XOYIK-846P`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `8310b0f2deb5828939a885a883534d161146a73802d9e0f188ddabb764fcc95e`
-- **New SHA-256:** `bf1571aec60eb74c46fbafa52457f8a473142fb3a8d0ed8f6cfefa1953bc6a00`
-- **Project stateVersion:** 98 -> 100
-- **Audit Count:** 104 -> 106
-- **Reverse Audit Chain:** 106 / 106 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `bf1571aec60eb74c46fbafa52457f8a473142fb3a8d0ed8f6cfefa1953bc6a00`
+- **New SHA-256:** `2a373352e5b94ff18704fb0851e295cd35ae7f15c6e3507a9914167b866bf185`
+- **Project stateVersion:** 100 -> 101
+- **Audit Count:** 106 -> 107
+- **Reverse Audit Chain:** 107 / 107 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
 
-## 5. Next Action & Review Gate
+## 6. Next Action & Review Gate
 
-This PR is submitted in **DRAFT** status to allow operator inspection.
+This PR remains in **DRAFT** status on branch `dmk-197-approval-inbox-quorum` awaiting human operator inspection.
 
 **Current Next Actions:**
-1. Await human operator review of this implementation on PR HEAD.
-2. Verify GitHub Actions PR CI runs clean across all jobs (`Quality & Build`, `Controlled Docs`, `Complete Regression`).
-3. Maintain DMK-197 canonical WBS status as `IN_PROGRESS`.
-4. Maintain Human Governance as `PENDING_SIGNOFF`.
-5. Maintain active reconciliation blockers at strictly 11.
-6. Await explicit human instruction before executing any closure transition or merge recommendation.
+1. Maintain DMK-197 canonical WBS status strictly as `IN_PROGRESS`.
+2. Maintain Human Governance strictly as `PENDING_SIGNOFF`.
+3. Maintain active reconciliation blockers strictly at 11.
+4. Verify PR CI on GitHub Actions completes green.
+5. STOP strictly at the DMK-197 Implementation Review Gate.
+6. Await explicit human operator review before executing any closure transition or merge recommendation.
