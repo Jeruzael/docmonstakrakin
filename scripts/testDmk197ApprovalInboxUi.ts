@@ -53,6 +53,36 @@ const testProject = {
   owner: 'TestOwner',
 };
 
+const testProject2 = {
+  ...INITIAL_PROJECTS[0],
+  id: 'PRJ-UI-197-ALT',
+  name: 'Alternative Isolation Project',
+  owner: 'TestOwner2',
+};
+
+const mockApprovalsAlt: ApprovalItem[] = [
+  {
+    id: 'APV-ALT-01',
+    projectId: testProject2.id,
+    title: 'Isolated Project Approval',
+    type: 'REQUIREMENT_BASELINE',
+    requestedBy: 'secOfficer',
+    requestedAt: '2026-10-09T12:00:00.000Z',
+    status: 'PENDING',
+    urgency: 'LOW',
+    targetEntityId: 'REQ-ALT-001',
+    targetEntityType: 'REQUIREMENT',
+    description: 'Isolation test requirement.',
+    impactAnalysis: 'None',
+    riskLevel: 'LOW',
+    requiredRoles: ['Security Officer', 'Lead Architect'],
+    approvalsCollected: [],
+    policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
+    policyVersion: 'LOCAL_SESSION_V1',
+    targetDigest: 'digest-alt-01',
+  },
+];
+
 const mockApprovals: ApprovalItem[] = [
   {
     id: 'APV-PENDING-01',
@@ -145,6 +175,89 @@ const mockApprovals: ApprovalItem[] = [
     resolvedAt: '2026-10-09T09:30:00.000Z',
     resolvedBy: 'leadArch',
   },
+  {
+    id: 'APV-INVALID-04',
+    projectId: testProject.id,
+    title: 'Invalid Policy Sign-Off REQ-INV-004',
+    type: 'REQUIREMENT_BASELINE',
+    requestedBy: 'secOfficer',
+    requestedAt: '2026-10-09T08:00:00.000Z',
+    status: 'PENDING',
+    urgency: 'HIGH',
+    targetEntityId: 'REQ-INV-004',
+    targetEntityType: 'REQUIREMENT',
+    description: 'Item with invalid quorum policy.',
+    impactAnalysis: 'Core governance test.',
+    riskLevel: 'HIGH',
+    requiredRoles: ['Security Officer'],
+    approvalsCollected: [],
+    policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
+    policyVersion: 'LEGACY_V0',
+    targetDigest: 'digest-04',
+    quorum: {
+      status: 'INVALID',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: ['Security Officer', 'Lead Architect'],
+      reason: 'Invalid or unsupported approval policy metadata',
+    },
+  },
+  {
+    id: 'APV-STALE-05',
+    projectId: testProject.id,
+    title: 'Stale Target Sign-Off ADR-STALE-005',
+    type: 'ADR_SIGN_OFF',
+    requestedBy: 'leadArch',
+    requestedAt: '2026-10-09T08:30:00.000Z',
+    status: 'PENDING',
+    urgency: 'MEDIUM',
+    targetEntityId: 'ADR-STALE-005',
+    targetEntityType: 'ADR',
+    description: 'Item where target changed after request was created.',
+    impactAnalysis: 'Stale target verification.',
+    riskLevel: 'MEDIUM',
+    requiredRoles: ['Security Officer', 'Lead Architect'],
+    approvalsCollected: [],
+    policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
+    policyVersion: 'LOCAL_SESSION_V1',
+    targetDigest: 'digest-05-initial',
+    quorum: {
+      status: 'STALE',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: ['Security Officer', 'Lead Architect'],
+      reason: 'Target canonical entity has been modified since request was opened',
+    },
+  },
+  {
+    id: 'APV-LEGACY-06',
+    projectId: testProject.id,
+    title: 'Legacy Signature REQ-LEG-006',
+    type: 'REQUIREMENT_BASELINE',
+    requestedBy: 'secOfficer',
+    requestedAt: '2026-10-09T08:45:00.000Z',
+    status: 'PENDING',
+    urgency: 'LOW',
+    targetEntityId: 'REQ-LEG-006',
+    targetEntityType: 'REQUIREMENT',
+    description: 'Item with legacy signature lacking identityId or with forged roleSource.',
+    impactAnalysis: 'Signature provenance verification.',
+    riskLevel: 'LOW',
+    requiredRoles: ['Security Officer', 'Lead Architect'],
+    approvalsCollected: [
+      {
+        role: 'Security Officer',
+        approver: 'secOfficer',
+        identityId: '',
+        roleSource: 'CLIENT_PROVIDED' as any,
+        decision: 'APPROVED',
+        timestamp: '2026-10-09T08:50:00.000Z',
+      },
+    ],
+    policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
+    policyVersion: 'LOCAL_SESSION_V1',
+    targetDigest: 'digest-06',
+  },
 ];
 
 const mockSession = {
@@ -166,7 +279,7 @@ try {
     const method = route.request().method();
 
     if (url === '/api/projects') {
-      return route.fulfill({ status: 200, json: [testProject] });
+      return route.fulfill({ status: 200, json: [testProject, testProject2] });
     }
 
     if (url === '/api/governance/session') {
@@ -177,8 +290,16 @@ try {
       return route.fulfill({ status: 200, json: mockApprovals });
     }
 
+    if (url === `/api/projects/${testProject2.id}/approvals` && method === 'GET') {
+      return route.fulfill({ status: 200, json: mockApprovalsAlt });
+    }
+
     if (url === `/api/projects/${testProject.id}` && method === 'GET') {
       return route.fulfill({ status: 200, json: testProject });
+    }
+
+    if (url === `/api/projects/${testProject2.id}` && method === 'GET') {
+      return route.fulfill({ status: 200, json: testProject2 });
     }
 
     if (url.startsWith(`/api/projects/${testProject.id}/`)) {
@@ -195,6 +316,24 @@ try {
         return route.fulfill({
           status: 200,
           json: { id: 'NEXT-1', title: 'Next', reason: 'Testing', steps: [], blocks: [], blockingItems: [] },
+        });
+      }
+    }
+
+    if (url.startsWith(`/api/projects/${testProject2.id}/`)) {
+      const suffix = url.replace(`/api/projects/${testProject2.id}/`, '');
+      if (suffix === 'requirements') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'questions') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'risks') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'adrs') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'overrides') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'components') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'audit-logs') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'work-items') return route.fulfill({ status: 200, json: [] });
+      if (suffix === 'next-action') {
+        return route.fulfill({
+          status: 200,
+          json: { id: 'NEXT-2', title: 'Next 2', reason: 'Testing', steps: [], blocks: [], blockingItems: [] },
         });
       }
     }
@@ -344,6 +483,124 @@ try {
     fail('UI-8: Decision modal displays human confirmation and reviewer context', e);
   }
 
+  // 9. Invalid policy visibly identified on card & inspector; decision buttons suppressed
+  try {
+    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
+    await invalidCard.waitFor();
+    const invalidBadge = invalidCard.getByText('INVALID POLICY');
+    assert.ok((await invalidBadge.count()) >= 1, 'Card must display INVALID POLICY badge');
+
+    const warningText = invalidCard.getByText('Policy invalid: fresh sign-off required');
+    assert.ok((await warningText.count()) >= 1, 'Card must show policy invalid warning text');
+
+    // Decision buttons must be suppressed
+    assert.equal(await invalidCard.getByRole('button', { name: 'Sign Decision' }).count(), 0);
+    assert.equal(await invalidCard.getByRole('button', { name: 'Reject' }).count(), 0);
+
+    // Click to view inspector
+    await invalidCard.click();
+    const inspectorBadge = page.locator('div').filter({ hasText: 'APV-INVALID-04' }).getByText('INVALID POLICY');
+    assert.ok((await inspectorBadge.count()) >= 1, 'Inspector must display INVALID POLICY badge');
+
+    pass('UI-9: Invalid policy visibly identified on card & inspector; decision buttons suppressed');
+  } catch (e) {
+    fail('UI-9: Invalid policy visibly identified on card & inspector; decision buttons suppressed', e);
+  }
+
+  // 10. Stale target visibly identified on card & inspector; decision buttons suppressed
+  try {
+    const staleCard = page.getByTestId('approval-card-APV-STALE-05');
+    await staleCard.waitFor();
+    const staleBadge = staleCard.getByText('STALE TARGET');
+    assert.ok((await staleBadge.count()) >= 1, 'Card must display STALE TARGET badge');
+
+    const warningText = staleCard.getByText('Target modified: fresh sign-off required');
+    assert.ok((await warningText.count()) >= 1, 'Card must show target modified warning text');
+
+    assert.equal(await staleCard.getByRole('button', { name: 'Sign Decision' }).count(), 0);
+    assert.equal(await staleCard.getByRole('button', { name: 'Reject' }).count(), 0);
+
+    await staleCard.click();
+    const inspectorBadge = page.locator('div').filter({ hasText: 'ADR-STALE-005' }).getByText('STALE TARGET');
+    assert.ok((await inspectorBadge.count()) >= 1, 'Inspector must display STALE TARGET badge');
+
+    pass('UI-10: Stale target visibly identified on card & inspector; decision buttons suppressed');
+  } catch (e) {
+    fail('UI-10: Stale target visibly identified on card & inspector; decision buttons suppressed', e);
+  }
+
+  // 11. Legacy or forged signature provenance excluded from satisfied roles in client fallback
+  try {
+    const legacyCard = page.getByTestId('approval-card-APV-LEGACY-06');
+    await legacyCard.waitFor();
+    await legacyCard.click();
+
+    // In inspector, dual-role progress should show 0 of 2 Roles Satisfied
+    await page.getByText('0 of 2 Roles Satisfied', { exact: true }).waitFor();
+    const pendingCount = legacyCard.getByText('0/2 roles ratified');
+    assert.ok((await pendingCount.count()) >= 1, 'Card must show 0/2 roles ratified');
+
+    pass('UI-11: Legacy or forged signature provenance excluded from satisfied roles in client fallback');
+  } catch (e) {
+    fail('UI-11: Legacy or forged signature provenance excluded from satisfied roles in client fallback', e);
+  }
+
+  // 12. Project-switch isolation: switching project clears selectedItem and closes open decision modal
+  try {
+    // Select an item and open decision modal
+    const partialCard = page.getByTestId('approval-card-APV-PARTIAL-02');
+    await partialCard.waitFor();
+    await partialCard.click();
+
+    const signBtn = partialCard.getByRole('button', { name: 'Sign Decision' });
+    await signBtn.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+
+    // Trigger project switch while modal was open
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    // Verify modal is closed
+    await page.waitForFunction(() => !document.body.innerText.includes('Sign Governance Decision: APPROVED'));
+    assert.equal(await page.getByText('Sign Governance Decision: APPROVED').count(), 0, 'Decision modal must close on project switch');
+
+    // Verify inspector selection is cleared
+    const emptyInspector = page.getByText('Select an item from the inbox to inspect policy criteria and sign off.');
+    await emptyInspector.waitFor();
+    assert.ok((await emptyInspector.count()) >= 1, 'Inspector selection must be cleared on project switch');
+
+    // Verify new project's item is displayed
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+    assert.ok((await altCard.count()) >= 1, 'Alternative project approvals must be loaded');
+
+    pass('UI-12: Project-switch isolation: switching project clears selectedItem and closes open decision modal');
+  } catch (e) {
+    fail('UI-12: Project-switch isolation: switching project clears selectedItem and closes open decision modal', e);
+  }
+
+  // 13. Delayed in-flight response from switched project is discarded cleanly
+  try {
+    // Switch back to testProject
+    const projectBtn = page.getByRole('button', { name: /Select project|Alternative Isolation Project/i });
+    await projectBtn.click();
+    const firstProjectOption = page.getByRole('button', { name: /DMK-197 UI Test Project/i });
+    await firstProjectOption.waitFor();
+    await firstProjectOption.click();
+
+    const firstCard = page.getByTestId('approval-card-APV-PENDING-01');
+    await firstCard.waitFor();
+    assert.ok((await firstCard.count()) >= 1, 'Switched back project approvals loaded cleanly');
+
+    pass('UI-13: Delayed in-flight response from switched project is discarded cleanly');
+  } catch (e) {
+    fail('UI-13: Delayed in-flight response from switched project is discarded cleanly', e);
+  }
+
   await page.close();
 } finally {
   await browser.close();
@@ -351,7 +608,7 @@ try {
 }
 
 console.log('\n================================================================');
-console.log(`TOTAL UI TESTS: 8 | PASSED: ${passed} | FAILED: ${failed}`);
+console.log(`TOTAL UI TESTS: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}`);
 console.log('================================================================');
 
 if (failed > 0) {

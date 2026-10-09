@@ -25,6 +25,7 @@
     "test:req-signoff": "tsx scripts/testRequirementSignoff.ts",
     "test:dmk-197": "tsx scripts/testDmk197Quorum.ts",
     "test:dmk-197:ui": "tsx scripts/testDmk197ApprovalInboxUi.ts",
+    "test:dmk-197:persistence": "tsx scripts/testDmk197Persistence.ts",
     "test:bootstrap:contract": "tsx scripts/testSelfBootstrapContract.ts",
     "test:bootstrap:manifest": "tsx scripts/validateSelfBootstrapManifestFile.ts",
     "test:bootstrap:executor": "tsx scripts/testSelfBootstrapExecutor.ts",
