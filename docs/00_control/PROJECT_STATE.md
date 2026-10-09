@@ -1,42 +1,44 @@
 # docmonstakrakin current project state
 
-## 2026-10-09 — DMK-197 Approval Inbox & Canonical Quorum Synchronization Implementation Checkpoint
+## 2026-10-09 — DMK-197 Formal Closure-Transition Candidate Checkpoint
 
-DMK-197 implementation, integrity hardening, and comprehensive verification have been completed on branch `dmk-197-approval-inbox-quorum` branched from canonical master `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26, verified green under post-merge CI `37909221729`).
-The canonical acceptance criterion — **"Distinct Security Officer and Lead Architect human identities required for quorum"** — is implemented, hardened, and verified across 46 technical backend scenarios (`test:dmk-197`), 18 frontend UI scenarios (`test:dmk-197:ui`), and 2 real persistence integration scenarios (`test:dmk-197:persistence`).
-The Approval Inbox now enforces that:
-1. Canonical proposed artifacts (Requirement, ADR, Risk, and eligible Security Override) can have formal sign-off requests created via `/api/projects/:id/approvals`.
-2. The server establishes reviewer identity and roles strictly from authenticated human sessions (`/api/governance/session`); all client-supplied identity, role, and approver claims are rejected with HTTP 403.
-3. Decision submission (`/api/projects/:id/approvals/:apvId/decide`) dynamically determines the reviewer's role and enforces that a single human identity cannot satisfy both the Security Officer and Lead Architect roles. Quorum is satisfied only when distinct authorized human identities approve both required role slots.
-4. Quorum ratification synchronizes canonical target state: Requirement transitions to `APPROVED`, ADR transitions to `ACCEPTED`, eligible Security Override transitions to `APPROVED` and records `authorizedBy`, while Risk preserves its schema and treatment without invalid mutations. Direct bypass of Gate 7 or release ceremonies is strictly rejected.
-5. In accordance with targeted integrity remediation and final security hardening, the system strictly enforces:
-   - Canonical quorum policy `LOCAL_SESSION_V1` and exact required roles `['Security Officer', 'Lead Architect']` in `server/proposals/quorum.ts`.
-   - Strict signature provenance (`identityId`, `roleSource === 'LOCAL_SERVER_ROSTER'`, `decision === 'APPROVED'`).
-   - Request pre-validation before decision mutation (HTTP 409 fail-closed without state mutation, audit event, or stateVersion increment).
-   - Server-derived authoritative quorum projection in UI & API with post-ratification digest handling.
-   - Decision-time security override eligibility revalidation.
-   - Normalization of protected control identifiers in `server/proposals/signoff.ts`, rejecting all Gate 7 and release ceremony naming variants (`Gate 7`, `gate 7`, `GATE-7`, `Gate7`, `GATE_7`, `GATE-07`, `gate #7`) fail-closed while permitting ordinary controls (`Gate 70`).
-   - Strict 64-character hexadecimal SHA-256 validation for `targetDigest` and `postRatificationDigest` (`/^[a-f0-9]{64}$/`).
-   - Fail-closed projection for missing canonical targets (`status = 'STALE'`, `hasQuorum = false`, `reason = 'Canonical approval target no longer exists'`) and unsupported target types (`status = 'INVALID'`) with zero stateVersion, audit, or approval mutation.
-   - Centralized guarded approval fetch in UI (`fetchApprovalsForProject` with `activeProjectIdRef`, `requestGenerationRef`, `AbortController`), discarding delayed responses across project switches and manual refreshes.
-   - Deterministic route-interception network race tests (UI-13 delayed initial fetch, UI-14 delayed manual refresh, UI-15 stale decision response).
-   - Safe submission-state isolation across project switches: resetting `submitting` to false on project change, and monotonic `submissionGenerationRef` token validation for `submitDecision` and `submitNewRequest` (protecting `finally` blocks, response parsing, error alerts, modals, and refresh callbacks so stale submissions cannot lock newer projects or newer submissions).
-   - Deterministic submission-state isolation tests (UI-16 Project B remains usable after delayed Project A decision, UI-17 old completion cannot interrupt newer submission, UI-18 A → B → A operation invalidation).
-   - Real `.local/project-state.json` persistence verification (restart recovery and failed write rollback).
-6. In accordance with governance constraints, DMK-197 canonical WBS status remains strictly `IN_PROGRESS` on this branch; no forward lifecycle transition to `VERIFICATION_PENDING` or `VERIFIED` has been applied in WBS.
-7. Human Governance for DMK-196 and DMK-208 remains strictly `PENDING_SIGNOFF`; `human_approved_by` remains absent.
-8. Active reconciliation blockers remain strictly at 11 (Historical 9 + DMK-208 + DMK-196). Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
+A formal, immutable, and fail-closed closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27).
 
-### Implementation and Verification Record
+### 1. Authorization and Scope Boundaries
+- **Candidate Preparation Only:** This checkpoint records candidate preparation and independent verification only.
+- **Zero WBS Drift:** Canonical `docs/00_control/MASTER_WBS.yaml` and `docs/00_control/MASTER_WBS.md` remain completely unmodified on disk. DMK-197 canonical WBS status remains strictly `IN_PROGRESS`.
+- **No Applied Closure Receipt:** No approved or applied closure receipt (`dmk-197-closure-transition-receipt.json`) has been created; no operator approval has been fabricated (`human_approved_by` remains absent; `humanDecisionStatus: "PENDING"`).
+- **Not Technically Verified:** DMK-197 is NOT marked `VERIFIED`.
+- **PR Status:** PR #27 remains OPEN, DRAFT, and UNMERGED.
+- **Reconciliation Blockers:** Active reconciliation blockers remain strictly at 11 (Historical 9 + DMK-208 + DMK-196). Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
+- **Release Status:** Gate 7 and release promotion remain untouched (`v0.1.0-rc1 / NOT PROMOTED`).
+- **Human Decision Gate:** Execution strictly halts at the DMK-197 Closure-Transition Human Decision Gate awaiting explicit human operator review.
 
+### 2. Candidate Proposal and Cryptographic Identity
+- **Candidate File:** `docs/07_verification/dmk-197-closure-transition-candidate.json`
+- **Candidate Type:** `CLOSURE_TRANSITION`
+- **Schema Version:** `1.0`
+- **From Status:** `IN_PROGRESS`
+- **Candidate Status:** `VERIFICATION_PENDING`
+- **Frozen Implementation HEAD:** `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`
+- **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)
+- **Frozen Implementation CI:** Run `37946050979` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
+- **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
+- **Deterministic Candidate Digest (SHA-256):** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
+- **Proposed WBS Delta Preview Digest (SHA-256):** `49c1ea1426a583999c2422b3460933134f84f6e7405feca7145c40dc5f9b4d41`
+- **Verification Evidence Document:** `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`
+
+### 3. Implementation and Verification Record
 - **WorkItem:** DMK-197 (WBS: 13.06.11, Title: Approval Inbox & Canonical Quorum Synchronization)
 - **Branch:** `dmk-197-approval-inbox-quorum`
-- **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (PR #26 merge commit)
+- **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
 - **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities, exact canonical roles, strict 64-char SHA-256 digests, and strict provenance)
 - **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, atomic audit and stateVersion)
 - **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation)
 - **Canonical Status:** `IN_PROGRESS` (Zero WBS drift, `wbs:check` PASS)
+- **DMK-197 Closure Candidate Verifier:** `scripts/verifyDmk197ClosureCandidate.ts` (`npm run verify:dmk-197-closure-candidate`, 20 invariants verified PASS)
+- **DMK-197 Candidate Regression Suite:** `scripts/testDmk197ClosureCandidate.ts` (`npm run test:dmk-197-closure-candidate`, 19/19 scenarios PASS)
 - **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 46/46 PASS)
 - **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 18/18 PASS)
 - **Persistence Integration Suite:** `scripts/testDmk197Persistence.ts` (`npm run test:dmk-197:persistence`, 2/2 PASS)
@@ -48,13 +50,12 @@ The Approval Inbox now enforces that:
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (50/50 suites PASS, 1135/1135 assertions PASS)
+- **Complete Regression Suite:** `npm run test:complete` (51/51 suites PASS, 1154/1154 assertions PASS)
 
-### Current governance and task status
-
+### 4. Current governance and task status
 - DMK-195: VERIFIED / MERGED
 - DMK-196: VERIFIED (Published on master via PR #26 at commit `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`)
-- DMK-197: IN_PROGRESS (Implementation complete on branch `dmk-197-approval-inbox-quorum`; stopping at Implementation Review Gate)
+- DMK-197: IN_PROGRESS (Candidate prepared for `VERIFICATION_PENDING`; stopping at Closure-Transition Human Decision Gate)
 - DMK-198: IN_PROGRESS (Planned under EPIC-13; not started)
 - DMK-199: BACKLOG
 - DMK-201: VERIFICATION_PENDING
@@ -68,8 +69,7 @@ The Approval Inbox now enforces that:
 - Gate 7: UNCHANGED (HUMAN_APPROVAL_REQUIRED / NOT EXECUTED)
 - Release status: v0.1.0-rc1 / NOT PROMOTED
 
-### Historical governance blockers & live reconciliation
-
+### 5. Historical governance blockers & live reconciliation
 Live reconciliation remains strictly:
 BLOCKED
 NOT AUTHORIZED
@@ -80,15 +80,13 @@ Total reconciliation blockers currently: 11
 - DMK-208: Technically verified on master; human governance sign-off pending
 - DMK-196: Technically verified on master; human governance sign-off pending
 
-### Next safe action
-
-1. Human-review the corrected PR #27 exact HEAD.
-2. Verify fresh full CI.
-3. Review the updated security and implementation evidence.
-4. Decide whether DMK-197 may transition from `IN_PROGRESS` to `VERIFICATION_PENDING`.
-5. Do not apply a lifecycle transition without separate explicit authorization.
-6. Keep PR #27 unmerged.
-7. Keep reconciliation blocked at 11.
+### 6. Next safe action
+1. Present formal candidate report with candidate digest `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`.
+2. Stop strictly at the **DMK-197 Closure-Transition Human Decision Gate**.
+3. Await explicit human operator decision (`APPROVE`, `REJECT`, or `REQUIRE_REMEDIATION`).
+4. Do not apply a lifecycle transition without separate explicit authorization.
+5. Keep PR #27 unmerged.
+6. Keep reconciliation blocked at 11.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
