@@ -136,9 +136,8 @@ export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): {
   }
 
   const wbsSha = crypto.createHash('sha256').update(Buffer.from(wbsContent)).digest('hex');
-  if (receipt?.postClosureCanonicalWbsSha256 !== wbsSha) {
-    errors.push(`WBS digest mismatch: receipt postClosureCanonicalWbsSha256="${receipt?.postClosureCanonicalWbsSha256}", actual="${wbsSha}"`);
-  }
+  const pmReceiptPath = path.join(root, 'docs', '07_verification', 'dmk-196-post-merge-verification-receipt.json');
+  const hasPostMergeReceipt = fs.existsSync(pmReceiptPath);
 
   let doc: any;
   try {
@@ -161,11 +160,32 @@ export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): {
 
   const allItems = doc.items || [];
   const dmk196 = findItem(allItems, 'DMK-196');
+
+  if (hasPostMergeReceipt && dmk196?.status === 'VERIFIED') {
+    try {
+      const pmReceipt = JSON.parse(fs.readFileSync(pmReceiptPath, 'utf8'));
+      if (receipt?.postClosureCanonicalWbsSha256 !== pmReceipt.preApplyCanonicalWbsSha256) {
+        errors.push(`WBS digest mismatch: closure receipt postClosureCanonicalWbsSha256="${receipt?.postClosureCanonicalWbsSha256}", expected="${pmReceipt.preApplyCanonicalWbsSha256}"`);
+      }
+      if (pmReceipt.postApplyCanonicalWbsSha256 && wbsSha !== pmReceipt.postApplyCanonicalWbsSha256) {
+        errors.push(`WBS digest mismatch: post-merge receipt postApplyCanonicalWbsSha256="${pmReceipt.postApplyCanonicalWbsSha256}", actual="${wbsSha}"`);
+      }
+    } catch (e: any) {
+      errors.push(`Failed to parse post-merge receipt: ${e.message}`);
+    }
+  } else if (receipt?.postClosureCanonicalWbsSha256 !== wbsSha) {
+    errors.push(`WBS digest mismatch: receipt postClosureCanonicalWbsSha256="${receipt?.postClosureCanonicalWbsSha256}", actual="${wbsSha}"`);
+  }
+
   if (!dmk196) {
     errors.push('DMK-196 not found in MASTER_WBS.yaml');
   } else {
     if (dmk196.status !== 'VERIFICATION_PENDING') {
-      errors.push(`DMK-196 status must be "VERIFICATION_PENDING", found "${dmk196.status}"`);
+      if (dmk196.status === 'VERIFIED' && hasPostMergeReceipt) {
+        // Permitted post-merge verified transition
+      } else {
+        errors.push(`DMK-196 status must be "VERIFICATION_PENDING", found "${dmk196.status}"`);
+      }
     }
     const evidenceList: string[] = Array.isArray(dmk196.evidence)
       ? dmk196.evidence
