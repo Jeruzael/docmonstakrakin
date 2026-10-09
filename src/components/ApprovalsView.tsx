@@ -51,6 +51,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const [reqImpact, setReqImpact] = useState('');
   const [reqUrgency, setReqUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
 
+  const activeProjectIdRef = React.useRef(project.id);
+  const requestGenerationRef = React.useRef(0);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
+  activeProjectIdRef.current = project.id;
+
   const fetchSession = async () => {
     try {
       const res = await fetch('/api/governance/session');
@@ -63,28 +69,61 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     }
   };
 
-  const fetchApprovals = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/projects/${project.id}/approvals`);
-      if (res.ok) {
-        const data = await res.json();
-        setApprovals(data);
-        if (selectedItem && selectedItem.projectId === project.id) {
-          const updated = data.find((a: ApprovalItem) => a.id === selectedItem.id);
-          if (updated) setSelectedItem(updated);
-          else setSelectedItem(null);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch approvals:', err);
-    } finally {
-      setLoading(false);
+  const fetchApprovalsForProject = React.useCallback(async (targetProjectId: string, preserveSelection = false) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  };
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentGen = ++requestGenerationRef.current;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${targetProjectId}/approvals`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data: ApprovalItem[] = await res.json();
+
+      // Check strictly after response.json() completes:
+      if (activeProjectIdRef.current !== targetProjectId || requestGenerationRef.current !== currentGen) {
+        return; // Discard stale response
+      }
+
+      setApprovals(data);
+      if (preserveSelection) {
+        setSelectedItem((prev) => {
+          if (prev && prev.projectId === targetProjectId) {
+            const updated = data.find((a) => a.id === prev.id);
+            return updated || null;
+          }
+          return null;
+        });
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        return;
+      }
+      if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+        console.error('Failed to fetch approvals:', err);
+      }
+    } finally {
+      if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    let isCancelled = false;
+    activeProjectIdRef.current = project.id;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    ++requestGenerationRef.current;
+
     setSelectedItem(null);
     setError('');
     setShowDecisionModal(false);
@@ -92,32 +131,15 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     setHumanConfirmed(false);
     setApprovals([]);
 
-    const fetchForProject = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/projects/${project.id}/approvals`);
-        if (res.ok && !isCancelled) {
-          const data = await res.json();
-          setApprovals(data);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          console.error('Failed to fetch approvals:', err);
-        }
-      } finally {
-        if (!isCancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchForProject();
+    fetchApprovalsForProject(project.id, false);
     fetchSession();
 
     return () => {
-      isCancelled = true;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [project.id]);
+  }, [project.id, fetchApprovalsForProject]);
 
   const getQuorumProgress = (item: ApprovalItem) => {
     if (item.quorum) {
@@ -197,7 +219,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const submitDecision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
-    if (selectedItem.projectId !== project.id) {
+    const targetApvId = selectedItem.id;
+    const targetProjId = selectedItem.projectId;
+
+    if (targetProjId !== project.id || activeProjectIdRef.current !== project.id) {
       setError('Active approval item belongs to a different project; submission cancelled.');
       setSelectedItem(null);
       return;
@@ -206,7 +231,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
     try {
       setSubmitting(true);
-      const res = await fetch(`/api/projects/${project.id}/approvals/${selectedItem.id}/decide`, {
+      const res = await fetch(`/api/projects/${targetProjId}/approvals/${targetApvId}/decide`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -216,6 +241,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         }),
       });
 
+      if (activeProjectIdRef.current !== targetProjId) {
+        return;
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || `Decision failed with status ${res.status}`);
@@ -223,13 +252,17 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       }
 
       setShowDecisionModal(false);
-      await fetchApprovals();
+      await fetchApprovalsForProject(targetProjId, true);
       if (onRefreshData) onRefreshData();
     } catch (err: any) {
-      console.error('Decision submission failed:', err);
-      setError(err?.message || 'Decision submission failed');
+      if (activeProjectIdRef.current === targetProjId) {
+        console.error('Decision submission failed:', err);
+        setError(err?.message || 'Decision submission failed');
+      }
     } finally {
-      setSubmitting(false);
+      if (activeProjectIdRef.current === targetProjId) {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -246,6 +279,9 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       return;
     }
 
+    const targetProjId = project.id;
+    if (activeProjectIdRef.current !== targetProjId) return;
+
     try {
       setSubmitting(true);
       let targetEntityType: 'REQUIREMENT' | 'ADR' | 'RISK' | 'OVERRIDE' = 'REQUIREMENT';
@@ -253,7 +289,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       else if (reqType === 'SECURITY_OVERRIDE') targetEntityType = 'OVERRIDE';
       else if (reqType === 'RISK_ACCEPTANCE') targetEntityType = 'RISK';
 
-      const res = await fetch(`/api/projects/${project.id}/approvals`, {
+      const res = await fetch(`/api/projects/${targetProjId}/approvals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -267,6 +303,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         }),
       });
 
+      if (activeProjectIdRef.current !== targetProjId) {
+        return;
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || `Request failed with status ${res.status}`);
@@ -278,12 +318,16 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       setReqDescription('');
       setReqImpact('');
       setReqTargetId('');
-      await fetchApprovals();
+      await fetchApprovalsForProject(targetProjId, false);
     } catch (err: any) {
-      console.error('Failed to create approval request:', err);
-      setError(err?.message || 'Failed to create approval request');
+      if (activeProjectIdRef.current === targetProjId) {
+        console.error('Failed to create approval request:', err);
+        setError(err?.message || 'Failed to create approval request');
+      }
     } finally {
-      setSubmitting(false);
+      if (activeProjectIdRef.current === targetProjId) {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -364,7 +408,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { fetchApprovals(); fetchSession(); }}
+            onClick={() => { fetchApprovalsForProject(project.id, true); fetchSession(); }}
             disabled={loading}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
           >
