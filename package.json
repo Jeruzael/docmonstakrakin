@@ -44,6 +44,8 @@
     "verify:dmk-208-status-audit": "tsx scripts/verifyDmk208StatusAudit.ts",
     "verify:dmk-196-closure": "tsx scripts/verifyDmk196Closure.ts",
     "verify:dmk-196-post-merge": "tsx scripts/verifyDmk196PostMergeCandidate.ts",
+    "verify:dmk-197-closure-candidate": "tsx scripts/verifyDmk197ClosureCandidate.ts",
+    "test:dmk-197-closure-candidate": "tsx scripts/testDmk197ClosureCandidate.ts",
     "ci:prepare": "tsx scripts/prepareCiRuntime.ts",
     "ci:quality": "npm run wbs:check && npm run lint && npm run build",
     "ci:controlled-docs": "npm run ci:prepare && npm run test:controlled-docs",
