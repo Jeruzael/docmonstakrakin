@@ -79,7 +79,7 @@ const mockApprovalsAlt: ApprovalItem[] = [
     approvalsCollected: [],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-alt-01',
+    targetDigest: 'a'.repeat(63) + '0',
   },
 ];
 
@@ -102,7 +102,7 @@ const mockApprovals: ApprovalItem[] = [
     approvalsCollected: [],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-01',
+    targetDigest: 'a'.repeat(63) + '1',
   },
   {
     id: 'APV-PARTIAL-02',
@@ -132,7 +132,7 @@ const mockApprovals: ApprovalItem[] = [
     ],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-02',
+    targetDigest: 'a'.repeat(63) + '2',
   },
   {
     id: 'APV-SATISFIED-03',
@@ -171,7 +171,7 @@ const mockApprovals: ApprovalItem[] = [
     ],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-03',
+    targetDigest: 'a'.repeat(63) + '3',
     resolvedAt: '2026-10-09T09:30:00.000Z',
     resolvedBy: 'leadArch',
   },
@@ -193,7 +193,7 @@ const mockApprovals: ApprovalItem[] = [
     approvalsCollected: [],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LEGACY_V0',
-    targetDigest: 'digest-04',
+    targetDigest: 'a'.repeat(63) + '4',
     quorum: {
       status: 'INVALID',
       hasQuorum: false,
@@ -220,7 +220,7 @@ const mockApprovals: ApprovalItem[] = [
     approvalsCollected: [],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-05-initial',
+    targetDigest: 'a'.repeat(63) + '5',
     quorum: {
       status: 'STALE',
       hasQuorum: false,
@@ -256,7 +256,7 @@ const mockApprovals: ApprovalItem[] = [
     ],
     policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
     policyVersion: 'LOCAL_SESSION_V1',
-    targetDigest: 'digest-06',
+    targetDigest: 'a'.repeat(63) + '6',
   },
 ];
 
@@ -269,6 +269,15 @@ const mockSession = {
     roleSource: 'LOCAL_SERVER_ROSTER',
   },
 };
+
+let holdProjectAResponse: (() => void) | null = null;
+let delayProjectAApprovals = false;
+
+let holdProjectARefresh: (() => void) | null = null;
+let delayProjectARefresh = false;
+
+let holdDecisionResponse: (() => void) | null = null;
+let delayDecision = false;
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -287,11 +296,43 @@ try {
     }
 
     if (url === `/api/projects/${testProject.id}/approvals` && method === 'GET') {
+      if (delayProjectAApprovals) {
+        delayProjectAApprovals = false;
+        await new Promise<void>((r) => { holdProjectAResponse = r; });
+      }
+      if (delayProjectARefresh) {
+        delayProjectARefresh = false;
+        await new Promise<void>((r) => { holdProjectARefresh = r; });
+      }
       return route.fulfill({ status: 200, json: mockApprovals });
     }
 
     if (url === `/api/projects/${testProject2.id}/approvals` && method === 'GET') {
       return route.fulfill({ status: 200, json: mockApprovalsAlt });
+    }
+
+    if (url.includes('/decide') && method === 'POST') {
+      if (delayDecision) {
+        delayDecision = false;
+        await new Promise<void>((r) => { holdDecisionResponse = r; });
+      }
+      return route.fulfill({
+        status: 200,
+        json: {
+          ...mockApprovals[1],
+          approvalsCollected: [
+            ...mockApprovals[1].approvalsCollected,
+            {
+              role: 'Security Officer',
+              approver: 'secOfficer',
+              identityId: 'REV-SEC-01',
+              roleSource: 'LOCAL_SERVER_ROSTER',
+              decision: 'APPROVED',
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        },
+      });
     }
 
     if (url === `/api/projects/${testProject.id}` && method === 'GET') {
@@ -583,22 +624,151 @@ try {
     fail('UI-12: Project-switch isolation: switching project clears selectedItem and closes open decision modal', e);
   }
 
-  // 13. Delayed in-flight response from switched project is discarded cleanly
+  // UI-13. Deterministic Race Scenario A: Delayed initial fetch response from switched project is discarded
   try {
-    // Switch back to testProject
-    const projectBtn = page.getByRole('button', { name: /Select project|Alternative Isolation Project/i });
-    await projectBtn.click();
-    const firstProjectOption = page.getByRole('button', { name: /DMK-197 UI Test Project/i });
-    await firstProjectOption.waitFor();
-    await firstProjectOption.click();
+    // Current project is testProject2 (ALT).
+    // Arm route interception to hold testProject's initial fetch.
+    delayProjectAApprovals = true;
+
+    // Trigger switch to testProject (Project A)
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    // While Project A fetch is held in-flight, immediately switch back to testProject2 (Project B)
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    // Project B approvals load immediately
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+    assert.ok((await altCard.count()) >= 1, 'Project B approvals must be loaded and visible');
+
+    // Release held Project A response
+    if (holdProjectAResponse) {
+      holdProjectAResponse();
+      holdProjectAResponse = null;
+    }
+    await page.waitForTimeout(200);
+
+    // Verify Project A's approvals do NOT overwrite Project B
+    assert.equal(await page.getByTestId('approval-card-APV-PENDING-01').count(), 0, 'Delayed Project A approvals must not appear');
+    assert.ok((await altCard.count()) >= 1, 'Current project must remain Project B');
+    assert.equal(await page.getByText('Sign Governance Decision: APPROVED').count(), 0, 'No stale modal should appear');
+
+    pass('UI-13: Deterministic Race Scenario A: Delayed initial fetch response from switched project is discarded');
+  } catch (e) {
+    fail('UI-13: Deterministic Race Scenario A: Delayed initial fetch response from switched project is discarded', e);
+  }
+
+  // UI-14. Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded
+  try {
+    // Switch to Project A normally
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
 
     const firstCard = page.getByTestId('approval-card-APV-PENDING-01');
     await firstCard.waitFor();
-    assert.ok((await firstCard.count()) >= 1, 'Switched back project approvals loaded cleanly');
 
-    pass('UI-13: Delayed in-flight response from switched project is discarded cleanly');
+    // Arm delay on Project A's manual refresh
+    delayProjectARefresh = true;
+
+    // Click Refresh button
+    const refreshBtn = page.getByRole('button', { name: /Refresh/i });
+    await refreshBtn.click();
+
+    // While refresh is held, switch to Project B
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // Release held Project A refresh response
+    if (holdProjectARefresh) {
+      holdProjectARefresh();
+      holdProjectARefresh = null;
+    }
+    await page.waitForTimeout(200);
+
+    // Verify Project B state remains completely unchanged
+    assert.equal(await page.getByTestId('approval-card-APV-PENDING-01').count(), 0, 'Held refresh must not overwrite Project B');
+    assert.ok((await altCard.count()) >= 1, 'Project B state must remain intact');
+
+    pass('UI-14: Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded');
   } catch (e) {
-    fail('UI-13: Delayed in-flight response from switched project is discarded cleanly', e);
+    fail('UI-14: Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded', e);
+  }
+
+  // UI-15. Deterministic Race Scenario C: Stale decision response does not affect switched project
+  try {
+    // Switch back to Project A
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    const partialCard = page.getByTestId('approval-card-APV-PARTIAL-02');
+    await partialCard.waitFor();
+    await partialCard.click();
+
+    const signBtn = partialCard.getByRole('button', { name: 'Sign Decision' });
+    await signBtn.click();
+    await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
+
+    const confirmCheckbox = page.getByRole('checkbox');
+    await confirmCheckbox.check();
+
+    // Arm delay on decision response
+    delayDecision = true;
+
+    const submitBtn = page.getByRole('button', { name: /Record APPROVED Decision/i });
+    await submitBtn.click();
+
+    // Switch to Project B while decision is in-flight
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // Release held decision response
+    if (holdDecisionResponse) {
+      holdDecisionResponse();
+      holdDecisionResponse = null;
+    }
+    await page.waitForTimeout(200);
+
+    // Confirm Project B's state, approvals, and lack of error banners
+    assert.ok((await altCard.count()) >= 1, 'Project B card remains visible');
+    assert.equal(await page.getByRole('alert').count(), 0, 'No stale error alert should appear on Project B');
+    assert.equal(await page.getByText('Sign Governance Decision: APPROVED').count(), 0, 'No decision modal should appear on Project B');
+    assert.equal(await page.getByTestId('approval-card-APV-PARTIAL-02').count(), 0, 'Project A card must not appear on Project B');
+
+    pass('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project');
+  } catch (e) {
+    fail('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project', e);
   }
 
   await page.close();

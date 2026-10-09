@@ -12,7 +12,7 @@ import { digest } from '../server/proposals/review.js';
 console.log('================================================================');
 console.log('   DMK-197 QUORUM & APPROVAL INBOX REGRESSION TEST SUITE');
 console.log('   Evaluates Invariant: Distinct Security Officer & Lead Architect');
-console.log('   Coverage: Scenarios 1 through 44 (Canonical acceptance criteria)');
+console.log('   Coverage: Scenarios 1 through 46 (Canonical acceptance criteria)');
 console.log('================================================================\n');
 
 let passedCount = 0;
@@ -420,7 +420,7 @@ async function runTests() {
         status: 'PENDING',
         requiredRoles: ['Security Officer', 'Lead Architect'],
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc',
+        targetDigest: 'a'.repeat(64),
         approvalsCollected: [
           {
             role: 'Lead Architect',
@@ -432,7 +432,7 @@ async function runTests() {
           },
         ],
       };
-      const q = evaluateQuorum(dummyItem, 'abc');
+      const q = evaluateQuorum(dummyItem, 'a'.repeat(64));
       assert.equal(q.status, 'PARTIAL');
       assert.equal(q.hasQuorum, false);
       assert.deepEqual(q.satisfiedRoles, ['Lead Architect']);
@@ -623,13 +623,13 @@ async function runTests() {
         status: 'PENDING',
         requiredRoles: ['Security Officer', 'Lead Architect'],
         policyVersion: 'LEGACY_V0',
-        targetDigest: 'abc',
+        targetDigest: 'a'.repeat(64),
         approvalsCollected: [
           { role: 'Security Officer', approver: 'so', identityId: 'REV-SEC-01', decision: 'APPROVED' },
           { role: 'Lead Architect', approver: 'la', identityId: 'REV-ARCH-01', decision: 'APPROVED' },
         ],
       };
-      const q = evaluateQuorum(dummyItem, 'abc');
+      const q = evaluateQuorum(dummyItem, 'a'.repeat(64));
       assert.equal(q.status, 'INVALID', 'Legacy policy must evaluate to INVALID');
       assert.equal(q.hasQuorum, false);
       pass('19. Invalid policy version fails');
@@ -644,13 +644,13 @@ async function runTests() {
         status: 'PENDING',
         requiredRoles: ['Security Officer', 'Lead Architect'],
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc',
+        targetDigest: 'a'.repeat(64),
         approvalsCollected: [
           { role: 'Security Officer', approver: 'legacySo', decision: 'APPROVED' }, // missing identityId
           { role: 'Lead Architect', approver: 'legacyLa', decision: 'APPROVED' }, // missing identityId
         ],
       };
-      const q = evaluateQuorum(dummyItem, 'abc');
+      const q = evaluateQuorum(dummyItem, 'a'.repeat(64));
       assert.notEqual(q.status, 'SATISFIED', 'Signatures without identityId must not satisfy quorum');
       assert.equal(q.hasQuorum, false);
       pass('20. Historical signatures lacking identity provenance do not count');
@@ -862,7 +862,7 @@ async function runTests() {
     try {
       const shortItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         requiredRoles: ['Security Officer'],
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
@@ -880,7 +880,7 @@ async function runTests() {
     try {
       const dupItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         requiredRoles: ['Security Officer', 'Security Officer'],
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
@@ -899,7 +899,7 @@ async function runTests() {
     try {
       const extraItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         requiredRoles: ['Security Officer', 'Lead Architect', 'Auditor'],
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
@@ -918,7 +918,7 @@ async function runTests() {
     try {
       const missingRolesItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         requiredRoles: [],
         approvalsCollected: [],
       };
@@ -928,7 +928,7 @@ async function runTests() {
 
       const undefinedRolesItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         approvalsCollected: [],
       };
       const q2 = evaluateQuorum(undefinedRolesItem, undefinedRolesItem.targetDigest);
@@ -942,7 +942,7 @@ async function runTests() {
     // 34. evaluateQuorum rejects missing or unsupported policyVersion
     try {
       const noPolicyItem = {
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: 'a'.repeat(64),
         requiredRoles: ['Security Officer', 'Lead Architect'],
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
@@ -959,17 +959,69 @@ async function runTests() {
 
     // 35. evaluateQuorum rejects missing or invalid targetDigest
     try {
-      const noDigestItem = {
+      const validDigest = 'a'.repeat(64);
+      const malformedDigests = [
+        undefined,
+        null,
+        '',
+        '   ',
+        'abcdef123456', // short
+        'a'.repeat(65), // long
+        'g'.repeat(64), // non-hex
+        'A'.repeat(64), // uppercase non-canonical
+        ' ' + 'a'.repeat(64), // leading space
+        'a'.repeat(64) + ' ', // trailing space
+        'digest-placeholder', // arbitrary string
+      ];
+
+      for (const badDigest of malformedDigests) {
+        const item = {
+          policyVersion: 'LOCAL_SESSION_V1',
+          requiredRoles: ['Security Officer', 'Lead Architect'],
+          targetDigest: badDigest,
+          approvalsCollected: [
+            { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+            { role: 'Lead Architect', identityId: 'REV-ARCH-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+          ],
+        };
+        const q = evaluateQuorum(item, validDigest);
+        assert.equal(q.status, 'INVALID', `targetDigest '${badDigest}' must produce INVALID`);
+        assert.equal(q.hasQuorum, false, `targetDigest '${badDigest}' must have hasQuorum = false`);
+      }
+
+      // Also verify malformed postRatificationDigest produces INVALID
+      const malformedPostDigests = ['', 'xyz', 'a'.repeat(63), 'a'.repeat(65), 'G'.repeat(64)];
+      for (const badPost of malformedPostDigests) {
+        const item = {
+          status: 'APPROVED',
+          policyVersion: 'LOCAL_SESSION_V1',
+          requiredRoles: ['Security Officer', 'Lead Architect'],
+          targetDigest: validDigest,
+          postRatificationDigest: badPost,
+          approvalsCollected: [
+            { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+            { role: 'Lead Architect', identityId: 'REV-ARCH-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+          ],
+        };
+        const q = evaluateQuorum(item, validDigest);
+        assert.equal(q.status, 'INVALID', `postRatificationDigest '${badPost}' must produce INVALID`);
+        assert.equal(q.hasQuorum, false);
+      }
+
+      // Valid 64-char lowercase hex digest succeeds
+      const validItem = {
         policyVersion: 'LOCAL_SESSION_V1',
         requiredRoles: ['Security Officer', 'Lead Architect'],
+        targetDigest: validDigest,
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
           { role: 'Lead Architect', identityId: 'REV-ARCH-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
         ],
       };
-      const q = evaluateQuorum(noDigestItem, undefined);
-      assert.equal(q.status, 'INVALID', 'Missing targetDigest must be INVALID');
-      assert.equal(q.hasQuorum, false);
+      const qValid = evaluateQuorum(validItem, validDigest);
+      assert.equal(qValid.status, 'SATISFIED');
+      assert.equal(qValid.hasQuorum, true);
+
       pass('35. evaluateQuorum rejects missing or invalid targetDigest');
     } catch (e) {
       fail('35. evaluateQuorum rejects missing or invalid targetDigest', e);
@@ -977,9 +1029,10 @@ async function runTests() {
 
     // 36. evaluateQuorum excludes signature with missing/empty identityId
     try {
+      const validDigest = 'a'.repeat(64);
       const noIdSigItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: validDigest,
         requiredRoles: ['Security Officer', 'Lead Architect'],
         approvalsCollected: [
           { role: 'Security Officer', approver: 'Alice', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' }, // missing identityId
@@ -998,9 +1051,10 @@ async function runTests() {
 
     // 37. evaluateQuorum excludes signature with missing, empty, or forged roleSource
     try {
+      const validDigest = 'a'.repeat(64);
       const forgedSigItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: validDigest,
         requiredRoles: ['Security Officer', 'Lead Architect'],
         approvalsCollected: [
           { role: 'Security Officer', identityId: 'REV-SEC-01', roleSource: 'CLIENT_FORGED', decision: 'APPROVED' },
@@ -1018,9 +1072,10 @@ async function runTests() {
 
     // 38. evaluateQuorum excludes legacy approval containing only approver name
     try {
+      const validDigest = 'a'.repeat(64);
       const legacyItem = {
         policyVersion: 'LOCAL_SESSION_V1',
-        targetDigest: 'abc1234567890123456789012345678901234567890123456789012345678901',
+        targetDigest: validDigest,
         requiredRoles: ['Security Officer', 'Lead Architect'],
         approvalsCollected: [
           { role: 'Security Officer', approver: 'Alice Legacy', decision: 'APPROVED' },
@@ -1229,13 +1284,227 @@ async function runTests() {
       fail('43. Legitimate ratified target handles post-ratification digest properly', e);
     }
 
-    // 44. No WBS, Gate 7, release, or runtime reconciliation mutation occurs
+    // 44. Protected Gate 7 naming variants are rejected fail-closed, while unrelated controls like Gate 70 are permitted
+    try {
+      const gate7Variants = ['Gate 7', 'gate 7', 'GATE-7', 'Gate7', 'GATE_7', 'GATE-07', 'gate #7'];
+      const p = store.projects.find((proj: any) => proj.id === testProjectId);
+
+      for (const variant of gate7Variants) {
+        const stateVerBefore = p.stateVersion;
+        const auditCountBefore = (store.auditLogs[testProjectId] || []).length;
+        const approvalsCountBefore = (store.approvals[testProjectId] || []).length;
+
+        const ovr = {
+          id: `OVR-G7-${Buffer.from(variant).toString('hex')}`,
+          gateOrControl: variant,
+          reason: `Attempt to bypass ${variant}`,
+          riskAcknowledged: true,
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          status: 'PROPOSED' as const,
+        };
+        (store.overrides[testProjectId] ||= []).push(ovr);
+
+        const res = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+          body: JSON.stringify({ targetEntityType: 'OVERRIDE', targetEntityId: ovr.id }),
+        });
+
+        assert.equal(res.status, 403, `Gate 7 variant '${variant}' must be rejected with 403`);
+        assert.equal((store.approvals[testProjectId] || []).length, approvalsCountBefore, `Zero approvals created for '${variant}'`);
+        assert.equal(p.stateVersion, stateVerBefore, `stateVersion must not increment for '${variant}'`);
+        assert.equal((store.auditLogs[testProjectId] || []).length, auditCountBefore, `No audit event emitted for '${variant}'`);
+        assert.equal(ovr.status, 'PROPOSED', `Override status must not mutate for '${variant}'`);
+      }
+
+      // Unrelated control Gate 70 must NOT be misclassified as Gate 7
+      const ovr70 = {
+        id: 'OVR-GATE-70-VALID',
+        gateOrControl: 'Gate 70',
+        reason: 'Legitimate override for non-protected Gate 70',
+        riskAcknowledged: true,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        status: 'PROPOSED' as const,
+      };
+      (store.overrides[testProjectId] ||= []).push(ovr70);
+
+      const res70 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'OVERRIDE', targetEntityId: ovr70.id }),
+      });
+      assert.equal(res70.status, 201, "Gate 70 must not be misclassified as Gate 7 and should succeed with 201");
+
+      // Decision-time mutation protection: override control reference mutated to Gate 7 variant before second signature
+      const validOvr = {
+        id: 'OVR-MUTATE-TO-G7',
+        gateOrControl: 'Ordinary Security Control',
+        reason: 'Override that later attempts Gate 7 bypass',
+        riskAcknowledged: true,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        status: 'PROPOSED' as const,
+      };
+      (store.overrides[testProjectId] ||= []).push(validOvr);
+
+      const createRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'OVERRIDE', targetEntityId: validOvr.id }),
+      });
+      assert.equal(createRes.status, 201);
+      const apvMutate = await createRes.json();
+
+      // First signature by Security Officer
+      const sig1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${apvMutate.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ humanConfirmed: true, decision: 'APPROVED' }),
+      });
+      assert.equal(sig1.status, 200);
+
+      // Mutate control reference to protected Gate 7 variant before second signature
+      validOvr.gateOrControl = 'GATE-07';
+
+      // Attempt second signature by Lead Architect
+      const sig2 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${apvMutate.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ humanConfirmed: true, decision: 'APPROVED' }),
+      });
+      assert.equal(sig2.status, 403, 'Decision on mutated Gate 7 override must reject with 403');
+      const storedApv = (store.approvals[testProjectId] || []).find((a: any) => a.id === apvMutate.id);
+      assert.equal(storedApv.approvalsCollected.length, 1, 'Second signature must not be recorded');
+      assert.equal(storedApv.status, 'PENDING', 'Approval must remain PENDING');
+      assert.equal(validOvr.status, 'PROPOSED', 'Override must remain PROPOSED');
+
+      pass('44. Protected Gate 7 naming variants are rejected fail-closed, while unrelated controls like Gate 70 are permitted');
+    } catch (e) {
+      fail('44. Protected Gate 7 naming variants are rejected fail-closed, while unrelated controls like Gate 70 are permitted', e);
+    }
+
+    // 45. Missing canonical target and unsupported target type fail-closed in GET approvals without mutation
+    try {
+      const p = store.projects.find((proj: any) => proj.id === testProjectId);
+
+      // 1) Pending approval whose target is deleted from canonical collection
+      const deletedReq = {
+        id: 'REQ-TO-DELETE-01',
+        title: 'Requirement will be deleted',
+        statement: 'Ephemeral requirement',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(deletedReq);
+
+      const apvRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: deletedReq.id }),
+      });
+      assert.equal(apvRes.status, 201);
+      const apvDeleted = await apvRes.json();
+
+      // Delete the target requirement from store
+      store.requirements[testProjectId] = store.requirements[testProjectId].filter((r: any) => r.id !== deletedReq.id);
+
+      // 2) Previously completed/ratified approval whose target is subsequently deleted
+      const completedDeletedReq = {
+        id: 'REQ-RATIFIED-THEN-DELETED',
+        title: 'Ratified then deleted',
+        statement: 'Will be signed off then deleted',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(completedDeletedReq);
+
+      const apvCompRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: completedDeletedReq.id }),
+      });
+      const apvComp = await apvCompRes.json();
+
+      // Sign off by Security Officer and Lead Architect
+      await fetch(`${base}/api/projects/${testProjectId}/approvals/${apvComp.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ humanConfirmed: true, decision: 'APPROVED' }),
+      });
+      await fetch(`${base}/api/projects/${testProjectId}/approvals/${apvComp.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ humanConfirmed: true, decision: 'APPROVED' }),
+      });
+
+      // Now delete the target requirement
+      store.requirements[testProjectId] = store.requirements[testProjectId].filter((r: any) => r.id !== completedDeletedReq.id);
+
+      // 3) Stored approval with unsupported target type
+      const unsupportedApv = {
+        id: 'APV-UNSUPPORTED-TYPE',
+        projectId: testProjectId,
+        title: 'Unsupported Type Item',
+        type: 'CUSTOM_UNKNOWN',
+        targetEntityId: 'UNKNOWN-01',
+        targetEntityType: 'UNKNOWN_TYPE',
+        requestedBy: 'TestUser',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'LOW',
+        riskLevel: 'LOW',
+        description: 'Unsupported entity type test',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [],
+        targetDigest: 'a'.repeat(64),
+        policyGates: [],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).push(unsupportedApv);
+
+      const stateVerPreGet = p.stateVersion;
+      const auditCountPreGet = (store.auditLogs[testProjectId] || []).length;
+      const approvalsCountPreGet = (store.approvals[testProjectId] || []).length;
+
+      // Fetch approvals via GET endpoint
+      const listRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`);
+      assert.equal(listRes.status, 200);
+      const list = await listRes.json();
+
+      // 1. Pending approval with deleted target must project STALE with canonical reason
+      const projDeleted = list.find((a: any) => a.id === apvDeleted.id);
+      assert.ok(projDeleted, 'Deleted target approval must exist in list for auditability');
+      assert.equal(projDeleted.quorum.status, 'STALE', 'Missing target must project STALE');
+      assert.equal(projDeleted.quorum.hasQuorum, false, 'Missing target must have hasQuorum = false');
+      assert.equal(projDeleted.quorum.reason, 'Canonical approval target no longer exists');
+
+      // 2. Previously completed approval with deleted target must NOT display valid current-target quorum
+      const projCompDeleted = list.find((a: any) => a.id === apvComp.id);
+      assert.ok(projCompDeleted);
+      assert.equal(projCompDeleted.quorum.status, 'STALE', 'Completed approval with missing target must project STALE');
+      assert.equal(projCompDeleted.quorum.hasQuorum, false, 'Completed approval with missing target must have hasQuorum = false');
+      assert.equal(projCompDeleted.quorum.reason, 'Canonical approval target no longer exists');
+
+      // 3. Unsupported target type must project INVALID
+      const projUnsupported = list.find((a: any) => a.id === unsupportedApv.id);
+      assert.ok(projUnsupported);
+      assert.equal(projUnsupported.quorum.status, 'INVALID', 'Unsupported target type must project INVALID');
+      assert.equal(projUnsupported.quorum.hasQuorum, false);
+
+      // Verify GET projection NEVER mutated stateVersion, auditLogs, or stored approvals
+      assert.equal(p.stateVersion, stateVerPreGet, 'GET must never mutate stateVersion');
+      assert.equal((store.auditLogs[testProjectId] || []).length, auditCountPreGet, 'GET must never add audit event');
+      assert.equal((store.approvals[testProjectId] || []).length, approvalsCountPreGet, 'GET must never mutate approvals count');
+
+      pass('45. Missing canonical target and unsupported target type fail-closed in GET approvals without mutation');
+    } catch (e) {
+      fail('45. Missing canonical target and unsupported target type fail-closed in GET approvals without mutation', e);
+    }
+
+    // 46. No WBS, Gate 7, release, or runtime reconciliation mutation occurs
     try {
       const postWbsHash = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'docs/00_control/MASTER_WBS.yaml'))).digest('hex');
       assert.equal(postWbsHash, preWbsHash, 'MASTER_WBS.yaml must remain byte-for-byte identical');
-      pass('44. No WBS, Gate 7, release, or runtime reconciliation mutation occurs');
+      pass('46. No WBS, Gate 7, release, or runtime reconciliation mutation occurs');
     } catch (e) {
-      fail('44. No WBS, Gate 7, release, or runtime reconciliation mutation occurs', e);
+      fail('46. No WBS, Gate 7, release, or runtime reconciliation mutation occurs', e);
     }
   } finally {
     server.close();
@@ -1250,7 +1519,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 44 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 46 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {
