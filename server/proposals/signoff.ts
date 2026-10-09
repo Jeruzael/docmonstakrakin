@@ -15,9 +15,25 @@ export function registerSignoffRoutes(app: Express, store: any) {
     OVERRIDE: ['overrides', 'SECURITY_OVERRIDE'],
   };
 
+  function isProtectedGateOrRelease(controlCandidate: unknown): boolean {
+    if (typeof controlCandidate !== 'string') return false;
+    const val = controlCandidate.trim();
+    if (!val) return false;
+
+    // Matches Gate 7 representations: 'Gate 7', 'gate 7', 'GATE-7', 'Gate7', 'GATE_7', 'GATE-07', 'gate #7', etc.
+    // Must NOT match unrelated controls like 'Gate 70', 'Gate 71', 'GATE-70'
+    const gate7Pattern = /(?:^|[^a-zA-Z0-9])gate[\s\-_#/:.]*0*7(?!\d)/i;
+
+    // Matches release ceremony references regardless of case
+    const releasePattern = /(?:^|[^a-zA-Z0-9])release(?:$|[^a-zA-Z0-9])/i;
+
+    return gate7Pattern.test(val) || releasePattern.test(val);
+  }
+
   function validateOverrideEligibility(target: any): { valid: boolean; status: number; error: string } {
-    const gateOrControl = String(target.gateOrControl || '');
-    if (gateOrControl.includes('Gate 7') || gateOrControl.toLowerCase().includes('release')) {
+    const candidates = [target.gateOrControl, target.title, target.id].filter(Boolean);
+    const hasProtected = candidates.some((c) => isProtectedGateOrRelease(c));
+    if (hasProtected) {
       return { valid: false, status: 403, error: 'Direct bypass or override of Gate 7 or release ceremony is strictly forbidden' };
     }
     if (!target.expiresAt || isNaN(new Date(target.expiresAt).getTime())) {
