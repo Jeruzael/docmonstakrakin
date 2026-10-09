@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
 import {
@@ -285,14 +286,73 @@ try {
   fail('18: Gate 7 and release mutation claims fail closed', err);
 }
 
-// 19. Premature receipt file presence fails closed
+// 19. Premature receipt file presence in isolated workspace fails closed
 try {
-  // Test by checking that verifyDmk197ClosureCandidate checks receipt existence
-  const receiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
-  assert.equal(fs.existsSync(receiptPath), false, 'Closure receipt must not exist in candidate phase');
-  pass('19: Closure receipt absence verified for candidate preparation phase');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk197-receipt-test-'));
+  try {
+    // Replicate candidate file, evidence file, and MASTER_WBS.yaml into temp workspace
+    const tempVerifDir = path.join(tempDir, 'docs', '07_verification');
+    const tempControlDir = path.join(tempDir, 'docs', '00_control');
+    fs.mkdirSync(tempVerifDir, { recursive: true });
+    fs.mkdirSync(tempControlDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tempVerifDir, 'dmk-197-closure-transition-candidate.json'),
+      fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-candidate.json'))
+    );
+    fs.writeFileSync(
+      path.join(tempVerifDir, 'DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md'),
+      fs.readFileSync(path.join(root, 'docs', '07_verification', 'DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md'))
+    );
+    fs.writeFileSync(
+      path.join(tempControlDir, 'MASTER_WBS.yaml'),
+      fs.readFileSync(path.join(root, 'docs', '00_control', 'MASTER_WBS.yaml'))
+    );
+
+    // Inject synthetic premature receipt into temporary workspace
+    const syntheticReceipt = {
+      receiptType: 'DMK-197_CLOSURE_RECEIPT',
+      timestamp: new Date().toISOString(),
+      appliedStatus: 'VERIFICATION_PENDING',
+      applied: true,
+    };
+    fs.writeFileSync(
+      path.join(tempVerifDir, 'dmk-197-closure-transition-receipt.json'),
+      JSON.stringify(syntheticReceipt, null, 2)
+    );
+
+    // Run verification on isolated workspace
+    const res = verifyDmk197ClosureCandidate({ workspaceRoot: tempDir });
+    assert.equal(res.valid, false, 'Candidate verification must fail when closure receipt exists');
+    assert.ok(
+      res.errors.some((e) => e.includes('Closure receipt already exists') && e.includes('premature receipt creation is forbidden')),
+      `Expected premature receipt error, got: ${JSON.stringify(res.errors)}`
+    );
+  } finally {
+    // Clean up temporary workspace
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+
+  // Assert real repository disk and canonical WBS remain completely untouched
+  const realReceiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+  assert.equal(fs.existsSync(realReceiptPath), false, 'Real repo disk must have no closure receipt');
+  const realWbs = YAML.parse(fs.readFileSync(path.join(root, 'docs', '00_control', 'MASTER_WBS.yaml'), 'utf8'));
+  function findItem(items: any[], id: string): any {
+    for (const item of items || []) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = findItem(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  const dmk197Real = findItem(realWbs.items, 'DMK-197');
+  assert.equal(dmk197Real?.status, 'IN_PROGRESS', 'Real canonical WBS DMK-197 status must remain IN_PROGRESS');
+
+  pass('19: Premature closure receipt presence fails closed in isolated workspace');
 } catch (err) {
-  fail('19: Closure receipt absence verified for candidate preparation phase', err);
+  fail('19: Premature closure receipt presence fails closed in isolated workspace', err);
 }
 
 console.log('\n================================================================');
