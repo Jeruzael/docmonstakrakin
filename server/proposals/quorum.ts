@@ -42,21 +42,48 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
     };
   }
 
-  // 3. Target digest presence check
-  if (typeof item.targetDigest !== 'string' || !item.targetDigest.trim()) {
+  // 3. Target digest format check (lowercase 64-char hex SHA-256)
+  const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/;
+  if (typeof item.targetDigest !== 'string' || !SHA256_HEX_REGEX.test(item.targetDigest)) {
     return {
       status: 'INVALID',
       hasQuorum: false,
       satisfiedRoles: [],
       pendingRoles: [...REQUIRED_QUORUM_ROLES],
       collectedSignatures: [],
-      reason: 'Missing or invalid targetDigest in sign-off request',
+      reason: 'Missing, malformed, or non-hex SHA-256 targetDigest in sign-off request',
+    };
+  }
+
+  // Validate postRatificationDigest if present
+  if (
+    item.postRatificationDigest !== undefined &&
+    (typeof item.postRatificationDigest !== 'string' || !SHA256_HEX_REGEX.test(item.postRatificationDigest))
+  ) {
+    return {
+      status: 'INVALID',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: [...REQUIRED_QUORUM_ROLES],
+      collectedSignatures: [],
+      reason: 'Invalid postRatificationDigest format; requires 64-char lowercase hex SHA-256',
     };
   }
 
   const requiredRoles: string[] = [...REQUIRED_QUORUM_ROLES];
 
-  // 4. Stale digest check
+  // 4. Stale digest / missing target check
+  if (currentTargetDigest === null) {
+    return {
+      status: 'STALE',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: [...requiredRoles],
+      collectedSignatures: [],
+      reason: 'Canonical approval target no longer exists',
+    };
+  }
+
   if (currentTargetDigest !== undefined) {
     if (item.status === 'APPROVED') {
       const expectedDigest = item.postRatificationDigest || item.targetDigest;
@@ -69,6 +96,16 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
           pendingRoles: [...requiredRoles],
           collectedSignatures: [],
           reason: 'Target digest has changed since sign-off ratification',
+        };
+      }
+      if (!item.postRatificationDigest && currentTargetDigest !== item.targetDigest) {
+        return {
+          status: 'STALE',
+          hasQuorum: false,
+          satisfiedRoles: [],
+          pendingRoles: [...requiredRoles],
+          collectedSignatures: [],
+          reason: 'Target digest has changed since sign-off request was initiated',
         };
       }
     } else {

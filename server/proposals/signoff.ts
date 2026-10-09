@@ -54,8 +54,32 @@ export function registerSignoffRoutes(app: Express, store: any) {
     const list = store.approvals[req.params.id] || [];
     const projected = list.map((item: any) => {
       const spec = mapping[item.targetEntityType];
-      const target = spec ? (store[spec[0]]?.[req.params.id] || []).find((t: any) => t.id === item.targetEntityId) : null;
-      const currentTargetDigest = target ? digest(target) : undefined;
+      if (!spec) {
+        return {
+          ...item,
+          quorum: {
+            status: 'INVALID',
+            hasQuorum: false,
+            satisfiedRoles: [],
+            pendingRoles: [...REQUIRED_QUORUM_ROLES],
+            reason: `Unsupported target entity type: ${item.targetEntityType}`,
+          },
+        };
+      }
+      const target = (store[spec[0]]?.[req.params.id] || []).find((t: any) => t.id === item.targetEntityId);
+      if (!target) {
+        return {
+          ...item,
+          quorum: {
+            status: 'STALE',
+            hasQuorum: false,
+            satisfiedRoles: [],
+            pendingRoles: [...REQUIRED_QUORUM_ROLES],
+            reason: 'Canonical approval target no longer exists',
+          },
+        };
+      }
+      const currentTargetDigest = digest(target);
       const quorum = evaluateQuorum(item, currentTargetDigest);
       return {
         ...item,
@@ -210,9 +234,16 @@ export function registerSignoffRoutes(app: Express, store: any) {
       return res.status(409).json({ error: 'Invalid requiredRoles policy; request fresh authenticated sign-off' });
     }
 
-    // Validate target digest metadata
-    if (typeof item.targetDigest !== 'string' || !item.targetDigest.trim()) {
-      return res.status(409).json({ error: 'Invalid or missing targetDigest; request fresh authenticated sign-off' });
+    // Validate target digest metadata (strict 64-char lowercase hex SHA-256)
+    if (typeof item.targetDigest !== 'string' || !/^[a-f0-9]{64}$/.test(item.targetDigest)) {
+      return res.status(409).json({ error: 'Invalid or malformed targetDigest; request fresh authenticated sign-off' });
+    }
+
+    if (
+      item.postRatificationDigest !== undefined &&
+      (typeof item.postRatificationDigest !== 'string' || !/^[a-f0-9]{64}$/.test(item.postRatificationDigest))
+    ) {
+      return res.status(409).json({ error: 'Invalid or malformed postRatificationDigest; request fresh authenticated sign-off' });
     }
 
     if (item.status !== 'PENDING') {
