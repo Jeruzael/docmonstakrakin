@@ -135,6 +135,18 @@ A final security hardening pass resolved three critical boundary findings identi
   - `UI-14` (Scenario B): Delayed manual refresh response from switched project is discarded.
   - `UI-15` (Scenario C): Stale decision response does not affect switched project.
 
+### 4.4 Final Submission-State Isolation Correction
+- **Root Cause:** When a user initiates a decision or sign-off request in Project A and switches to Project B while the network request is still pending, the component previously retained `submitting = true`. This left submission controls disabled in Project B or allowed stale `finally` blocks to prematurely clear active submissions.
+- **Remediation in `src/components/ApprovalsView.tsx`:**
+  - Added explicit `setSubmitting(false)` reset inside the project switch `useEffect([project.id, fetchApprovalsForProject])`.
+  - Introduced monotonic `submissionGenerationRef` token. Every decision submission (`submitDecision`) and request creation (`submitNewRequest`) captures `const opGen = ++submissionGenerationRef.current`.
+  - Guarded post-fetch handling, response parsing, error state updates, modal state updates, and `onRefreshData()` callbacks against stale operations (`activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen`).
+  - Protected `finally` blocks so that only the active operation may clear its own `submitting` state (`if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) setSubmitting(false)`).
+- **Deterministic UI Regression Tests in `scripts/testDmk197ApprovalInboxUi.ts`:**
+  - `UI-16`: Project B remains usable after delayed Project A decision (submit controls enable immediately on switch and remain enabled when delayed Project A response arrives).
+  - `UI-17`: Old completion cannot interrupt a newer submission (delayed Project A completion does not reset Project B's in-flight submitting state).
+  - `UI-18`: A → B → A operation invalidation (switching back to Project A creates fresh operation context; delayed responses from earlier Project A operation do not mutate current modals or selections).
+
 ---
 
 ## 5. Verification Test Matrix
@@ -142,7 +154,7 @@ A final security hardening pass resolved three critical boundary findings identi
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
 | **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–46 (Quorum invariants & security hardening) | **46/46 PASS** |
-| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-15 | **15/15 PASS** |
+| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-18 | **18/18 PASS** |
 | **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback | **2/2 PASS** |
 | **DMK-196 Historical Suite** | `scripts/testRequirementSignoff.ts` | `npm run test:req-signoff` | Scenarios A–O (PR #25 pinned historical range) | **15/15 PASS** |
 | **Requirement Sync Suite** | `scripts/testRequirementStatusSync.ts` | `npm run test:req-sync` | Tests A–L (Direct APPROVED prevention) | **12/12 PASS** |
@@ -155,20 +167,20 @@ A final security hardening pass resolved three critical boundary findings identi
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
 | **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity | **PASS** |
-| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **50/50 suites PASS, 1132/1132 assertions PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **50/50 suites PASS, 1135/1135 assertions PASS** |
 
 ---
 
 ## 6. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV10RW3R-UURY`
+- **AuditEventId:** `AUD-MV12M4KQ-J6FS`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `2a373352e5b94ff18704fb0851e295cd35ae7f15c6e3507a9914167b866bf185`
-- **New SHA-256:** `c13bf85943dc9c1c91fb062c4731ee817828be1e03107754bcdf509c280ac671`
-- **Project stateVersion:** 101 -> 102
-- **Audit Count:** 107 -> 108
-- **Reverse Audit Chain:** 108 / 108 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `c13bf85943dc9c1c91fb062c4731ee817828be1e03107754bcdf509c280ac671`
+- **New SHA-256:** `26a1e1f2d730a1fdb05f98bcdc52d4d2a3c5e2a6790660eb1376c7de686b095d`
+- **Project stateVersion:** 102 -> 103
+- **Audit Count:** 108 -> 109
+- **Reverse Audit Chain:** 109 / 109 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
