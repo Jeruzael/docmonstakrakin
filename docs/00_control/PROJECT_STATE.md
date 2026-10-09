@@ -1,5 +1,82 @@
 # docmonstakrakin current project state
 
+## 2026-10-09 — DMK-197 Approval Inbox & Canonical Quorum Synchronization Implementation Checkpoint
+
+DMK-197 implementation and verification have been completed on branch `dmk-197-approval-inbox-quorum` branched from canonical master `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26, verified green under post-merge CI `37909221729`).
+The canonical acceptance criterion — **"Distinct Security Officer and Lead Architect human identities required for quorum"** — is implemented and verified across 30 technical backend scenarios and 8 frontend UI scenarios.
+The Approval Inbox now enforces that:
+1. Canonical proposed artifacts (Requirement, ADR, Risk, and eligible Security Override) can have formal sign-off requests created via `/api/projects/:id/approvals`.
+2. The server establishes reviewer identity and roles strictly from authenticated human sessions (`/api/governance/session`); all client-supplied identity, role, and approver claims are rejected with HTTP 403.
+3. Decision submission (`/api/projects/:id/approvals/:apvId/decide`) dynamically determines the reviewer's role and enforces that a single human identity cannot satisfy both the Security Officer and Lead Architect roles. Quorum is satisfied only when distinct authorized human identities approve both required role slots.
+4. Quorum ratification synchronizes canonical target state: Requirement transitions to `APPROVED`, ADR transitions to `ACCEPTED`, eligible Security Override transitions to `APPROVED` and records `authorizedBy`, while Risk preserves its schema and treatment without invalid mutations. Direct bypass of Gate 7 or release ceremonies is strictly rejected.
+5. In accordance with governance constraints, DMK-197 canonical WBS status remains strictly `IN_PROGRESS` on this branch; no forward lifecycle transition to `VERIFICATION_PENDING` or `VERIFIED` has been applied in WBS.
+6. Human Governance for DMK-196 and DMK-208 remains strictly `PENDING_SIGNOFF`; `human_approved_by` remains absent.
+7. Active reconciliation blockers remain strictly at 11 (Historical 9 + DMK-208 + DMK-196). Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
+
+### Implementation and Verification Record
+
+- **WorkItem:** DMK-197 (WBS: 13.06.11, Title: Approval Inbox & Canonical Quorum Synchronization)
+- **Branch:** `dmk-197-approval-inbox-quorum`
+- **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (PR #26 merge commit)
+- **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
+- **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities and required roles)
+- **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, atomic audit and stateVersion)
+- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (authoritative dual-role quorum status pills, role progress breakdown, session identity banner, dedicated ceremony exclusions)
+- **Canonical Status:** `IN_PROGRESS` (Zero WBS drift, `wbs:check` PASS)
+- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 30/30 PASS)
+- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 8/8 PASS)
+- **Historical DMK-196 Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
+- **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
+- **Closure Verifier Suite:** `scripts/verifyDmk196Closure.ts` & `scripts/testDmk196Closure.ts` (18/18 PASS)
+- **Post-Merge Candidate Suite:** `scripts/verifyDmk196PostMergeCandidate.ts` & `scripts/testDmk196PostMergeCandidate.ts` (38/38 PASS)
+- **Status Audit Verifier Suite:** `scripts/verifyDmk208StatusAudit.ts` & `scripts/testStatusAuditReceipt.ts` (56/56 PASS)
+- **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
+- **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
+- **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
+- **Complete Regression Suite:** `npm run test:complete` (49/49 suites PASS, 1107/1107 assertions PASS)
+
+### Current governance and task status
+
+- DMK-195: VERIFIED / MERGED
+- DMK-196: VERIFIED (Published on master via PR #26 at commit `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`)
+- DMK-197: IN_PROGRESS (Implementation complete on branch `dmk-197-approval-inbox-quorum`; stopping at Implementation Review Gate)
+- DMK-198: IN_PROGRESS (Planned under EPIC-13; not started)
+- DMK-199: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG
+- DMK-203: VERIFIED / MERGED
+- DMK-204: BACKLOG
+- DMK-205: VERIFICATION_PENDING (PR #20 merged; live reconciliation pending)
+- DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-208: VERIFIED (Published on master via PR #24; human governance sign-off pending; reconciliation-blocked)
+- Gate 7: UNCHANGED (HUMAN_APPROVAL_REQUIRED / NOT EXECUTED)
+- Release status: v0.1.0-rc1 / NOT PROMOTED
+
+### Historical governance blockers & live reconciliation
+
+Live reconciliation remains strictly:
+BLOCKED
+NOT AUTHORIZED
+NOT EXECUTED
+
+Total reconciliation blockers currently: 11
+- Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190
+- DMK-208: Technically verified on master; human governance sign-off pending
+- DMK-196: Technically verified on master; human governance sign-off pending
+
+### Next safe action
+
+1. Push branch `dmk-197-approval-inbox-quorum` to `origin`.
+2. Open Draft PR into `master` via GitHub API.
+3. Observe GitHub Actions CI on the new PR HEAD (Quality & Build, Controlled Docs, Complete Regression).
+4. Present complete 28-point implementation and verification report to human operator.
+5. STOP strictly at the DMK-197 Implementation Review Gate.
+6. Await explicit human operator review and instruction before any lifecycle transition or merge recommendation.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
+
 ## 2026-10-06 — DMK-196 Formal Requirement Sign-Off UX Verified Lifecycle Checkpoint
 
 DMK-196 implementation and its `VERIFICATION_PENDING` lifecycle checkpoint were published on master through PR #25 at commit `2eb763b936327629a809d05fc9f198f541ca0ab2`. The separately authorized technical verification transition to `VERIFIED` has been applied on PR #26, with publication to master pending human merge approval. Human Governance remains `PENDING_SIGNOFF`.
