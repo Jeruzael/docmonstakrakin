@@ -70,9 +70,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       if (res.ok) {
         const data = await res.json();
         setApprovals(data);
-        if (selectedItem) {
+        if (selectedItem && selectedItem.projectId === project.id) {
           const updated = data.find((a: ApprovalItem) => a.id === selectedItem.id);
           if (updated) setSelectedItem(updated);
+          else setSelectedItem(null);
         }
       }
     } catch (err) {
@@ -83,22 +84,85 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   };
 
   useEffect(() => {
-    fetchApprovals();
+    let isCancelled = false;
+    setSelectedItem(null);
+    setError('');
+    setShowDecisionModal(false);
+    setShowRequestModal(false);
+    setHumanConfirmed(false);
+    setApprovals([]);
+
+    const fetchForProject = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/projects/${project.id}/approvals`);
+        if (res.ok && !isCancelled) {
+          const data = await res.json();
+          setApprovals(data);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('Failed to fetch approvals:', err);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchForProject();
     fetchSession();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [project.id]);
 
   const getQuorumProgress = (item: ApprovalItem) => {
-    const required = Array.isArray(item.requiredRoles) && item.requiredRoles.length > 0
-      ? item.requiredRoles
-      : ['Security Officer', 'Lead Architect'];
+    if (item.quorum) {
+      return {
+        status: item.quorum.status,
+        hasQuorum: item.quorum.hasQuorum,
+        required: ['Security Officer', 'Lead Architect'],
+        satisfied: item.quorum.satisfiedRoles || [],
+        pending: item.quorum.pendingRoles || [],
+        reason: item.quorum.reason,
+      };
+    }
+
+    const required = ['Security Officer', 'Lead Architect'];
+    if (
+      item.policyVersion !== 'LOCAL_SESSION_V1' ||
+      !Array.isArray(item.requiredRoles) ||
+      item.requiredRoles.length !== 2 ||
+      item.requiredRoles[0] !== required[0] ||
+      item.requiredRoles[1] !== required[1] ||
+      !item.targetDigest
+    ) {
+      return {
+        status: 'INVALID' as const,
+        hasQuorum: false,
+        required,
+        satisfied: [],
+        pending: required,
+        reason: 'Invalid or unsupported approval policy metadata',
+      };
+    }
+
     const satisfied: string[] = [];
     const usedIdentities = new Set<string>();
 
     for (const sig of item.approvalsCollected || []) {
-      if (sig.decision === 'APPROVED' && required.includes(sig.role)) {
-        const idKey = sig.identityId || sig.approver;
-        if (!usedIdentities.has(idKey) && !satisfied.includes(sig.role)) {
-          usedIdentities.add(idKey);
+      if (
+        sig.decision === 'APPROVED' &&
+        required.includes(sig.role) &&
+        typeof sig.identityId === 'string' &&
+        sig.identityId.trim() &&
+        sig.roleSource === 'LOCAL_SERVER_ROSTER'
+      ) {
+        if (!usedIdentities.has(sig.identityId) && !satisfied.includes(sig.role)) {
+          usedIdentities.add(sig.identityId);
           satisfied.push(sig.role);
         }
       }
@@ -106,7 +170,15 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
     const pending = required.filter((r) => !satisfied.includes(r));
     const hasQuorum = required.length > 0 && pending.length === 0;
-    return { required, satisfied, pending, hasQuorum };
+    const status = item.status === 'REJECTED'
+      ? 'REJECTED'
+      : hasQuorum
+      ? 'SATISFIED'
+      : satisfied.length > 0
+      ? 'PARTIAL'
+      : 'PENDING';
+
+    return { status, hasQuorum, required, satisfied, pending, reason: undefined };
   };
 
   const handleOpenDecision = (item: ApprovalItem, decision: 'APPROVED' | 'REJECTED') => {
@@ -125,6 +197,11 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const submitDecision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    if (selectedItem.projectId !== project.id) {
+      setError('Active approval item belongs to a different project; submission cancelled.');
+      setSelectedItem(null);
+      return;
+    }
     setError('');
 
     try {
@@ -447,17 +524,29 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     <div className="text-right shrink-0">
                       <span
                         className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full inline-block ${
-                          item.status === 'APPROVED'
+                          q.status === 'INVALID'
+                            ? 'bg-red-100 text-red-800'
+                            : q.status === 'STALE'
+                            ? 'bg-amber-100 text-amber-800'
+                            : item.status === 'APPROVED' || q.status === 'SATISFIED'
                             ? 'bg-emerald-100 text-emerald-800'
-                            : item.status === 'REJECTED'
+                            : item.status === 'REJECTED' || q.status === 'REJECTED'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {item.status}
+                        {q.status === 'INVALID'
+                          ? 'INVALID POLICY'
+                          : q.status === 'STALE'
+                          ? 'STALE TARGET'
+                          : item.status}
                       </span>
                       <div className="text-[10px] text-slate-500 mt-1 font-mono">
-                        {q.satisfied.length}/{q.required.length} roles ratified
+                        {q.status === 'INVALID'
+                          ? 'policy invalid'
+                          : q.status === 'STALE'
+                          ? 'target stale'
+                          : `${q.satisfied.length}/${q.required.length} roles ratified`}
                       </div>
                     </div>
                   </div>
@@ -470,12 +559,14 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         <span
                           key={role}
                           className={`text-[9px] font-mono px-2 py-0.5 rounded border ${
-                            isSat
+                            q.status === 'INVALID'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : isSat
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
                               : 'bg-amber-50 text-amber-700 border-amber-200'
                           }`}
                         >
-                          {role}: {isSat ? '✓ RATIFIED' : '⏳ PENDING'}
+                          {role}: {q.status === 'INVALID' ? '⚠️ INVALID' : isSat ? '✓ RATIFIED' : '⏳ PENDING'}
                         </span>
                       );
                     })}
@@ -487,24 +578,36 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         Requested by <strong>{item.requestedBy}</strong>
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDecision(item, 'REJECTED');
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 rounded border border-red-200"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDecision(item, 'APPROVED');
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs"
-                        >
-                          Sign Decision
-                        </button>
+                        {q.status === 'INVALID' ? (
+                          <span className="text-[11px] font-semibold text-red-600">
+                            Policy invalid: fresh sign-off required
+                          </span>
+                        ) : q.status === 'STALE' ? (
+                          <span className="text-[11px] font-semibold text-amber-600">
+                            Target modified: fresh sign-off required
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDecision(item, 'REJECTED');
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 rounded border border-red-200 cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDecision(item, 'APPROVED');
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs cursor-pointer"
+                            >
+                              Sign Decision
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
@@ -516,7 +619,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
         {/* Right Inspector (6 cols) */}
         <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-5">
-          {selectedItem ? (
+          {selectedItem && selectedItem.projectId === project.id ? (
             (() => {
               const q = getQuorumProgress(selectedItem);
               return (
@@ -527,14 +630,22 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         <span className="font-mono text-xs font-bold text-slate-400">{selectedItem.id}</span>
                         <span
                           className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                            selectedItem.status === 'APPROVED'
+                            q.status === 'INVALID'
+                              ? 'bg-red-100 text-red-800'
+                              : q.status === 'STALE'
+                              ? 'bg-amber-100 text-amber-800'
+                              : selectedItem.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800'
                               : selectedItem.status === 'REJECTED'
                               ? 'bg-red-100 text-red-800'
                               : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {selectedItem.status}
+                          {q.status === 'INVALID'
+                            ? 'INVALID POLICY'
+                            : q.status === 'STALE'
+                            ? 'STALE TARGET'
+                            : selectedItem.status}
                         </span>
                       </div>
                       <h2 className="text-sm font-bold text-slate-900 mt-1">
@@ -542,23 +653,46 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </h2>
                     </div>
 
-                    {selectedItem.status === 'PENDING' && (
+                    {selectedItem.status === 'PENDING' && q.status !== 'INVALID' && q.status !== 'STALE' && (
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenDecision(selectedItem, 'REJECTED')}
-                          className="px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 rounded-lg border border-red-200"
+                          className="px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
                         >
                           Reject
                         </button>
                         <button
                           onClick={() => handleOpenDecision(selectedItem, 'APPROVED')}
-                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs"
+                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs cursor-pointer"
                         >
                           Approve
                         </button>
                       </div>
                     )}
                   </div>
+
+                  {(q.status === 'INVALID' || q.status === 'STALE') && (
+                    <div
+                      className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                        q.status === 'INVALID'
+                          ? 'bg-red-50 border-red-200 text-red-900'
+                          : 'bg-amber-50 border-amber-200 text-amber-900'
+                      }`}
+                    >
+                      <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${q.status === 'INVALID' ? 'text-red-600' : 'text-amber-600'}`} />
+                      <div>
+                        <span className="font-bold block">
+                          {q.status === 'INVALID' ? 'Invalid Approval Policy' : 'Stale Target Entity Revision'}
+                        </span>
+                        <p className="mt-0.5 text-[11px] leading-relaxed">
+                          {q.reason || (q.status === 'INVALID' ? 'Approval metadata does not match canonical dual-role quorum policy.' : 'Target entity was modified after sign-off was requested.')}
+                        </p>
+                        <span className="text-[10px] font-semibold text-slate-600 mt-1 block">
+                          Action required: A fresh authorized sign-off request must be initiated.
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quorum Progress Breakdown */}
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
