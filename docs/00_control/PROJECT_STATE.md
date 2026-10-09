@@ -3,7 +3,7 @@
 ## 2026-10-09 — DMK-197 Approval Inbox & Canonical Quorum Synchronization Implementation Checkpoint
 
 DMK-197 implementation, integrity hardening, and comprehensive verification have been completed on branch `dmk-197-approval-inbox-quorum` branched from canonical master `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26, verified green under post-merge CI `37909221729`).
-The canonical acceptance criterion — **"Distinct Security Officer and Lead Architect human identities required for quorum"** — is implemented, hardened, and verified across 46 technical backend scenarios (`test:dmk-197`), 15 frontend UI scenarios (`test:dmk-197:ui`), and 2 real persistence integration scenarios (`test:dmk-197:persistence`).
+The canonical acceptance criterion — **"Distinct Security Officer and Lead Architect human identities required for quorum"** — is implemented, hardened, and verified across 46 technical backend scenarios (`test:dmk-197`), 18 frontend UI scenarios (`test:dmk-197:ui`), and 2 real persistence integration scenarios (`test:dmk-197:persistence`).
 The Approval Inbox now enforces that:
 1. Canonical proposed artifacts (Requirement, ADR, Risk, and eligible Security Override) can have formal sign-off requests created via `/api/projects/:id/approvals`.
 2. The server establishes reviewer identity and roles strictly from authenticated human sessions (`/api/governance/session`); all client-supplied identity, role, and approver claims are rejected with HTTP 403.
@@ -20,6 +20,8 @@ The Approval Inbox now enforces that:
    - Fail-closed projection for missing canonical targets (`status = 'STALE'`, `hasQuorum = false`, `reason = 'Canonical approval target no longer exists'`) and unsupported target types (`status = 'INVALID'`) with zero stateVersion, audit, or approval mutation.
    - Centralized guarded approval fetch in UI (`fetchApprovalsForProject` with `activeProjectIdRef`, `requestGenerationRef`, `AbortController`), discarding delayed responses across project switches and manual refreshes.
    - Deterministic route-interception network race tests (UI-13 delayed initial fetch, UI-14 delayed manual refresh, UI-15 stale decision response).
+   - Safe submission-state isolation across project switches: resetting `submitting` to false on project change, and monotonic `submissionGenerationRef` token validation for `submitDecision` and `submitNewRequest` (protecting `finally` blocks, response parsing, error alerts, modals, and refresh callbacks so stale submissions cannot lock newer projects or newer submissions).
+   - Deterministic submission-state isolation tests (UI-16 Project B remains usable after delayed Project A decision, UI-17 old completion cannot interrupt newer submission, UI-18 A → B → A operation invalidation).
    - Real `.local/project-state.json` persistence verification (restart recovery and failed write rollback).
 6. In accordance with governance constraints, DMK-197 canonical WBS status remains strictly `IN_PROGRESS` on this branch; no forward lifecycle transition to `VERIFICATION_PENDING` or `VERIFIED` has been applied in WBS.
 7. Human Governance for DMK-196 and DMK-208 remains strictly `PENDING_SIGNOFF`; `human_approved_by` remains absent.
@@ -33,10 +35,10 @@ The Approval Inbox now enforces that:
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
 - **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities, exact canonical roles, strict 64-char SHA-256 digests, and strict provenance)
 - **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, atomic audit and stateVersion)
-- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions)
+- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation)
 - **Canonical Status:** `IN_PROGRESS` (Zero WBS drift, `wbs:check` PASS)
 - **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 46/46 PASS)
-- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 15/15 PASS)
+- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 18/18 PASS)
 - **Persistence Integration Suite:** `scripts/testDmk197Persistence.ts` (`npm run test:dmk-197:persistence`, 2/2 PASS)
 - **Historical DMK-196 Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
@@ -46,7 +48,7 @@ The Approval Inbox now enforces that:
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (50/50 suites PASS, 1132/1132 assertions PASS)
+- **Complete Regression Suite:** `npm run test:complete` (50/50 suites PASS, 1135/1135 assertions PASS)
 
 ### Current governance and task status
 
