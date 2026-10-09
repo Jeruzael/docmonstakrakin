@@ -2,12 +2,12 @@
 
 ## 2026-10-06 — DMK-196 Formal Requirement Sign-Off UX Verified Lifecycle Checkpoint
 
-DMK-196 Formal Requirement Sign-Off UX is published on master (`2eb763b936327629a809d05fc9f198f541ca0ab2`) following successful merge of PR #25 and clean post-merge master CI Run 37318919644 (Attempt 1, Quality & Build: PASS, Controlled Docs: PASS, Complete Regression: PASS).
+DMK-196 implementation and its `VERIFICATION_PENDING` lifecycle checkpoint were published on master through PR #25 at commit `2eb763b936327629a809d05fc9f198f541ca0ab2`. The separately authorized technical verification transition to `VERIFIED` has been applied on PR #26, with publication to master pending human merge approval. Human Governance remains `PENDING_SIGNOFF`.
 The obsolete direct `Approve Requirement` button has been removed from the requirements drawer in `src/components/RequirementsView.tsx`, and replaced with governed `<RequestSignoff />` for all non-APPROVED requirements.
 Server-side defense-in-depth (`server.ts:607`) remains intact and strictly denies direct `status: 'APPROVED'` mutations with HTTP 403.
 Request Sign-Off is now the only legitimate requirement approval path exposed in the UI.
 
-Following explicit human authorization of post-merge technical verification candidate `docs/07_verification/dmk-196-post-merge-verification-candidate.json` (candidateDigest `efc0462ee9326e35ca05e3da95cfbae0cb911f8a79723f551c7fe390e0db24ce`), DMK-196 canonical WBS status has transitioned from `VERIFICATION_PENDING` to `VERIFIED`.
+Following explicit human authorization of post-merge technical verification candidate `docs/07_verification/dmk-196-post-merge-verification-candidate.json` (candidateDigest `efc0462ee9326e35ca05e3da95cfbae0cb911f8a79723f551c7fe390e0db24ce`), DMK-196 canonical WBS status has transitioned from `VERIFICATION_PENDING` to `VERIFIED` on PR #26.
 Technical verification is COMPLETE and VERIFIED.
 Human Governance status remains strictly `PENDING_SIGNOFF`; `human_approved_by` is strictly absent.
 Active reconciliation blockers increment from 10 to 11 (Historical 9 + DMK-208 + DMK-196) because DMK-196 lacks completed human governance approval.
@@ -22,13 +22,13 @@ Candidate PR #26 is READY FOR HUMAN REVIEW / MERGE PENDING.
 - **Direct Approve Requirement UX:** REMOVED from requirement drawer
 - **Governed Request Sign-Off:** ACTIVE in drawer and list views
 - **Server Defense-in-Depth:** RETAINED (`server.ts:607` returns HTTP 403 `Use Request Sign-Off and human quorum to approve a requirement`)
-- **Canonical Status:** `VERIFIED` (zero WBS drift, `wbs:check` PASS)
+- **Canonical Status:** `VERIFIED` on PR #26 branch (publication to master pending; zero WBS drift, `wbs:check` PASS)
 - **Verification Status:** `VERIFIED`
 - **Verified By:** `PR #25 merged to master at 2eb763b936327629a809d05fc9f198f541ca0ab2; GitHub Actions master CI 37318919644 attempt 1 passed Quality & Build, Controlled Docs, and Complete Regression; DMK-196 post-merge verification receipt.`
 - **Human Approved By:** `ABSENT` (human governance strictly `PENDING_SIGNOFF`)
 - **Closure Transition Receipt:** `docs/07_verification/dmk-196-closure-transition-receipt.json` (VALID)
 - **Post-Merge Application Receipt:** `docs/07_verification/dmk-196-post-merge-verification-receipt.json` (VALID)
-- **PR #25 Status:** MERGED into `master` at `2eb763b936327629a809d05fc9f198f541ca0ab2`
+- **PR #25 Status:** MERGED into `master` at `2eb763b936327629a809d05fc9f198f541ca0ab2` (published implementation & `VERIFICATION_PENDING`)
 - **PR #26 Status:** READY FOR HUMAN REVIEW / MERGE PENDING (`draft = false`, mergeable = clean)
 - **Master CI Run:** `37318919644` (Attempt 1, Conclusion: success, all 3 jobs PASS)
 - **Post-Merge Verification Candidate:** `docs/07_verification/dmk-196-post-merge-verification-candidate.json` (VALID / PASS)
@@ -48,7 +48,7 @@ Candidate PR #26 is READY FOR HUMAN REVIEW / MERGE PENDING.
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
 - **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (47/47 suites PASS, 1045/1045 assertions PASS)
+- **Complete Regression Suite:** `npm run test:complete` (47/47 suites PASS, 1069/1069 assertions PASS)
 
 ### Current governance and task status
 
@@ -59,7 +59,7 @@ Candidate PR #26 is READY FOR HUMAN REVIEW / MERGE PENDING.
 - DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
 - DMK-208: VERIFIED (Published on master via PR #24; human governance sign-off pending; reconciliation-blocked)
-- DMK-196: VERIFIED (Published on master via PR #25; post-merge technical verification applied; human governance sign-off pending; reconciliation-blocked)
+- DMK-196: VERIFIED on PR #26 branch; publication to master pending.
 - DMK-197: IN_PROGRESS (Unmodified in this pass)
 - DMK-198: IN_PROGRESS (Unmodified in this pass)
 - DMK-199: BACKLOG
@@ -78,18 +78,22 @@ NOT EXECUTED
 Total reconciliation blockers currently: 11
 - Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190
 - DMK-208: Technically verified on master; human governance sign-off pending
-- DMK-196: Technically verified on master; human governance sign-off pending
+- DMK-196: Technically verified on PR #26 branch; publication to master pending; human governance sign-off pending
 
 All prior DMK-205 reconciliation plans remain superseded due to canonical WBS digest changes.
 
 ### Next safe action
 
-1. Mark PR #26 as Ready for Review (`draft = false`).
-2. Observe fresh candidate PR CI run to green across Quality & Build, Controlled Docs, and Complete Regression.
-3. Stop at PR #26 Merge Gate for human operator review and merge authorization. Do NOT merge PR #26.
-4. Do not begin DMK-197 completion pass until PR #26 is merged and published on master.
-5. Do not execute live reconciliation.
-6. Keep Gate 7 and release unchanged.
+1. Human-review PR #26 at its exact final HEAD.
+2. Confirm the latest PR CI passes all required jobs.
+3. Obtain explicit human merge approval.
+4. Merge PR #26 only after approval.
+5. Verify the exact resulting master SHA and push-to-master CI.
+6. Confirm DMK-196 `VERIFIED` is published on master.
+7. Preserve Human Governance `PENDING_SIGNOFF` and the absence of `human_approved_by`.
+8. Keep live reconciliation blocked at 11.
+9. Proceed to DMK-197 only after PR #26 publication is verified.
+10. Keep Gate 7 and release unchanged.
 
 Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
 
