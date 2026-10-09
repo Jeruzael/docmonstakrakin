@@ -285,6 +285,7 @@ let delayProjectADecision = false;
 let holdProjectBRequest: (() => void) | null = null;
 let delayProjectBRequest = false;
 let countProjectBRequests = 0;
+let overrideStatusProjectA: number | null = null;
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -303,6 +304,10 @@ try {
     }
 
     if (url === `/api/projects/${testProject.id}/approvals` && method === 'GET') {
+      if (overrideStatusProjectA) {
+        const st = overrideStatusProjectA;
+        return route.fulfill({ status: st, json: { error: 'Auth failed' } });
+      }
       if (delayProjectAApprovals) {
         delayProjectAApprovals = false;
         await new Promise<void>((r) => { holdProjectAResponse = r; });
@@ -1061,6 +1066,44 @@ try {
     pass('UI-18: A → B → A operation invalidation');
   } catch (e) {
     fail('UI-18: A → B → A operation invalidation', e);
+  }
+
+  // UI-19: Unauthenticated response displays auth notice and recovers on re-check
+  try {
+    overrideStatusProjectA = 401;
+    const refreshBtn = page.getByRole('button', { name: 'Refresh' });
+    await refreshBtn.click();
+    await page.getByTestId('approvals-auth-unauthenticated').waitFor();
+    assert.equal(await page.locator('[data-testid^="approval-card-"]').count(), 0, 'No approval cards rendered when unauthenticated');
+
+    // Click Re-check Session after session/auth restored
+    overrideStatusProjectA = null;
+    const recheckBtn = page.getByTestId('approvals-auth-unauthenticated').getByRole('button', { name: 'Re-check Session' });
+    await recheckBtn.click();
+    await page.getByTestId('approval-card-APV-PENDING-01').waitFor();
+    assert.equal(await page.getByTestId('approvals-auth-unauthenticated').count(), 0, 'Auth notice removed after successful refresh');
+    pass('UI-19: Unauthenticated response displays auth notice and recovers on re-check');
+  } catch (e) {
+    fail('UI-19: Unauthenticated response displays auth notice and recovers on re-check', e);
+  }
+
+  // UI-20: Forbidden response displays governance forbidden notice and recovers
+  try {
+    overrideStatusProjectA = 403;
+    const refreshBtn = page.getByRole('button', { name: 'Refresh' });
+    await refreshBtn.click();
+    await page.getByTestId('approvals-auth-forbidden').waitFor();
+    assert.equal(await page.locator('[data-testid^="approval-card-"]').count(), 0, 'No approval cards rendered when forbidden');
+
+    // Click Re-check Session after session/auth restored
+    overrideStatusProjectA = null;
+    const recheckBtn = page.getByTestId('approvals-auth-forbidden').getByRole('button', { name: 'Re-check Session' });
+    await recheckBtn.click();
+    await page.getByTestId('approval-card-APV-PENDING-01').waitFor();
+    assert.equal(await page.getByTestId('approvals-auth-forbidden').count(), 0, 'Forbidden notice removed after successful refresh');
+    pass('UI-20: Forbidden response displays governance forbidden notice and recovers');
+  } catch (e) {
+    fail('UI-20: Forbidden response displays governance forbidden notice and recovers', e);
   }
 
   await page.close();

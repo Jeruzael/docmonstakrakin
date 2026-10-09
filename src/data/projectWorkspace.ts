@@ -47,7 +47,12 @@ export function createProjectLoader(request:typeof fetch=fetch) {
       try {
         const entries=await Promise.all(Object.entries(resources).map(async([key,suffix])=>{
           const response=await request(`/api/projects/${encodeURIComponent(projectId)}${suffix}`,{method:'GET',signal});
-          if(!response.ok)throw new Error(`Cannot load selected project ${projectId}${suffix}. Retry or select another project.`);
+          if(!response.ok) {
+            if (key === 'approvals' && (response.status === 401 || response.status === 403)) {
+              return [key, []];
+            }
+            throw new Error(`Cannot load selected project ${projectId}${suffix}. Retry or select another project.`);
+          }
           const value=await response.json();
           if(key==='project' ? !value || value.id!==projectId : key==='nextAction' ? !value || typeof value!=='object' || Array.isArray(value) : !Array.isArray(value))throw new Error(`Invalid ${key} response for selected project ${projectId}.`);
           return [key,value];

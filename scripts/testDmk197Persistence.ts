@@ -188,7 +188,9 @@ try {
     const secCookie2 = await loginAndGetCookie(base2, 'secOfficer', 'SecPass123!');
 
     // Verify hydrated approvals list and quorum
-    const listRes = await fetch(`${base2}/api/projects/${testProjectId}/approvals`);
+    const listRes = await fetch(`${base2}/api/projects/${testProjectId}/approvals`, {
+      headers: { Cookie: secCookie2 },
+    });
     assert.equal(listRes.status, 200);
     const approvalsList = await listRes.json();
     assert.equal(approvalsList.length, 1);

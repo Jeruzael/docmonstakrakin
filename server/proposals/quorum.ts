@@ -125,7 +125,7 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
   const signatures = Array.isArray(item.approvalsCollected) ? item.approvalsCollected : [];
 
   // 5. Rejection check
-  if (item.status === 'REJECTED' || signatures.some((s: any) => s.decision === 'REJECTED')) {
+  if (item.status === 'REJECTED' || signatures.some((s: any) => s && typeof s === 'object' && s.decision === 'REJECTED')) {
     return {
       status: 'REJECTED',
       hasQuorum: false,
@@ -142,6 +142,7 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
   const validSignatures: any[] = [];
 
   for (const sig of signatures) {
+    if (!sig || typeof sig !== 'object') continue;
     if (sig.decision !== 'APPROVED') continue;
     if (typeof sig.identityId !== 'string' || !sig.identityId.trim()) continue;
     if (sig.roleSource !== 'LOCAL_SERVER_ROSTER') continue;

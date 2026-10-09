@@ -1464,7 +1464,9 @@ async function runTests() {
       const approvalsCountPreGet = (store.approvals[testProjectId] || []).length;
 
       // Fetch approvals via GET endpoint
-      const listRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`);
+      const listRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
       assert.equal(listRes.status, 200);
       const list = await listRes.json();
 
@@ -1506,6 +1508,181 @@ async function runTests() {
     } catch (e) {
       fail('46. No WBS, Gate 7, release, or runtime reconciliation mutation occurs', e);
     }
+    // 47. Unauthenticated GET approvals fails with 401
+    try {
+      const unauthRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`);
+      assert.equal(unauthRes.status, 401, 'Unauthenticated GET /approvals must return 401');
+      const unauthBody = await unauthRes.json();
+      assert.equal(unauthBody.error, 'Sign in as a configured human reviewer first');
+      pass('47. Unauthenticated GET approvals fails with 401');
+    } catch (e) {
+      fail('47. Unauthenticated GET approvals fails with 401', e);
+    }
+
+    // 48. Unauthorized reviewer GET approvals fails with 403
+    try {
+      const devCookie = await loginAndGetCookie(base, 'otherDev', 'DevPass123!');
+      const unauthRoleRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: devCookie },
+      });
+      assert.equal(unauthRoleRes.status, 403, 'Unauthorized reviewer GET /approvals must return 403');
+      const unauthRoleBody = await unauthRoleRes.json();
+      assert.equal(unauthRoleBody.error, 'This identity has no human governance authority');
+      pass('48. Unauthorized reviewer GET approvals fails with 403');
+    } catch (e) {
+      fail('48. Unauthorized reviewer GET approvals fails with 403', e);
+    }
+
+    // 49. Authorized reviewer GET approvals succeeds with 200
+    try {
+      const authRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      assert.equal(authRes.status, 200, 'Authorized reviewer GET /approvals must return 200');
+      const authBody = await authRes.json();
+      assert.ok(Array.isArray(authBody), 'Authorized GET /approvals must return an array');
+      pass('49. Authorized reviewer GET approvals succeeds with 200');
+    } catch (e) {
+      fail('49. Authorized reviewer GET approvals succeeds with 200', e);
+    }
+
+    // 50. Nonexistent project GET approvals returns 404 for authorized reviewer
+    try {
+      const notFoundRes = await fetch(`${base}/api/projects/NONEXISTENT-PRJ/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      assert.equal(notFoundRes.status, 404, 'Nonexistent project GET /approvals must return 404');
+      const notFoundBody = await notFoundRes.json();
+      assert.equal(notFoundBody.error, 'Project not found');
+      pass('50. Nonexistent project GET approvals returns 404 for authorized reviewer');
+    } catch (e) {
+      fail('50. Nonexistent project GET approvals returns 404 for authorized reviewer', e);
+    }
+
+    // 51. No audit-log or stateVersion mutation during authorized or rejected reads
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      await fetch(`${base}/api/projects/${testProjectId}/approvals`);
+      await fetch(`${base}/api/projects/${testProjectId}/approvals`, { headers: { Cookie: secCookie } });
+      await fetch(`${base}/api/projects/NONEXISTENT-PRJ/approvals`, { headers: { Cookie: secCookie } });
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not change during GET operations');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log count must not change during GET operations');
+      pass('51. No audit-log or stateVersion mutation during authorized or rejected reads');
+    } catch (e) {
+      fail('51. No audit-log or stateVersion mutation during authorized or rejected reads', e);
+    }
+
+    // 52. Malformed stored approval record (missing/null/non-array approvalsCollected) returns HTTP 409
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const malformedApv1: any = {
+        id: 'APV-MALFORMED-COLLECTED-1',
+        projectId: testProjectId,
+        title: 'Malformed Collected Non-Array',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: 'not-an-array',
+      };
+      const malformedApv2: any = {
+        id: 'APV-MALFORMED-COLLECTED-2',
+        projectId: testProjectId,
+        title: 'Malformed Collected Null',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: null,
+      };
+      (store.approvals[testProjectId] ||= []).push(malformedApv1, malformedApv2);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+
+      const dec1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${malformedApv1.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec1.status, 409, 'Non-array approvalsCollected must return HTTP 409 fail-closed');
+
+      const dec2 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${malformedApv2.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec2.status, 409, 'Null approvalsCollected must return HTTP 409 fail-closed');
+
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not change on rejected malformed record decision');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit logs must not change on rejected decision');
+
+      pass('52. Malformed stored approval record (missing/null/non-array approvalsCollected) returns HTTP 409');
+    } catch (e) {
+      fail('52. Malformed stored approval record (missing/null/non-array approvalsCollected) returns HTTP 409', e);
+    }
+
+    // 53. Malformed stored signature entries return HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const malformedSigApv1: any = {
+        id: 'APV-MALFORMED-SIG-1',
+        projectId: testProjectId,
+        title: 'Malformed Null Signature',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [null],
+      };
+      const malformedSigApv2: any = {
+        id: 'APV-MALFORMED-SIG-2',
+        projectId: testProjectId,
+        title: 'Malformed Signature Object',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [{ decision: 'NOT_A_VALID_DECISION', role: 'Security Officer' }],
+      };
+      (store.approvals[testProjectId] ||= []).push(malformedSigApv1, malformedSigApv2);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+
+      const dec1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${malformedSigApv1.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec1.status, 409, 'Null signature entry must return HTTP 409 fail-closed');
+
+      const dec2 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${malformedSigApv2.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec2.status, 409, 'Invalid signature decision must return HTTP 409 fail-closed');
+
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not change on rejected malformed signature decision');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit logs must not change on rejected decision');
+
+      pass('53. Malformed stored signature entries return HTTP 409 fail-closed');
+    } catch (e) {
+      fail('53. Malformed stored signature entries return HTTP 409 fail-closed', e);
+    }
   } finally {
     server.close();
     if (originalEnv === undefined) {
@@ -1519,7 +1696,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 46 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 53 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {

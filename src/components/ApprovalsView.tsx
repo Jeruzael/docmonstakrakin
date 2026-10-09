@@ -29,6 +29,7 @@ interface ReviewerSessionIdentity {
 export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefreshData }) => {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [sessionIdentity, setSessionIdentity] = useState<ReviewerSessionIdentity | null>(null);
+  const [authStatus, setAuthStatus] = useState<'UNAUTHENTICATED' | 'FORBIDDEN' | ''>('');
   const [error, setError] = useState('');
   const [humanConfirmed, setHumanConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -83,6 +84,22 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       const res = await fetch(`/api/projects/${targetProjectId}/approvals`, {
         signal: controller.signal,
       });
+      if (res.status === 401) {
+        if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+          setAuthStatus('UNAUTHENTICATED');
+          setApprovals([]);
+          setSelectedItem(null);
+        }
+        return;
+      }
+      if (res.status === 403) {
+        if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+          setAuthStatus('FORBIDDEN');
+          setApprovals([]);
+          setSelectedItem(null);
+        }
+        return;
+      }
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -93,6 +110,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         return; // Discard stale response
       }
 
+      setAuthStatus('');
       setApprovals(data);
       if (preserveSelection) {
         setSelectedItem((prev) => {
@@ -133,6 +151,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     setHumanConfirmed(false);
     setSubmitting(false);
     setApprovals([]);
+    setAuthStatus('');
 
     fetchApprovalsForProject(project.id, false);
     fetchSession();
@@ -528,7 +547,49 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left List (6 cols) */}
         <div className="lg:col-span-6 space-y-3">
-          {filteredApprovals.length === 0 ? (
+          {authStatus === 'UNAUTHENTICATED' ? (
+            <div data-testid="approvals-auth-unauthenticated" className="p-8 text-center bg-amber-50/50 rounded-xl border border-amber-200 text-amber-900 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-amber-700 font-semibold text-sm">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                Authentication Required
+              </div>
+              <p className="text-xs text-amber-800 max-w-md mx-auto">
+                Viewing the governance approval inbox requires an active authenticated session. Please sign in or re-check your session.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchSession();
+                  fetchApprovalsForProject(project.id, false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Re-check Session
+              </button>
+            </div>
+          ) : authStatus === 'FORBIDDEN' ? (
+            <div data-testid="approvals-auth-forbidden" className="p-8 text-center bg-red-50/50 rounded-xl border border-red-200 text-red-900 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-red-700 font-semibold text-sm">
+                <XCircle className="w-5 h-5 text-red-600" />
+                Governance Access Forbidden
+              </div>
+              <p className="text-xs text-red-800 max-w-md mx-auto">
+                Your session identity lacks governance reviewer authorization (Security Officer or Lead Architect) to access the approval inbox.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchSession();
+                  fetchApprovalsForProject(project.id, false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Re-check Session
+              </button>
+            </div>
+          ) : filteredApprovals.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-400 text-xs">
               No governance sign-off requests are pending. Select a canonical requirement, ADR, risk, or override to request sign-off.
             </div>

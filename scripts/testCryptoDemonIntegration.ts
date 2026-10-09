@@ -65,7 +65,7 @@ try {
     {type:'CODE_MODIFICATION',action:'CREATE',id:'external-code-local',title:'Implement local hash validation',details:'Add hash validation within the local demo ledger.',features:[feats[7].id]},
   ]});
   const session = await api(url+'/import-sessions',{rawJson:original},201);
-  assert.equal((await api(url+'/requirements')).length,0); assert.equal((await api(url+'/approvals')).length,0); passed('validation stages without canonical import or approval');
+  assert.equal((await api(url+'/requirements')).length,0); await api(url+'/approvals',undefined,401); passed('validation stages without canonical import or approval');
   await api(url+`/import-sessions/${session.id}/changes/0/review`,{disposition:'ACCEPTED',reviewer:'Forged Human',actorType:'HUMAN',humanConfirmed:true},401);
   await login('Fixture Human');
   const review = (index:number, disposition:string, extra:any={})=>api(url+`/import-sessions/${session.id}/changes/${index}/review`,{disposition,humanConfirmed:true,...extra});

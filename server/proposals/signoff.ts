@@ -51,7 +51,13 @@ export function registerSignoffRoutes(app: Express, store: any) {
   app.get('/api/projects/:id/governance-policy', (req, res) => res.json({ requiredRoles: roles }));
 
   app.get('/api/projects/:id/approvals', (req, res) => {
-    const list = store.approvals[req.params.id] || [];
+    const identity = requireHuman(req, res);
+    if (!identity) return;
+
+    const p = store.projects.find((pr: any) => pr.id === req.params.id);
+    if (!p) return res.status(404).json({ error: 'Project not found' });
+
+    const list = store.approvals[p.id] || [];
     const projected = list.map((item: any) => {
       const spec = mapping[item.targetEntityType];
       if (!spec) {
@@ -248,6 +254,41 @@ export function registerSignoffRoutes(app: Express, store: any) {
 
     if (item.status !== 'PENDING') {
       return res.status(409).json({ error: 'Request is no longer pending' });
+    }
+
+    // Validate stored approvalsCollected structure
+    if (!Array.isArray(item.approvalsCollected)) {
+      return res.status(409).json({
+        error: 'Malformed stored approval record: approvalsCollected must be an array; request fresh authenticated sign-off',
+      });
+    }
+
+    for (const sig of item.approvalsCollected) {
+      if (!sig || typeof sig !== 'object' || Array.isArray(sig)) {
+        return res.status(409).json({
+          error: 'Malformed stored signature record; request fresh authenticated sign-off',
+        });
+      }
+      if (typeof sig.decision !== 'string' || !['APPROVED', 'REJECTED'].includes(sig.decision)) {
+        return res.status(409).json({
+          error: 'Malformed stored signature: invalid or missing decision; request fresh authenticated sign-off',
+        });
+      }
+      if (typeof sig.role !== 'string' || !sig.role.trim()) {
+        return res.status(409).json({
+          error: 'Malformed stored signature: invalid or missing role; request fresh authenticated sign-off',
+        });
+      }
+      if (sig.identityId !== undefined && (typeof sig.identityId !== 'string' || !sig.identityId.trim())) {
+        return res.status(409).json({
+          error: 'Malformed stored signature: invalid identityId; request fresh authenticated sign-off',
+        });
+      }
+      if (sig.roleSource !== undefined && typeof sig.roleSource !== 'string') {
+        return res.status(409).json({
+          error: 'Malformed stored signature: invalid roleSource; request fresh authenticated sign-off',
+        });
+      }
     }
 
     const alreadySigned = item.approvalsCollected.some((a: any) => a.identityId === identity.id);
