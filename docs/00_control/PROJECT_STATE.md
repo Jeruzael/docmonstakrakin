@@ -1,11 +1,11 @@
 # docmonstakrakin current project state
 
-## 2026-10-09 — DMK-197 Formal Closure-Transition Candidate Checkpoint
+## 2026-10-10 — DMK-197 Formal Closure-Transition Candidate Checkpoint (Superseding Remediation)
 
-A formal, immutable, and fail-closed closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27).
+A formal, immutable, and fail-closed superseding closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27), following operator-directed targeted remediation.
 
 ### 1. Authorization and Scope Boundaries
-- **Candidate Preparation Only:** This checkpoint records candidate preparation and independent verification only.
+- **Candidate Preparation Only:** This checkpoint records superseding candidate preparation and independent verification only.
 - **Zero WBS Drift:** Canonical `docs/00_control/MASTER_WBS.yaml` and `docs/00_control/MASTER_WBS.md` remain completely unmodified on disk. DMK-197 canonical WBS status remains strictly `IN_PROGRESS`.
 - **No Applied Closure Receipt:** No approved or applied closure receipt (`dmk-197-closure-transition-receipt.json`) has been created; no operator approval has been fabricated (`human_approved_by` remains absent; `humanDecisionStatus: "PENDING"`).
 - **Not Technically Verified:** DMK-197 is NOT marked `VERIFIED`.
@@ -20,11 +20,12 @@ A formal, immutable, and fail-closed closure-transition candidate proposal (`IN_
 - **Schema Version:** `1.0`
 - **From Status:** `IN_PROGRESS`
 - **Candidate Status:** `VERIFICATION_PENDING`
-- **Frozen Implementation HEAD:** `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`
+- **Frozen Implementation HEAD:** `c84e9cfc8af202688698cddaf64f80dc2c155549`
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)
-- **Frozen Implementation CI:** Run `37946050979` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
+- **Frozen Implementation CI:** Run `37965723187` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
 - **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
-- **Deterministic Candidate Digest (SHA-256):** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
+- **Deterministic Candidate Digest (SHA-256):** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`
+- **Superseded Historical Candidate Digest:** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
 - **Proposed WBS Delta Preview Digest (SHA-256):** `49c1ea1426a583999c2422b3460933134f84f6e7405feca7145c40dc5f9b4d41`
 - **Verification Evidence Document:** `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`
 
@@ -33,14 +34,18 @@ A formal, immutable, and fail-closed closure-transition candidate proposal (`IN_
 - **Branch:** `dmk-197-approval-inbox-quorum`
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
+- **Targeted Remediation Invariants:**
+  - Correction A (P1 - Security): Approval Inbox read authorization enforced via `requireHuman` on `GET /api/projects/:id/approvals` (401 unauthenticated, 403 unauthorized, 404 nonexistent project for authorized reviewer, non-mutating reads; UI graceful degradation with session re-check; `createProjectLoader` resilience).
+  - Correction B (P2 - Robustness): Stored approval records pre-validated for array structure and valid signature objects before processing decisions (HTTP 409 fail-closed without mutation; `evaluateQuorum` safe null/non-object signature handling).
+  - Correction C (P2 - Test Coverage): Premature closure receipt injection tested in isolated temporary workspace with fail-closed rejection and zero host repository mutation.
 - **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities, exact canonical roles, strict 64-char SHA-256 digests, and strict provenance)
 - **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, atomic audit and stateVersion)
-- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation)
+- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation, auth status rendering)
 - **Canonical Status:** `IN_PROGRESS` (Zero WBS drift, `wbs:check` PASS)
-- **DMK-197 Closure Candidate Verifier:** `scripts/verifyDmk197ClosureCandidate.ts` (`npm run verify:dmk-197-closure-candidate`, 20 invariants verified PASS)
-- **DMK-197 Candidate Regression Suite:** `scripts/testDmk197ClosureCandidate.ts` (`npm run test:dmk-197-closure-candidate`, 19/19 scenarios PASS)
-- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 46/46 PASS)
-- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 18/18 PASS)
+- **DMK-197 Closure Candidate Verifier:** `scripts/verifyDmk197ClosureCandidate.ts` (`npm run verify:dmk-197-closure-candidate`, 21 invariants verified PASS)
+- **DMK-197 Candidate Regression Suite:** `scripts/testDmk197ClosureCandidate.ts` (`npm run test:dmk-197-closure-candidate`, 20/20 scenarios PASS)
+- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 53/53 PASS)
+- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 20/20 PASS)
 - **Persistence Integration Suite:** `scripts/testDmk197Persistence.ts` (`npm run test:dmk-197:persistence`, 2/2 PASS)
 - **Historical DMK-196 Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
@@ -50,7 +55,7 @@ A formal, immutable, and fail-closed closure-transition candidate proposal (`IN_
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (51/51 suites PASS, 1154/1154 assertions PASS)
+- **Complete Regression Suite:** `npm run test:complete` (51/51 suites PASS, 1163/1163 assertions PASS)
 
 ### 4. Current governance and task status
 - DMK-195: VERIFIED / MERGED
@@ -81,7 +86,7 @@ Total reconciliation blockers currently: 11
 - DMK-196: Technically verified on master; human governance sign-off pending
 
 ### 6. Next safe action
-1. Present formal candidate report with candidate digest `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`.
+1. Present formal candidate report with candidate digest `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec` (superseding historical candidate digest `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`).
 2. Stop strictly at the **DMK-197 Closure-Transition Human Decision Gate**.
 3. Await explicit human operator decision (`APPROVE`, `REJECT`, or `REQUIRE_REMEDIATION`).
 4. Do not apply a lifecycle transition without separate explicit authorization.

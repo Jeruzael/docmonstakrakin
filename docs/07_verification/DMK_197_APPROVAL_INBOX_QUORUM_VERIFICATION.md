@@ -7,7 +7,10 @@
 **Canonical Acceptance Criterion:** Distinct Security Officer and Lead Architect human identities required for quorum  
 **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)  
 **Base Master CI Run:** `37909221729` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Baseline PR HEAD:** `2f7cc14708ed9a0d72b85d616bc61d654324b8a3`  
+**Frozen Implementation HEAD:** `c84e9cfc8af202688698cddaf64f80dc2c155549`  
+**Frozen Implementation CI Run:** `37965723187` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
+**Deterministic Candidate Digest (SHA-256):** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`  
+**Superseded Historical Candidate Digest:** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`  
 **Branch:** `dmk-197-approval-inbox-quorum`  
 **Canonical WBS Status:** `IN_PROGRESS` (Strictly retained; zero forward lifecycle drift in WBS)  
 **Human Governance Status:** `PENDING_SIGNOFF`  
@@ -147,15 +150,32 @@ A final security hardening pass resolved three critical boundary findings identi
   - `UI-17`: Old completion cannot interrupt a newer submission (delayed Project A completion does not reset Project B's in-flight submitting state).
   - `UI-18`: A → B → A operation invalidation (switching back to Project A creates fresh operation context; delayed responses from earlier Project A operation do not mutate current modals or selections).
 
+
+### 4.5 Targeted Security, Robustness & Verification Remediation Pass
+
+Following independent review, an additional targeted remediation pass was implemented and verified:
+- **Correction A (P1 - Security) — Approval Inbox Read Authorization:**
+  - `GET /api/projects/:id/approvals` strictly enforces human session authorization (`requireHuman`) with governance role (`Security Officer` or `Lead Architect`). Unauthenticated callers receive HTTP 401; callers without governance role receive HTTP 403; nonexistent projects return HTTP 404 for authorized callers.
+  - All read calls are strictly non-mutating: zero `stateVersion` increments and zero audit entries.
+  - `ApprovalsView.tsx` renders dedicated security notice cards for 401/403 with session re-check capability and clean project-switch state resetting.
+  - `createProjectLoader` in `src/data/projectWorkspace.ts` gracefully treats 401/403 on `/approvals` as `[key, []]`, ensuring unauthenticated project browsing remains fully functional.
+- **Correction B (P2 - Robustness) — Stored Signature Schema Pre-Validation:**
+  - `POST /api/projects/:id/approvals/:apvId/decide` pre-validates that `item.approvalsCollected` is an array and every signature is a valid object with non-empty `role`, valid `decision` (`APPROVED` or `REJECTED`), non-empty `identityId`, and string `roleSource`. Rejects malformed records with HTTP 409 fail-closed without mutating state, audit log, or canonical targets.
+  - `evaluateQuorum` in `server/proposals/quorum.ts` safely skips null or non-object signature entries during rejection scanning and verification loops.
+- **Correction C (P2 - Test Coverage) — Premature Closure Receipt Regression:**
+  - Upgraded Scenario 19 in `scripts/testDmk197ClosureCandidate.ts` to test premature receipt injection inside an isolated temporary workspace, confirming fail-closed rejection without any mutation to the real repository disk or canonical WBS.
+
 ---
 
 ## 5. Verification Test Matrix
 
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
-| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–46 (Quorum invariants & security hardening) | **46/46 PASS** |
-| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-18 | **18/18 PASS** |
+| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–53 (Quorum invariants, security hardening, read auth, signature schema) | **53/53 PASS** |
+| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-20 (auth notice cards & session re-check) | **20/20 PASS** |
 | **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback | **2/2 PASS** |
+| **DMK-197 Closure Candidate Verifier** | `scripts/verifyDmk197ClosureCandidate.ts` | `npm run verify:dmk-197-closure-candidate` | DMK-197 closure candidate verification (21 invariants) | **21/21 PASS** |
+| **DMK-197 Candidate Regression** | `scripts/testDmk197ClosureCandidate.ts` | `npm run test:dmk-197-closure-candidate` | Scenarios 1–20 (isolated receipt test & superseded digest check) | **20/20 PASS** |
 | **DMK-196 Historical Suite** | `scripts/testRequirementSignoff.ts` | `npm run test:req-signoff` | Scenarios A–O (PR #25 pinned historical range) | **15/15 PASS** |
 | **Requirement Sync Suite** | `scripts/testRequirementStatusSync.ts` | `npm run test:req-sync` | Tests A–L (Direct APPROVED prevention) | **12/12 PASS** |
 | **Closure Verifier Suite** | `scripts/verifyDmk196Closure.ts` | `npm run verify:dmk-196-closure` | DMK-196 closure receipt verification | **18/18 PASS** |
@@ -166,21 +186,21 @@ A final security hardening pass resolved three critical boundary findings identi
 | **WBS Check** | `scripts/renderWbs.ts --check` | `npm run wbs:check` | Canonical WBS structure and integrity | **PASS (0 drift)** |
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
-| **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity | **PASS** |
-| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **50/50 suites PASS, 1135/1135 assertions PASS** |
+| **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity (87 checks) | **PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1164/1164 assertions PASS** |
 
 ---
 
 ## 6. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV12M4KQ-J6FS`
+- **AuditEventId:** `AUD-MV18R070-WJR5`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `c13bf85943dc9c1c91fb062c4731ee817828be1e03107754bcdf509c280ac671`
-- **New SHA-256:** `26a1e1f2d730a1fdb05f98bcdc52d4d2a3c5e2a6790660eb1376c7de686b095d`
-- **Project stateVersion:** 102 -> 103
-- **Audit Count:** 108 -> 109
-- **Reverse Audit Chain:** 109 / 109 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `4b00c418a3b79caf1696bde59aafb338140ae1e4d78ff5241795f08d8e2e2bd1`
+- **New SHA-256:** `60d6f0475e24cf9e10af395758be3a7696e01972c1e6dc4a7cd45a1bc4ac1dfc`
+- **Project stateVersion:** 104 -> 105
+- **Audit Count:** 110 -> 111
+- **Reverse Audit Chain:** 111 / 111 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
@@ -190,11 +210,12 @@ The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL
 This PR remains in **DRAFT** status on branch `dmk-197-approval-inbox-quorum` awaiting human operator inspection.
 
 **Current Next Actions:**
-1. Human-review the corrected PR #27 exact HEAD.
+1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`).
 2. Verify fresh full CI.
-3. Review the updated security and implementation evidence.
+3. Review the updated security and implementation evidence in `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`.
 4. Decide whether DMK-197 may transition from `IN_PROGRESS` to `VERIFICATION_PENDING`.
 5. Do not apply a lifecycle transition without separate explicit authorization.
 6. Keep PR #27 unmerged.
 7. Keep reconciliation blocked at 11.
+
 

@@ -10,11 +10,12 @@
 - **Proposed Lifecycle Transition:** `IN_PROGRESS → VERIFICATION_PENDING`
 - **Closure Transition State:** PROPOSED CANDIDATE ONLY (Not applied; awaiting human operator decision)
 - **Closure Candidate File:** `docs/07_verification/dmk-197-closure-transition-candidate.json`
-- **Candidate Digest (SHA-256):** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
+- **Candidate Digest (SHA-256):** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`
+- **Superseded Historical Candidate Digest:** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
 - **Pull Request:** #27 (`dmk-197-approval-inbox-quorum`)
-- **Frozen Implementation HEAD:** `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`
+- **Frozen Implementation HEAD:** `c84e9cfc8af202688698cddaf64f80dc2c155549`
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (PR #26 merge commit)
-- **Frozen Implementation CI Run:** `37946050979` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
+- **Frozen Implementation CI Run:** `37965723187` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
 - **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
 - **Proposed WBS Delta Preview Digest (SHA-256):** `49c1ea1426a583999c2422b3460933134f84f6e7405feca7145c40dc5f9b4d41`
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum"
@@ -27,7 +28,7 @@
 
 ## 1. Executive Summary & Authorization Scope
 
-This document provides formal, deterministic, and independently verifiable closure-transition evidence for **DMK-197** (*Approval Inbox & Canonical Quorum Synchronization*).
+This document provides formal, deterministic, and independently verifiable closure-transition evidence for **DMK-197** (*Approval Inbox & Canonical Quorum Synchronization*), superseding the previous closure candidate following targeted remediation.
 
 The human operator authorized **candidate preparation only** (`IN_PROGRESS → VERIFICATION_PENDING`). This authorization is strictly bounded:
 1. **Zero WBS Drift:** `docs/00_control/MASTER_WBS.yaml` and `docs/00_control/MASTER_WBS.md` remain completely unmodified on disk. Canonical status remains strictly `IN_PROGRESS`.
@@ -40,11 +41,24 @@ The human operator authorized **candidate preparation only** (`IN_PROGRESS → V
 
 ---
 
-## 2. Technical Implementation & Integrity Invariants
+## 2. Technical Implementation & Targeted Remediation Hardening
 
-The implementation frozen at commit `234c85b88ce042ce3019c7a8b463ac2e22b8ae86` satisfies all functional requirements and integrity hardening criteria:
+The implementation frozen at commit `c84e9cfc8af202688698cddaf64f80dc2c155549` satisfies all functional requirements and incorporates the operator-directed integrity remediations:
 
-### 2.1 Authoritative Server Quorum Evaluator (`server/proposals/quorum.ts`)
+### 2.1 Correction A (P1 - Security): Approval Inbox Read Authorization
+- **Server Enforcement (`server/proposals/signoff.ts`):** `GET /api/projects/:id/approvals` strictly enforces human session authorization via `requireHuman`. Non-authenticated callers receive HTTP 401; non-governance identities receive HTTP 403. Nonexistent projects return HTTP 404 for authorized reviewers.
+- **Zero Mutation Guarantee:** Reads are verified non-mutating: zero `stateVersion` bumps and zero audit log entries across successful and failed read calls.
+- **UI Graceful Degradation (`src/components/ApprovalsView.tsx`):** Unauthenticated (401) and forbidden (403) states render dedicated security notice cards with session re-check capability and clean project-switch state resetting.
+- **Project Loader Resilience (`src/data/projectWorkspace.ts`):** `createProjectLoader` safely treats 401/403 responses on `/approvals` as an empty collection for general workspace loading, preserving full project readability for unauthenticated viewers without failing project load.
+
+### 2.2 Correction B (P2 - Robustness): Malformed Stored Approval Records
+- **Decision Pre-Validation (`server/proposals/signoff.ts`):** `POST /api/projects/:id/approvals/:apvId/decide` validates that `item.approvalsCollected` is an array and each signature is a valid object containing non-empty `role`, valid `decision` (`APPROVED` or `REJECTED`), non-empty `identityId`, and string `roleSource`. Rejects malformed records with HTTP 409 fail-closed without mutating state, audit log, or canonical targets.
+- **Quorum Evaluator Safeguard (`server/proposals/quorum.ts`):** `evaluateQuorum` safely skips null or non-object signature entries during rejection scanning and verification loops.
+
+### 2.3 Correction C (P2 - Test Coverage): Premature Closure Receipt Regression
+- **Isolated Workspace Test (`scripts/testDmk197ClosureCandidate.ts` Scenario 19):** Constructs an isolated temporary workspace, injects a synthetic `dmk-197-closure-transition-receipt.json`, executes `verifyDmk197ClosureCandidate({ workspaceRoot: tempDir })`, asserts fail-closed rejection identifying premature receipt creation, removes the temporary workspace, and verifies real repository disk and canonical WBS remain untouched.
+
+### 2.4 Authoritative Server Quorum Evaluator (`server/proposals/quorum.ts`)
 - **Canonical Policy Version:** Enforces `policyVersion === 'LOCAL_SESSION_V1'`. Malformed or legacy versions fail closed (`INVALID`, `hasQuorum = false`).
 - **Exact Required Roles:** Requires exactly two roles: `['Security Officer', 'Lead Architect']`. Extra, missing, or altered roles fail closed.
 - **Strict Target Digest:** Rejects missing or non-SHA256 hex strings fail-closed.
@@ -55,24 +69,6 @@ The implementation frozen at commit `234c85b88ce042ce3019c7a8b463ac2e22b8ae86` s
   - Ratified requests (`APPROVED`) verify against `postRatificationDigest || targetDigest`, avoiding false stale classification upon status mutation.
 - **Single-Rejection Termination:** A valid human rejection immediately terminates the request (`REJECTED`) and requires a justification note.
 
-### 2.2 Hardened Sign-Off Routes (`server/proposals/signoff.ts`)
-- **Request Creation (`POST /api/projects/:id/approvals`):**
-  - Authenticated human session enforced via `requireHuman`. Agent callers (`actorType === 'AGENT'`) are rejected (HTTP 403).
-  - Protected controls (Gate 7 and release ceremonies) are strictly rejected from generic sign-off routes (HTTP 403 / 422), normalized against alternative spellings.
-  - Security Override validation rejects expired overrides, unacknowledged risks, or protected control overrides.
-  - Idempotent deduplication preserves audit logs and stateVersion on duplicate submissions.
-  - Atomic persistence to disk via `installProjectPersistence`.
-- **Decision Submission (`POST /api/projects/:id/approvals/:apvId/decide`):**
-  - Caller-supplied identity claims in request body rejected with HTTP 403.
-  - `humanConfirmed === true` required.
-  - Pre-validation rejects malformed stored requests fail-closed without mutating project state or audit log.
-  - Atomic transition of ratified artifacts (Requirement → `APPROVED`, ADR → `ACCEPTED`, Override → `APPROVED` with `authorizedBy`). Risk records maintain schema integrity without illegal status fields.
-
-### 2.3 Approval Inbox UI (`src/components/ApprovalsView.tsx`)
-- Projects authoritative server-evaluated quorum statuses.
-- Enforces distinct human signers and renders required roles.
-- Race-condition and project-switch safe: cleans up inflight controller state and resets submission flags upon switching projects.
-
 ---
 
 ## 3. Verification Evidence & Regression Matrix
@@ -81,20 +77,21 @@ All verification checks execute fail-closed and pass cleanly:
 
 | Suite / Verification Check | Command | Checks / Scenarios | Status | Evidence Log |
 |---|---|---|---|---|
-| DMK-197 Core Quorum Suite | `npm run test:dmk-197` | 46 / 46 checks | **PASS** | `scripts/testDmk197Quorum.ts` |
-| DMK-197 Approval Inbox UI Suite | `npm run test:dmk-197:ui` | 18 / 18 checks | **PASS** | `scripts/testDmk197ApprovalInboxUi.ts` |
+| DMK-197 Core Quorum Suite | `npm run test:dmk-197` | 53 / 53 checks | **PASS** | `scripts/testDmk197Quorum.ts` |
+| DMK-197 Approval Inbox UI Suite | `npm run test:dmk-197:ui` | 20 / 20 checks | **PASS** | `scripts/testDmk197ApprovalInboxUi.ts` |
 | DMK-197 Persistence Suite | `npm run test:dmk-197:persistence` | 2 / 2 checks | **PASS** | `scripts/testDmk197Persistence.ts` |
 | Requirement Sign-Off Suite | `npm run test:req-signoff` | 15 / 15 checks | **PASS** | `scripts/testRequirementSignoff.ts` |
 | Requirement Status Sync Suite | `npm run test:req-sync` | 12 / 12 checks | **PASS** | `scripts/testRequirementStatusSync.ts` |
 | Projects Workspace UI Suite | `npm run test:projects-workspace:ui` | 14 / 14 checks | **PASS** | `scripts/testProjectsWorkspaceUi.ts` |
-| DMK-197 Closure Candidate Verifier | `npm run verify:dmk-197-closure-candidate` | 20 Invariants | **PASS** | `scripts/verifyDmk197ClosureCandidate.ts` |
-| DMK-197 Candidate Regression Suite | `npm run test:dmk-197-closure-candidate` | 19 Scenarios | **PASS** | `scripts/testDmk197ClosureCandidate.ts` |
+| DMK-197 Closure Candidate Verifier | `npm run verify:dmk-197-closure-candidate` | 21 Invariants | **PASS** | `scripts/verifyDmk197ClosureCandidate.ts` |
+| DMK-197 Candidate Regression Suite | `npm run test:dmk-197-closure-candidate` | 20 Scenarios | **PASS** | `scripts/testDmk197ClosureCandidate.ts` |
 | Historical DMK-196 Closure Verifier | `npm run verify:dmk-196-closure` | 18 Invariants | **PASS** | `scripts/verifyDmk196Closure.ts` |
 | Historical DMK-196 Post-Merge Verifier | `npm run verify:dmk-196-post-merge` | 38 Invariants | **PASS** | `scripts/verifyDmk196PostMergeCandidate.ts` |
 | Historical DMK-208 Status Audit Verifier | `npm run verify:dmk-208-status-audit` | 56 Invariants | **PASS** | `scripts/verifyDmk208StatusAudit.ts` |
 | Self Work-Item Reconciliation Test | `npm run test:self-work-sync` | 90 / 90 checks | **PASS** | `scripts/testSelfWorkItemReconciliation.ts` |
+| Controlled Docs Matrix Suite | `npm run test:controlled-docs` | 87 / 87 checks | **PASS** | `scripts/testControlledDocs.ts` |
 | Canonical WBS Drift Check | `npm run wbs:check` | 0 drift | **PASS** | `scripts/renderWbs.ts --check` |
-| Complete Regression Suite | `npm run test:complete` | 51 suites / 1154 checks | **PASS** | `runtime/rc-regression/results.json` |
+| Complete Regression Suite | `npm run test:complete` | 51 suites / 1164 checks | **PASS** | `runtime/rc-regression/results.json` |
 
 ---
 

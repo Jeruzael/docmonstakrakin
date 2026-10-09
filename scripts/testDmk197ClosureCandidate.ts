@@ -22,7 +22,7 @@ const rawWbsYaml = fs.readFileSync(path.join(root, 'docs', '00_control', 'MASTER
 console.log('================================================================');
 console.log('   DMK-197 CLOSURE TRANSITION CANDIDATE REGRESSION TEST SUITE');
 console.log('   Evaluates Invariant: Fail-closed verification & tamper-proofing');
-console.log('   Coverage: Scenarios 1 through 19 (Positive & Negative checks)');
+console.log('   Coverage: Scenarios 1 through 20 (Positive & Negative checks)');
 console.log('================================================================\n');
 
 function clone<T>(obj: T): T {
@@ -355,8 +355,20 @@ try {
   fail('19: Premature closure receipt presence fails closed in isolated workspace', err);
 }
 
+// 20. Tampered or missing supersededCandidateDigest fails closed
+try {
+  const bad = clone(rawCandidate);
+  bad.supersededCandidateDigest = 'bad0000000000000000000000000000000000000000000000000000000000000';
+  const res = verifyDmk197ClosureCandidate({ customCandidate: bad, skipDigestCheck: true });
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes('supersededCandidateDigest must match')));
+  pass('20: Tampered or missing supersededCandidateDigest fails closed');
+} catch (err) {
+  fail('20: Tampered or missing supersededCandidateDigest fails closed', err);
+}
+
 console.log('\n================================================================');
-console.log(`TOTAL CANDIDATE TESTS: 19 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL CANDIDATE TESTS: 20 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {

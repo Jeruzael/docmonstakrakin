@@ -33,6 +33,7 @@ export interface Dmk197ClosureCandidate {
   runtimeWorkItemMutationCount: number;
   gate7Changed: boolean;
   releaseChanged: boolean;
+  supersededCandidateDigest?: string;
   candidateDigest: string;
 }
 
@@ -52,9 +53,9 @@ export const EXPECTED_DECISION_REQUIRED = true;
 export const EXPECTED_FROM_STATUS = 'IN_PROGRESS';
 export const EXPECTED_CANDIDATE_STATUS = 'VERIFICATION_PENDING';
 export const EXPECTED_IMPLEMENTATION_PR = 27;
-export const EXPECTED_FROZEN_IMPLEMENTATION_HEAD_SHA = '234c85b88ce042ce3019c7a8b463ac2e22b8ae86';
+export const EXPECTED_FROZEN_IMPLEMENTATION_HEAD_SHA = 'c84e9cfc8af202688698cddaf64f80dc2c155549';
 export const EXPECTED_BASE_MASTER_SHA = '7e45da9b0d4d8553745e5b7c25597eb48c94d6af';
-export const EXPECTED_IMPLEMENTATION_CI_RUN_ID = 37946050979;
+export const EXPECTED_IMPLEMENTATION_CI_RUN_ID = 37965723187;
 export const EXPECTED_IMPLEMENTATION_CI_ATTEMPT = 1;
 export const EXPECTED_IMPLEMENTATION_CI_CONCLUSION = 'success';
 export const EXPECTED_QUALITY_BUILD_CONCLUSION = 'success';
@@ -72,7 +73,8 @@ export const EXPECTED_LIVE_RECONCILIATION = false;
 export const EXPECTED_RUNTIME_WORK_ITEM_MUTATIONS = 0;
 export const EXPECTED_GATE7_CHANGED = false;
 export const EXPECTED_RELEASE_CHANGED = false;
-export const EXPECTED_CANDIDATE_DIGEST = 'c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627';
+export const EXPECTED_SUPERSEDED_CANDIDATE_DIGEST = 'c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627';
+export const EXPECTED_CANDIDATE_DIGEST = '5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec';
 
 export const CANDIDATE_FILE_PATH = 'docs/07_verification/dmk-197-closure-transition-candidate.json';
 
@@ -187,6 +189,9 @@ export function validateDmk197ClosureCandidate(
   }
   if (candidate.releaseChanged !== EXPECTED_RELEASE_CHANGED) {
     errors.push(`candidate.releaseChanged must be false, found ${candidate.releaseChanged}`);
+  }
+  if (candidate.supersededCandidateDigest !== EXPECTED_SUPERSEDED_CANDIDATE_DIGEST) {
+    errors.push(`candidate.supersededCandidateDigest must match "${EXPECTED_SUPERSEDED_CANDIDATE_DIGEST}", found "${candidate.supersededCandidateDigest}"`);
   }
 
   // Reject unauthorized closure application or approval fields
