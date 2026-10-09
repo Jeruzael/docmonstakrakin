@@ -54,6 +54,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const activeProjectIdRef = React.useRef(project.id);
   const requestGenerationRef = React.useRef(0);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const submissionGenerationRef = React.useRef(0);
 
   activeProjectIdRef.current = project.id;
 
@@ -123,12 +124,14 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     }
     abortControllerRef.current = new AbortController();
     ++requestGenerationRef.current;
+    ++submissionGenerationRef.current;
 
     setSelectedItem(null);
     setError('');
     setShowDecisionModal(false);
     setShowRequestModal(false);
     setHumanConfirmed(false);
+    setSubmitting(false);
     setApprovals([]);
 
     fetchApprovalsForProject(project.id, false);
@@ -228,6 +231,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       return;
     }
     setError('');
+    const opGen = ++submissionGenerationRef.current;
 
     try {
       setSubmitting(true);
@@ -241,26 +245,30 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         }),
       });
 
-      if (activeProjectIdRef.current !== targetProjId) {
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
         return;
       }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || `Decision failed with status ${res.status}`);
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Decision failed with status ${res.status}`);
+        }
         return;
       }
 
       setShowDecisionModal(false);
       await fetchApprovalsForProject(targetProjId, true);
-      if (onRefreshData) onRefreshData();
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        if (onRefreshData) onRefreshData();
+      }
     } catch (err: any) {
-      if (activeProjectIdRef.current === targetProjId) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         console.error('Decision submission failed:', err);
         setError(err?.message || 'Decision submission failed');
       }
     } finally {
-      if (activeProjectIdRef.current === targetProjId) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         setSubmitting(false);
       }
     }
@@ -281,6 +289,8 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
     const targetProjId = project.id;
     if (activeProjectIdRef.current !== targetProjId) return;
+
+    const opGen = ++submissionGenerationRef.current;
 
     try {
       setSubmitting(true);
@@ -303,13 +313,15 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         }),
       });
 
-      if (activeProjectIdRef.current !== targetProjId) {
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
         return;
       }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || `Request failed with status ${res.status}`);
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Request failed with status ${res.status}`);
+        }
         return;
       }
 
@@ -320,12 +332,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       setReqTargetId('');
       await fetchApprovalsForProject(targetProjId, false);
     } catch (err: any) {
-      if (activeProjectIdRef.current === targetProjId) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         console.error('Failed to create approval request:', err);
         setError(err?.message || 'Failed to create approval request');
       }
     } finally {
-      if (activeProjectIdRef.current === targetProjId) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         setSubmitting(false);
       }
     }
