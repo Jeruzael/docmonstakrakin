@@ -12,7 +12,7 @@ import { digest } from '../server/proposals/review.js';
 console.log('================================================================');
 console.log('   DMK-197 QUORUM & APPROVAL INBOX REGRESSION TEST SUITE');
 console.log('   Evaluates Invariant: Distinct Security Officer & Lead Architect');
-console.log('   Coverage: Scenarios 1 through 46 (Canonical acceptance criteria)');
+console.log('   Coverage: Scenarios 1 through 63 (Canonical acceptance criteria)');
 console.log('================================================================\n');
 
 let passedCount = 0;
@@ -1683,6 +1683,439 @@ async function runTests() {
     } catch (e) {
       fail('53. Malformed stored signature entries return HTTP 409 fail-closed', e);
     }
+
+    // 54. Missing identityId in stored signature returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const noIdApv: any = {
+        id: 'APV-STORED-NO-ID',
+        projectId: testProjectId,
+        title: 'Stored Signature Missing identityId',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Alice', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(noIdApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${noIdApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Missing identityId in stored signature must return HTTP 409 fail-closed');
+      assert.equal(noIdApv.approvalsCollected.length, 1, 'Must not append signature to malformed record');
+      assert.equal(noIdApv.status, 'PENDING', 'Approval status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('54. Missing identityId in stored signature returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('54. Missing identityId in stored signature returns HTTP 409 fail-closed', e);
+    }
+
+    // 55. Empty or whitespace-only identityId in stored signature returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const emptyIdApv: any = {
+        id: 'APV-STORED-EMPTY-ID',
+        projectId: testProjectId,
+        title: 'Stored Signature Empty identityId',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Alice', identityId: '   ', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(emptyIdApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${emptyIdApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Empty/whitespace identityId must return HTTP 409 fail-closed');
+      assert.equal(emptyIdApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(emptyIdApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('55. Empty or whitespace-only identityId in stored signature returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('55. Empty or whitespace-only identityId in stored signature returns HTTP 409 fail-closed', e);
+    }
+
+    // 56. Missing roleSource in stored signature returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const noRoleSourceApv: any = {
+        id: 'APV-STORED-NO-ROLESOURCE',
+        projectId: testProjectId,
+        title: 'Stored Signature Missing roleSource',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Alice', identityId: 'REV-SEC-01', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(noRoleSourceApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${noRoleSourceApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Missing roleSource must return HTTP 409 fail-closed');
+      assert.equal(noRoleSourceApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(noRoleSourceApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('56. Missing roleSource in stored signature returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('56. Missing roleSource in stored signature returns HTTP 409 fail-closed', e);
+    }
+
+    // 57. Invalid roleSource in stored signature returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const invalidRoleSourceApv: any = {
+        id: 'APV-STORED-INVALID-ROLESOURCE',
+        projectId: testProjectId,
+        title: 'Stored Signature Invalid roleSource',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Alice', identityId: 'REV-SEC-01', roleSource: 'CLIENT_INJECTED', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(invalidRoleSourceApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${invalidRoleSourceApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Invalid roleSource must return HTTP 409 fail-closed');
+      assert.equal(invalidRoleSourceApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(invalidRoleSourceApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('57. Invalid roleSource in stored signature returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('57. Invalid roleSource in stored signature returns HTTP 409 fail-closed', e);
+    }
+
+    // 58. Unknown governance role in stored signature returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const unknownRoleApv: any = {
+        id: 'APV-STORED-UNKNOWN-ROLE',
+        projectId: testProjectId,
+        title: 'Stored Signature Unknown Role',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Developer', approver: 'Bob', identityId: 'REV-DEV-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(unknownRoleApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${unknownRoleApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Unknown governance role must return HTTP 409 fail-closed');
+      assert.equal(unknownRoleApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(unknownRoleApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('58. Unknown governance role in stored signature returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('58. Unknown governance role in stored signature returns HTTP 409 fail-closed', e);
+    }
+
+    // 59. Duplicate human identity across roles in stored signatures returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const dupIdentityApv: any = {
+        id: 'APV-STORED-DUP-IDENTITY',
+        projectId: testProjectId,
+        title: 'Stored Signature Duplicate Identity',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'DualUser', identityId: 'REV-DUAL-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+          { role: 'Lead Architect', approver: 'DualUser', identityId: 'REV-DUAL-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(dupIdentityApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${dupIdentityApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Duplicate identity across roles must return HTTP 409 fail-closed');
+      assert.equal(dupIdentityApv.approvalsCollected.length, 2, 'Must not append signature');
+      assert.equal(dupIdentityApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('59. Duplicate human identity across roles in stored signatures returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('59. Duplicate human identity across roles in stored signatures returns HTTP 409 fail-closed', e);
+    }
+
+    // 60. Duplicate approval signatures for the same role returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const dupRoleApv: any = {
+        id: 'APV-STORED-DUP-ROLE',
+        projectId: testProjectId,
+        title: 'Stored Signature Duplicate Role',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Sec1', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+          { role: 'Security Officer', approver: 'Sec2', identityId: 'REV-SEC-02', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(dupRoleApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${dupRoleApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Duplicate approval for same role must return HTTP 409 fail-closed');
+      assert.equal(dupRoleApv.approvalsCollected.length, 2, 'Must not append signature');
+      assert.equal(dupRoleApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('60. Duplicate approval signatures for the same role returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('60. Duplicate approval signatures for the same role returns HTTP 409 fail-closed', e);
+    }
+
+    // 61. Invalid Security Officer signature cannot occupy slot: legitimate decision returns HTTP 409
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const invalidSlotApv: any = {
+        id: 'APV-STORED-INVALID-SLOT',
+        projectId: testProjectId,
+        title: 'Invalid Security Officer Slot Occupancy',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'FakeSo', roleSource: 'CLIENT_FORGED', identityId: 'FAKE-SO', decision: 'APPROVED' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(invalidSlotApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      // Legitimate Security Officer attempts decision on item with invalid Security Officer signature
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${invalidSlotApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.notEqual(dec.status, 403, 'Must NOT return HTTP 403 (role falsely occupied); must fail-closed on malformed record');
+      assert.equal(dec.status, 409, 'Invalid slot signature must cause HTTP 409 fail-closed');
+      assert.equal(invalidSlotApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(invalidSlotApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('61. Invalid Security Officer signature cannot occupy slot: legitimate decision returns HTTP 409');
+    } catch (e) {
+      fail('61. Invalid Security Officer signature cannot occupy slot: legitimate decision returns HTTP 409', e);
+    }
+
+    // 62. Pending request containing inconsistent rejected-signature evidence returns HTTP 409 fail-closed
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId][0];
+      const pendingRejApv: any = {
+        id: 'APV-STORED-PENDING-WITH-REJECT',
+        projectId: testProjectId,
+        title: 'Pending Request With Rejection Signature',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'secOfficer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'REJECTED', comment: 'Rejected previously' },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(pendingRejApv);
+
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const preTargetStatus = targetReq.status;
+
+      const dec = await fetch(`${base}/api/projects/${testProjectId}/approvals/${pendingRejApv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec.status, 409, 'Pending request containing rejection signature must return HTTP 409 fail-closed');
+      assert.equal(pendingRejApv.approvalsCollected.length, 1, 'Must not append signature');
+      assert.equal(pendingRejApv.status, 'PENDING', 'Status must not mutate');
+      assert.equal(targetReq.status, preTargetStatus, 'Target status must not mutate');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append');
+
+      pass('62. Pending request containing inconsistent rejected-signature evidence returns HTTP 409 fail-closed');
+    } catch (e) {
+      fail('62. Pending request containing inconsistent rejected-signature evidence returns HTTP 409 fail-closed', e);
+    }
+
+    // 63. Legitimate two-human approval workflow succeeds and ratifies quorum
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const reqToApprove = {
+        id: 'REQ-TWO-HUMAN-VALID-01',
+        title: 'Two-Human Valid Approval Requirement',
+        statement: 'Statement for two-human quorum testing',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(reqToApprove);
+
+      const createRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: reqToApprove.id }),
+      });
+      assert.equal(createRes.status, 201, 'Request creation must return 201');
+      const apv = await createRes.json();
+      assert.equal(apv.status, 'PENDING');
+      assert.equal(apv.approvalsCollected.length, 0);
+
+      const preVer = prj.stateVersion;
+
+      // Decision 1: Security Officer
+      const dec1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${apv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec1.status, 200, 'Security Officer decision must succeed with 200');
+      const itemAfter1 = (store.approvals[testProjectId] || []).find((a: any) => a.id === apv.id);
+      assert.equal(itemAfter1.status, 'PENDING', 'Item must remain PENDING after 1 signature');
+      assert.equal(itemAfter1.approvalsCollected.length, 1);
+      assert.equal(itemAfter1.approvalsCollected[0].role, 'Security Officer');
+      assert.equal(itemAfter1.approvalsCollected[0].identityId, 'REV-SEC-01');
+      assert.equal(itemAfter1.approvalsCollected[0].roleSource, 'LOCAL_SERVER_ROSTER');
+
+      // Decision 2: Lead Architect
+      const dec2 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${apv.id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec2.status, 200, 'Lead Architect decision must succeed with 200');
+      const itemAfter2 = (store.approvals[testProjectId] || []).find((a: any) => a.id === apv.id);
+      assert.equal(itemAfter2.status, 'APPROVED', 'Item must transition to APPROVED after dual-human quorum');
+      assert.equal(itemAfter2.approvalsCollected.length, 2);
+      assert.equal(reqToApprove.status, 'APPROVED', 'Target requirement must transition to APPROVED');
+      assert.ok(itemAfter2.postRatificationDigest, 'postRatificationDigest must be recorded');
+      assert.equal(prj.stateVersion, preVer + 2, 'StateVersion must increment for each valid decision');
+
+      const q = evaluateQuorum(itemAfter2, digest(reqToApprove));
+      assert.equal(q.hasQuorum, true, 'Quorum must be evaluated as satisfied');
+      assert.equal(q.status, 'SATISFIED');
+
+      pass('63. Legitimate two-human approval workflow succeeds and ratifies quorum');
+    } catch (e) {
+      fail('63. Legitimate two-human approval workflow succeeds and ratifies quorum', e);
+    }
   } finally {
     server.close();
     if (originalEnv === undefined) {
@@ -1696,7 +2129,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 53 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 63 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {
@@ -1704,3 +2137,4 @@ if (failedCount > 0) {
 } else {
   process.exit(0);
 }
+

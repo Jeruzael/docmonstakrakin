@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { digest } from './review.js';
 import { validateText } from '../../src/data/generationValidation.js';
 import { installReviewerIdentity } from './identity.js';
-import { evaluateQuorum, REQUIRED_QUORUM_ROLES } from './quorum.js';
+import { evaluateQuorum, REQUIRED_QUORUM_ROLES, validateStoredSignatures } from './quorum.js';
 
 export function registerSignoffRoutes(app: Express, store: any) {
   const { requireHuman } = installReviewerIdentity(app);
@@ -256,51 +256,25 @@ export function registerSignoffRoutes(app: Express, store: any) {
       return res.status(409).json({ error: 'Request is no longer pending' });
     }
 
-    // Validate stored approvalsCollected structure
-    if (!Array.isArray(item.approvalsCollected)) {
+    // Validate stored approvalsCollected structure with strict canonical provenance
+    const sigValidation = validateStoredSignatures(item.approvalsCollected, {
+      isPending: item.status === 'PENDING',
+      requiredRoles: roles,
+    });
+    if (!sigValidation.valid) {
       return res.status(409).json({
-        error: 'Malformed stored approval record: approvalsCollected must be an array; request fresh authenticated sign-off',
+        error: sigValidation.error || 'Malformed or inconsistent stored approval signatures; request fresh authenticated sign-off',
       });
     }
 
-    for (const sig of item.approvalsCollected) {
-      if (!sig || typeof sig !== 'object' || Array.isArray(sig)) {
-        return res.status(409).json({
-          error: 'Malformed stored signature record; request fresh authenticated sign-off',
-        });
-      }
-      if (typeof sig.decision !== 'string' || !['APPROVED', 'REJECTED'].includes(sig.decision)) {
-        return res.status(409).json({
-          error: 'Malformed stored signature: invalid or missing decision; request fresh authenticated sign-off',
-        });
-      }
-      if (typeof sig.role !== 'string' || !sig.role.trim()) {
-        return res.status(409).json({
-          error: 'Malformed stored signature: invalid or missing role; request fresh authenticated sign-off',
-        });
-      }
-      if (sig.identityId !== undefined && (typeof sig.identityId !== 'string' || !sig.identityId.trim())) {
-        return res.status(409).json({
-          error: 'Malformed stored signature: invalid identityId; request fresh authenticated sign-off',
-        });
-      }
-      if (sig.roleSource !== undefined && typeof sig.roleSource !== 'string') {
-        return res.status(409).json({
-          error: 'Malformed stored signature: invalid roleSource; request fresh authenticated sign-off',
-        });
-      }
-    }
-
-    const alreadySigned = item.approvalsCollected.some((a: any) => a.identityId === identity.id);
+    const alreadySigned = sigValidation.usedIdentities.includes(identity.id);
     if (alreadySigned) {
       return res.status(409).json({
         error: 'Reviewer has already signed this approval request; distinct human identities required for quorum',
       });
     }
 
-    const alreadySatisfiedRoles = item.approvalsCollected
-      .filter((a: any) => a.decision === 'APPROVED')
-      .map((a: any) => a.role);
+    const alreadySatisfiedRoles = sigValidation.satisfiedRoles;
     const assignedRole = decision === 'REJECTED'
       ? (roles.find((r: string) => !alreadySatisfiedRoles.includes(r) && identity.roles.includes(r)) || roles.find((r: string) => identity.roles.includes(r)))
       : roles.find((r: string) => !alreadySatisfiedRoles.includes(r) && identity.roles.includes(r));

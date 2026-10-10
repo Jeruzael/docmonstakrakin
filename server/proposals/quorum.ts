@@ -12,6 +12,116 @@ export interface QuorumEvaluation {
   reason?: string;
 }
 
+export interface StoredSignaturesValidation {
+  valid: boolean;
+  error?: string;
+  satisfiedRoles: string[];
+  usedIdentities: string[];
+}
+
+export function validateStoredSignatures(
+  signatures: any,
+  options?: { isPending?: boolean; requiredRoles?: readonly string[] }
+): StoredSignaturesValidation {
+  const allowedRoles = options?.requiredRoles || REQUIRED_QUORUM_ROLES;
+
+  if (!Array.isArray(signatures)) {
+    return {
+      valid: false,
+      error: 'Malformed stored approval record: approvalsCollected must be an array; request fresh authenticated sign-off',
+      satisfiedRoles: [],
+      usedIdentities: [],
+    };
+  }
+
+  const satisfiedRoles: string[] = [];
+  const usedIdentities = new Set<string>();
+
+  for (const sig of signatures) {
+    if (!sig || typeof sig !== 'object' || Array.isArray(sig)) {
+      return {
+        valid: false,
+        error: 'Malformed stored signature record; request fresh authenticated sign-off',
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (typeof sig.decision !== 'string' || !['APPROVED', 'REJECTED'].includes(sig.decision)) {
+      return {
+        valid: false,
+        error: 'Malformed stored signature: invalid or missing decision; request fresh authenticated sign-off',
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (typeof sig.role !== 'string' || !allowedRoles.includes(sig.role as any)) {
+      return {
+        valid: false,
+        error: `Malformed stored signature: invalid canonical role "${sig.role}"; request fresh authenticated sign-off`,
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (typeof sig.identityId !== 'string' || !sig.identityId.trim()) {
+      return {
+        valid: false,
+        error: 'Malformed stored signature: missing or empty identityId; request fresh authenticated sign-off',
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (sig.roleSource !== 'LOCAL_SERVER_ROSTER') {
+      return {
+        valid: false,
+        error: 'Malformed stored signature: invalid or missing roleSource; request fresh authenticated sign-off',
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (options?.isPending && sig.decision === 'REJECTED') {
+      return {
+        valid: false,
+        error: 'Inconsistent stored signature: pending approval request contains a rejection signature; request fresh authenticated sign-off',
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+
+    if (usedIdentities.has(sig.identityId)) {
+      return {
+        valid: false,
+        error: `Inconsistent stored signature: duplicate signer identity "${sig.identityId}"; request fresh authenticated sign-off`,
+        satisfiedRoles: [],
+        usedIdentities: [],
+      };
+    }
+    usedIdentities.add(sig.identityId);
+
+    if (sig.decision === 'APPROVED') {
+      if (satisfiedRoles.includes(sig.role)) {
+        return {
+          valid: false,
+          error: `Inconsistent stored signature: duplicate approval for role "${sig.role}"; request fresh authenticated sign-off`,
+          satisfiedRoles: [],
+          usedIdentities: [],
+        };
+      }
+      satisfiedRoles.push(sig.role);
+    }
+  }
+
+  return {
+    valid: true,
+    satisfiedRoles,
+    usedIdentities: Array.from(usedIdentities),
+  };
+}
+
 export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumEvaluation {
   // 1. Policy version check
   if (item.policyVersion !== 'LOCAL_SESSION_V1') {
