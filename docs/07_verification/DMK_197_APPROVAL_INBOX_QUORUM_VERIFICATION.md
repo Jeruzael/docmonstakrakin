@@ -7,10 +7,11 @@
 **Canonical Acceptance Criterion:** Distinct Security Officer and Lead Architect human identities required for quorum  
 **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)  
 **Base Master CI Run:** `37909221729` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Frozen Implementation HEAD:** `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`  
-**Frozen Implementation CI Run:** `38033744079` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Deterministic Candidate Digest (SHA-256):** `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`  
+**Frozen Implementation HEAD:** `407b64e583d61e7881751c9d312bc00ec8828cb7`  
+**Frozen Implementation CI Run:** `38055400742` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
+**Deterministic Candidate Digest (SHA-256):** `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7`  
 **Superseded Candidate Lineage:**
+- Superseded Candidate 2: `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891` (HEAD: `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`, CI: `38033744079`)
 - Superseded Candidate 1: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec` (HEAD: `c84e9cfc8af202688698cddaf64f80dc2c155549`, CI: `37965723187`)
 - Original Candidate: `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627` (HEAD: `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`, CI: `37946050979`)
 **Branch:** `dmk-197-approval-inbox-quorum`  
@@ -190,7 +191,24 @@ Following operator review, a final targeted signature integrity remediation pass
     - Scenario 60: Invalid Security Officer signature followed by legitimate decision fails closed with HTTP 409 without treating the role as occupied (HTTP 409, not HTTP 403).
     - Scenario 61: Pending request containing a rejection signature is rejected fail-closed (HTTP 409).
     - Scenario 62: Valid dual-human approval workflow completes normally with strict provenance (HTTP 200, ratifies to APPROVED).
-    - Scenario 63: Non-mutating invariant verified across all invalid signature scenarios (stateVersion, target status, and audit logs unchanged).
+### 4.7 Governed Approval Recovery Remediation Pass
+
+Following operator review finding `Decision: REQUIRE_REMEDIATION`, a targeted remediation pass was implemented and verified for corrupted approval recovery and sign-off deduplication:
+- **Correction A — Deduplication & Integrity Separation (`server/proposals/signoff.ts`):**
+  - In `POST /api/projects/:id/approvals`, deduplication pre-validates existing pending approvals against canonical integrity (`LOCAL_SESSION_V1`, exact roles `['Security Officer', 'Lead Architect']`, valid 64-char hex `targetDigest`, and `validateStoredSignatures`).
+  - Healthy pending requests return existing approval (HTTP 201) without state mutation or redundant audit events.
+  - Corrupted pending requests fail closed with HTTP 409 (`code: 'REISSUE_REQUIRED'`).
+  - Multiple conflicting pending requests fail closed with HTTP 409.
+  - Target digest changes do not reuse existing pending approvals.
+- **Correction B — Governed Reissue Endpoint (`server/proposals/signoff.ts`):**
+  - Implemented `POST /api/projects/:id/approvals/:apvId/reissue` with strict session human authorization (`requireHuman`), agent rejection (HTTP 403), explicit `humanConfirmed === true` check, non-empty justification requirement (HTTP 422), corruption verification, and matching target digest check.
+  - Atomically transitions original record to terminal `SUPERSEDED`, creates fresh `PENDING` replacement with 0 signatures, increments project `stateVersion`, records audit event `APPROVAL_REISSUED`, and supports idempotent retries.
+- **Correction C — Approval Inbox Recovery UX (`src/components/ApprovalsView.tsx`):**
+  - Identifies corrupted approvals with `REISSUE REQUIRED` state, preserves historical evidence explanation notice, renders `Reissue Sign-Off` modal requiring confirmation and justification, and enforces project-switch isolation. Displays `SUPERSEDED` records as non-actionable historical items.
+- **Correction D — 20 Deterministic Regression Scenarios:**
+  - 17 backend scenarios in `scripts/testDmk197Quorum.ts` (Scenarios 64–80; 80/80 total).
+  - 1 transactional rollback/restart persistence scenario in `scripts/testDmk197Persistence.ts` (PERSIST-3; 3/3 total).
+  - 3 Playwright UI scenarios in `scripts/testDmk197ApprovalInboxUi.ts` (UI-21, UI-22, UI-23; 23/23 total).
 
 ---
 
@@ -198,9 +216,9 @@ Following operator review, a final targeted signature integrity remediation pass
 
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
-| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–63 (Quorum invariants, security hardening, read auth, signature provenance & occupancy) | **63/63 PASS** |
-| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-20 (auth notice cards & session re-check) | **20/20 PASS** |
-| **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback | **2/2 PASS** |
+| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–80 (Quorum invariants, security hardening, read auth, signature provenance, deduplication & governed reissue) | **80/80 PASS** |
+| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-23 (reissue modal, superseded inspection & project-switch isolation) | **23/23 PASS** |
+| **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback (PERSIST-1 through PERSIST-3) | **3/3 PASS** |
 | **DMK-197 Closure Candidate Verifier** | `scripts/verifyDmk197ClosureCandidate.ts` | `npm run verify:dmk-197-closure-candidate` | DMK-197 closure candidate verification (21 invariants) | **21/21 PASS** |
 | **DMK-197 Candidate Regression** | `scripts/testDmk197ClosureCandidate.ts` | `npm run test:dmk-197-closure-candidate` | Scenarios 1–20 (isolated receipt test & superseded digest check) | **20/20 PASS** |
 | **DMK-196 Historical Suite** | `scripts/testRequirementSignoff.ts` | `npm run test:req-signoff` | Scenarios A–O (PR #25 pinned historical range) | **15/15 PASS** |
@@ -214,20 +232,20 @@ Following operator review, a final targeted signature integrity remediation pass
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
 | **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity (87 checks) | **PASS** |
-| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1174/1174 assertions PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1195/1195 assertions PASS** |
 
 ---
 
 ## 6. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV22JFD8-KOUW`
+- **AuditEventId:** `AUD-MV2FP3YQ-YRFH`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `60d6f0475e24cf9e10af395758be3a7696e01972c1e6dc4a7cd45a1bc4ac1dfc`
-- **New SHA-256:** `59d2c59705e105cf3f0acd0b0b84c380f459daf289dfae155147b21589fd2a15`
-- **Project stateVersion:** 105 -> 106
-- **Audit Count:** 111 -> 112
-- **Reverse Audit Chain:** 112 / 112 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `59d2c59705e105cf3f0acd0b0b84c380f459daf289dfae155147b21589fd2a15`
+- **New SHA-256:** `18a54793e400d2e957de0caf4f709ae89168d9171b377e9ce903cbd5ef712ea9`
+- **Project stateVersion:** 109 -> 110
+- **Audit Count:** 115 -> 116
+- **Reverse Audit Chain:** 116 / 116 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
@@ -237,7 +255,7 @@ The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL
 This PR remains in **DRAFT** status on branch `dmk-197-approval-inbox-quorum` awaiting human operator inspection.
 
 **Current Next Actions:**
-1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`).
+1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7`).
 2. Verify fresh full CI.
 3. Review the updated security and implementation evidence in `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`.
 4. Decide whether DMK-197 may transition from `IN_PROGRESS` to `VERIFICATION_PENDING`.

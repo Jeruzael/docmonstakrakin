@@ -10,13 +10,13 @@
 - **Proposed Lifecycle Transition:** `IN_PROGRESS → VERIFICATION_PENDING`
 - **Closure Transition State:** PROPOSED CANDIDATE ONLY (Not applied; awaiting human operator decision)
 - **Closure Candidate File:** `docs/07_verification/dmk-197-closure-transition-candidate.json`
-- **Candidate Digest (SHA-256):** `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`
-- **Superseded Candidate Digest:** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`
-- **Superseded Historical Candidate Digest:** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
+- **Candidate Digest (SHA-256):** `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7`
+- **Superseded Candidate Digest:** `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`
+- **Superseded Prior Candidate Digests:** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`, `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`
 - **Pull Request:** #27 (`dmk-197-approval-inbox-quorum`)
-- **Frozen Implementation HEAD:** `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`
+- **Frozen Implementation HEAD:** `407b64e583d61e7881751c9d312bc00ec8828cb7`
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (PR #26 merge commit)
-- **Frozen Implementation CI Run:** `38033744079` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
+- **Frozen Implementation CI Run:** `38055400742` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
 - **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
 - **Proposed WBS Delta Preview Digest (SHA-256):** `49c1ea1426a583999c2422b3460933134f84f6e7405feca7145c40dc5f9b4d41`
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum"
@@ -75,6 +75,12 @@ The implementation frozen at commit `da1d1973a7ec161dd45d807ba99d5d2c20c2386d` s
 - **Synchronized Decision-Time Role Occupancy (`server/proposals/quorum.ts`):** Synchronized decision-time role occupancy with canonical quorum validation rules via shared helper `validateStoredSignatures` in `server/proposals/quorum.ts`. `alreadySatisfiedRoles` is populated strictly from `sigValidation.satisfiedRoles` rather than raw unvalidated `item.approvalsCollected.filter(a => a.decision === 'APPROVED')`.
 - **Deterministic Negative Scenarios (`scripts/testDmk197Quorum.ts`):** Added 10 deterministic regression scenarios (Scenarios 54–63) covering missing/empty `identityId`, missing/invalid `roleSource`, unknown roles, duplicate identities across roles, duplicate approvals for same role, invalid Security Officer signature followed by legitimate decision (HTTP 409 fail-closed, not HTTP 403 slot-occupied), pending request containing rejection signatures, valid dual-human approval workflow ratification, and non-mutation invariance.
 
+### 2.6 Correction E (P1 - Governed Recovery): Approval Recovery & Deduplication Remediation
+- **Corrupted Pending Approval Deduplication (`server/proposals/signoff.ts`):** `POST /api/projects/:id/approvals` validates existing pending approvals against canonical schema (`LOCAL_SESSION_V1`, exact roles `['Security Officer', 'Lead Architect']`, valid 64-char hex `targetDigest`, `validateStoredSignatures`). Returns existing approval (HTTP 201) on healthy requests without audit mutation; returns HTTP 409 (`code: 'REISSUE_REQUIRED'`) on corrupted pending requests; returns HTTP 409 on multiple conflicting active requests or target digest mismatch.
+- **Governed Reissue Endpoint (`server/proposals/signoff.ts`):** `POST /api/projects/:id/approvals/:apvId/reissue` authenticates session human reviewer (`requireHuman`), rejects agent claims (HTTP 403), enforces `humanConfirmed === true` and non-empty justification (HTTP 422), verifies corruption and matching target digest, atomically transitions original to terminal `SUPERSEDED`, creates fresh `PENDING` replacement with 0 signatures, bumps `stateVersion`, records audit event `APPROVAL_REISSUED`, and supports idempotent retry.
+- **Approval Inbox Recovery UX (`src/components/ApprovalsView.tsx`):** Displays `REISSUE REQUIRED` state for corrupted approvals, preserves historical evidence explanation notice, renders `Reissue Sign-Off` modal requiring confirmation and justification, and enforces project-switch isolation. Displays `SUPERSEDED` records as non-actionable historical items.
+- **20 Deterministic Regression Scenarios:** Added across `scripts/testDmk197Quorum.ts` (Scenarios 64–80; 80/80 total), `scripts/testDmk197Persistence.ts` (PERSIST-3; 3/3 total), and `scripts/testDmk197ApprovalInboxUi.ts` (UI-21, UI-22, UI-23; 23/23 total).
+
 ---
 
 ## 3. Verification Evidence & Regression Matrix
@@ -83,9 +89,9 @@ All verification checks execute fail-closed and pass cleanly:
 
 | Suite / Verification Check | Command | Checks / Scenarios | Status | Evidence Log |
 |---|---|---|---|---|
-| DMK-197 Core Quorum Suite | `npm run test:dmk-197` | 63 / 63 checks | **PASS** | `scripts/testDmk197Quorum.ts` |
-| DMK-197 Approval Inbox UI Suite | `npm run test:dmk-197:ui` | 20 / 20 checks | **PASS** | `scripts/testDmk197ApprovalInboxUi.ts` |
-| DMK-197 Persistence Suite | `npm run test:dmk-197:persistence` | 2 / 2 checks | **PASS** | `scripts/testDmk197Persistence.ts` |
+| DMK-197 Core Quorum Suite | `npm run test:dmk-197` | 80 / 80 checks | **PASS** | `scripts/testDmk197Quorum.ts` |
+| DMK-197 Approval Inbox UI Suite | `npm run test:dmk-197:ui` | 23 / 23 checks | **PASS** | `scripts/testDmk197ApprovalInboxUi.ts` |
+| DMK-197 Persistence Suite | `npm run test:dmk-197:persistence` | 3 / 3 checks | **PASS** | `scripts/testDmk197Persistence.ts` |
 | Requirement Sign-Off Suite | `npm run test:req-signoff` | 15 / 15 checks | **PASS** | `scripts/testRequirementSignoff.ts` |
 | Requirement Status Sync Suite | `npm run test:req-sync` | 12 / 12 checks | **PASS** | `scripts/testRequirementStatusSync.ts` |
 | Projects Workspace UI Suite | `npm run test:projects-workspace:ui` | 14 / 14 checks | **PASS** | `scripts/testProjectsWorkspaceUi.ts` |
@@ -97,7 +103,7 @@ All verification checks execute fail-closed and pass cleanly:
 | Self Work-Item Reconciliation Test | `npm run test:self-work-sync` | 90 / 90 checks | **PASS** | `scripts/testSelfWorkItemReconciliation.ts` |
 | Controlled Docs Matrix Suite | `npm run test:controlled-docs` | 87 / 87 checks | **PASS** | `scripts/testControlledDocs.ts` |
 | Canonical WBS Drift Check | `npm run wbs:check` | 0 drift | **PASS** | `scripts/renderWbs.ts --check` |
-| Complete Regression Suite | `npm run test:complete` | 51 suites / 1174 checks | **PASS** | `runtime/rc-regression/results.json` |
+| Complete Regression Suite | `npm run test:complete` | 51 suites / 1195 checks | **PASS** | `runtime/rc-regression/results.json` |
 
 ---
 
