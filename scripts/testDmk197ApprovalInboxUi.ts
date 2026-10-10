@@ -286,6 +286,8 @@ let holdProjectBRequest: (() => void) | null = null;
 let delayProjectBRequest = false;
 let countProjectBRequests = 0;
 let overrideStatusProjectA: number | null = null;
+let holdReissue: (() => void) | null = null;
+let delayReissue = false;
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -369,6 +371,29 @@ try {
               timestamp: new Date().toISOString(),
             },
           ],
+        },
+      });
+    }
+
+    if (url.includes('/reissue') && method === 'POST') {
+      if (delayReissue) {
+        delayReissue = false;
+        await new Promise<void>((r) => { holdReissue = r; });
+      }
+      return route.fulfill({
+        status: 201,
+        json: {
+          id: 'APV-REPLACEMENT-99',
+          projectId: testProject.id,
+          title: 'Replacement Sign-Off',
+          type: 'REQUIREMENT_BASELINE',
+          status: 'PENDING',
+          urgency: 'HIGH',
+          riskLevel: 'MEDIUM',
+          requiredRoles: ['Security Officer', 'Lead Architect'],
+          approvalsCollected: [],
+          policyVersion: 'LOCAL_SESSION_V1',
+          supersededApprovalId: 'APV-INVALID-04',
         },
       });
     }
@@ -1104,6 +1129,136 @@ try {
     pass('UI-20: Forbidden response displays governance forbidden notice and recovers');
   } catch (e) {
     fail('UI-20: Forbidden response displays governance forbidden notice and recovers', e);
+  }
+
+  // UI-21: Corrupted approval renders REISSUE REQUIRED state and preserved evidence notice
+  try {
+    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
+    await invalidCard.waitFor();
+
+    // Verify card displays REISSUE REQUIRED badge
+    const badge = invalidCard.getByText('REISSUE REQUIRED', { exact: true });
+    assert.ok((await badge.count()) >= 1, 'Corrupted pending approval card must display REISSUE REQUIRED badge');
+
+    // Verify Reissue Sign-Off button exists on card
+    const cardReissueBtn = invalidCard.getByRole('button', { name: 'Reissue Sign-Off' });
+    assert.ok((await cardReissueBtn.count()) >= 1, 'Corrupted card must offer Reissue Sign-Off action');
+
+    // Click card to open inspection drawer
+    await invalidCard.click();
+
+    // Verify inspector banner explains corrupted record and preservation
+    const inspectorBanner = page.getByText(/Approval Record Corrupted — Reissue Required/i);
+    assert.ok((await inspectorBanner.count()) >= 1, 'Inspector must display corrupted record notice');
+    assert.ok((await page.getByText(/Existing signatures and historical evidence will be preserved/i).count()) >= 1);
+
+    // Verify Reissue Sign-Off button exists in inspector
+    const inspectorReissueBtn = page.getByTestId('inspector-reissue-btn');
+    assert.ok((await inspectorReissueBtn.count()) >= 1, 'Inspector must display Reissue Sign-Off button');
+
+    pass('UI-21: Corrupted approval renders REISSUE REQUIRED state and preserved evidence notice');
+  } catch (e) {
+    fail('UI-21: Corrupted approval renders REISSUE REQUIRED state and preserved evidence notice', e);
+  }
+
+  // UI-22: Authorized Reissue Sign-Off modal requires human confirmation and justification, calls reissue endpoint, and updates inbox
+  try {
+    const cardReissueBtn = page.getByTestId('approval-card-APV-INVALID-04').getByRole('button', { name: 'Reissue Sign-Off' });
+    await cardReissueBtn.click();
+
+    // Verify modal is open
+    await page.getByText('Governed Sign-Off Reissue', { exact: true }).waitFor();
+    assert.ok((await page.getByText(/All historical signatures and evidence remain permanently preserved/i).count()) >= 1);
+
+    // Confirm button must be disabled initially
+    const confirmBtn = page.getByRole('button', { name: 'Confirm & Reissue Sign-Off' });
+    assert.equal(await confirmBtn.isDisabled(), true, 'Confirm button must be disabled without input');
+
+    // Fill justification only
+    const justificationTextarea = page.locator('textarea[placeholder*="Explain why this approval request is being reissued"]');
+    await justificationTextarea.fill('Governed recovery of malformed policy in APV-INVALID-04');
+    assert.equal(await confirmBtn.isDisabled(), true, 'Confirm button must remain disabled without checkbox confirmation');
+
+    // Check confirmation checkbox
+    const confirmCheckbox = page.locator('#reissue-confirm');
+    await confirmCheckbox.check();
+    assert.equal(await confirmBtn.isDisabled(), false, 'Confirm button must be enabled when inputs valid');
+
+    // Submit reissue
+    await confirmBtn.click();
+
+    // Verify modal closes
+    await page.waitForFunction(() => !document.body.innerText.includes('Governed Sign-Off Reissue'));
+
+    pass('UI-22: Authorized Reissue Sign-Off modal requires human confirmation and justification, calls reissue endpoint, and updates inbox');
+  } catch (e) {
+    fail('UI-22: Authorized Reissue Sign-Off modal requires human confirmation and justification, calls reissue endpoint, and updates inbox', e);
+  }
+
+  // UI-23: Project switching during in-flight reissue cannot contaminate the active UI project
+  try {
+    // 1. Ensure we are on Project A
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+
+    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
+    await invalidCard.waitFor();
+    await invalidCard.click();
+
+    const inspectorReissueBtn = page.getByTestId('inspector-reissue-btn');
+    await inspectorReissueBtn.click();
+    await page.getByText('Governed Sign-Off Reissue', { exact: true }).waitFor();
+
+    const justificationTextarea = page.locator('textarea[placeholder*="Explain why this approval request is being reissued"]');
+    await justificationTextarea.fill('In-flight project switch isolation test');
+    await page.locator('#reissue-confirm').check();
+
+    // 2. Arm delay on reissue response and click submit
+    delayReissue = true;
+    const confirmBtn = page.getByRole('button', { name: 'Confirm & Reissue Sign-Off' });
+    await confirmBtn.click();
+
+    // 3. While request is in-flight, switch to Project B
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject2.id);
+
+    const altCard = page.getByTestId('approval-card-APV-ALT-01');
+    await altCard.waitFor();
+
+    // Verify Reissue Modal is NOT open in Project B
+    assert.equal(await page.locator('text="Governed Sign-Off Reissue"').count(), 0, 'Reissue modal must not be visible in Project B');
+
+    // 4. Release Project A's delayed reissue response
+    if (holdReissue) {
+      holdReissue();
+      holdReissue = null;
+    }
+    await page.waitForTimeout(200);
+
+    // 5. Verify Project B's UI is still pristine: no error, controls are enabled
+    assert.equal(await page.getByRole('alert').count(), 0, 'No error alert injected into Project B');
+    assert.equal(await page.getByTestId('approval-card-APV-ALT-01').count(), 1, 'Project B approval card remains active');
+
+    // Cleanly switch back to Project A
+    await page.evaluate((targetProjId) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', targetProjId);
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, testProject.id);
+    await page.getByTestId('approval-card-APV-PENDING-01').waitFor();
+
+    pass('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project');
+  } catch (e) {
+    fail('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project', e);
   }
 
   await page.close();

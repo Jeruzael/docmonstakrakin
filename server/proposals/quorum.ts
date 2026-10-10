@@ -123,6 +123,18 @@ export function validateStoredSignatures(
 }
 
 export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumEvaluation {
+  // 0. Superseded check
+  if (item.status === 'SUPERSEDED' || item.supersededBy) {
+    return {
+      status: 'INVALID',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: [...REQUIRED_QUORUM_ROLES],
+      collectedSignatures: Array.isArray(item.approvalsCollected) ? item.approvalsCollected : [],
+      reason: 'Approval request has been superseded by a replacement sign-off request',
+    };
+  }
+
   // 1. Policy version check
   if (item.policyVersion !== 'LOCAL_SESSION_V1') {
     return {

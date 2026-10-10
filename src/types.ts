@@ -613,7 +613,7 @@ export type ApprovalType =
   | 'STANDARD_UPDATE'
   | 'RELEASE_SIGNOFF';
 
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'SUPERSEDED';
 
 export interface ApprovalItem {
   id: string;
@@ -650,6 +650,10 @@ export interface ApprovalItem {
   resolvedAt?: string;
   resolvedBy?: string;
   resolutionNotes?: string;
+  supersededApprovalId?: string;
+  supersededBy?: string;
+  supersededAt?: string;
+  supersededReason?: string;
   quorum?: {
     status: 'PENDING' | 'PARTIAL' | 'SATISFIED' | 'REJECTED' | 'STALE' | 'INVALID';
     hasQuorum: boolean;

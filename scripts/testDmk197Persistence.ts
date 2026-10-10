@@ -10,6 +10,7 @@ import {
   readProjectSnapshot,
   projectSnapshotDigest,
   snapshotProjectStore,
+  writeProjectSnapshotAtomic,
 } from '../server/projectPersistence.ts';
 import { registerSignoffRoutes } from '../server/proposals/signoff.ts';
 
@@ -323,10 +324,147 @@ try {
       fail('PERSIST-2: Failed snapshot write rollback', e);
     }
 
-    // Stop Server 2
-    await new Promise<void>((resolve, reject) => {
-      server2.close((err) => (err ? reject(err) : resolve()));
-    });
+    // TEST C: Reissue Persistence Rollback & Server Restart Recovery
+    try {
+      // 1. Setup a dedicated requirement REQ-PERSIST-03 and a corrupted pending approval
+      const targetReq3 = {
+        id: 'REQ-PERSIST-03',
+        title: 'Third Requirement for Reissue',
+        status: 'UNDER_REVIEW',
+        statement: 'Persistence reissue recovery requirement',
+        urgency: 'HIGH',
+        riskLevel: 'HIGH',
+      };
+      store2.requirements[testProjectId].push(targetReq3);
+
+      const corruptApvId = 'APV-PERSIST-CORRUPT-01';
+      const corruptItem = {
+        id: corruptApvId,
+        projectId: testProjectId,
+        title: targetReq3.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: targetReq3.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: targetReq3.statement,
+        impactAnalysis: 'Persistence reissue recovery test',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Corrupt', decision: 'APPROVED' }, // corrupted signature without identityId & roleSource
+        ],
+        targetDigest: crypto.createHash('sha256').update(JSON.stringify(targetReq3)).digest('hex'),
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target in project' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      store2.approvals[testProjectId].push(corruptItem);
+
+      // Part 1: Failed Write Rollback during Reissue
+      const lockPath = path.join(tempDir, '.local', 'project-state.write.lock');
+      const lockFd = fs.openSync(lockPath, 'wx');
+
+      const stateVerBefore = store2.projects[0].stateVersion;
+      const auditCountBefore = store2.auditLogs[testProjectId].length;
+      const approvalsCountBefore = store2.approvals[testProjectId].length;
+
+      const failReissueRes = await fetch(`${base2}/api/projects/${testProjectId}/approvals/${corruptApvId}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie2 },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Recovery under write failure condition',
+        }),
+      });
+
+      assert.equal(failReissueRes.status, 500, 'Reissue during write lock must return HTTP 500');
+      const failData = await failReissueRes.json();
+      assert.equal(failData.error, 'Failed to persist project transaction; changes rolled back');
+
+      // Verify in-memory rollback:
+      assert.equal(store2.projects[0].stateVersion, stateVerBefore, 'stateVersion must not change on rollback');
+      assert.equal(store2.auditLogs[testProjectId].length, auditCountBefore, 'Audit logs must not change on rollback');
+      assert.equal(store2.approvals[testProjectId].length, approvalsCountBefore, 'Approvals count must not change');
+      const itemAfterRollback = store2.approvals[testProjectId].find((a: any) => a.id === corruptApvId);
+      assert.equal(itemAfterRollback.status, 'PENDING', 'Original approval must remain PENDING after rollback');
+      assert.equal(itemAfterRollback.supersededBy, undefined, 'supersededBy must not be set after rollback');
+
+      // Release write lock
+      fs.closeSync(lockFd);
+      fs.unlinkSync(lockPath);
+
+      // Part 2: Successful Reissue & Persistence
+      const successReissueRes = await fetch(`${base2}/api/projects/${testProjectId}/approvals/${corruptApvId}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie2 },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Legitimate recovery of corrupted persistence record',
+        }),
+      });
+
+      assert.ok([200, 201].includes(successReissueRes.status), `Reissue must succeed with 200 or 201, got ${successReissueRes.status}`);
+      const replacement = await successReissueRes.json();
+      assert.ok(replacement.id.startsWith('APV-'));
+      assert.equal(replacement.status, 'PENDING');
+      assert.equal(replacement.supersededApprovalId, corruptApvId);
+
+      // Stop Server 2
+      await new Promise<void>((resolve, reject) => {
+        server2.close((err) => (err ? reject(err) : resolve()));
+      });
+
+      // Part 3: Restart recovery on Server 3
+      const store3: any = new ProjectStore();
+      const app3 = express();
+      app3.use(express.json());
+      installProjectPersistence(app3, store3, tempDir);
+      registerSignoffRoutes(app3, store3);
+
+      const server3 = app3.listen(0, '127.0.0.1');
+      await new Promise<void>((r) => server3.once('listening', r));
+      const base3 = `http://127.0.0.1:${(server3.address() as any).port}`;
+
+      const secCookie3 = await loginAndGetCookie(base3, 'secOfficer', 'SecPass123!');
+
+      const listRes = await fetch(`${base3}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie3 },
+      });
+      assert.equal(listRes.status, 200);
+      const list = await listRes.json();
+
+      const restoredOriginal = list.find((a: any) => a.id === corruptApvId);
+      assert.ok(restoredOriginal, 'Original approval must exist across restart');
+      assert.equal(restoredOriginal.status, 'SUPERSEDED', 'Original must be SUPERSEDED across restart');
+      assert.equal(restoredOriginal.supersededBy, replacement.id, 'supersededBy link must be preserved');
+      assert.equal(restoredOriginal.supersededReason, 'Legitimate recovery of corrupted persistence record');
+
+      const restoredReplacement = list.find((a: any) => a.id === replacement.id);
+      assert.ok(restoredReplacement, 'Replacement approval must exist across restart');
+      assert.equal(restoredReplacement.status, 'PENDING', 'Replacement must be PENDING across restart');
+      assert.equal(restoredReplacement.supersededApprovalId, corruptApvId);
+      assert.equal(restoredReplacement.approvalsCollected.length, 0);
+
+      // Verify audit logs across restart
+      const audit3 = store3.auditLogs[testProjectId];
+      const reissueEvent = audit3.find((e: any) => e.action === 'APPROVAL_REISSUED');
+      assert.ok(reissueEvent, 'APPROVAL_REISSUED audit event must be persisted');
+      assert.equal(reissueEvent.target, corruptApvId);
+
+      for (let i = 0; i < audit3.length - 1; i++) {
+        assert.equal(audit3[i].previousHash, audit3[i + 1].stateHash, 'Audit chain must be valid across restart');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        server3.close((err) => (err ? reject(err) : resolve()));
+      });
+
+      pass('PERSIST-3: Failed reissue write rolls back completely, and successful reissue supersession/replacement survives server restart');
+    } catch (e) {
+      fail('PERSIST-3: Reissue persistence rollback and server restart recovery', e);
+    }
   } catch (e) {
     fail('PERSIST-1: Server restart recovery', e);
   }

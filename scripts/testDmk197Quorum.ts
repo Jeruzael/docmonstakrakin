@@ -2116,6 +2116,700 @@ async function runTests() {
     } catch (e) {
       fail('63. Legitimate two-human approval workflow succeeds and ratifies quorum', e);
     }
+
+    // Login dev cookie for unauthorized tests
+    const devCookie = await loginAndGetCookie(base, 'otherDev', 'DevPass123!');
+
+    // 64. Healthy pending approval deduplication returns existing approval without mutation or new audit events
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const healthyReq = {
+        id: 'REQ-HEALTHY-DEDUP-01',
+        title: 'Healthy Dedup Target Requirement',
+        statement: 'Statement for healthy deduplication test',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(healthyReq);
+
+      const createRes1 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: healthyReq.id }),
+      });
+      assert.equal(createRes1.status, 201);
+      const initialApv = await createRes1.json();
+      assert.equal(initialApv.status, 'PENDING');
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+      const preApprovalsCount = (store.approvals[testProjectId] || []).length;
+
+      // Second identical request - must deduplicate
+      const createRes2 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: healthyReq.id }),
+      });
+      assert.ok([200, 201].includes(createRes2.status), `Dedup status must be 200 or 201, got ${createRes2.status}`);
+      const dedupApv = await createRes2.json();
+      assert.equal(dedupApv.id, initialApv.id, 'Must return the identical approval item');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment on healthy deduplication');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount, 'Audit log must not append on deduplication');
+      assert.equal((store.approvals[testProjectId] || []).length, preApprovalsCount, 'No duplicate approval items created');
+
+      pass('64. Healthy pending approval deduplication returns existing approval without mutation or new audit events');
+    } catch (e) {
+      fail('64. Healthy pending approval deduplication returns existing approval without mutation or new audit events', e);
+    }
+
+    // 65. Deduplication of corrupted pending approval (malformed signatures) is rejected with HTTP 409 and code REISSUE_REQUIRED
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const corruptReq = {
+        id: 'REQ-CORRUPT-DEDUP-01',
+        title: 'Corrupted Pending Request Target',
+        statement: 'Statement for corrupted deduplication test',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(corruptReq);
+
+      const targetDigest = digest(corruptReq);
+      const corruptedItem = {
+        id: 'APV-CORRUPT-SIGS-01',
+        projectId: testProjectId,
+        title: corruptReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: corruptReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: corruptReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Hacker', decision: 'APPROVED' }, // missing identityId & roleSource
+        ],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(corruptedItem);
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+      const preApprovalsCount = (store.approvals[testProjectId] || []).length;
+
+      const dedupRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: corruptReq.id }),
+      });
+
+      assert.equal(dedupRes.status, 409, 'Must reject deduplication of corrupted approval with HTTP 409');
+      const errBody = await dedupRes.json();
+      assert.equal(errBody.code, 'REISSUE_REQUIRED', 'Error code must be REISSUE_REQUIRED');
+      assert.equal(errBody.approvalId, corruptedItem.id, 'Error must identify affected approvalId');
+      assert.ok(errBody.reason || errBody.error, 'Must provide an explanation');
+
+      // Assert no side-effects
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount, 'Audit log must not append');
+      assert.equal((store.approvals[testProjectId] || []).length, preApprovalsCount, 'No approval mutated or added');
+      assert.equal(corruptedItem.status, 'PENDING', 'Original status must remain PENDING');
+
+      pass('65. Deduplication of corrupted pending approval (malformed signatures) is rejected with HTTP 409 and code REISSUE_REQUIRED');
+    } catch (e) {
+      fail('65. Deduplication of corrupted pending approval (malformed signatures) is rejected with HTTP 409 and code REISSUE_REQUIRED', e);
+    }
+
+    // 66. Deduplication of corrupted pending approval (invalid policyVersion or roles) is rejected with HTTP 409 and code REISSUE_REQUIRED
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const corruptPolicyReq = {
+        id: 'REQ-CORRUPT-POLICY-01',
+        title: 'Corrupted Policy Target',
+        statement: 'Statement for corrupt policy dedup test',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(corruptPolicyReq);
+
+      const targetDigest = digest(corruptPolicyReq);
+      const corruptPolicyItem = {
+        id: 'APV-CORRUPT-POLICY-01',
+        projectId: testProjectId,
+        title: corruptPolicyReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: corruptPolicyReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: corruptPolicyReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer'], // invalid roles: missing Lead Architect
+        approvalsCollected: [],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LEGACY_V0', // invalid policyVersion
+      };
+      (store.approvals[testProjectId] ||= []).unshift(corruptPolicyItem);
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      const dedupRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: corruptPolicyReq.id }),
+      });
+
+      assert.equal(dedupRes.status, 409, 'Must reject with HTTP 409');
+      const errBody = await dedupRes.json();
+      assert.equal(errBody.code, 'REISSUE_REQUIRED');
+      assert.equal(errBody.approvalId, corruptPolicyItem.id);
+      assert.equal(prj.stateVersion, preVer);
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount);
+
+      pass('66. Deduplication of corrupted pending approval (invalid policyVersion or roles) is rejected with HTTP 409 and code REISSUE_REQUIRED');
+    } catch (e) {
+      fail('66. Deduplication of corrupted pending approval (invalid policyVersion or roles) is rejected with HTTP 409 and code REISSUE_REQUIRED', e);
+    }
+
+    // 67. Multiple conflicting active pending approvals fail closed on request creation
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const conflictReq = {
+        id: 'REQ-CONFLICT-DEDUP-01',
+        title: 'Conflicting Target',
+        statement: 'Statement for conflicting approvals test',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(conflictReq);
+
+      const targetDigest = digest(conflictReq);
+      const apvA = {
+        id: 'APV-CONFLICT-A-01',
+        projectId: testProjectId,
+        title: conflictReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: conflictReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: conflictReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      const apvB = {
+        id: 'APV-CONFLICT-B-01',
+        projectId: testProjectId,
+        title: conflictReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: conflictReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'leadArch',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: conflictReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(apvA, apvB);
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      const conflictRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: conflictReq.id }),
+      });
+
+      assert.equal(conflictRes.status, 409, 'Multiple active pendings must fail closed with HTTP 409');
+      assert.equal(prj.stateVersion, preVer);
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount);
+
+      pass('67. Multiple conflicting active pending approvals fail closed on request creation');
+    } catch (e) {
+      fail('67. Multiple conflicting active pending approvals fail closed on request creation', e);
+    }
+
+    // 68. Request creation against changed target digest does not reuse existing pending approval
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const changedReq = {
+        id: 'REQ-CHANGED-DIGEST-01',
+        title: 'Original Title',
+        statement: 'Original statement',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(changedReq);
+
+      const oldDigest = digest(changedReq);
+      const stalePending = {
+        id: 'APV-STALE-PENDING-01',
+        projectId: testProjectId,
+        title: changedReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: changedReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: changedReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [],
+        targetDigest: oldDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(stalePending);
+
+      // Now mutate the target requirement statement so digest changes
+      changedReq.statement = 'Mutated statement after approval creation';
+      const newDigest = digest(changedReq);
+      assert.notEqual(oldDigest, newDigest);
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      const changedRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ targetEntityType: 'REQUIREMENT', targetEntityId: changedReq.id }),
+      });
+
+      // Must fail closed with 409 rather than silently returning stale pending approval
+      assert.equal(changedRes.status, 409, 'Must fail closed when pending approval digest mismatches current target');
+      assert.equal(prj.stateVersion, preVer);
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount);
+
+      pass('68. Request creation against changed target digest does not reuse existing pending approval');
+    } catch (e) {
+      fail('68. Request creation against changed target digest does not reuse existing pending approval', e);
+    }
+
+    // 69. Unauthenticated reissue request returns HTTP 401
+    try {
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ humanConfirmed: true, justification: 'Recovery for corrupted record' }),
+      });
+      assert.equal(res.status, 401, 'Unauthenticated reissue must return HTTP 401');
+      pass('69. Unauthenticated reissue request returns HTTP 401');
+    } catch (e) {
+      fail('69. Unauthenticated reissue request returns HTTP 401', e);
+    }
+
+    // 70. Unauthorized identity (missing reviewer role) reissue returns HTTP 403
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: devCookie },
+        body: JSON.stringify({ humanConfirmed: true, justification: 'Recovery attempt by developer' }),
+      });
+      assert.equal(res.status, 403, 'Unauthorized reviewer must return HTTP 403');
+      assert.equal(prj.stateVersion, preVer);
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount);
+
+      pass('70. Unauthorized identity (missing reviewer role) reissue returns HTTP 403');
+    } catch (e) {
+      fail('70. Unauthorized identity (missing reviewer role) reissue returns HTTP 403', e);
+    }
+
+    // 71. Agent identity reissue request is rejected with HTTP 403
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Agent attempt',
+          actorType: 'AGENT',
+        }),
+      });
+      assert.equal(res.status, 403, 'Agent actorType or claims must be rejected with HTTP 403');
+      assert.equal(prj.stateVersion, preVer);
+
+      pass('71. Agent identity reissue request is rejected with HTTP 403');
+    } catch (e) {
+      fail('71. Agent identity reissue request is rejected with HTTP 403', e);
+    }
+
+    // 72. Reissue without explicit humanConfirmed === true is rejected with HTTP 403
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: false,
+          justification: 'Recovery without confirmation',
+        }),
+      });
+      assert.equal(res.status, 403, 'Missing humanConfirmed must return HTTP 403');
+      assert.equal(prj.stateVersion, preVer);
+
+      pass('72. Reissue without explicit humanConfirmed === true is rejected with HTTP 403');
+    } catch (e) {
+      fail('72. Reissue without explicit humanConfirmed === true is rejected with HTTP 403', e);
+    }
+
+    // 73. Reissue with missing or empty recovery justification is rejected with HTTP 422
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: '   ',
+        }),
+      });
+      assert.equal(res.status, 422, 'Empty justification must return HTTP 422');
+      assert.equal(prj.stateVersion, preVer);
+
+      pass('73. Reissue with missing or empty recovery justification is rejected with HTTP 422');
+    } catch (e) {
+      fail('73. Reissue with missing or empty recovery justification is rejected with HTTP 422', e);
+    }
+
+    // 74. Reissue of a healthy pending approval is rejected with HTTP 409
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const healthyReq2 = {
+        id: 'REQ-HEALTHY-REISSUE-01',
+        title: 'Healthy Target for Reissue Test',
+        statement: 'Statement for healthy target',
+        status: 'UNDER_REVIEW' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(healthyReq2);
+
+      const targetDigest = digest(healthyReq2);
+      const healthyApv = {
+        id: 'APV-HEALTHY-01',
+        projectId: testProjectId,
+        title: healthyReq2.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: healthyReq2.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: healthyReq2.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(healthyApv);
+
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/${healthyApv.id}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Attempt to reissue a healthy pending request',
+        }),
+      });
+
+      assert.equal(res.status, 409, 'Reissuing a healthy pending approval must return HTTP 409');
+      assert.equal(prj.stateVersion, preVer);
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount);
+      assert.equal(healthyApv.status, 'PENDING');
+
+      pass('74. Reissue of a healthy pending approval is rejected with HTTP 409');
+    } catch (e) {
+      fail('74. Reissue of a healthy pending approval is rejected with HTTP 409', e);
+    }
+
+    // 75. Reissue of an approved, rejected, or superseded approval is rejected with HTTP 409
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const terminalReq = {
+        id: 'REQ-TERMINAL-REISSUE-01',
+        title: 'Terminal Target',
+        statement: 'Statement for terminal target',
+        status: 'APPROVED' as const,
+      };
+      (store.requirements[testProjectId] ||= []).push(terminalReq);
+
+      const targetDigest = digest(terminalReq);
+      const approvedApv = {
+        id: 'APV-ALREADY-APPROVED-01',
+        projectId: testProjectId,
+        title: terminalReq.title,
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: terminalReq.id,
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'APPROVED',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: terminalReq.statement,
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'secOfficer', identityId: 'REV-SEC-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+          { role: 'Lead Architect', approver: 'leadArch', identityId: 'REV-ARCH-01', roleSource: 'LOCAL_SERVER_ROSTER', decision: 'APPROVED' },
+        ],
+        targetDigest,
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(approvedApv);
+
+      const preVer = prj.stateVersion;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/${approvedApv.id}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Attempt to reissue approved item',
+        }),
+      });
+
+      assert.equal(res.status, 409, 'Reissuing non-pending approval must return HTTP 409');
+      assert.equal(prj.stateVersion, preVer);
+
+      pass('75. Reissue of an approved, rejected, or superseded approval is rejected with HTTP 409');
+    } catch (e) {
+      fail('75. Reissue of an approved, rejected, or superseded approval is rejected with HTTP 409', e);
+    }
+
+    // 76. Reissue of approval with stale or deleted target fails closed with HTTP 404/409
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const staleApv = {
+        id: 'APV-STALE-TARGET-01',
+        projectId: testProjectId,
+        title: 'Nonexistent target approval',
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityId: 'REQ-DOES-NOT-EXIST',
+        targetEntityType: 'REQUIREMENT',
+        requestedBy: 'secOfficer',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+        urgency: 'HIGH',
+        riskLevel: 'MEDIUM',
+        description: 'Target missing',
+        impactAnalysis: 'Human sign-off',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        approvalsCollected: [
+          { role: 'Security Officer', approver: 'Corrupt', decision: 'APPROVED' },
+        ],
+        targetDigest: '0'.repeat(64),
+        policyGates: [{ gateName: 'Canonical target exists', passed: true, details: 'Target resolved' }],
+        policyVersion: 'LOCAL_SESSION_V1',
+      };
+      (store.approvals[testProjectId] ||= []).unshift(staleApv);
+
+      const preVer = prj.stateVersion;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/${staleApv.id}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Attempt to reissue approval with deleted target',
+        }),
+      });
+
+      assert.ok([404, 409].includes(res.status), `Deleted target reissue must fail closed with 404 or 409, got ${res.status}`);
+      assert.equal(prj.stateVersion, preVer);
+
+      pass('76. Reissue of approval with stale or deleted target fails closed with HTTP 404/409');
+    } catch (e) {
+      fail('76. Reissue of approval with stale or deleted target fails closed with HTTP 404/409', e);
+    }
+
+    // 77. Valid corrupted-record reissue produces SUPERSEDED original and fresh PENDING replacement with 0 signatures
+    let validReplacementId = '';
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+      const preApprovalsCount = (store.approvals[testProjectId] || []).length;
+
+      const res = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Governed recovery of corrupted signatures in APV-CORRUPT-SIGS-01',
+        }),
+      });
+
+      assert.ok([200, 201].includes(res.status), `Reissue must succeed with 200 or 201, got ${res.status}`);
+      const replacement = await res.json();
+      validReplacementId = replacement.id;
+
+      // Assert replacement structure
+      assert.ok(replacement.id.startsWith('APV-'), 'Replacement must have APV- ID prefix');
+      assert.notEqual(replacement.id, 'APV-CORRUPT-SIGS-01', 'Replacement must have distinct ID');
+      assert.equal(replacement.status, 'PENDING', 'Replacement status must be PENDING');
+      assert.equal(replacement.approvalsCollected.length, 0, 'Replacement must start with 0 signatures');
+      assert.equal(replacement.supersededApprovalId, 'APV-CORRUPT-SIGS-01', 'Replacement must link to superseded ID');
+      assert.equal(replacement.policyVersion, 'LOCAL_SESSION_V1');
+      assert.deepEqual(replacement.requiredRoles, ['Security Officer', 'Lead Architect']);
+
+      // Assert original item state
+      const original = (store.approvals[testProjectId] || []).find((a: any) => a.id === 'APV-CORRUPT-SIGS-01')!;
+      assert.equal(original.status, 'SUPERSEDED', 'Original approval must transition to SUPERSEDED');
+      assert.equal(original.supersededBy, replacement.id, 'Original must link to replacement ID');
+      assert.ok(original.supersededAt, 'Original must record supersededAt timestamp');
+      assert.equal(original.supersededReason, 'Governed recovery of corrupted signatures in APV-CORRUPT-SIGS-01');
+      assert.equal(original.approvalsCollected.length, 1, 'Original signatures must remain preserved');
+
+      // Assert stateVersion increment and audit event
+      assert.equal(prj.stateVersion, preVer + 1, 'StateVersion must increment by 1');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount + 1, 'Audit log must append exactly 1 event');
+      assert.equal((store.approvals[testProjectId] || []).length, preApprovalsCount + 1, 'Exactly 1 new approval created');
+
+      const auditEvent = store.auditLogs[testProjectId][0];
+      assert.equal(auditEvent.action, 'APPROVAL_REISSUED');
+      assert.equal(auditEvent.target, 'APV-CORRUPT-SIGS-01');
+
+      pass('77. Valid corrupted-record reissue produces SUPERSEDED original and fresh PENDING replacement with 0 signatures');
+    } catch (e) {
+      fail('77. Valid corrupted-record reissue produces SUPERSEDED original and fresh PENDING replacement with 0 signatures', e);
+    }
+
+    // 78. Valid replacement approval can subsequently achieve dual-human quorum ratification
+    try {
+      assert.ok(validReplacementId, 'validReplacementId must be set from Scenario 77');
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId].find((r: any) => r.id === 'REQ-CORRUPT-DEDUP-01')!;
+      const preVer = prj.stateVersion;
+
+      // Decision 1: Security Officer
+      const dec1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${validReplacementId}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec1.status, 200, 'Security Officer ratification must return 200');
+      const repAfter1 = (store.approvals[testProjectId] || []).find((a: any) => a.id === validReplacementId)!;
+      assert.equal(repAfter1.status, 'PENDING');
+      assert.equal(repAfter1.approvalsCollected.length, 1);
+
+      // Decision 2: Lead Architect
+      const dec2 = await fetch(`${base}/api/projects/${testProjectId}/approvals/${validReplacementId}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(dec2.status, 200, 'Lead Architect ratification must return 200');
+      const repAfter2 = (store.approvals[testProjectId] || []).find((a: any) => a.id === validReplacementId)!;
+      assert.equal(repAfter2.status, 'APPROVED', 'Replacement must become APPROVED after dual-human quorum');
+      assert.equal(repAfter2.approvalsCollected.length, 2);
+      assert.equal(targetReq.status, 'APPROVED', 'Target requirement must become APPROVED');
+      assert.equal(prj.stateVersion, preVer + 2);
+
+      const q = evaluateQuorum(repAfter2, digest(targetReq));
+      assert.equal(q.hasQuorum, true, 'Quorum must be SATISFIED');
+      assert.equal(q.status, 'SATISFIED');
+
+      // Attempting to decide on superseded original must fail
+      const decSuperseded = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(decSuperseded.status, 409, 'Deciding on superseded approval must fail with HTTP 409');
+
+      pass('78. Valid replacement approval can subsequently achieve dual-human quorum ratification');
+    } catch (e) {
+      fail('78. Valid replacement approval can subsequently achieve dual-human quorum ratification', e);
+    }
+
+    // 79. Idempotent reissue retry returns existing replacement without duplicate audit event or stateVersion increment
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const preVer = prj.stateVersion;
+      const preAuditCount = (store.auditLogs[testProjectId] || []).length;
+      const preApprovalsCount = (store.approvals[testProjectId] || []).length;
+
+      const retryRes = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-SIGS-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Retry reissue of already-superseded approval',
+        }),
+      });
+
+      assert.ok([200, 201].includes(retryRes.status), `Retry must return 200 or 201, got ${retryRes.status}`);
+      const retryBody = await retryRes.json();
+      assert.equal(retryBody.id, validReplacementId, 'Must return the already-created replacement');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment on idempotent retry');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAuditCount, 'Audit log must not append duplicate events');
+      assert.equal((store.approvals[testProjectId] || []).length, preApprovalsCount, 'No duplicate approvals created');
+
+      pass('79. Idempotent reissue retry returns existing replacement without duplicate audit event or stateVersion increment');
+    } catch (e) {
+      fail('79. Idempotent reissue retry returns existing replacement without duplicate audit event or stateVersion increment', e);
+    }
+
+    // 80. Cross-project reissue request is rejected with HTTP 404/403
+    try {
+      const res = await fetch(`${base}/api/projects/PRJ-OTHER/approvals/${validReplacementId}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Cross project reissue attempt',
+        }),
+      });
+
+      assert.ok([403, 404].includes(res.status), `Cross-project reissue must return 403 or 404, got ${res.status}`);
+
+      pass('80. Cross-project reissue request is rejected with HTTP 404/403');
+    } catch (e) {
+      fail('80. Cross-project reissue request is rejected with HTTP 404/403', e);
+    }
   } finally {
     server.close();
     if (originalEnv === undefined) {
@@ -2129,7 +2823,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 63 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 80 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {
@@ -2137,4 +2831,5 @@ if (failedCount > 0) {
 } else {
   process.exit(0);
 }
+
 

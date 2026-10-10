@@ -142,15 +142,61 @@ export function registerSignoffRoutes(app: Express, store: any) {
 
     const targetDigest = digest(target);
 
-    const prior = (store.approvals[p.id] || []).find(
+    const activePendings = (store.approvals[p.id] || []).filter(
       (a: any) =>
         a.targetEntityType === targetEntityType &&
         a.targetEntityId === targetEntityId &&
-        a.policyVersion === 'LOCAL_SESSION_V1' &&
-        a.status === 'PENDING' &&
-        a.targetDigest === targetDigest
+        a.status === 'PENDING'
     );
-    if (prior) return res.status(201).json(prior);
+
+    if (activePendings.length > 1) {
+      return res.status(409).json({
+        error: 'Multiple conflicting active pending approvals exist for this target; governed resolution required',
+        code: 'CONFLICTING_APPROVALS',
+      });
+    }
+
+    if (activePendings.length === 1) {
+      const prior = activePendings[0];
+      if (prior.targetDigest !== targetDigest) {
+        return res.status(409).json({
+          error: 'Active pending approval targetDigest does not match current canonical artifact; governed resolution required',
+          code: 'TARGET_DIGEST_MISMATCH',
+        });
+      }
+
+      // Authoritative pending approval integrity checks
+      const isPolicyValid = prior.policyVersion === 'LOCAL_SESSION_V1';
+      const isRolesValid =
+        Array.isArray(prior.requiredRoles) &&
+        prior.requiredRoles.length === roles.length &&
+        prior.requiredRoles[0] === roles[0] &&
+        prior.requiredRoles[1] === roles[1];
+      const isDigestValid = typeof prior.targetDigest === 'string' && /^[a-f0-9]{64}$/.test(prior.targetDigest);
+      const sigValidation = validateStoredSignatures(prior.approvalsCollected, {
+        isPending: true,
+        requiredRoles: roles,
+      });
+
+      if (!isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || prior.supersededBy) {
+        let reason = 'Stored pending approval is corrupted; governed reissue required';
+        if (!isPolicyValid) reason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
+        else if (!isRolesValid) reason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
+        else if (!isDigestValid) reason = 'Invalid or malformed targetDigest format';
+        else if (!sigValidation.valid) reason = sigValidation.error || 'Malformed stored approval signatures';
+        else if (prior.supersededBy) reason = 'Approval has been superseded';
+
+        return res.status(409).json({
+          error: 'Pending approval record is corrupted and cannot receive signatures; governed reissue required',
+          code: 'REISSUE_REQUIRED',
+          approvalId: prior.id,
+          reason,
+        });
+      }
+
+      // Case A: Healthy pending approval - deduplicate silently
+      return res.status(201).json(prior);
+    }
 
     const item = {
       id: `APV-${randomUUID()}`,
@@ -190,6 +236,175 @@ export function registerSignoffRoutes(app: Express, store: any) {
       { targetEntityId, authenticatedIdentity: identity.id, roleSource: identity.roleSource }
     );
     res.status(201).json(item);
+  });
+
+  app.post('/api/projects/:id/approvals/:apvId/reissue', (req, res) => {
+    const identity = requireHuman(req, res);
+    if (!identity) return;
+
+    if (
+      req.body.approver ||
+      req.body.role ||
+      req.body.reviewerName ||
+      req.body.reviewerRole ||
+      req.body.authorizedRole ||
+      req.body.actorType === 'AGENT'
+    ) {
+      return res.status(403).json({
+        error: 'Identity and role claims are not accepted; the server uses your authenticated session',
+      });
+    }
+
+    const hasAuthorizedRole = identity.roles.some((r: string) => roles.includes(r as any));
+    if (!hasAuthorizedRole) {
+      return res.status(403).json({ error: 'Identity lacks authorized governance role for approval reissue' });
+    }
+
+    const { humanConfirmed, justification, reason } = req.body;
+    if (humanConfirmed !== true) {
+      return res.status(403).json({ error: 'Explicit human confirmation required for sign-off reissue' });
+    }
+
+    const reissueReason = (justification || reason || '').trim();
+    if (!reissueReason) {
+      return res.status(422).json({ error: 'A meaningful recovery justification is required' });
+    }
+
+    const p = store.projects.find((pr: any) => pr.id === req.params.id);
+    if (!p) return res.status(404).json({ error: 'Project not found' });
+
+    const item = (store.approvals[p.id] || []).find((a: any) => a.id === req.params.apvId);
+    if (!item) {
+      return res.status(404).json({ error: 'Approval request not found in this project' });
+    }
+
+    // Idempotent retry: if already superseded, return existing replacement
+    if (item.status === 'SUPERSEDED' || item.supersededBy) {
+      const existingReplacement = (store.approvals[p.id] || []).find((a: any) => a.id === item.supersededBy);
+      if (existingReplacement) {
+        return res.status(200).json(existingReplacement);
+      }
+      return res.status(409).json({ error: 'Approval request has already been superseded' });
+    }
+
+    if (item.status !== 'PENDING') {
+      return res.status(409).json({ error: `Cannot reissue approval with status "${item.status}"; must be PENDING` });
+    }
+
+    const spec = mapping[item.targetEntityType];
+    if (!spec) {
+      return res.status(422).json({ error: `Unsupported targetEntityType: ${item.targetEntityType}` });
+    }
+
+    const target = (store[spec[0]]?.[p.id] || []).find((t: any) => t.id === item.targetEntityId);
+    if (!target) {
+      return res.status(404).json({ error: 'Canonical approval target no longer exists; cannot reissue approval' });
+    }
+
+    if (item.targetEntityType === 'OVERRIDE') {
+      const ovrCheck = validateOverrideEligibility(target);
+      if (!ovrCheck.valid) {
+        return res.status(ovrCheck.status).json({ error: ovrCheck.error });
+      }
+    }
+
+    const currentTargetDigest = digest(target);
+    if (item.targetDigest !== currentTargetDigest) {
+      return res.status(409).json({ error: 'Canonical approval target has changed; cannot reissue against stale target' });
+    }
+
+    // Verify corruption: healthy pending approvals cannot be reissued
+    const isPolicyValid = item.policyVersion === 'LOCAL_SESSION_V1';
+    const isRolesValid =
+      Array.isArray(item.requiredRoles) &&
+      item.requiredRoles.length === roles.length &&
+      item.requiredRoles[0] === roles[0] &&
+      item.requiredRoles[1] === roles[1];
+    const isDigestValid = typeof item.targetDigest === 'string' && /^[a-f0-9]{64}$/.test(item.targetDigest);
+    const sigValidation = validateStoredSignatures(item.approvalsCollected, {
+      isPending: true,
+      requiredRoles: roles,
+    });
+
+    const isCorrupted = !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid;
+    if (!isCorrupted) {
+      return res.status(409).json({
+        error: 'Cannot reissue a healthy pending approval; existing request is valid for sign-off',
+      });
+    }
+
+    // Check no conflicting active pending request
+    const conflictingActive = (store.approvals[p.id] || []).filter(
+      (a: any) =>
+        a.id !== item.id &&
+        a.targetEntityType === item.targetEntityType &&
+        a.targetEntityId === item.targetEntityId &&
+        a.status === 'PENDING'
+    );
+    if (conflictingActive.length > 0) {
+      return res.status(409).json({
+        error: 'Conflicting active pending approval already exists for this target',
+      });
+    }
+
+    // Perform atomic supersession transaction
+    const newApprovalId = `APV-${randomUUID()}`;
+    const timestamp = new Date().toISOString();
+
+    item.status = 'SUPERSEDED';
+    item.supersededBy = newApprovalId;
+    item.supersededAt = timestamp;
+    item.supersededReason = reissueReason;
+
+    const replacementItem: any = {
+      id: newApprovalId,
+      projectId: p.id,
+      title: target.title || target.gateOrControl || item.title,
+      type: item.type,
+      targetEntityId: item.targetEntityId,
+      targetEntityType: item.targetEntityType,
+      requestedBy: identity.name,
+      requestedAt: timestamp,
+      status: 'PENDING',
+      urgency: item.urgency || 'HIGH',
+      riskLevel: item.riskLevel || 'MEDIUM',
+      description: target.statement || target.context || target.description || target.reason || item.description,
+      impactAnalysis: item.impactAnalysis || 'Human sign-off of canonical proposed artifact',
+      requiredRoles: [...roles],
+      approvalsCollected: [],
+      targetDigest: currentTargetDigest,
+      policyGates: [
+        {
+          gateName: 'Canonical target exists',
+          passed: true,
+          details: 'Target resolved within this project; distinct authorized humans required',
+        },
+      ],
+      policyVersion: 'LOCAL_SESSION_V1',
+      supersededApprovalId: item.id,
+    };
+
+    store.approvals[p.id].unshift(replacementItem);
+    p.stateVersion++;
+
+    store.addAuditEvent(
+      p.id,
+      identity.name,
+      'APPROVAL_REISSUED',
+      item.id,
+      reissueReason,
+      {
+        supersededApprovalId: item.id,
+        replacementApprovalId: newApprovalId,
+        targetEntityId: item.targetEntityId,
+        targetEntityType: item.targetEntityType,
+        authenticatedIdentity: identity.id,
+        roleSource: identity.roleSource,
+        reason: reissueReason,
+      }
+    );
+
+    res.status(201).json(replacementItem);
   });
 
   app.post('/api/projects/:id/approvals/:apvId/decide', (req, res) => {

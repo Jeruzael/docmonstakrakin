@@ -33,7 +33,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const [error, setError] = useState('');
   const [humanConfirmed, setHumanConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUPERSEDED'>('PENDING');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
 
@@ -42,6 +42,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const [decisionType, setDecisionType] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [decisionComment, setDecisionComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Reissue Modal
+  const [showReissueModal, setShowReissueModal] = useState(false);
+  const [reissueItem, setReissueItem] = useState<ApprovalItem | null>(null);
+  const [reissueConfirmed, setReissueConfirmed] = useState(false);
+  const [reissueJustification, setReissueJustification] = useState('');
 
   // Request New Approval Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -148,6 +154,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     setError('');
     setShowDecisionModal(false);
     setShowRequestModal(false);
+    setShowReissueModal(false);
+    setReissueItem(null);
+    setReissueConfirmed(false);
+    setReissueJustification('');
     setHumanConfirmed(false);
     setSubmitting(false);
     setApprovals([]);
@@ -164,6 +174,17 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   }, [project.id, fetchApprovalsForProject]);
 
   const getQuorumProgress = (item: ApprovalItem) => {
+    if (item.status === 'SUPERSEDED') {
+      return {
+        status: 'SUPERSEDED' as const,
+        hasQuorum: false,
+        required: ['Security Officer', 'Lead Architect'],
+        satisfied: [],
+        pending: [],
+        reason: 'Approval request has been superseded by a replacement sign-off request',
+      };
+    }
+
     if (item.quorum) {
       return {
         status: item.quorum.status,
@@ -285,6 +306,72 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         console.error('Decision submission failed:', err);
         setError(err?.message || 'Decision submission failed');
+      }
+    } finally {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        setSubmitting(false);
+      }
+    }
+  };
+
+  const handleOpenReissue = (item: ApprovalItem) => {
+    setError('');
+    setReissueConfirmed(false);
+    setReissueJustification('');
+    setReissueItem(item);
+    setShowReissueModal(true);
+  };
+
+  const submitReissue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reissueItem) return;
+    const targetApvId = reissueItem.id;
+    const targetProjId = reissueItem.projectId;
+
+    if (targetProjId !== project.id || activeProjectIdRef.current !== project.id) {
+      setError('Active approval item belongs to a different project; reissue cancelled.');
+      setReissueItem(null);
+      setShowReissueModal(false);
+      return;
+    }
+    setError('');
+    const opGen = ++submissionGenerationRef.current;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/projects/${targetProjId}/approvals/${targetApvId}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          humanConfirmed: reissueConfirmed,
+          justification: reissueJustification.trim(),
+        }),
+      });
+
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Reissue failed with status ${res.status}`);
+        }
+        return;
+      }
+
+      setShowReissueModal(false);
+      setReissueItem(null);
+      setReissueConfirmed(false);
+      setReissueJustification('');
+      await fetchApprovalsForProject(targetProjId, false);
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        if (onRefreshData) onRefreshData();
+      }
+    } catch (err: any) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        console.error('Reissue submission failed:', err);
+        setError(err?.message || 'Reissue submission failed');
       }
     } finally {
       if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
@@ -516,7 +603,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-1.5 overflow-x-auto">
-          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((st) => (
+          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUPERSEDED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -641,7 +728,11 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     <div className="text-right shrink-0">
                       <span
                         className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full inline-block ${
-                          q.status === 'INVALID'
+                          item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                            ? 'bg-slate-100 text-slate-700'
+                            : item.status === 'PENDING' && q.status === 'INVALID'
+                            ? 'bg-red-100 text-red-800'
+                            : q.status === 'INVALID'
                             ? 'bg-red-100 text-red-800'
                             : q.status === 'STALE'
                             ? 'bg-amber-100 text-amber-800'
@@ -652,14 +743,22 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {q.status === 'INVALID'
+                        {item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                          ? 'SUPERSEDED'
+                          : item.status === 'PENDING' && q.status === 'INVALID'
+                          ? 'REISSUE REQUIRED'
+                          : q.status === 'INVALID'
                           ? 'INVALID POLICY'
                           : q.status === 'STALE'
                           ? 'STALE TARGET'
                           : item.status}
                       </span>
                       <div className="text-[10px] text-slate-500 mt-1 font-mono">
-                        {q.status === 'INVALID'
+                        {item.status === 'SUPERSEDED'
+                          ? 'historical / superseded'
+                          : item.status === 'PENDING' && q.status === 'INVALID'
+                          ? 'reissue required'
+                          : q.status === 'INVALID'
                           ? 'policy invalid'
                           : q.status === 'STALE'
                           ? 'target stale'
@@ -696,9 +795,21 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </span>
                       <div className="flex items-center gap-1.5">
                         {q.status === 'INVALID' ? (
-                          <span className="text-[11px] font-semibold text-red-600">
-                            Policy invalid: fresh sign-off required
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-red-600">
+                              Policy invalid: fresh sign-off required
+                            </span>
+                            <button
+                              data-testid={`reissue-btn-${item.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenReissue(item);
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-2xs cursor-pointer"
+                            >
+                              Reissue Sign-Off
+                            </button>
+                          </div>
                         ) : q.status === 'STALE' ? (
                           <span className="text-[11px] font-semibold text-amber-600">
                             Target modified: fresh sign-off required
@@ -728,6 +839,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </div>
                     </div>
                   )}
+                  {item.status === 'SUPERSEDED' && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Historical record: superseded by <strong>{item.supersededBy || 'replacement'}</strong></span>
+                      <span className="font-semibold text-slate-500">Non-actionable</span>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -747,7 +864,11 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         <span className="font-mono text-xs font-bold text-slate-400">{selectedItem.id}</span>
                         <span
                           className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                            q.status === 'INVALID'
+                            selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                              ? 'bg-slate-100 text-slate-700'
+                              : selectedItem.status === 'PENDING' && q.status === 'INVALID'
+                              ? 'bg-red-100 text-red-800'
+                              : q.status === 'INVALID'
                               ? 'bg-red-100 text-red-800'
                               : q.status === 'STALE'
                               ? 'bg-amber-100 text-amber-800'
@@ -758,7 +879,11 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                               : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {q.status === 'INVALID'
+                          {selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                            ? 'SUPERSEDED'
+                            : selectedItem.status === 'PENDING' && q.status === 'INVALID'
+                            ? 'REISSUE REQUIRED'
+                            : q.status === 'INVALID'
                             ? 'INVALID POLICY'
                             : q.status === 'STALE'
                             ? 'STALE TARGET'
@@ -769,6 +894,18 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         {selectedItem.title}
                       </h2>
                     </div>
+
+                    {selectedItem.status === 'PENDING' && q.status === 'INVALID' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          data-testid="inspector-reissue-btn"
+                          onClick={() => handleOpenReissue(selectedItem)}
+                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs cursor-pointer"
+                        >
+                          Reissue Sign-Off
+                        </button>
+                      </div>
+                    )}
 
                     {selectedItem.status === 'PENDING' && q.status !== 'INVALID' && q.status !== 'STALE' && (
                       <div className="flex items-center gap-2">
@@ -788,26 +925,53 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     )}
                   </div>
 
-                  {(q.status === 'INVALID' || q.status === 'STALE') && (
-                    <div
-                      className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
-                        q.status === 'INVALID'
-                          ? 'bg-red-50 border-red-200 text-red-900'
-                          : 'bg-amber-50 border-amber-200 text-amber-900'
-                      }`}
-                    >
-                      <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${q.status === 'INVALID' ? 'text-red-600' : 'text-amber-600'}`} />
-                      <div>
-                        <span className="font-bold block">
-                          {q.status === 'INVALID' ? 'Invalid Approval Policy' : 'Stale Target Entity Revision'}
-                        </span>
-                        <p className="mt-0.5 text-[11px] leading-relaxed">
-                          {q.reason || (q.status === 'INVALID' ? 'Approval metadata does not match canonical dual-role quorum policy.' : 'Target entity was modified after sign-off was requested.')}
-                        </p>
-                        <span className="text-[10px] font-semibold text-slate-600 mt-1 block">
-                          Action required: A fresh authorized sign-off request must be initiated.
-                        </span>
+                  {selectedItem.status === 'SUPERSEDED' && (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-slate-800">
+                        <Clock className="w-4 h-4 text-slate-500" />
+                        Superseded Approval Record (Historical)
                       </div>
+                      <p className="text-[11px] text-slate-600">
+                        This approval was superseded on {selectedItem.supersededAt || 'prior record'} by <strong>{selectedItem.supersededBy || 'replacement request'}</strong>.
+                      </p>
+                      {selectedItem.supersededReason && (
+                        <p className="text-[11px] text-slate-600 italic">
+                          Reason: {selectedItem.supersededReason}
+                        </p>
+                      )}
+                      <span className="text-[10px] font-semibold text-slate-500 block">
+                        All historical signatures and evidence remain preserved for audit. This record is non-actionable.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedItem.status === 'PENDING' && q.status === 'INVALID' && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-red-800">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        Approval Record Corrupted — Reissue Required
+                      </div>
+                      <p className="text-[11px] text-red-700">
+                        {q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-red-600 block">
+                        Action available: An authorized reviewer may reissue this request. Existing signatures and historical evidence will be preserved.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedItem.status === 'PENDING' && q.status === 'STALE' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-amber-800">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        Stale Target Entity Revision
+                      </div>
+                      <p className="text-[11px] text-amber-800">
+                        {q.reason || 'Target entity was modified after sign-off was requested.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-slate-600 block">
+                        Action required: A fresh authorized sign-off request must be initiated.
+                      </span>
                     </div>
                   )}
 
@@ -1157,6 +1321,98 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                   className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold shadow-xs cursor-pointer"
                 >
                   {submitting ? 'Submitting...' : 'Submit Sign-Off Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Governed Reissue Modal */}
+      {showReissueModal && reissueItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Governed Sign-Off Reissue
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReissueModal(false);
+                  setReissueItem(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <span className="font-bold block">Approval Record Requires Reissue</span>
+              <p className="text-[11px] text-amber-800">
+                This pending request (<strong>{reissueItem.id}</strong>) is corrupted and cannot receive signatures.
+                Reissuing will mark this record as <strong>SUPERSEDED</strong> and create a fresh pending sign-off request.
+              </p>
+              <p className="text-[11px] font-semibold text-amber-700">
+                ✓ All historical signatures and evidence remain permanently preserved for audit.
+              </p>
+            </div>
+
+            <form onSubmit={submitReissue} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Recovery Justification <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reissueJustification}
+                  onChange={(e) => setReissueJustification(e.target.value)}
+                  placeholder="Explain why this approval request is being reissued (e.g. malformed signatures, corrupted ingestion)..."
+                  rows={3}
+                  required
+                  className="w-full p-2.5 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:border-slate-400 font-medium"
+                />
+              </div>
+
+              <div className="flex items-start gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <input
+                  type="checkbox"
+                  id="reissue-confirm"
+                  checked={reissueConfirmed}
+                  onChange={(e) => setReissueConfirmed(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                />
+                <label htmlFor="reissue-confirm" className="text-xs text-slate-700 cursor-pointer font-medium leading-relaxed">
+                  I confirm that I am an authorized governance reviewer and explicitly authorize superseding this corrupted approval with a fresh dual-role sign-off request.
+                </label>
+              </div>
+
+              {error && (
+                <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReissueModal(false);
+                    setReissueItem(null);
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!reissueConfirmed || !reissueJustification.trim() || submitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-2xs cursor-pointer flex items-center gap-1.5"
+                >
+                  {submitting ? 'Reissuing...' : 'Confirm & Reissue Sign-Off'}
                 </button>
               </div>
             </form>
