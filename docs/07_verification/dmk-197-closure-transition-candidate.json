@@ -7,9 +7,9 @@
   "fromStatus": "IN_PROGRESS",
   "candidateStatus": "VERIFICATION_PENDING",
   "implementationPullRequest": 27,
-  "implementationHeadSha": "c84e9cfc8af202688698cddaf64f80dc2c155549",
+  "implementationHeadSha": "da1d1973a7ec161dd45d807ba99d5d2c20c2386d",
   "baseMasterSha": "7e45da9b0d4d8553745e5b7c25597eb48c94d6af",
-  "implementationCiRunId": 37965723187,
+  "implementationCiRunId": 38033744079,
   "implementationCiAttempt": 1,
   "implementationCiConclusion": "success",
   "qualityBuildConclusion": "success",
@@ -27,6 +27,6 @@
   "runtimeWorkItemMutationCount": 0,
   "gate7Changed": false,
   "releaseChanged": false,
-  "supersededCandidateDigest": "c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627",
-  "candidateDigest": "5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec"
+  "supersededCandidateDigest": "5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec",
+  "candidateDigest": "36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891"
 }

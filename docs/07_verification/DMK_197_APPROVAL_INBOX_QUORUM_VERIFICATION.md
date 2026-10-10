@@ -7,10 +7,12 @@
 **Canonical Acceptance Criterion:** Distinct Security Officer and Lead Architect human identities required for quorum  
 **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)  
 **Base Master CI Run:** `37909221729` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Frozen Implementation HEAD:** `c84e9cfc8af202688698cddaf64f80dc2c155549`  
-**Frozen Implementation CI Run:** `37965723187` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Deterministic Candidate Digest (SHA-256):** `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`  
-**Superseded Historical Candidate Digest:** `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`  
+**Frozen Implementation HEAD:** `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`  
+**Frozen Implementation CI Run:** `38033744079` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
+**Deterministic Candidate Digest (SHA-256):** `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`  
+**Superseded Candidate Lineage:**
+- Superseded Candidate 1: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec` (HEAD: `c84e9cfc8af202688698cddaf64f80dc2c155549`, CI: `37965723187`)
+- Original Candidate: `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627` (HEAD: `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`, CI: `37946050979`)
 **Branch:** `dmk-197-approval-inbox-quorum`  
 **Canonical WBS Status:** `IN_PROGRESS` (Strictly retained; zero forward lifecycle drift in WBS)  
 **Human Governance Status:** `PENDING_SIGNOFF`  
@@ -165,13 +167,38 @@ Following independent review, an additional targeted remediation pass was implem
 - **Correction C (P2 - Test Coverage) — Premature Closure Receipt Regression:**
   - Upgraded Scenario 19 in `scripts/testDmk197ClosureCandidate.ts` to test premature receipt injection inside an isolated temporary workspace, confirming fail-closed rejection without any mutation to the real repository disk or canonical WBS.
 
+### 4.6 Final Signature Integrity & Role Occupancy Remediation Pass
+
+Following operator review, a final targeted signature integrity remediation pass was implemented and verified:
+- **Correction A (P1 - Governance Integrity) — Strict Stored Signature Provenance:**
+  - `POST /api/projects/:id/approvals/:apvId/decide` pre-validates all stored signatures on pending requests via `validateStoredSignatures(item.approvalsCollected)` in `server/proposals/quorum.ts` before processing decisions.
+  - Enforces: array check, non-null objects, canonical roles (`Security Officer` / `Lead Architect`), non-empty string `identityId`, exact `roleSource === 'LOCAL_SERVER_ROSTER'`, valid decision (`APPROVED` or `REJECTED`).
+  - Fails closed on inconsistent rejection signatures in `PENDING` requests, duplicate signer identities, duplicate satisfied-role signatures, and invalid signatures attempting to occupy quorum slots.
+  - Returns HTTP 409 fail-closed without mutating state, audit logs, `stateVersion`, or canonical targets.
+- **Correction B (P1 - Quorum Correctness) — Synchronized Decision-Time Role Occupancy:**
+  - Synchronized decision-time role occupancy with canonical quorum validation rules via shared helper `validateStoredSignatures` in `server/proposals/quorum.ts`.
+  - `alreadySatisfiedRoles` is populated strictly from `sigValidation.satisfiedRoles` rather than raw unvalidated `item.approvalsCollected.filter(a => a.decision === 'APPROVED')`.
+  - Invalid signatures never occupy a quorum slot; legitimate reviewers are never falsely blocked with HTTP 403 slot-occupied.
+- **Correction C (P1 - Regression Coverage) — Deterministic Negative Scenarios (Scenarios 54–63):**
+  - Added 10 deterministic regression scenarios in `scripts/testDmk197Quorum.ts`:
+    - Scenario 54: Reject pending request containing signature with missing/empty `identityId` (HTTP 409).
+    - Scenario 55: Reject pending request containing signature with missing `roleSource` (HTTP 409).
+    - Scenario 56: Reject pending request containing signature with invalid `roleSource` (`EXTERNAL_IDP`) (HTTP 409).
+    - Scenario 57: Reject pending request containing signature with unknown role (`QA Lead`) (HTTP 409).
+    - Scenario 58: Reject pending request containing duplicate signer identities across roles (HTTP 409).
+    - Scenario 59: Reject pending request containing duplicate approval signatures for the same role (HTTP 409).
+    - Scenario 60: Invalid Security Officer signature followed by legitimate decision fails closed with HTTP 409 without treating the role as occupied (HTTP 409, not HTTP 403).
+    - Scenario 61: Pending request containing a rejection signature is rejected fail-closed (HTTP 409).
+    - Scenario 62: Valid dual-human approval workflow completes normally with strict provenance (HTTP 200, ratifies to APPROVED).
+    - Scenario 63: Non-mutating invariant verified across all invalid signature scenarios (stateVersion, target status, and audit logs unchanged).
+
 ---
 
 ## 5. Verification Test Matrix
 
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
-| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–53 (Quorum invariants, security hardening, read auth, signature schema) | **53/53 PASS** |
+| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–63 (Quorum invariants, security hardening, read auth, signature provenance & occupancy) | **63/63 PASS** |
 | **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-20 (auth notice cards & session re-check) | **20/20 PASS** |
 | **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback | **2/2 PASS** |
 | **DMK-197 Closure Candidate Verifier** | `scripts/verifyDmk197ClosureCandidate.ts` | `npm run verify:dmk-197-closure-candidate` | DMK-197 closure candidate verification (21 invariants) | **21/21 PASS** |
@@ -187,20 +214,20 @@ Following independent review, an additional targeted remediation pass was implem
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
 | **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity (87 checks) | **PASS** |
-| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1164/1164 assertions PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1174/1174 assertions PASS** |
 
 ---
 
 ## 6. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV18R070-WJR5`
+- **AuditEventId:** `AUD-MV22JFD8-KOUW`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `4b00c418a3b79caf1696bde59aafb338140ae1e4d78ff5241795f08d8e2e2bd1`
-- **New SHA-256:** `60d6f0475e24cf9e10af395758be3a7696e01972c1e6dc4a7cd45a1bc4ac1dfc`
-- **Project stateVersion:** 104 -> 105
-- **Audit Count:** 110 -> 111
-- **Reverse Audit Chain:** 111 / 111 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `60d6f0475e24cf9e10af395758be3a7696e01972c1e6dc4a7cd45a1bc4ac1dfc`
+- **New SHA-256:** `59d2c59705e105cf3f0acd0b0b84c380f459daf289dfae155147b21589fd2a15`
+- **Project stateVersion:** 105 -> 106
+- **Audit Count:** 111 -> 112
+- **Reverse Audit Chain:** 112 / 112 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
@@ -210,7 +237,7 @@ The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL
 This PR remains in **DRAFT** status on branch `dmk-197-approval-inbox-quorum` awaiting human operator inspection.
 
 **Current Next Actions:**
-1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`).
+1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`).
 2. Verify fresh full CI.
 3. Review the updated security and implementation evidence in `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`.
 4. Decide whether DMK-197 may transition from `IN_PROGRESS` to `VERIFICATION_PENDING`.
