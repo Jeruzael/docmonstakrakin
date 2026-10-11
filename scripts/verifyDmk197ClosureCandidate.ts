@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
 import { fileURLToPath } from 'node:url';
+import { verifyDmk197Closure } from './verifyDmk197Closure.ts';
 
 export interface Dmk197ClosureCandidate {
   schemaVersion: string;
@@ -43,6 +44,8 @@ export interface VerifyDmk197ClosureCandidateOptions {
   customWbsYamlContent?: string;
   allowMissingEvidenceFile?: boolean;
   skipDigestCheck?: boolean;
+  mode?: 'PRE_APPLY' | 'POST_APPLY';
+  allowExistingReceipt?: boolean;
 }
 
 export const EXPECTED_SCHEMA_VERSION = '1.0';
@@ -225,6 +228,36 @@ export function verifyDmk197ClosureCandidate(
   options: VerifyDmk197ClosureCandidateOptions = {}
 ): { valid: boolean; errors: string[] } {
   const root = options.workspaceRoot || process.cwd();
+  const receiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+  const hasReceipt = fs.existsSync(receiptPath);
+  const mode = options.mode || (hasReceipt ? 'POST_APPLY' : 'PRE_APPLY');
+
+  if (mode === 'POST_APPLY') {
+    const candidatePath = path.join(root, CANDIDATE_FILE_PATH);
+    let candidate = options.customCandidate;
+    if (!candidate) {
+      if (!fs.existsSync(candidatePath)) {
+        return { valid: false, errors: [`Candidate file does not exist at ${candidatePath}`] };
+      }
+      try {
+        candidate = JSON.parse(fs.readFileSync(candidatePath, 'utf8'));
+      } catch (e: any) {
+        return { valid: false, errors: [`Failed to parse candidate JSON: ${e.message}`] };
+      }
+    }
+    const candidateValidation = validateDmk197ClosureCandidate(candidate, {
+      skipDigestCheck: options.skipDigestCheck,
+    });
+    if (!candidateValidation.valid) {
+      return candidateValidation;
+    }
+    return verifyDmk197Closure({
+      workspaceRoot: root,
+      customWbsYamlContent: options.customWbsYamlContent,
+      allowMissingEvidenceFile: options.allowMissingEvidenceFile,
+    });
+  }
+
   const candidatePath = path.join(root, CANDIDATE_FILE_PATH);
   const errors: string[] = [];
 
@@ -334,8 +367,7 @@ export function verifyDmk197ClosureCandidate(
   }
 
   // Check that no closure receipt exists yet for DMK-197
-  const receiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
-  if (fs.existsSync(receiptPath)) {
+  if (!options.allowExistingReceipt && fs.existsSync(receiptPath)) {
     errors.push(`Closure receipt already exists at ${receiptPath}; premature receipt creation is forbidden`);
   }
 
@@ -347,13 +379,15 @@ export function verifyDmk197ClosureCandidate(
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   console.log('--- Verifying DMK-197 Closure Transition Candidate ---');
-  const result = verifyDmk197ClosureCandidate();
+  const receiptPath = path.join(process.cwd(), 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+  const mode = fs.existsSync(receiptPath) ? 'POST_APPLY' : 'PRE_APPLY';
+  const result = verifyDmk197ClosureCandidate({ mode });
   if (result.valid) {
-    console.log('✓ [PASS] DMK-197 closure transition candidate verified successfully.');
+    console.log(`✓ [PASS] DMK-197 closure transition candidate verified successfully (mode: ${mode}).`);
     console.log(`  Candidate Digest: ${EXPECTED_CANDIDATE_DIGEST}`);
     process.exit(0);
   } else {
-    console.error('✗ [FAIL] DMK-197 closure candidate verification errors:');
+    console.error(`✗ [FAIL] DMK-197 closure candidate verification errors (mode: ${mode}):`);
     result.errors.forEach((err) => console.error(`  - ${err}`));
     process.exit(1);
   }

@@ -170,13 +170,14 @@ export interface VerifyOptions {
   customPostMergeReceipt?: Dmk208PostMergeVerificationReceipt;
   customDmk196ClosureReceipt?: any;
   customDmk196PostMergeReceipt?: any;
+  customDmk197ClosureReceipt?: any;
   forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
   simulateCanonicalItemOverrides?: Record<string, any>;
 }
 
 export function verifyDmk208StatusAudit(
-  workspaceRoot: string,
+  workspaceRoot: string = process.cwd(),
   candidatePath?: string,
   receiptPath?: string,
   options?: VerifyOptions
@@ -562,6 +563,37 @@ export function verifyDmk208StatusAudit(
             // Permitted if simulated as historical in_progress
           } else {
             throw new Error(`TRANSITION item DMK-196 status mismatch: expected IN_PROGRESS, VERIFICATION_PENDING, or authorized VERIFIED, got ${canonicalItem.status}`);
+          }
+        } else if (item.id === 'DMK-197') {
+          if (canonicalItem.status === item.candidateStatus) {
+            // Permitted historical status (IN_PROGRESS)
+          } else if (canonicalItem.status === 'VERIFICATION_PENDING') {
+            // Receipt-bound exception for authorized DMK-197 closure transition
+            let dmk197Receipt = options?.customDmk197ClosureReceipt;
+            if (dmk197Receipt === undefined) {
+              const rPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+              if (fs.existsSync(rPath)) {
+                try {
+                  dmk197Receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+                } catch (e: any) {
+                  throw new Error(`DMK-197 closure receipt JSON parse failed: ${e.message}`);
+                }
+              } else {
+                throw new Error(`DMK-197 is in VERIFICATION_PENDING but closure receipt is missing at ${rPath}`);
+              }
+            } else if (dmk197Receipt === null) {
+              throw new Error(`DMK-197 is in VERIFICATION_PENDING but closure receipt is missing`);
+            }
+            if (
+              dmk197Receipt.workItemId !== 'DMK-197' ||
+              dmk197Receipt.toStatus !== 'VERIFICATION_PENDING' ||
+              dmk197Receipt.decision !== 'APPROVE' ||
+              dmk197Receipt.applied !== true
+            ) {
+              throw new Error('DMK-197 closure receipt validation failed for VERIFICATION_PENDING transition');
+            }
+          } else {
+            throw new Error(`TRANSITION item DMK-197 status mismatch: expected ${item.candidateStatus} or authorized VERIFICATION_PENDING, got ${canonicalItem.status}`);
           }
         } else {
           assert.equal(

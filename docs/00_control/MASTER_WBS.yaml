@@ -259,7 +259,7 @@ items:
     epic: "EPIC-13"
     priority: "P1"
     risk: "HIGH"
-    status: "IN_PROGRESS"
+    status: "VERIFICATION_PENDING"
     dependencies: ["DMK-196"]
     requirements: ["REQ-GOV-QUORUM-001"]
     architecture_links: ["CMP-01", "CMP-04"]
@@ -267,7 +267,9 @@ items:
     acceptance_criteria:
       - "Distinct Security Officer and Lead Architect human identities required for quorum"
     verification_method: "Quorum verification test"
-    evidence: []
+    evidence:
+      - "docs/07_verification/DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md"
+      - "docs/07_verification/dmk-197-closure-transition-candidate.json"
 
   - id: "DMK-198"
     wbs_path: "13.06.12"

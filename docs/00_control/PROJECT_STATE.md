@@ -1,5 +1,97 @@
 # docmonstakrakin current project state
 
+## 2026-10-12 — DMK-197 Governed Closure-Transition Application Checkpoint
+
+Following explicit human operator authorization (`APPROVE`), the governed closure transition for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) from `IN_PROGRESS` to `VERIFICATION_PENDING` has been applied on branch `dmk-197-approval-inbox-quorum` (PR #27).
+The transition is backed by immutable candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7`), authoritative human operator decision record, and immutable closure transition receipt `docs/07_verification/dmk-197-closure-transition-receipt.json`.
+Canonical `docs/00_control/MASTER_WBS.yaml` status is transitioned to `VERIFICATION_PENDING` with post-closure digest `53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d`, and derived `docs/00_control/MASTER_WBS.md` is rendered with zero drift.
+
+PR #27 remains OPEN, DRAFT, and UNMERGED. Downstream human sign-offs remain separate and pending (`human_approved_by` remains absent; human governance `PENDING_SIGNOFF`).
+Total active reconciliation blockers remain strictly at 11 (Historical 9 + DMK-208 + DMK-196). Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
+Gate 7 and release promotion remain untouched (`v0.1.0-rc1 / NOT PROMOTED`).
+
+### 1. Governed Closure Application Record
+- **WorkItem:** DMK-197 (WBS: 13.06.11, Title: Batch 3 — Approval Inbox & Canonical Quorum Synchronization)
+- **Branch:** `dmk-197-approval-inbox-quorum`
+- **Pull Request:** #27 (DRAFT / OPEN / UNMERGED)
+- **Authorized Transition:** `IN_PROGRESS → VERIFICATION_PENDING`
+- **Human Operator Decision:** `APPROVE`
+- **Decision Authority:** Human operator
+- **Decision Source:** Explicit human operator approval of DMK-197 closure transition candidate in governed review session
+- **Approved Candidate File:** `docs/07_verification/dmk-197-closure-transition-candidate.json`
+- **Approved Candidate Digest (SHA-256):** `0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7` (IMMUTABLE)
+- **Closure Transition Receipt:** `docs/07_verification/dmk-197-closure-transition-receipt.json` (VALID)
+- **Frozen Implementation HEAD:** `dab159041b9b2616c42d2654598d0949e5778d85`
+- **Frozen Implementation CI:** Run `38150032624` (Attempt 1: All 3 jobs SUCCESS)
+- **Pre-Closure Review HEAD:** `153c4c5c97df44d367725c4aa94aef4bde81717e`
+- **Pre-Closure Review CI:** Run `38155331392` (Attempt 1: All 3 jobs SUCCESS)
+- **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`
+- **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
+- **Post-Closure Canonical WBS SHA-256:** `53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d`
+- **Pre-Transition stateVersion:** `112`
+- **Post-Transition stateVersion:** `113`
+- **Controlled Docs Audit Event ID:** `AUD-MV44ZEM6-DAEK`
+- **Canonical Status:** `VERIFICATION_PENDING` (`wbs:check` PASS, zero drift)
+- **Technical Implementation Verification:** `PASS`
+- **Human Governance Status:** `PENDING_SIGNOFF` (`human_approved_by` absent)
+- **Live Reconciliation Executed:** `false` (11 blockers intact)
+- **Runtime WorkItem Mutations:** `0`
+- **Gate 7 Changed:** `false` (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`)
+- **Release Changed:** `false` (`v0.1.0-rc1 / NOT PROMOTED`)
+
+### 2. Implementation and Verification Record
+- **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
+- **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities, exact canonical roles, strict 64-char SHA-256 digests, strict provenance, terminal `SUPERSEDED` status handling; `validateStoredSignatures` helper)
+- **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, strict stored signature provenance validation, governed reissue endpoint, canonical target type derivation, decision-time canonical type validation, atomic audit and stateVersion)
+- **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation, auth status rendering, governed reissue modal, superseded record inspection)
+- **DMK-197 Applied Closure Verifier:** `scripts/verifyDmk197Closure.ts` (`npm run verify:dmk-197-closure`, PASS)
+- **DMK-197 Closure Regression Suite:** `scripts/testDmk197Closure.ts` (`npm run test:dmk-197-closure`, 26/26 PASS)
+- **DMK-197 Candidate Verifier:** `scripts/verifyDmk197ClosureCandidate.ts` (`npm run verify:dmk-197-closure-candidate`, PASS mode: POST_APPLY)
+- **DMK-197 Candidate Regression Suite:** `scripts/testDmk197ClosureCandidate.ts` (`npm run test:dmk-197-closure-candidate`, 20/20 PASS)
+- **Historical Verifiers:** `scripts/verifyDmk196Closure.ts` (PASS), `scripts/verifyDmk196PostMergeCandidate.ts` (PASS), `scripts/verifyDmk208StatusAudit.ts` (PASS)
+- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 86/86 PASS)
+- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 25/25 PASS)
+- **Persistence Integration Suite:** `scripts/testDmk197Persistence.ts` (`npm run test:dmk-197:persistence`, 3/3 PASS)
+- **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
+- **Complete Regression Suite:** `npm run test:complete` (PASS)
+
+### 3. Current governance and task status
+- DMK-195: VERIFIED / MERGED
+- DMK-196: VERIFIED (Published on master via PR #26 at commit `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`)
+- DMK-197: VERIFICATION_PENDING (Applied closure transition; PR #27 open/draft/unmerged)
+- DMK-198: IN_PROGRESS (Planned under EPIC-13; not started)
+- DMK-199: BACKLOG
+- DMK-201: VERIFICATION_PENDING
+- DMK-202: BACKLOG
+- DMK-203: VERIFIED / MERGED
+- DMK-204: BACKLOG
+- DMK-205: VERIFICATION_PENDING (PR #20 merged; live reconciliation pending)
+- DMK-206: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-207: BACKLOG (Planned under PLAN-GOV-2026-001; not started)
+- DMK-208: VERIFIED (Published on master via PR #24; human governance sign-off pending; reconciliation-blocked)
+- Gate 7: UNCHANGED (HUMAN_APPROVAL_REQUIRED / NOT EXECUTED)
+- Release status: v0.1.0-rc1 / NOT PROMOTED
+
+### 4. Historical governance blockers & live reconciliation
+Live reconciliation remains strictly:
+BLOCKED
+NOT AUTHORIZED
+NOT EXECUTED
+
+Total reconciliation blockers currently: 11
+- Historical 9: DMK-156, DMK-157, DMK-158, DMK-159, DMK-165, DMK-187, DMK-188, DMK-189, DMK-190
+- DMK-208: Technically verified on master; human governance sign-off pending
+- DMK-196: Technically verified on master; human governance sign-off pending
+
+### 5. Next safe action
+1. Commit and push the applied closure transition to `origin/dmk-197-approval-inbox-quorum`.
+2. Monitor GitHub Actions CI run on PR #27.
+3. Update PR #27 description with closure-transition application details.
+4. Halt strictly at the DMK-197 POST-CLOSURE APPLICATION REVIEW GATE.
+5. Do NOT merge PR #27.
+
+Gate 7 remains HUMAN_APPROVAL_REQUIRED / NOT EXECUTED.
+
 ## 2026-10-11 — DMK-197 Formal Closure-Transition Candidate Checkpoint (Governance Consistency Remediation)
 
 A formal, immutable, and fail-closed rebaselined closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27), following operator-directed targeted remediation for decision-time canonical type validation, synchronized reissue eligibility, and postRatificationDigest metadata policy.
