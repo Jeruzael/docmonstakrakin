@@ -1,8 +1,8 @@
 # docmonstakrakin current project state
 
-## 2026-10-10 — DMK-197 Formal Closure-Transition Candidate Checkpoint (Governed Approval Recovery Remediation)
+## 2026-10-11 — DMK-197 Formal Closure-Transition Candidate Checkpoint (Recovery UI & Canonical Type Corrections)
 
-A formal, immutable, and fail-closed rebaselined closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27), following operator-directed targeted remediation for corrupted pending approval recovery, deduplication integrity, and supporting Approval Inbox UX.
+A formal, immutable, and fail-closed rebaselined closure-transition candidate proposal (`IN_PROGRESS → VERIFICATION_PENDING`) has been prepared and independently verified for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) on branch `dmk-197-approval-inbox-quorum` (PR #27), following operator-directed targeted remediation for malformed signature projection, canonical replacement approval types, and Approval Inbox recovery UX.
 
 ### 1. Authorization and Scope Boundaries
 - **Candidate Preparation Only:** This checkpoint records rebaselined candidate preparation and independent verification only.
@@ -20,16 +20,17 @@ A formal, immutable, and fail-closed rebaselined closure-transition candidate pr
 - **Schema Version:** `1.0`
 - **From Status:** `IN_PROGRESS`
 - **Candidate Status:** `VERIFICATION_PENDING`
-- **Frozen Implementation HEAD:** `407b64e583d61e7881751c9d312bc00ec8828cb7`
+- **Frozen Implementation HEAD:** `ae9f536b6bb0dcde11f96dbf319a70f89dbd2a00`
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)
-- **Frozen Implementation CI:** Run `38055400742` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
+- **Frozen Implementation CI:** Run `38144817899` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)
 - **Pre-Closure Canonical WBS SHA-256:** `c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087`
-- **Deterministic Candidate Digest (SHA-256):** `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7`
+- **Deterministic Candidate Digest (SHA-256):** `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8`
 - **Superseded Candidate Lineage:**
   - Original Candidate: `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627` (HEAD: `234c85b88ce042ce3019c7a8b463ac2e22b8ae86`, CI: `37946050979`)
   - Superseded Candidate 1: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec` (HEAD: `c84e9cfc8af202688698cddaf64f80dc2c155549`, CI: `37965723187`)
   - Superseded Candidate 2: `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891` (HEAD: `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`, CI: `38033744079`)
-  - Rebaselined Current Candidate: `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7` (HEAD: `407b64e583d61e7881751c9d312bc00ec8828cb7`, CI: `38055400742`)
+  - Superseded Candidate 3: `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7` (HEAD: `407b64e583d61e7881751c9d312bc00ec8828cb7`, CI: `38055400742`)
+  - Rebaselined Current Candidate: `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8` (HEAD: `ae9f536b6bb0dcde11f96dbf319a70f89dbd2a00`, CI: `38144817899`)
 - **Proposed WBS Delta Preview Digest (SHA-256):** `49c1ea1426a583999c2422b3460933134f84f6e7405feca7145c40dc5f9b4d41`
 - **Verification Evidence Document:** `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`
 
@@ -39,18 +40,18 @@ A formal, immutable, and fail-closed rebaselined closure-transition candidate pr
 - **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af`
 - **Canonical Acceptance Criterion:** "Distinct Security Officer and Lead Architect human identities required for quorum" (SATISFIED)
 - **Targeted Remediation Invariants:**
-  - Correction A (Deduplication & Integrity Separation): In `POST /api/projects/:id/approvals`, existing pending approval integrity is validated against canonical schema (`LOCAL_SESSION_V1`, exact roles `['Security Officer', 'Lead Architect']`, valid 64-char hex `targetDigest`, `validateStoredSignatures`). Returns existing approval (HTTP 201) on healthy requests without audit mutation; returns HTTP 409 (`code: 'REISSUE_REQUIRED'`) on corrupted pending approvals; returns HTTP 409 on multiple conflicting active requests or target digest mismatch.
-  - Correction B (Governed Reissue Endpoint): Implemented `POST /api/projects/:id/approvals/:apvId/reissue`. Authenticates session human reviewer (`requireHuman`), rejects agent claims, enforces `humanConfirmed === true` and non-empty justification. Validates corruption and matching target digest. Atomically transitions original to terminal `SUPERSEDED`, creates fresh `PENDING` replacement with 0 signatures, bumps `stateVersion`, records audit event `APPROVAL_REISSUED`, and supports idempotent retry.
-  - Correction C (Approval Inbox Recovery UX): In `src/components/ApprovalsView.tsx`, displays `REISSUE REQUIRED` state for corrupted approvals, preserves historical evidence notice, provides `Reissue Sign-Off` action and modal, and enforces project-switch isolation. Displays `SUPERSEDED` records as non-actionable historical items.
-  - Correction D (20 Regression Scenarios): Added 17 backend scenarios in `scripts/testDmk197Quorum.ts` (Scenarios 64–80; 80/80 total), 1 transactional persistence scenario in `scripts/testDmk197Persistence.ts` (PERSIST-3; 3/3 total), and 3 Playwright UI scenarios in `scripts/testDmk197ApprovalInboxUi.ts` (UI-21, UI-22, UI-23; 23/23 total).
+  - Correction A (Server-Authoritative Malformed-Signature Projection): In `server/proposals/quorum.ts` and `server/proposals/signoff.ts`, malformed stored signatures on pending approvals are evaluated via `validateStoredSignatures`, returning `status = 'INVALID'`, `hasQuorum = false`, `satisfiedRoles = []`, and projecting server-derived `reissueRequired: true` for pending records with fresh targets. Healthy pending items, stale/missing targets, and historical completed records retain `reissueRequired = false`.
+  - Correction B (Approval Inbox Recovery UX): In `src/components/ApprovalsView.tsx`, authoritative `reissueRequired` projection drives the `REISSUE REQUIRED` state, renders corruption justification and guidance, suppresses standard `Approve`/`Reject` buttons, exposes `Reissue Sign-Off` quick actions and modal, and maintains strict project-switch isolation.
+  - Correction C (Canonical Replacement Approval Type & Integrity Mapping): In `server/proposals/signoff.ts`, approval types are authoritatively mapped from target types (`REQUIREMENT` -> `REQUIREMENT_BASELINE`, `ADR` -> `ADR_SIGN_OFF`, `RISK` -> `RISK_ACCEPTANCE`, `OVERRIDE` -> `SECURITY_OVERRIDE`). Mismatched types trigger `REISSUE_REQUIRED` 409 in deduplication, and reissue creates replacements with canonical type.
+  - Correction D (Deterministic Regression Scenarios): Expanded test suites to 82 quorum scenarios in `scripts/testDmk197Quorum.ts` (Scenarios 81 & 82) and 24 UI scenarios in `scripts/testDmk197ApprovalInboxUi.ts` (UI-24).
 - **Authoritative Server Evaluator:** `server/proposals/quorum.ts` (`evaluateQuorum` enforcing distinct identities, exact canonical roles, strict 64-char SHA-256 digests, strict provenance, terminal `SUPERSEDED` status handling; `validateStoredSignatures` helper)
-- **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, strict stored signature provenance validation, governed reissue endpoint, atomic audit and stateVersion)
+- **Hardened Signoff Endpoints:** `server/proposals/signoff.ts` (server-assigned roles, distinct identity enforcement, override validation, protected Gate 7 naming normalization, pre-mutation request validation, strict stored signature provenance validation, governed reissue endpoint, canonical target type derivation, atomic audit and stateVersion)
 - **Approval Inbox UI:** `src/components/ApprovalsView.tsx` (`ApprovalsView` with authoritative dual-role quorum status pills, role progress breakdown, session identity banner, centralized guarded fetch, project-switch isolation, dedicated ceremony exclusions, submission-state lifecycle isolation, auth status rendering, governed reissue modal, superseded record inspection)
 - **Canonical Status:** `IN_PROGRESS` (Zero WBS drift, `wbs:check` PASS)
 - **DMK-197 Closure Candidate Verifier:** `scripts/verifyDmk197ClosureCandidate.ts` (`npm run verify:dmk-197-closure-candidate`, 21 invariants verified PASS)
 - **DMK-197 Candidate Regression Suite:** `scripts/testDmk197ClosureCandidate.ts` (`npm run test:dmk-197-closure-candidate`, 20/20 scenarios PASS)
-- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 80/80 PASS)
-- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 23/23 PASS)
+- **Dedicated Quorum Suite:** `scripts/testDmk197Quorum.ts` (`npm run test:dmk-197`, 82/82 PASS)
+- **Dedicated Inbox UI Suite:** `scripts/testDmk197ApprovalInboxUi.ts` (`npm run test:dmk-197:ui`, 24/24 PASS)
 - **Persistence Integration Suite:** `scripts/testDmk197Persistence.ts` (`npm run test:dmk-197:persistence`, 3/3 PASS)
 - **Historical DMK-196 Suite:** `scripts/testRequirementSignoff.ts` (`npm run test:req-signoff`, 15/15 PASS)
 - **Requirement Sync Suite:** `scripts/testRequirementStatusSync.ts` (`npm run test:req-sync`, 12/12 PASS)
@@ -60,7 +61,7 @@ A formal, immutable, and fail-closed rebaselined closure-transition candidate pr
 - **UI Workspace Suite:** `scripts/testProjectsWorkspaceUi.ts` (`npm run test:projects-workspace:ui`, 14/14 PASS)
 - **Self WorkItem Reconciliation Suite:** `scripts/testSelfWorkItemReconciliation.ts` (`npm run test:self-work-sync`, 90/90 PASS)
 - **Controlled Docs Suite:** `npm run test:controlled-docs` (PASS)
-- **Complete Regression Suite:** `npm run test:complete` (51/51 suites PASS, 1195/1195 assertions PASS)
+- **Complete Regression Suite:** `npm run test:complete` (51/51 suites PASS, 1198/1198 assertions PASS)
 
 ### 4. Current governance and task status
 - DMK-195: VERIFIED / MERGED
@@ -91,7 +92,7 @@ Total reconciliation blockers currently: 11
 - DMK-196: Technically verified on master; human governance sign-off pending
 
 ### 6. Next safe action
-1. Present formal candidate report with candidate digest `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7` (superseding candidate digest `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`, `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`, and original candidate digest `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`).
+1. Present formal candidate report with candidate digest `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8` (superseding candidate digest `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7`, `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891`, `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec`, and original candidate digest `c1ee902a80de1f1676c09fdaa18980b55abe10040710602f4bc9bcd14ce88627`).
 2. Stop strictly at the **DMK-197 Closure-Transition Human Decision Gate**.
 3. Await explicit human operator decision (`APPROVE`, `REJECT`, or `REQUIRE_REMEDIATION`).
 4. Do not apply a lifecycle transition without separate explicit authorization.
