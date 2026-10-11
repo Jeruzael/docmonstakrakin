@@ -44,7 +44,7 @@ The human operator authorized **candidate preparation only** (`IN_PROGRESS → V
 
 ## 2. Technical Implementation & Targeted Remediation Hardening
 
-The implementation frozen at commit `da1d1973a7ec161dd45d807ba99d5d2c20c2386d` satisfies all functional requirements and incorporates the operator-directed integrity remediations:
+The implementation frozen at commit `dab159041b9b2616c42d2654598d0949e5778d85` satisfies the reviewed functional requirements and incorporates the operator-directed integrity remediations:
 
 ### 2.1 Correction A (P1 - Security): Approval Inbox Read Authorization
 - **Server Enforcement (`server/proposals/signoff.ts`):** `GET /api/projects/:id/approvals` strictly enforces human session authorization via `requireHuman`. Non-authenticated callers receive HTTP 401; non-governance identities receive HTTP 403. Nonexistent projects return HTTP 404 for authorized reviewers.
@@ -91,7 +91,12 @@ The implementation frozen at commit `da1d1973a7ec161dd45d807ba99d5d2c20c2386d` s
 - **Decision-Time Canonical Approval Type Validation (`server/proposals/signoff.ts`):** `POST /api/projects/:id/approvals/:apvId/decide` resolves canonical target mapping (`mapping[item.targetEntityType]`), rejects unsupported target entity types (HTTP 409 `REISSUE_REQUIRED`), and verifies `item.type === spec[1]`. Rejects mismatches with HTTP 409 `REISSUE_REQUIRED` without appending signatures, changing status, mutating targets, incrementing `stateVersion`, or creating audit events.
 - **Governed Reissue Eligibility & Pending Ratification Metadata Policy Synchronized (`server/proposals/quorum.ts` & `server/proposals/signoff.ts`):** `evaluateQuorum` enforces that for `item.status === 'PENDING'`, `postRatificationDigest` must NOT exist (`status = 'INVALID'`). In `POST .../decide`, reject if `item.status === 'PENDING' && item.postRatificationDigest !== undefined` with HTTP 409 `REISSUE_REQUIRED`. Deduplication checks `prior.postRatificationDigest === undefined`. In `GET /api/projects/:id/approvals`, project `reissueRequired: true` strictly when canonical target exists and is fresh (`currentTargetDigest === item.targetDigest`), supported target type, eligible override, no conflicting active pending approvals, item is pending, un-superseded, and corrupted. Stale/missing targets and conflicting approvals project `reissueRequired: false`.
 - **Remove Unsafe UI Recovery Fallback (`src/components/ApprovalsView.tsx`):** Rely strictly on authoritative `item.status === 'PENDING' && Boolean(item.reissueRequired ?? q.reissueRequired)` for displaying `Reissue Sign-Off`. Removed `q.status === 'INVALID'` fallback from enabling reissue. Normal decision buttons (`Approve`, `Reject`) are suppressed for invalid/stale/reissue-required items.
-- **Deterministic Regression Scenarios:** Added Scenarios 83–86 in `scripts/testDmk197Quorum.ts` (86/86 total) and Playwright UI scenario UI-25 in `scripts/testDmk197ApprovalInboxUi.ts` (25/25 total).
+- **Deterministic Regression Scenarios:** Added Scenarios 83–86 in `scripts/testDmk197Quorum.ts` (86/86 total) and Playwright UI scenario UI-25 in `scripts/testDmk197ApprovalInboxUi.ts` (25/25 total):
+  - Scenario 83: Direct decision endpoint rejects mismatched canonical approval type with zero or one existing valid signature; HTTP 409 and zero mutation
+  - Scenario 84: Pending approval containing unexpected `postRatificationDigest` is invalid; decision and deduplication fail closed; governed reissue succeeds
+  - Scenario 85: Corrupted pending approval referencing a stale canonical target cannot be reissued
+  - Scenario 86: Corrupted pending approval with conflicting active pending requests cannot be reissued
+  - Scenario UI-25: Ineligible invalid approval renders policy warning, suppresses decision buttons, and does not render `Reissue Sign-Off` button
 
 ---
 

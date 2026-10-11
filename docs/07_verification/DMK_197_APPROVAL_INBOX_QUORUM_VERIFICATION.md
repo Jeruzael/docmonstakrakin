@@ -251,8 +251,13 @@ Following operator review finding `Decision: REQUIRE_REMEDIATION`, a targeted re
   - Suppress normal decision buttons (`Approve`, `Reject`) when `item.status === 'PENDING' && (isReissue || q.status === 'INVALID' || q.status === 'STALE')`.
   - Display appropriate blocked/invalid/stale warnings without `Reissue Sign-Off` when invalid but ineligible.
 - **Correction D — Deterministic Regression Scenarios:**
-  - Added Scenarios 83–86 in `scripts/testDmk197Quorum.ts` (86/86 total).
-  - Added Playwright UI scenario UI-25 in `scripts/testDmk197ApprovalInboxUi.ts` (25/25 total).
+  - Added Scenarios 83–86 in `scripts/testDmk197Quorum.ts` (86/86 total):
+    - Scenario 83: Direct decision endpoint rejects mismatched canonical approval type with zero or one existing valid signature; HTTP 409 and zero mutation
+    - Scenario 84: Pending approval containing unexpected `postRatificationDigest` is invalid; decision and deduplication fail closed; governed reissue succeeds
+    - Scenario 85: Corrupted pending approval referencing a stale canonical target cannot be reissued
+    - Scenario 86: Corrupted pending approval with conflicting active pending requests cannot be reissued
+  - Added Playwright UI scenario UI-25 in `scripts/testDmk197ApprovalInboxUi.ts` (25/25 total):
+    - Scenario UI-25: Ineligible invalid approval renders policy warning, suppresses decision buttons, and does not render `Reissue Sign-Off` button
 
 ---
 
