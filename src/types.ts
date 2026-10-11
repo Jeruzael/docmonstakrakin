@@ -654,12 +654,16 @@ export interface ApprovalItem {
   supersededBy?: string;
   supersededAt?: string;
   supersededReason?: string;
+  reissueRequired?: boolean;
+  reissueReason?: string;
   quorum?: {
     status: 'PENDING' | 'PARTIAL' | 'SATISFIED' | 'REJECTED' | 'STALE' | 'INVALID';
     hasQuorum: boolean;
     satisfiedRoles: string[];
     pendingRoles: string[];
     reason?: string;
+    reissueRequired?: boolean;
+    reissueReason?: string;
   };
 }
 

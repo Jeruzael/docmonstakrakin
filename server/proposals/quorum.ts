@@ -10,6 +10,8 @@ export interface QuorumEvaluation {
   pendingRoles: string[];
   collectedSignatures: any[];
   reason?: string;
+  reissueRequired?: boolean;
+  reissueReason?: string;
 }
 
 export interface StoredSignaturesValidation {
@@ -241,6 +243,24 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
           reason: 'Target digest has changed since sign-off request was initiated',
         };
       }
+    }
+  }
+
+  // 4.5. Stored signature validation for pending approvals
+  if (item.status === 'PENDING') {
+    const sigValidation = validateStoredSignatures(item.approvalsCollected, {
+      isPending: true,
+      requiredRoles,
+    });
+    if (!sigValidation.valid) {
+      return {
+        status: 'INVALID',
+        hasQuorum: false,
+        satisfiedRoles: [],
+        pendingRoles: [...requiredRoles],
+        collectedSignatures: [],
+        reason: sigValidation.error || 'Malformed stored approval signatures; request fresh authenticated sign-off',
+      };
     }
   }
 

@@ -258,6 +258,45 @@ const mockApprovals: ApprovalItem[] = [
     policyVersion: 'LOCAL_SESSION_V1',
     targetDigest: 'a'.repeat(63) + '6',
   },
+  {
+    id: 'APV-MALFORMED-SIG-07',
+    projectId: testProject.id,
+    title: 'Malformed Signature Sign-Off REQ-MAL-007',
+    type: 'REQUIREMENT_BASELINE',
+    requestedBy: 'secOfficer',
+    requestedAt: '2026-10-09T08:50:00.000Z',
+    status: 'PENDING',
+    urgency: 'HIGH',
+    targetEntityId: 'REQ-MAL-007',
+    targetEntityType: 'REQUIREMENT',
+    description: 'Item with malformed signature requiring reissue.',
+    impactAnalysis: 'Malformed signature test.',
+    riskLevel: 'HIGH',
+    requiredRoles: ['Security Officer', 'Lead Architect'],
+    approvalsCollected: [
+      {
+        role: 'Security Officer',
+        approver: 'secOfficer',
+        decision: 'APPROVED',
+        timestamp: '2026-10-09T08:50:00.000Z',
+        // missing identityId and roleSource
+      },
+    ],
+    policyGates: [{ gateName: 'Target exists', passed: true, details: 'Target in project' }],
+    policyVersion: 'LOCAL_SESSION_V1',
+    targetDigest: 'a'.repeat(63) + '7',
+    reissueRequired: true,
+    reissueReason: 'Malformed stored signature: missing or empty identityId; request fresh authenticated sign-off',
+    quorum: {
+      status: 'INVALID',
+      hasQuorum: false,
+      satisfiedRoles: [],
+      pendingRoles: ['Security Officer', 'Lead Architect'],
+      reason: 'Malformed stored signature: missing or empty identityId; request fresh authenticated sign-off',
+      reissueRequired: true,
+      reissueReason: 'Malformed stored signature: missing or empty identityId; request fresh authenticated sign-off',
+    },
+  },
 ];
 
 const mockSession = {
@@ -1259,6 +1298,51 @@ try {
     pass('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project');
   } catch (e) {
     fail('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project', e);
+  }
+
+  // 24. Malformed signature card renders REISSUE REQUIRED, inspector shows reason, decision buttons suppressed, reissue succeeds
+  try {
+    const malformedCard = page.getByTestId('approval-card-APV-MALFORMED-SIG-07');
+    await malformedCard.waitFor();
+    const reissueBadge = malformedCard.getByText('REISSUE REQUIRED');
+    assert.ok((await reissueBadge.count()) >= 1, 'Card must display REISSUE REQUIRED badge');
+
+    await malformedCard.click();
+
+    // Verify inspector displays REISSUE REQUIRED status badge
+    const inspectorBadge = page.locator('div').filter({ hasText: 'APV-MALFORMED-SIG-07' }).getByText('REISSUE REQUIRED');
+    assert.ok((await inspectorBadge.count()) >= 1, 'Inspector must display REISSUE REQUIRED badge');
+
+    // Verify corruption warning box explains malformed signature
+    const corruptNotice = page.getByText(/Malformed stored signature/);
+    assert.ok((await corruptNotice.count()) >= 1, 'Inspector must display corruption reason');
+
+    // Verify Reissue Sign-Off button is visible
+    const reissueBtn = page.getByTestId('inspector-reissue-btn');
+    assert.ok((await reissueBtn.count()) >= 1, 'Reissue Sign-Off button must be visible');
+
+    // Verify normal decision buttons (Sign Decision / Reject / Approve) are suppressed for corrupted approval
+    assert.equal(await malformedCard.getByRole('button', { name: 'Sign Decision' }).count(), 0, 'Card Sign Decision must be suppressed');
+    assert.equal(await malformedCard.getByRole('button', { name: 'Reject' }).count(), 0, 'Card Reject must be suppressed');
+    assert.equal(await page.getByRole('button', { name: 'Approve', exact: true }).count(), 0, 'Inspector Approve must be suppressed');
+
+    // Open Reissue Modal and verify submission
+    await reissueBtn.click();
+    await page.getByText('Governed Sign-Off Reissue', { exact: true }).waitFor();
+    const justificationTextarea = page.locator('textarea[placeholder*="Explain why this approval request is being reissued"]');
+    await justificationTextarea.fill('Reissuing due to malformed signature provenance');
+    await page.locator('#reissue-confirm').check();
+
+    const confirmBtn = page.getByRole('button', { name: 'Confirm & Reissue Sign-Off' });
+    await confirmBtn.click();
+
+    // Wait for reissue modal to close
+    await page.waitForTimeout(200);
+    assert.equal(await page.locator('text="Governed Sign-Off Reissue"').count(), 0, 'Modal must close after reissue');
+
+    pass('UI-24: Genuine malformed signature card renders REISSUE REQUIRED, suppresses decision buttons, and enables governed reissue');
+  } catch (e) {
+    fail('UI-24: Genuine malformed signature card renders REISSUE REQUIRED, suppresses decision buttons, and enables governed reissue', e);
   }
 
   await page.close();

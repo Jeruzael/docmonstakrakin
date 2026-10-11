@@ -2810,6 +2810,205 @@ async function runTests() {
     } catch (e) {
       fail('80. Cross-project reissue request is rejected with HTTP 404/403', e);
     }
+
+    // 81. Pending approval with malformed signatures evaluates to INVALID, projects reissueRequired, fails decision, and deduplicates to REISSUE_REQUIRED
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const targetReq = store.requirements[testProjectId].find((r: any) => r.id === 'REQ-CORRUPT-DEDUP-01')!;
+      const malformedPendingApv: any = {
+        id: 'APV-CORRUPT-PROJ-01',
+        projectId: testProjectId,
+        title: 'Pending with Malformed Signature Provenance',
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: targetReq.id,
+        targetDigest: digest(targetReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          {
+            role: 'Security Officer',
+            approver: 'Malicious Or Spoofed Signer',
+            decision: 'APPROVED',
+            // missing identityId and missing roleSource!
+          },
+        ],
+      };
+      (store.approvals[testProjectId] ||= []).push(malformedPendingApv);
+
+      // 1. evaluateQuorum directly on this item must return INVALID, hasQuorum: false, satisfiedRoles: []
+      const evalDirect = evaluateQuorum(malformedPendingApv, digest(targetReq));
+      assert.equal(evalDirect.status, 'INVALID', 'evaluateQuorum must return INVALID for pending approval with malformed signatures');
+      assert.equal(evalDirect.hasQuorum, false, 'hasQuorum must be false');
+      assert.deepEqual(evalDirect.satisfiedRoles, [], 'satisfiedRoles must be empty');
+      assert.ok(evalDirect.reason?.includes('identityId') || evalDirect.reason?.includes('signature') || evalDirect.reason?.includes('roleSource'), 'Reason must explain malformed signature');
+
+      // 2. GET /approvals must project quorum.status === 'INVALID', reissueRequired === true, and reissueReason
+      const getRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      assert.equal(getRes.status, 200);
+      const getList = await getRes.json();
+      const projItem = getList.find((a: any) => a.id === 'APV-CORRUPT-PROJ-01');
+      assert.ok(projItem, 'Projected list must contain malformed pending item');
+      assert.equal(projItem.quorum.status, 'INVALID');
+      assert.equal(projItem.quorum.hasQuorum, false);
+      assert.deepEqual(projItem.quorum.satisfiedRoles, []);
+      assert.equal(projItem.reissueRequired, true, 'Corrupted pending approval with fresh target must have reissueRequired: true');
+      assert.ok(typeof projItem.reissueReason === 'string' && projItem.reissueReason.length > 0, 'Must have reissueReason');
+      assert.equal(projItem.quorum.reissueRequired, true, 'quorum.reissueRequired must also be true');
+
+      // 3. Contrast verification: healthy pending, approved, and superseded must NOT require reissue
+      const healthyPending = getList.find((a: any) => a.id === 'APV-REAL-01');
+      if (healthyPending) {
+        assert.equal(Boolean(healthyPending.reissueRequired), false, 'Healthy pending must not require reissue');
+      }
+      const supersededItem = getList.find((a: any) => a.id === 'APV-CORRUPT-SIGS-01');
+      if (supersededItem) {
+        assert.equal(Boolean(supersededItem.reissueRequired), false, 'Superseded record must not require reissue');
+      }
+
+      // 4. Deciding on corrupted pending record returns HTTP 409 without state mutation
+      const preVer = prj.stateVersion;
+      const preAudit = (store.auditLogs[testProjectId] || []).length;
+      const decRes = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-PROJ-01/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({ decision: 'APPROVED', humanConfirmed: true }),
+      });
+      assert.equal(decRes.status, 409, 'Deciding on corrupted pending approval must return 409');
+      assert.equal(prj.stateVersion, preVer, 'StateVersion must not increment on failed decision');
+      assert.equal((store.auditLogs[testProjectId] || []).length, preAudit, 'Audit log must not append event');
+
+      // 5. Reissuing the corrupted pending record succeeds
+      const reissueRes = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CORRUPT-PROJ-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Recovery of APV-CORRUPT-PROJ-01 with malformed signatures',
+        }),
+      });
+      assert.ok([200, 201].includes(reissueRes.status), `Reissue must succeed, got ${reissueRes.status}`);
+      const rep = await reissueRes.json();
+      assert.equal(rep.status, 'PENDING');
+      assert.equal(rep.type, 'REQUIREMENT_BASELINE');
+      assert.equal(malformedPendingApv.status, 'SUPERSEDED');
+
+      pass('81. Pending approval with malformed signatures evaluates to INVALID, projects reissueRequired, fails decision, and deduplicates to REISSUE_REQUIRED');
+    } catch (e) {
+      fail('81. Pending approval with malformed signatures evaluates to INVALID, projects reissueRequired, fails decision, and deduplicates to REISSUE_REQUIRED', e);
+    }
+
+    // 82. Pending approval with mismatched type is detected as corrupted and reissue derives canonical mapped type
+    try {
+      const prj = store.projects.find((p: any) => p.id === testProjectId)!;
+      const freshReq: any = {
+        id: 'REQ-MISMATCH-TYPE-TEST',
+        projectId: testProjectId,
+        title: 'Canonical Type Integrity Requirement',
+        statement: 'Test requirement for canonical type mapping verification',
+        status: 'DRAFT',
+      };
+      store.requirements[testProjectId].push(freshReq);
+
+      const mismatchTypeApv: any = {
+        id: 'APV-MISMATCH-TYPE-01',
+        projectId: testProjectId,
+        title: 'Mismatched Type Approval',
+        type: 'REQUIREMENT', // Intentionally wrong type instead of REQUIREMENT_BASELINE
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq.id,
+        targetDigest: digest(freshReq),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      (store.approvals[testProjectId] ||= []).push(mismatchTypeApv);
+
+      // 1. Deduplication on POST /approvals detects corrupted type and returns 409 REISSUE_REQUIRED
+      const dedupRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          targetEntityType: 'REQUIREMENT',
+          targetEntityId: freshReq.id,
+        }),
+      });
+      assert.equal(dedupRes.status, 409, 'Deduplication must reject mismatched type with 409');
+      const dedupBody = await dedupRes.json();
+      assert.equal(dedupBody.code, 'REISSUE_REQUIRED', 'Error code must be REISSUE_REQUIRED');
+      assert.equal(dedupBody.approvalId, 'APV-MISMATCH-TYPE-01');
+
+      // 2. GET /approvals projects reissueRequired === true
+      const getRes = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      assert.equal(getRes.status, 200);
+      const getList = await getRes.json();
+      const projItem = getList.find((a: any) => a.id === 'APV-MISMATCH-TYPE-01');
+      assert.ok(projItem, 'Projected list must contain mismatch item');
+      assert.equal(projItem.reissueRequired, true, 'Mismatched type approval must have reissueRequired: true');
+
+      // 3. Reissuing produces replacement with canonical type REQUIREMENT_BASELINE, NOT copying corrupted type 'REQUIREMENT'
+      const reissueRes = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-MISMATCH-TYPE-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Fix mismatched approval type to canonical REQUIREMENT_BASELINE',
+        }),
+      });
+      assert.ok([200, 201].includes(reissueRes.status), `Reissue must succeed, got ${reissueRes.status}`);
+      const rep = await reissueRes.json();
+      assert.equal(rep.type, 'REQUIREMENT_BASELINE', 'Replacement must derive canonical type REQUIREMENT_BASELINE from mapping');
+      assert.notEqual(rep.type, mismatchTypeApv.type, 'Replacement must NOT copy corrupted type');
+      assert.equal(mismatchTypeApv.type, 'REQUIREMENT', 'Original historical type must remain preserved');
+      assert.equal(mismatchTypeApv.status, 'SUPERSEDED');
+
+      // Also verify canonical type derivation for ADR, RISK, OVERRIDE
+      const freshAdr: any = {
+        id: 'ADR-MISMATCH-TYPE-TEST',
+        projectId: testProjectId,
+        title: 'Canonical Type Integrity ADR',
+        context: 'Test ADR for canonical type mapping verification',
+        status: 'PROPOSED',
+      };
+      store.adrs[testProjectId].push(freshAdr);
+
+      const mismatchAdrApv: any = {
+        id: 'APV-MISMATCH-ADR-01',
+        projectId: testProjectId,
+        title: 'Mismatched ADR Type',
+        type: 'ADR', // wrong type instead of ADR_SIGN_OFF
+        targetEntityType: 'ADR',
+        targetEntityId: freshAdr.id,
+        targetDigest: digest(freshAdr),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      store.approvals[testProjectId].push(mismatchAdrApv);
+
+      const reissueAdrRes = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-MISMATCH-ADR-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Fix mismatched ADR type to canonical ADR_SIGN_OFF',
+        }),
+      });
+      assert.ok([200, 201].includes(reissueAdrRes.status));
+      const repAdr = await reissueAdrRes.json();
+      assert.equal(repAdr.type, 'ADR_SIGN_OFF', 'Replacement ADR must have canonical type ADR_SIGN_OFF');
+
+      pass('82. Pending approval with mismatched type is detected as corrupted and reissue derives canonical mapped type');
+    } catch (e) {
+      fail('82. Pending approval with mismatched type is detected as corrupted and reissue derives canonical mapped type', e);
+    }
   } finally {
     server.close();
     if (originalEnv === undefined) {
@@ -2823,7 +3022,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 80 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 82 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {

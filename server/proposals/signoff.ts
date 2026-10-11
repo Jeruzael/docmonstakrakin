@@ -63,12 +63,14 @@ export function registerSignoffRoutes(app: Express, store: any) {
       if (!spec) {
         return {
           ...item,
+          reissueRequired: false,
           quorum: {
             status: 'INVALID',
             hasQuorum: false,
             satisfiedRoles: [],
             pendingRoles: [...REQUIRED_QUORUM_ROLES],
             reason: `Unsupported target entity type: ${item.targetEntityType}`,
+            reissueRequired: false,
           },
         };
       }
@@ -76,25 +78,79 @@ export function registerSignoffRoutes(app: Express, store: any) {
       if (!target) {
         return {
           ...item,
+          reissueRequired: false,
           quorum: {
             status: 'STALE',
             hasQuorum: false,
             satisfiedRoles: [],
             pendingRoles: [...REQUIRED_QUORUM_ROLES],
             reason: 'Canonical approval target no longer exists',
+            reissueRequired: false,
           },
         };
       }
       const currentTargetDigest = digest(target);
       const quorum = evaluateQuorum(item, currentTargetDigest);
+
+      // Determine if this item is a corrupted pending approval with a fresh canonical target
+      let reissueRequired = false;
+      let reissueReason: string | undefined;
+
+      if (item.status === 'PENDING' && !item.supersededBy && item.status !== 'SUPERSEDED') {
+        const isTargetFresh = currentTargetDigest === item.targetDigest;
+        if (isTargetFresh) {
+          const isTypeValid = item.type === spec[1];
+          const isPolicyValid = item.policyVersion === 'LOCAL_SESSION_V1';
+          const isRolesValid =
+            Array.isArray(item.requiredRoles) &&
+            item.requiredRoles.length === roles.length &&
+            item.requiredRoles[0] === roles[0] &&
+            item.requiredRoles[1] === roles[1];
+          const isDigestValid = typeof item.targetDigest === 'string' && /^[a-f0-9]{64}$/.test(item.targetDigest);
+          const sigValidation = validateStoredSignatures(item.approvalsCollected, {
+            isPending: true,
+            requiredRoles: roles,
+          });
+
+          const isCorrupted =
+            quorum.status === 'INVALID' ||
+            !isTypeValid ||
+            !isPolicyValid ||
+            !isRolesValid ||
+            !isDigestValid ||
+            !sigValidation.valid;
+
+          if (isCorrupted) {
+            reissueRequired = true;
+            if (quorum.status === 'INVALID' && quorum.reason) {
+              reissueReason = quorum.reason;
+            } else if (!isTypeValid) {
+              reissueReason = `Mismatched approval type "${item.type}" for target entity "${item.targetEntityType}"; canonical type requires "${spec[1]}"`;
+            } else if (!isPolicyValid) {
+              reissueReason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
+            } else if (!isRolesValid) {
+              reissueReason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
+            } else if (!isDigestValid) {
+              reissueReason = 'Invalid or malformed targetDigest format';
+            } else if (!sigValidation.valid) {
+              reissueReason = sigValidation.error || 'Malformed stored approval signatures';
+            }
+          }
+        }
+      }
+
       return {
         ...item,
+        reissueRequired,
+        ...(reissueReason ? { reissueReason } : {}),
         quorum: {
-          status: quorum.status,
-          hasQuorum: quorum.hasQuorum,
-          satisfiedRoles: quorum.satisfiedRoles,
+          status: reissueRequired ? 'INVALID' : quorum.status,
+          hasQuorum: reissueRequired ? false : quorum.hasQuorum,
+          satisfiedRoles: reissueRequired ? [] : quorum.satisfiedRoles,
           pendingRoles: quorum.pendingRoles,
-          ...(quorum.reason ? { reason: quorum.reason } : {}),
+          reissueRequired,
+          ...(reissueReason ? { reissueReason } : {}),
+          ...((reissueReason || quorum.reason) ? { reason: reissueReason || quorum.reason } : {}),
         },
       };
     });
@@ -166,6 +222,7 @@ export function registerSignoffRoutes(app: Express, store: any) {
       }
 
       // Authoritative pending approval integrity checks
+      const isTypeValid = prior.type === spec[1];
       const isPolicyValid = prior.policyVersion === 'LOCAL_SESSION_V1';
       const isRolesValid =
         Array.isArray(prior.requiredRoles) &&
@@ -178,9 +235,10 @@ export function registerSignoffRoutes(app: Express, store: any) {
         requiredRoles: roles,
       });
 
-      if (!isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || prior.supersededBy) {
+      if (!isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || prior.supersededBy) {
         let reason = 'Stored pending approval is corrupted; governed reissue required';
-        if (!isPolicyValid) reason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
+        if (!isTypeValid) reason = `Mismatched approval type "${prior.type}" for target entity "${targetEntityType}"; canonical type requires "${spec[1]}"`;
+        else if (!isPolicyValid) reason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
         else if (!isRolesValid) reason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
         else if (!isDigestValid) reason = 'Invalid or malformed targetDigest format';
         else if (!sigValidation.valid) reason = sigValidation.error || 'Malformed stored approval signatures';
@@ -314,6 +372,7 @@ export function registerSignoffRoutes(app: Express, store: any) {
     }
 
     // Verify corruption: healthy pending approvals cannot be reissued
+    const isTypeValid = item.type === spec[1];
     const isPolicyValid = item.policyVersion === 'LOCAL_SESSION_V1';
     const isRolesValid =
       Array.isArray(item.requiredRoles) &&
@@ -326,7 +385,7 @@ export function registerSignoffRoutes(app: Express, store: any) {
       requiredRoles: roles,
     });
 
-    const isCorrupted = !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid;
+    const isCorrupted = !isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid;
     if (!isCorrupted) {
       return res.status(409).json({
         error: 'Cannot reissue a healthy pending approval; existing request is valid for sign-off',
@@ -360,7 +419,7 @@ export function registerSignoffRoutes(app: Express, store: any) {
       id: newApprovalId,
       projectId: p.id,
       title: target.title || target.gateOrControl || item.title,
-      type: item.type,
+      type: spec[1],
       targetEntityId: item.targetEntityId,
       targetEntityType: item.targetEntityType,
       requestedBy: identity.name,

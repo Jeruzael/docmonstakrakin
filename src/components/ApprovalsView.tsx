@@ -193,6 +193,8 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         satisfied: item.quorum.satisfiedRoles || [],
         pending: item.quorum.pendingRoles || [],
         reason: item.quorum.reason,
+        reissueRequired: item.quorum.reissueRequired ?? item.reissueRequired,
+        reissueReason: item.quorum.reissueReason ?? item.reissueReason,
       };
     }
 
@@ -684,6 +686,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
             filteredApprovals.map((item) => {
               const isSelected = selectedItem?.id === item.id;
               const q = getQuorumProgress(item);
+              const isReissue = item.status === 'PENDING' && (Boolean(item.reissueRequired) || Boolean(q.reissueRequired) || q.status === 'INVALID');
               return (
                 <div
                   key={item.id}
@@ -730,7 +733,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full inline-block ${
                           item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
                             ? 'bg-slate-100 text-slate-700'
-                            : item.status === 'PENDING' && q.status === 'INVALID'
+                            : isReissue
                             ? 'bg-red-100 text-red-800'
                             : q.status === 'INVALID'
                             ? 'bg-red-100 text-red-800'
@@ -745,7 +748,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       >
                         {item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
                           ? 'SUPERSEDED'
-                          : item.status === 'PENDING' && q.status === 'INVALID'
+                          : isReissue
                           ? 'REISSUE REQUIRED'
                           : q.status === 'INVALID'
                           ? 'INVALID POLICY'
@@ -756,7 +759,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       <div className="text-[10px] text-slate-500 mt-1 font-mono">
                         {item.status === 'SUPERSEDED'
                           ? 'historical / superseded'
-                          : item.status === 'PENDING' && q.status === 'INVALID'
+                          : isReissue
                           ? 'reissue required'
                           : q.status === 'INVALID'
                           ? 'policy invalid'
@@ -794,7 +797,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         Requested by <strong>{item.requestedBy}</strong>
                       </span>
                       <div className="flex items-center gap-1.5">
-                        {q.status === 'INVALID' ? (
+                        {isReissue ? (
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-red-600">
                               Policy invalid: fresh sign-off required
@@ -856,6 +859,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
           {selectedItem && selectedItem.projectId === project.id ? (
             (() => {
               const q = getQuorumProgress(selectedItem);
+              const isReissue = selectedItem.status === 'PENDING' && (Boolean(selectedItem.reissueRequired) || Boolean(q.reissueRequired) || q.status === 'INVALID');
               return (
                 <>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -866,7 +870,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                           className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
                             selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
                               ? 'bg-slate-100 text-slate-700'
-                              : selectedItem.status === 'PENDING' && q.status === 'INVALID'
+                              : isReissue
                               ? 'bg-red-100 text-red-800'
                               : q.status === 'INVALID'
                               ? 'bg-red-100 text-red-800'
@@ -881,7 +885,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         >
                           {selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
                             ? 'SUPERSEDED'
-                            : selectedItem.status === 'PENDING' && q.status === 'INVALID'
+                            : isReissue
                             ? 'REISSUE REQUIRED'
                             : q.status === 'INVALID'
                             ? 'INVALID POLICY'
@@ -895,7 +899,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </h2>
                     </div>
 
-                    {selectedItem.status === 'PENDING' && q.status === 'INVALID' && (
+                    {isReissue && (
                       <div className="flex items-center gap-2">
                         <button
                           data-testid="inspector-reissue-btn"
@@ -907,7 +911,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </div>
                     )}
 
-                    {selectedItem.status === 'PENDING' && q.status !== 'INVALID' && q.status !== 'STALE' && (
+                    {selectedItem.status === 'PENDING' && !isReissue && q.status !== 'INVALID' && q.status !== 'STALE' && (
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenDecision(selectedItem, 'REJECTED')}
@@ -945,14 +949,14 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     </div>
                   )}
 
-                  {selectedItem.status === 'PENDING' && q.status === 'INVALID' && (
+                  {isReissue && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
                       <div className="flex items-center gap-2 font-bold text-red-800">
                         <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                         Approval Record Corrupted — Reissue Required
                       </div>
                       <p className="text-[11px] text-red-700">
-                        {q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
+                        {selectedItem.reissueReason || q.reissueReason || q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
                       </p>
                       <span className="text-[10px] font-semibold text-red-600 block">
                         Action available: An authorized reviewer may reissue this request. Existing signatures and historical evidence will be preserved.
