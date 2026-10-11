@@ -686,7 +686,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
             filteredApprovals.map((item) => {
               const isSelected = selectedItem?.id === item.id;
               const q = getQuorumProgress(item);
-              const isReissue = item.status === 'PENDING' && (Boolean(item.reissueRequired) || Boolean(q.reissueRequired) || q.status === 'INVALID');
+              const isReissue = item.status === 'PENDING' && Boolean(item.reissueRequired ?? q.reissueRequired);
               return (
                 <div
                   key={item.id}
@@ -813,6 +813,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                               Reissue Sign-Off
                             </button>
                           </div>
+                        ) : q.status === 'INVALID' ? (
+                          <span className="text-[11px] font-semibold text-red-600">
+                            Policy invalid: fresh sign-off required
+                          </span>
                         ) : q.status === 'STALE' ? (
                           <span className="text-[11px] font-semibold text-amber-600">
                             Target modified: fresh sign-off required
@@ -855,11 +859,11 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         </div>
 
         {/* Right Inspector (6 cols) */}
-        <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-5">
+        <div data-testid="approval-inspector-panel" className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-5">
           {selectedItem && selectedItem.projectId === project.id ? (
             (() => {
               const q = getQuorumProgress(selectedItem);
-              const isReissue = selectedItem.status === 'PENDING' && (Boolean(selectedItem.reissueRequired) || Boolean(q.reissueRequired) || q.status === 'INVALID');
+              const isReissue = selectedItem.status === 'PENDING' && Boolean(selectedItem.reissueRequired ?? q.reissueRequired);
               return (
                 <>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -960,6 +964,21 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                       </p>
                       <span className="text-[10px] font-semibold text-red-600 block">
                         Action available: An authorized reviewer may reissue this request. Existing signatures and historical evidence will be preserved.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedItem.status === 'PENDING' && !isReissue && q.status === 'INVALID' && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-red-800">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        Invalid Governance Policy / Sign-Off Blocked
+                      </div>
+                      <p className="text-[11px] text-red-700">
+                        {q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-red-600 block">
+                        Action blocked: This record cannot be signed or reissued directly. A fresh valid sign-off request must be initiated.
                       </span>
                     </div>
                   )}

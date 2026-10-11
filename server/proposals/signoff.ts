@@ -99,41 +99,65 @@ export function registerSignoffRoutes(app: Express, store: any) {
       if (item.status === 'PENDING' && !item.supersededBy && item.status !== 'SUPERSEDED') {
         const isTargetFresh = currentTargetDigest === item.targetDigest;
         if (isTargetFresh) {
-          const isTypeValid = item.type === spec[1];
-          const isPolicyValid = item.policyVersion === 'LOCAL_SESSION_V1';
-          const isRolesValid =
-            Array.isArray(item.requiredRoles) &&
-            item.requiredRoles.length === roles.length &&
-            item.requiredRoles[0] === roles[0] &&
-            item.requiredRoles[1] === roles[1];
-          const isDigestValid = typeof item.targetDigest === 'string' && /^[a-f0-9]{64}$/.test(item.targetDigest);
-          const sigValidation = validateStoredSignatures(item.approvalsCollected, {
-            isPending: true,
-            requiredRoles: roles,
-          });
+          let isOverrideEligible = true;
+          if (item.targetEntityType === 'OVERRIDE') {
+            const ovrCheck = validateOverrideEligibility(target);
+            if (!ovrCheck.valid) {
+              isOverrideEligible = false;
+            }
+          }
 
-          const isCorrupted =
-            quorum.status === 'INVALID' ||
-            !isTypeValid ||
-            !isPolicyValid ||
-            !isRolesValid ||
-            !isDigestValid ||
-            !sigValidation.valid;
+          const activePendings = list.filter(
+            (a: any) =>
+              a.targetEntityType === item.targetEntityType &&
+              a.targetEntityId === item.targetEntityId &&
+              a.status === 'PENDING' &&
+              !a.supersededBy &&
+              a.status !== 'SUPERSEDED'
+          );
+          const hasConflicts = activePendings.length > 1;
 
-          if (isCorrupted) {
-            reissueRequired = true;
-            if (quorum.status === 'INVALID' && quorum.reason) {
-              reissueReason = quorum.reason;
-            } else if (!isTypeValid) {
-              reissueReason = `Mismatched approval type "${item.type}" for target entity "${item.targetEntityType}"; canonical type requires "${spec[1]}"`;
-            } else if (!isPolicyValid) {
-              reissueReason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
-            } else if (!isRolesValid) {
-              reissueReason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
-            } else if (!isDigestValid) {
-              reissueReason = 'Invalid or malformed targetDigest format';
-            } else if (!sigValidation.valid) {
-              reissueReason = sigValidation.error || 'Malformed stored approval signatures';
+          if (isOverrideEligible && !hasConflicts) {
+            const isTypeValid = item.type === spec[1];
+            const isPolicyValid = item.policyVersion === 'LOCAL_SESSION_V1';
+            const isRolesValid =
+              Array.isArray(item.requiredRoles) &&
+              item.requiredRoles.length === roles.length &&
+              item.requiredRoles[0] === roles[0] &&
+              item.requiredRoles[1] === roles[1];
+            const isDigestValid = typeof item.targetDigest === 'string' && /^[a-f0-9]{64}$/.test(item.targetDigest);
+            const sigValidation = validateStoredSignatures(item.approvalsCollected, {
+              isPending: true,
+              requiredRoles: roles,
+            });
+            const isPostRatificationValid = item.postRatificationDigest === undefined;
+
+            const isCorrupted =
+              quorum.status === 'INVALID' ||
+              !isTypeValid ||
+              !isPolicyValid ||
+              !isRolesValid ||
+              !isDigestValid ||
+              !sigValidation.valid ||
+              !isPostRatificationValid;
+
+            if (isCorrupted) {
+              reissueRequired = true;
+              if (quorum.status === 'INVALID' && quorum.reason) {
+                reissueReason = quorum.reason;
+              } else if (!isTypeValid) {
+                reissueReason = `Mismatched approval type "${item.type}" for target entity "${item.targetEntityType}"; canonical type requires "${spec[1]}"`;
+              } else if (!isPolicyValid) {
+                reissueReason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
+              } else if (!isRolesValid) {
+                reissueReason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
+              } else if (!isDigestValid) {
+                reissueReason = 'Invalid or malformed targetDigest format';
+              } else if (!sigValidation.valid) {
+                reissueReason = sigValidation.error || 'Malformed stored approval signatures';
+              } else if (!isPostRatificationValid) {
+                reissueReason = 'Inconsistent ratification metadata: pending approval contains unexpected postRatificationDigest';
+              }
             }
           }
         }
@@ -234,14 +258,16 @@ export function registerSignoffRoutes(app: Express, store: any) {
         isPending: true,
         requiredRoles: roles,
       });
+      const isPostRatificationValid = prior.postRatificationDigest === undefined;
 
-      if (!isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || prior.supersededBy) {
+      if (!isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || !isPostRatificationValid || prior.supersededBy) {
         let reason = 'Stored pending approval is corrupted; governed reissue required';
         if (!isTypeValid) reason = `Mismatched approval type "${prior.type}" for target entity "${targetEntityType}"; canonical type requires "${spec[1]}"`;
         else if (!isPolicyValid) reason = 'Invalid or unsupported policyVersion; requires LOCAL_SESSION_V1';
         else if (!isRolesValid) reason = "Invalid requiredRoles; policy requires exact ['Security Officer', 'Lead Architect']";
         else if (!isDigestValid) reason = 'Invalid or malformed targetDigest format';
         else if (!sigValidation.valid) reason = sigValidation.error || 'Malformed stored approval signatures';
+        else if (!isPostRatificationValid) reason = 'Inconsistent ratification metadata: pending approval contains unexpected postRatificationDigest';
         else if (prior.supersededBy) reason = 'Approval has been superseded';
 
         return res.status(409).json({
@@ -384,8 +410,9 @@ export function registerSignoffRoutes(app: Express, store: any) {
       isPending: true,
       requiredRoles: roles,
     });
+    const isPostRatificationValid = item.postRatificationDigest === undefined;
 
-    const isCorrupted = !isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid;
+    const isCorrupted = !isTypeValid || !isPolicyValid || !isRolesValid || !isDigestValid || !sigValidation.valid || !isPostRatificationValid;
     if (!isCorrupted) {
       return res.status(409).json({
         error: 'Cannot reissue a healthy pending approval; existing request is valid for sign-off',
@@ -499,6 +526,21 @@ export function registerSignoffRoutes(app: Express, store: any) {
     const item = (store.approvals[req.params.id] || []).find((a: any) => a.id === req.params.apvId);
     if (!item) return res.status(404).json({ error: 'Approval request not found' });
 
+    const spec = mapping[item.targetEntityType];
+    if (!spec) {
+      return res.status(409).json({
+        error: `Unsupported target entity type "${item.targetEntityType}"; governed reissue required`,
+        code: 'REISSUE_REQUIRED',
+      });
+    }
+
+    if (item.type !== spec[1]) {
+      return res.status(409).json({
+        error: `Mismatched approval type "${item.type}" for target entity "${item.targetEntityType}"; canonical type requires "${spec[1]}"; governed reissue required`,
+        code: 'REISSUE_REQUIRED',
+      });
+    }
+
     // Validate approval policy version
     if (item.policyVersion !== 'LOCAL_SESSION_V1') {
       return res.status(409).json({ error: 'Historical or unsupported approval policy; request fresh authenticated sign-off' });
@@ -519,7 +561,14 @@ export function registerSignoffRoutes(app: Express, store: any) {
       return res.status(409).json({ error: 'Invalid or malformed targetDigest; request fresh authenticated sign-off' });
     }
 
-    if (
+    if (item.status === 'PENDING') {
+      if (item.postRatificationDigest !== undefined) {
+        return res.status(409).json({
+          error: 'Inconsistent ratification metadata: pending approval contains unexpected postRatificationDigest; governed reissue required',
+          code: 'REISSUE_REQUIRED',
+        });
+      }
+    } else if (
       item.postRatificationDigest !== undefined &&
       (typeof item.postRatificationDigest !== 'string' || !/^[a-f0-9]{64}$/.test(item.postRatificationDigest))
     ) {

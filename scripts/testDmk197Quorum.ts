@@ -3009,6 +3009,330 @@ async function runTests() {
     } catch (e) {
       fail('82. Pending approval with mismatched type is detected as corrupted and reissue derives canonical mapped type', e);
     }
+
+    // -------------------------------------------------------------------------
+    // Scenario 83: POST .../decide rejects mismatched approval type with HTTP 409 and REISSUE_REQUIRED
+    // -------------------------------------------------------------------------
+    try {
+      const freshReq83: any = {
+        id: 'REQ-MISMATCH-DECIDE-01',
+        projectId: testProjectId,
+        title: 'Mismatched Decide Validation Req',
+        statement: 'Validation requirement for decision-time canonical type enforcement',
+        status: 'PROPOSED',
+      };
+      store.requirements[testProjectId].push(freshReq83);
+
+      const apvMismatchDecide0: any = {
+        id: 'APV-MISMATCH-DECIDE-0',
+        projectId: testProjectId,
+        title: 'Mismatched Approval 0 Signatures',
+        type: 'REQUIREMENT', // Invalid: should be REQUIREMENT_BASELINE
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq83.id,
+        targetDigest: digest(freshReq83),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      store.approvals[testProjectId].push(apvMismatchDecide0);
+
+      const initialVersion = store.projects.find((p: any) => p.id === testProjectId).stateVersion;
+      const initialAuditCount = (store.auditLogs[testProjectId] || []).length;
+
+      // Decide with 0 signatures must reject with 409 REISSUE_REQUIRED
+      const decideRes0 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-MISMATCH-DECIDE-0/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          decision: 'APPROVED',
+          comment: 'Should fail type integrity check',
+        }),
+      });
+      assert.equal(decideRes0.status, 409, `Expected 409 for mismatched type, got ${decideRes0.status}`);
+      const data0 = await decideRes0.json();
+      assert.equal(data0.code, 'REISSUE_REQUIRED');
+      assert.ok(data0.error.includes('Mismatched approval type') || data0.error.includes('REQUIREMENT_BASELINE'));
+      // Verify zero state mutation
+      assert.equal(apvMismatchDecide0.status, 'PENDING');
+      assert.equal(apvMismatchDecide0.approvalsCollected.length, 0);
+      assert.equal(store.projects.find((p: any) => p.id === testProjectId).stateVersion, initialVersion);
+      assert.equal((store.auditLogs[testProjectId] || []).length, initialAuditCount);
+
+      // Now test with 1 existing signature
+      const apvMismatchDecide1: any = {
+        id: 'APV-MISMATCH-DECIDE-1',
+        projectId: testProjectId,
+        title: 'Mismatched Approval 1 Signature',
+        type: 'REQUIREMENT', // Invalid: should be REQUIREMENT_BASELINE
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq83.id,
+        targetDigest: digest(freshReq83),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [
+          {
+            role: 'Security Officer',
+            approver: 'Security Officer',
+            identityId: 'REV-SEC-01',
+            roleSource: 'LOCAL_SERVER_ROSTER',
+            decision: 'APPROVED',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+      store.approvals[testProjectId].push(apvMismatchDecide1);
+
+      const decideRes1 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-MISMATCH-DECIDE-1/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: archCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          decision: 'APPROVED',
+          comment: 'Should fail type integrity check even with 1 valid signature',
+        }),
+      });
+      assert.equal(decideRes1.status, 409, `Expected 409 for mismatched type with 1 signature, got ${decideRes1.status}`);
+      const data1 = await decideRes1.json();
+      assert.equal(data1.code, 'REISSUE_REQUIRED');
+      // Verify zero state mutation
+      assert.equal(apvMismatchDecide1.status, 'PENDING');
+      assert.equal(apvMismatchDecide1.approvalsCollected.length, 1);
+      assert.equal(store.projects.find((p: any) => p.id === testProjectId).stateVersion, initialVersion);
+      assert.equal((store.auditLogs[testProjectId] || []).length, initialAuditCount);
+
+      pass('83. Decision endpoint rejects mismatched approval type with HTTP 409 and REISSUE_REQUIRED (0 and 1 signature cases)');
+    } catch (e) {
+      fail('83. Decision endpoint rejects mismatched approval type with HTTP 409 and REISSUE_REQUIRED (0 and 1 signature cases)', e);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 84: Pending approval with malformed or unexpected postRatificationDigest enforces INVALID quorum, GET projection, decision 409, deduplication 409, and clean reissue
+    // -------------------------------------------------------------------------
+    try {
+      const freshReq84: any = {
+        id: 'REQ-RATIF-PENDING-01',
+        projectId: testProjectId,
+        title: 'Pending Ratification Metadata Test',
+        statement: 'Verify pending approval cannot contain postRatificationDigest',
+        status: 'PROPOSED',
+      };
+      store.requirements[testProjectId].push(freshReq84);
+
+      const apvRatifPending: any = {
+        id: 'APV-RATIF-PENDING-01',
+        projectId: testProjectId,
+        title: 'Pending Ratification Metadata Approval',
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq84.id,
+        targetDigest: digest(freshReq84),
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+        postRatificationDigest: 'a'.repeat(64), // Inconsistent: pending approval should NOT have postRatificationDigest
+      };
+      store.approvals[testProjectId].push(apvRatifPending);
+
+      // 1. evaluateQuorum must return INVALID status mentioning inconsistent ratification metadata
+      const qEval = evaluateQuorum(apvRatifPending, digest(freshReq84));
+      assert.equal(qEval.status, 'INVALID');
+      assert.ok(qEval.reason && qEval.reason.includes('unexpected postRatificationDigest'));
+
+      // 2. GET projection must project reissueRequired: true and quorum.status: 'INVALID'
+      const getRes84 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      assert.equal(getRes84.status, 200);
+      const list84 = await getRes84.json();
+      const projItem84 = list84.find((a: any) => a.id === 'APV-RATIF-PENDING-01');
+      assert.ok(projItem84);
+      assert.equal(projItem84.reissueRequired, true);
+      assert.equal(projItem84.quorum.status, 'INVALID');
+
+      // 3. POST .../decide must reject with 409 REISSUE_REQUIRED
+      const decideRes84 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-RATIF-PENDING-01/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          decision: 'APPROVED',
+          comment: 'Should fail due to unexpected postRatificationDigest',
+        }),
+      });
+      assert.equal(decideRes84.status, 409);
+      const decideData84 = await decideRes84.json();
+      assert.equal(decideData84.code, 'REISSUE_REQUIRED');
+
+      // 4. Deduplication via POST .../approvals must reject deduplication with 409 REISSUE_REQUIRED
+      const dedupRes84 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          targetEntityType: 'REQUIREMENT',
+          targetEntityId: freshReq84.id,
+        }),
+      });
+      assert.equal(dedupRes84.status, 409);
+      const dedupData84 = await dedupRes84.json();
+      assert.equal(dedupData84.code, 'REISSUE_REQUIRED');
+
+      // 5. POST .../reissue must succeed and create clean replacement without postRatificationDigest
+      const reissueRes84 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-RATIF-PENDING-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Clear invalid pending ratification metadata via governed reissue',
+        }),
+      });
+      assert.ok([200, 201].includes(reissueRes84.status));
+      const rep84 = await reissueRes84.json();
+      assert.equal(rep84.status, 'PENDING');
+      assert.equal(rep84.postRatificationDigest, undefined, 'Replacement approval must not carry over postRatificationDigest');
+      assert.equal(apvRatifPending.status, 'SUPERSEDED');
+
+      pass('84. Pending approval with unexpected postRatificationDigest enforces INVALID quorum, GET projection, decision 409, dedup 409, and clean reissue');
+    } catch (e) {
+      fail('84. Pending approval with unexpected postRatificationDigest enforces INVALID quorum, GET projection, decision 409, dedup 409, and clean reissue', e);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 85: Corrupted pending approval against STALE canonical target projects reissueRequired: false and rejects reissue
+    // -------------------------------------------------------------------------
+    try {
+      const freshAdr85: any = {
+        id: 'ADR-STALE-REISSUE-01',
+        projectId: testProjectId,
+        title: 'Stale Target Corrupted Approval Test',
+        context: 'Verify stale target suppresses reissueRequired',
+        status: 'PROPOSED',
+      };
+      store.adrs[testProjectId].push(freshAdr85);
+      const originalAdrDigest = digest(freshAdr85);
+
+      const apvStaleCorrupt: any = {
+        id: 'APV-STALE-CORRUPT-01',
+        projectId: testProjectId,
+        title: 'Stale Corrupted Approval',
+        type: 'ADR', // Mismatched type (corrupted)
+        targetEntityType: 'ADR',
+        targetEntityId: freshAdr85.id,
+        targetDigest: originalAdrDigest,
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      store.approvals[testProjectId].push(apvStaleCorrupt);
+
+      // Mutate canonical target so digest changes (becomes STALE)
+      freshAdr85.context = 'Updated context that changes digest';
+      const updatedAdrDigest = digest(freshAdr85);
+      assert.notEqual(originalAdrDigest, updatedAdrDigest);
+
+      // 1. GET projection: reissueRequired must be false because target is stale
+      const getRes85 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      const list85 = await getRes85.json();
+      const projItem85 = list85.find((a: any) => a.id === 'APV-STALE-CORRUPT-01');
+      assert.ok(projItem85);
+      assert.equal(projItem85.reissueRequired, false, 'Stale target must suppress reissueRequired');
+
+      // 2. POST .../reissue must reject with 409 (target has changed)
+      const reissueRes85 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-STALE-CORRUPT-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Attempting reissue on stale target',
+        }),
+      });
+      assert.equal(reissueRes85.status, 409);
+      const reissueData85 = await reissueRes85.json();
+      assert.ok(reissueData85.error.includes('Canonical approval target has changed'));
+      assert.equal(apvStaleCorrupt.status, 'PENDING', 'Original approval must not be mutated');
+
+      pass('85. Corrupted pending approval against STALE canonical target projects reissueRequired: false and rejects reissue');
+    } catch (e) {
+      fail('85. Corrupted pending approval against STALE canonical target projects reissueRequired: false and rejects reissue', e);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 86: Corrupted pending approval with conflicting active pending requests projects reissueRequired: false and rejects reissue
+    // -------------------------------------------------------------------------
+    try {
+      const freshReq86: any = {
+        id: 'REQ-CONFLICT-REISSUE-01',
+        projectId: testProjectId,
+        title: 'Conflict Active Pending Test',
+        statement: 'Verify multiple active pending approvals suppress reissueRequired',
+        status: 'PROPOSED',
+      };
+      store.requirements[testProjectId].push(freshReq86);
+      const req86Digest = digest(freshReq86);
+
+      const apvConflict1: any = {
+        id: 'APV-CONFLICT-01',
+        projectId: testProjectId,
+        title: 'Corrupted Approval with Conflict',
+        type: 'REQUIREMENT', // Corrupted type
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq86.id,
+        targetDigest: req86Digest,
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      const apvConflict2: any = {
+        id: 'APV-CONFLICT-02',
+        projectId: testProjectId,
+        title: 'Second Active Pending Approval',
+        type: 'REQUIREMENT_BASELINE',
+        targetEntityType: 'REQUIREMENT',
+        targetEntityId: freshReq86.id,
+        targetDigest: req86Digest,
+        policyVersion: 'LOCAL_SESSION_V1',
+        requiredRoles: ['Security Officer', 'Lead Architect'],
+        status: 'PENDING',
+        approvalsCollected: [],
+      };
+      store.approvals[testProjectId].push(apvConflict1);
+      store.approvals[testProjectId].push(apvConflict2);
+
+      // 1. GET projection: APV-CONFLICT-01 must have reissueRequired: false because conflicting active approvals exist
+      const getRes86 = await fetch(`${base}/api/projects/${testProjectId}/approvals`, {
+        headers: { Cookie: secCookie },
+      });
+      const list86 = await getRes86.json();
+      const projItem86_1 = list86.find((a: any) => a.id === 'APV-CONFLICT-01');
+      assert.ok(projItem86_1);
+      assert.equal(projItem86_1.reissueRequired, false, 'Conflicting active pending approvals must suppress reissueRequired');
+
+      // 2. POST .../reissue on APV-CONFLICT-01 must reject with 409
+      const reissueRes86 = await fetch(`${base}/api/projects/${testProjectId}/approvals/APV-CONFLICT-01/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: secCookie },
+        body: JSON.stringify({
+          humanConfirmed: true,
+          justification: 'Attempting reissue when another active pending exists',
+        }),
+      });
+      assert.equal(reissueRes86.status, 409);
+      const reissueData86 = await reissueRes86.json();
+      assert.ok(reissueData86.error.includes('Conflicting active pending approval'));
+      assert.equal(apvConflict1.status, 'PENDING', 'Original approval must not be mutated');
+
+      pass('86. Corrupted pending approval with conflicting active pending requests projects reissueRequired: false and rejects reissue');
+    } catch (e) {
+      fail('86. Corrupted pending approval with conflicting active pending requests projects reissueRequired: false and rejects reissue', e);
+    }
   } finally {
     server.close();
     if (originalEnv === undefined) {
@@ -3022,7 +3346,7 @@ async function runTests() {
 await runTests();
 
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 82 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: 86 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {

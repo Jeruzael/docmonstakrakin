@@ -179,8 +179,19 @@ export function evaluateQuorum(item: any, currentTargetDigest?: string): QuorumE
     };
   }
 
-  // Validate postRatificationDigest if present
-  if (
+  // Validate postRatificationDigest: pending approvals must NOT contain postRatificationDigest
+  if (item.status === 'PENDING') {
+    if (item.postRatificationDigest !== undefined) {
+      return {
+        status: 'INVALID',
+        hasQuorum: false,
+        satisfiedRoles: [],
+        pendingRoles: [...REQUIRED_QUORUM_ROLES],
+        collectedSignatures: [],
+        reason: 'Inconsistent ratification metadata: pending approval contains unexpected postRatificationDigest; request fresh authenticated sign-off',
+      };
+    }
+  } else if (
     item.postRatificationDigest !== undefined &&
     (typeof item.postRatificationDigest !== 'string' || !SHA256_HEX_REGEX.test(item.postRatificationDigest))
   ) {

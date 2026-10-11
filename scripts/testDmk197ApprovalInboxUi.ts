@@ -1172,19 +1172,19 @@ try {
 
   // UI-21: Corrupted approval renders REISSUE REQUIRED state and preserved evidence notice
   try {
-    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
-    await invalidCard.waitFor();
+    const malformedCard = page.getByTestId('approval-card-APV-MALFORMED-SIG-07');
+    await malformedCard.waitFor();
 
     // Verify card displays REISSUE REQUIRED badge
-    const badge = invalidCard.getByText('REISSUE REQUIRED', { exact: true });
+    const badge = malformedCard.getByText('REISSUE REQUIRED', { exact: true });
     assert.ok((await badge.count()) >= 1, 'Corrupted pending approval card must display REISSUE REQUIRED badge');
 
     // Verify Reissue Sign-Off button exists on card
-    const cardReissueBtn = invalidCard.getByRole('button', { name: 'Reissue Sign-Off' });
+    const cardReissueBtn = malformedCard.getByRole('button', { name: 'Reissue Sign-Off' });
     assert.ok((await cardReissueBtn.count()) >= 1, 'Corrupted card must offer Reissue Sign-Off action');
 
     // Click card to open inspection drawer
-    await invalidCard.click();
+    await malformedCard.click();
 
     // Verify inspector banner explains corrupted record and preservation
     const inspectorBanner = page.getByText(/Approval Record Corrupted — Reissue Required/i);
@@ -1202,7 +1202,7 @@ try {
 
   // UI-22: Authorized Reissue Sign-Off modal requires human confirmation and justification, calls reissue endpoint, and updates inbox
   try {
-    const cardReissueBtn = page.getByTestId('approval-card-APV-INVALID-04').getByRole('button', { name: 'Reissue Sign-Off' });
+    const cardReissueBtn = page.getByTestId('approval-card-APV-MALFORMED-SIG-07').getByRole('button', { name: 'Reissue Sign-Off' });
     await cardReissueBtn.click();
 
     // Verify modal is open
@@ -1215,7 +1215,7 @@ try {
 
     // Fill justification only
     const justificationTextarea = page.locator('textarea[placeholder*="Explain why this approval request is being reissued"]');
-    await justificationTextarea.fill('Governed recovery of malformed policy in APV-INVALID-04');
+    await justificationTextarea.fill('Governed recovery of malformed signature in APV-MALFORMED-SIG-07');
     assert.equal(await confirmBtn.isDisabled(), true, 'Confirm button must remain disabled without checkbox confirmation');
 
     // Check confirmation checkbox
@@ -1244,9 +1244,9 @@ try {
       window.dispatchEvent(new PopStateEvent('popstate'));
     }, testProject.id);
 
-    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
-    await invalidCard.waitFor();
-    await invalidCard.click();
+    const malformedCard = page.getByTestId('approval-card-APV-MALFORMED-SIG-07');
+    await malformedCard.waitFor();
+    await malformedCard.click();
 
     const inspectorReissueBtn = page.getByTestId('inspector-reissue-btn');
     await inspectorReissueBtn.click();
@@ -1343,6 +1343,44 @@ try {
     pass('UI-24: Genuine malformed signature card renders REISSUE REQUIRED, suppresses decision buttons, and enables governed reissue');
   } catch (e) {
     fail('UI-24: Genuine malformed signature card renders REISSUE REQUIRED, suppresses decision buttons, and enables governed reissue', e);
+  }
+
+  // 25. Ineligible invalid and stale records suppress Reissue Sign-Off and decision buttons
+  try {
+    const invalidCard = page.getByTestId('approval-card-APV-INVALID-04');
+    await invalidCard.waitFor();
+
+    // Verify card does NOT offer Reissue Sign-Off
+    assert.equal(await invalidCard.getByRole('button', { name: 'Reissue Sign-Off' }).count(), 0, 'Ineligible invalid card must NOT offer Reissue Sign-Off');
+    // Verify card decision buttons are suppressed
+    assert.equal(await invalidCard.getByRole('button', { name: 'Sign Decision' }).count(), 0, 'Card Sign Decision must be suppressed for invalid item');
+    assert.equal(await invalidCard.getByRole('button', { name: 'Reject' }).count(), 0, 'Card Reject must be suppressed for invalid item');
+    assert.ok((await invalidCard.getByText('Policy invalid: fresh sign-off required').count()) >= 1, 'Card must show policy invalid message');
+
+    await invalidCard.click();
+
+    // Verify inspector does NOT offer Reissue Sign-Off or decision buttons
+    const inspector = page.getByTestId('approval-inspector-panel');
+    assert.equal(await inspector.getByTestId('inspector-reissue-btn').count(), 0, 'Inspector must NOT display Reissue button for ineligible invalid item');
+    assert.equal(await inspector.getByRole('button', { name: 'Approve', exact: true }).count(), 0, 'Inspector Approve must be suppressed for invalid item');
+    assert.equal(await inspector.getByRole('button', { name: 'Reject', exact: true }).count(), 0, 'Inspector Reject must be suppressed for invalid item');
+
+    // Test Stale card
+    const staleCard = page.getByTestId('approval-card-APV-STALE-05');
+    await staleCard.waitFor();
+    assert.equal(await staleCard.getByRole('button', { name: 'Reissue Sign-Off' }).count(), 0, 'Stale card must NOT offer Reissue Sign-Off');
+    assert.equal(await staleCard.getByRole('button', { name: 'Sign Decision' }).count(), 0, 'Card Sign Decision must be suppressed for stale item');
+    assert.equal(await staleCard.getByRole('button', { name: 'Reject' }).count(), 0, 'Card Reject must be suppressed for stale item');
+    assert.ok((await staleCard.getByText('Target modified: fresh sign-off required').count()) >= 1, 'Card must show target modified message');
+
+    await staleCard.click();
+    assert.equal(await inspector.getByTestId('inspector-reissue-btn').count(), 0, 'Inspector must NOT display Reissue button for stale item');
+    assert.equal(await inspector.getByRole('button', { name: 'Approve', exact: true }).count(), 0, 'Inspector Approve must be suppressed for stale item');
+    assert.equal(await inspector.getByRole('button', { name: 'Reject', exact: true }).count(), 0, 'Inspector Reject must be suppressed for stale item');
+
+    pass('UI-25: Ineligible invalid and stale records suppress Reissue Sign-Off and decision buttons across card and inspector');
+  } catch (e) {
+    fail('UI-25: Ineligible invalid and stale records suppress Reissue Sign-Off and decision buttons across card and inspector', e);
   }
 
   await page.close();
