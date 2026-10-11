@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 export interface VerifyDmk197ClosureOptions {
   workspaceRoot?: string;
   customReceipt?: any;
+  customAttestation?: any;
   customWbsYamlContent?: string;
   allowMissingEvidenceFile?: boolean;
 }
@@ -37,6 +38,27 @@ export const EXPECTED_POST_CLOSURE_CANONICAL_WBS_SHA256 = '53050b92be8de04eb0bc9
 export const EXPECTED_APPLIED_AT = '2026-10-12T01:40:03Z';
 
 export const RECEIPT_FILE_PATH = 'docs/07_verification/dmk-197-closure-transition-receipt.json';
+export const ATTESTATION_FILE_PATH = 'docs/07_verification/dmk-197-post-merge-governance-attestation.json';
+
+export const EXPECTED_ATTESTATION_TYPE = 'POST_MERGE_GOVERNANCE_RECONCILIATION';
+export const EXPECTED_ORIGINAL_RECEIPT_SHA256 = '78b66ed881c8d2bd891229b7cc7821c000421573bce29f48eea7a7323d07187a';
+export const EXPECTED_CLOSURE_COMMIT_SHA = '59231ea8bb9cdf174f69d0d2cb94561d40c3b551';
+export const EXPECTED_MERGED_PULL_REQUEST = 27;
+export const EXPECTED_MERGE_COMMIT_SHA = '7196ec4840e8b89d672b61b383beebe148141b7c';
+export const EXPECTED_MERGE_TIMESTAMP = '2026-10-11T19:39:32Z';
+export const EXPECTED_APPROVAL_COMMENT_ID = 6112940783;
+export const EXPECTED_APPROVAL_COMMENT_URL = 'https://github.com/Jeruzael/docmonstakrakin/pull/27#issuecomment-6112940783';
+export const EXPECTED_APPROVAL_AUTHOR = 'Jeruzael';
+export const EXPECTED_APPROVAL_AUTHOR_ID = 91640195;
+export const EXPECTED_APPROVAL_AUTHOR_ASSOCIATION = 'OWNER';
+export const EXPECTED_APPROVAL_TIMESTAMP = '2026-10-11T19:39:54Z';
+export const EXPECTED_APPROVAL_DECISION = 'APPROVE';
+export const EXPECTED_PRIOR_APPROVAL_OBTAINED = false;
+export const EXPECTED_RETROSPECTIVE_INTERVAL_SECONDS = 22;
+export const EXPECTED_RETROSPECTIVE_GOVERNANCE_STATUS = 'UNRESOLVED_PROCEDURAL_NONCOMPLIANCE';
+export const EXPECTED_TIMESTAMP_INTERPRETATION = 'ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED';
+export const EXPECTED_MASTER_CI_RUN_ID = 38168952638;
+export const EXPECTED_MASTER_CI_CONCLUSION = 'success';
 
 export function canonicalJsonStringify(obj: any): string {
   if (obj === null || typeof obj !== 'object') {
@@ -153,6 +175,148 @@ export function validateDmk197ClosureReceipt(
   };
 }
 
+export function validateDmk197PostMergeAttestation(
+  attestation: any,
+  options: { workspaceRoot?: string } = {}
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (!attestation || typeof attestation !== 'object') {
+    errors.push('attestation must be a valid non-null object');
+    return { valid: false, errors };
+  }
+
+  if (attestation.schemaVersion !== EXPECTED_SCHEMA_VERSION) {
+    errors.push(`attestation.schemaVersion must be "${EXPECTED_SCHEMA_VERSION}", found "${attestation.schemaVersion}"`);
+  }
+  if (attestation.attestationType !== EXPECTED_ATTESTATION_TYPE) {
+    errors.push(`attestation.attestationType must be "${EXPECTED_ATTESTATION_TYPE}", found "${attestation.attestationType}"`);
+  }
+  if (attestation.workItemId !== EXPECTED_WORK_ITEM_ID) {
+    errors.push(`attestation.workItemId must be "${EXPECTED_WORK_ITEM_ID}", found "${attestation.workItemId}"`);
+  }
+  if (attestation.wbsPath !== EXPECTED_WBS_PATH) {
+    errors.push(`attestation.wbsPath must be "${EXPECTED_WBS_PATH}", found "${attestation.wbsPath}"`);
+  }
+  if (attestation.approvedCandidateDigest !== EXPECTED_APPROVED_CANDIDATE_DIGEST) {
+    errors.push(`attestation.approvedCandidateDigest must match "${EXPECTED_APPROVED_CANDIDATE_DIGEST}", found "${attestation.approvedCandidateDigest}"`);
+  }
+  if (attestation.originalReceiptPath !== RECEIPT_FILE_PATH) {
+    errors.push(`attestation.originalReceiptPath must be "${RECEIPT_FILE_PATH}", found "${attestation.originalReceiptPath}"`);
+  }
+  if (attestation.originalReceiptSha256 !== EXPECTED_ORIGINAL_RECEIPT_SHA256) {
+    errors.push(`attestation.originalReceiptSha256 must match "${EXPECTED_ORIGINAL_RECEIPT_SHA256}", found "${attestation.originalReceiptSha256}"`);
+  }
+  if (attestation.originalReceiptAppliedAt !== EXPECTED_APPLIED_AT) {
+    errors.push(`attestation.originalReceiptAppliedAt must be "${EXPECTED_APPLIED_AT}", found "${attestation.originalReceiptAppliedAt}"`);
+  }
+  if (attestation.closureCommitSha !== EXPECTED_CLOSURE_COMMIT_SHA) {
+    errors.push(`attestation.closureCommitSha must be "${EXPECTED_CLOSURE_COMMIT_SHA}", found "${attestation.closureCommitSha}"`);
+  }
+  if (attestation.mergedPullRequest !== EXPECTED_MERGED_PULL_REQUEST) {
+    errors.push(`attestation.mergedPullRequest must be ${EXPECTED_MERGED_PULL_REQUEST}, found ${attestation.mergedPullRequest}`);
+  }
+  if (attestation.mergeCommitSha !== EXPECTED_MERGE_COMMIT_SHA) {
+    errors.push(`attestation.mergeCommitSha must be "${EXPECTED_MERGE_COMMIT_SHA}", found "${attestation.mergeCommitSha}"`);
+  }
+  if (attestation.mergeTimestamp !== EXPECTED_MERGE_TIMESTAMP) {
+    errors.push(`attestation.mergeTimestamp must be "${EXPECTED_MERGE_TIMESTAMP}", found "${attestation.mergeTimestamp}"`);
+  }
+  if (attestation.approvalCommentId !== EXPECTED_APPROVAL_COMMENT_ID) {
+    errors.push(`attestation.approvalCommentId must be ${EXPECTED_APPROVAL_COMMENT_ID}, found ${attestation.approvalCommentId}`);
+  }
+  if (attestation.approvalCommentUrl !== EXPECTED_APPROVAL_COMMENT_URL) {
+    errors.push(`attestation.approvalCommentUrl must be "${EXPECTED_APPROVAL_COMMENT_URL}", found "${attestation.approvalCommentUrl}"`);
+  }
+  if (attestation.approvalAuthor !== EXPECTED_APPROVAL_AUTHOR) {
+    errors.push(`attestation.approvalAuthor must be "${EXPECTED_APPROVAL_AUTHOR}", found "${attestation.approvalAuthor}"`);
+  }
+  if (attestation.approvalAuthorId !== EXPECTED_APPROVAL_AUTHOR_ID) {
+    errors.push(`attestation.approvalAuthorId must be ${EXPECTED_APPROVAL_AUTHOR_ID}, found ${attestation.approvalAuthorId}`);
+  }
+  if (attestation.approvalAuthorAssociation !== EXPECTED_APPROVAL_AUTHOR_ASSOCIATION) {
+    errors.push(`attestation.approvalAuthorAssociation must be "${EXPECTED_APPROVAL_AUTHOR_ASSOCIATION}", found "${attestation.approvalAuthorAssociation}"`);
+  }
+  if (attestation.approvalTimestamp !== EXPECTED_APPROVAL_TIMESTAMP) {
+    errors.push(`attestation.approvalTimestamp must be "${EXPECTED_APPROVAL_TIMESTAMP}", found "${attestation.approvalTimestamp}"`);
+  }
+  if (attestation.approvalDecision !== EXPECTED_APPROVAL_DECISION) {
+    errors.push(`attestation.approvalDecision must be "${EXPECTED_APPROVAL_DECISION}", found "${attestation.approvalDecision}"`);
+  }
+  if (attestation.priorApprovalObtained !== EXPECTED_PRIOR_APPROVAL_OBTAINED) {
+    errors.push(`attestation.priorApprovalObtained must be false, found ${attestation.priorApprovalObtained}`);
+  }
+  if (attestation.retrospectiveIntervalSeconds !== EXPECTED_RETROSPECTIVE_INTERVAL_SECONDS) {
+    errors.push(`attestation.retrospectiveIntervalSeconds must be ${EXPECTED_RETROSPECTIVE_INTERVAL_SECONDS}, found ${attestation.retrospectiveIntervalSeconds}`);
+  }
+  if (attestation.retrospectiveGovernanceStatus !== EXPECTED_RETROSPECTIVE_GOVERNANCE_STATUS) {
+    errors.push(`attestation.retrospectiveGovernanceStatus must be "${EXPECTED_RETROSPECTIVE_GOVERNANCE_STATUS}", found "${attestation.retrospectiveGovernanceStatus}"`);
+  }
+  if (attestation.timestampInterpretation !== EXPECTED_TIMESTAMP_INTERPRETATION) {
+    errors.push(`attestation.timestampInterpretation must be "${EXPECTED_TIMESTAMP_INTERPRETATION}", found "${attestation.timestampInterpretation}"`);
+  }
+  if (attestation.masterCiRunId !== EXPECTED_MASTER_CI_RUN_ID) {
+    errors.push(`attestation.masterCiRunId must be ${EXPECTED_MASTER_CI_RUN_ID}, found ${attestation.masterCiRunId}`);
+  }
+  if (attestation.masterCiConclusion !== EXPECTED_MASTER_CI_CONCLUSION) {
+    errors.push(`attestation.masterCiConclusion must be "${EXPECTED_MASTER_CI_CONCLUSION}", found "${attestation.masterCiConclusion}"`);
+  }
+  if (attestation.canonicalStatus !== EXPECTED_TO_STATUS) {
+    errors.push(`attestation.canonicalStatus must be "${EXPECTED_TO_STATUS}", found "${attestation.canonicalStatus}"`);
+  }
+  if (attestation.verifiedPromoted !== false) {
+    errors.push(`attestation.verifiedPromoted must be false, found ${attestation.verifiedPromoted}`);
+  }
+  if (attestation.liveReconciliationExecuted !== false) {
+    errors.push(`attestation.liveReconciliationExecuted must be false, found ${attestation.liveReconciliationExecuted}`);
+  }
+  if (attestation.gate7Changed !== false) {
+    errors.push(`attestation.gate7Changed must be false, found ${attestation.gate7Changed}`);
+  }
+  if (attestation.releaseChanged !== false) {
+    errors.push(`attestation.releaseChanged must be false, found ${attestation.releaseChanged}`);
+  }
+
+  // Cross-check receipt digest if receipt file exists in workspace
+  const root = options.workspaceRoot || process.cwd();
+  const receiptFile = path.join(root, RECEIPT_FILE_PATH);
+  if (fs.existsSync(receiptFile)) {
+    try {
+      const receiptContent = fs.readFileSync(receiptFile, 'utf8');
+      const computedReceiptSha = crypto.createHash('sha256').update(Buffer.from(receiptContent)).digest('hex');
+      if (computedReceiptSha !== attestation.originalReceiptSha256) {
+        errors.push(`attestation.originalReceiptSha256 mismatch with disk receipt: computed="${computedReceiptSha}", attestation="${attestation.originalReceiptSha256}"`);
+      }
+    } catch {
+      // ignore read error
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+export function validateDmk197ClosureComplete(
+  receipt: any,
+  attestation: any,
+  options: { workspaceRoot?: string } = {}
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const receiptRes = validateDmk197ClosureReceipt(receipt, options);
+  if (!receiptRes.valid) {
+    errors.push(...receiptRes.errors);
+  }
+  const attestationRes = validateDmk197PostMergeAttestation(attestation, options);
+  if (!attestationRes.valid) {
+    errors.push(...attestationRes.errors);
+  }
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
 export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): { valid: boolean; errors: string[] } {
   const root = options.workspaceRoot || process.cwd();
   const receiptPath = path.join(root, RECEIPT_FILE_PATH);
@@ -175,6 +339,30 @@ export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): {
   const receiptValidation = validateDmk197ClosureReceipt(receipt, { workspaceRoot: root });
   if (!receiptValidation.valid) {
     errors.push(...receiptValidation.errors);
+  }
+
+  // Post-merge governance attestation validation
+  const attestationPath = path.join(root, ATTESTATION_FILE_PATH);
+  let attestation = options.customAttestation;
+  if (attestation === undefined) {
+    if (!fs.existsSync(attestationPath)) {
+      errors.push(`Post-merge governance attestation does not exist at ${attestationPath}`);
+    } else {
+      try {
+        attestation = JSON.parse(fs.readFileSync(attestationPath, 'utf8'));
+      } catch (e: any) {
+        errors.push(`Failed to parse governance attestation JSON: ${e.message}`);
+      }
+    }
+  } else if (attestation === null) {
+    errors.push(`Post-merge governance attestation is missing`);
+  }
+
+  if (attestation) {
+    const attestationValidation = validateDmk197PostMergeAttestation(attestation, { workspaceRoot: root });
+    if (!attestationValidation.valid) {
+      errors.push(...attestationValidation.errors);
+    }
   }
 
   // Candidate validation

@@ -3,10 +3,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
 import { fileURLToPath } from 'node:url';
+import { validateDmk197ClosureComplete } from './verifyDmk197Closure.ts';
 
 export interface VerifyDmk196ClosureOptions {
   workspaceRoot?: string;
   customReceipt?: any;
+  customDmk197ClosureReceipt?: any;
+  customDmk197Attestation?: any;
   customWbsYamlContent?: string;
   allowMissingEvidenceFile?: boolean;
 }
@@ -222,22 +225,42 @@ export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): {
   } else if (dmk197.status === 'IN_PROGRESS') {
     // Permitted historical status
   } else if (dmk197.status === 'VERIFICATION_PENDING') {
-    const dmk197ReceiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
-    if (!fs.existsSync(dmk197ReceiptPath)) {
-      errors.push('DMK-197 status is "VERIFICATION_PENDING" but dmk-197-closure-transition-receipt.json does not exist');
-    } else {
-      try {
-        const dmk197Receipt = JSON.parse(fs.readFileSync(dmk197ReceiptPath, 'utf8'));
-        if (
-          dmk197Receipt.workItemId !== 'DMK-197' ||
-          dmk197Receipt.toStatus !== 'VERIFICATION_PENDING' ||
-          dmk197Receipt.decision !== 'APPROVE' ||
-          dmk197Receipt.applied !== true
-        ) {
-          errors.push('DMK-197 closure receipt validation failed for VERIFICATION_PENDING transition');
+    let receipt = options.customDmk197ClosureReceipt;
+    if (receipt === undefined) {
+      const rPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+      if (fs.existsSync(rPath)) {
+        try {
+          receipt = JSON.parse(fs.readFileSync(rPath, 'utf8'));
+        } catch (e: any) {
+          errors.push(`DMK-197 closure receipt JSON parse failed: ${e.message}`);
         }
-      } catch (e: any) {
-        errors.push(`Failed to parse DMK-197 closure receipt: ${e.message}`);
+      } else {
+        errors.push(`DMK-197 status is "VERIFICATION_PENDING" but dmk-197-closure-transition-receipt.json does not exist at ${rPath}`);
+      }
+    } else if (receipt === null) {
+      errors.push(`DMK-197 status is "VERIFICATION_PENDING" but dmk-197-closure-transition-receipt.json is missing`);
+    }
+
+    let attestation = options.customDmk197Attestation;
+    if (attestation === undefined) {
+      const aPath = path.join(root, 'docs', '07_verification', 'dmk-197-post-merge-governance-attestation.json');
+      if (fs.existsSync(aPath)) {
+        try {
+          attestation = JSON.parse(fs.readFileSync(aPath, 'utf8'));
+        } catch (e: any) {
+          errors.push(`DMK-197 post-merge governance attestation JSON parse failed: ${e.message}`);
+        }
+      } else {
+        errors.push(`DMK-197 status is "VERIFICATION_PENDING" but post-merge governance attestation is missing at ${aPath}`);
+      }
+    } else if (attestation === null) {
+      errors.push(`DMK-197 status is "VERIFICATION_PENDING" but post-merge governance attestation is missing`);
+    }
+
+    if (receipt && attestation) {
+      const val = validateDmk197ClosureComplete(receipt, attestation, { workspaceRoot: root });
+      if (!val.valid) {
+        errors.push(...val.errors.map((e) => `DMK-197 verification failed: ${e}`));
       }
     }
   } else {
