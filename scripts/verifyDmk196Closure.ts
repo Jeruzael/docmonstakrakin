@@ -168,7 +168,28 @@ export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): {
         errors.push(`WBS digest mismatch: closure receipt postClosureCanonicalWbsSha256="${receipt?.postClosureCanonicalWbsSha256}", expected="${pmReceipt.preApplyCanonicalWbsSha256}"`);
       }
       if (pmReceipt.postApplyCanonicalWbsSha256 && wbsSha !== pmReceipt.postApplyCanonicalWbsSha256) {
-        errors.push(`WBS digest mismatch: post-merge receipt postApplyCanonicalWbsSha256="${pmReceipt.postApplyCanonicalWbsSha256}", actual="${wbsSha}"`);
+        const dmk197ReceiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+        let chainValid = false;
+        if (fs.existsSync(dmk197ReceiptPath)) {
+          try {
+            const dmk197Receipt = JSON.parse(fs.readFileSync(dmk197ReceiptPath, 'utf8'));
+            if (
+              dmk197Receipt.workItemId === 'DMK-197' &&
+              dmk197Receipt.toStatus === 'VERIFICATION_PENDING' &&
+              dmk197Receipt.decision === 'APPROVE' &&
+              dmk197Receipt.applied === true &&
+              dmk197Receipt.preClosureCanonicalWbsSha256 === pmReceipt.postApplyCanonicalWbsSha256 &&
+              dmk197Receipt.postClosureCanonicalWbsSha256 === wbsSha
+            ) {
+              chainValid = true;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        if (!chainValid) {
+          errors.push(`WBS digest mismatch: post-merge receipt postApplyCanonicalWbsSha256="${pmReceipt.postApplyCanonicalWbsSha256}", actual="${wbsSha}"`);
+        }
       }
     } catch (e: any) {
       errors.push(`Failed to parse post-merge receipt: ${e.message}`);
@@ -196,8 +217,31 @@ export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): {
   }
 
   const dmk197 = findItem(allItems, 'DMK-197');
-  if (!dmk197 || dmk197.status !== 'IN_PROGRESS') {
-    errors.push(`DMK-197 status must remain "IN_PROGRESS", found "${dmk197?.status}"`);
+  if (!dmk197) {
+    errors.push('DMK-197 not found in MASTER_WBS.yaml');
+  } else if (dmk197.status === 'IN_PROGRESS') {
+    // Permitted historical status
+  } else if (dmk197.status === 'VERIFICATION_PENDING') {
+    const dmk197ReceiptPath = path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json');
+    if (!fs.existsSync(dmk197ReceiptPath)) {
+      errors.push('DMK-197 status is "VERIFICATION_PENDING" but dmk-197-closure-transition-receipt.json does not exist');
+    } else {
+      try {
+        const dmk197Receipt = JSON.parse(fs.readFileSync(dmk197ReceiptPath, 'utf8'));
+        if (
+          dmk197Receipt.workItemId !== 'DMK-197' ||
+          dmk197Receipt.toStatus !== 'VERIFICATION_PENDING' ||
+          dmk197Receipt.decision !== 'APPROVE' ||
+          dmk197Receipt.applied !== true
+        ) {
+          errors.push('DMK-197 closure receipt validation failed for VERIFICATION_PENDING transition');
+        }
+      } catch (e: any) {
+        errors.push(`Failed to parse DMK-197 closure receipt: ${e.message}`);
+      }
+    }
+  } else {
+    errors.push(`DMK-197 status must remain "IN_PROGRESS" or authorized "VERIFICATION_PENDING", found "${dmk197?.status}"`);
   }
   const dmk198 = findItem(allItems, 'DMK-198');
   if (!dmk198 || dmk198.status !== 'IN_PROGRESS') {

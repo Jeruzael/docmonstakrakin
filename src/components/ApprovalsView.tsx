@@ -5,36 +5,35 @@ import {
   XCircle,
   AlertCircle,
   Clock,
-  ShieldAlert,
   ShieldCheck,
-  FileCheck2,
-  Cpu,
-  Layers,
   Search,
-  Filter,
   RefreshCw,
   Plus,
-  ArrowRight,
-  MessageSquare,
-  Lock,
-  ChevronDown,
-  ChevronUp,
   X,
-  Send,
 } from 'lucide-react';
-import { Project, ApprovalItem, ApprovalType, ApprovalStatus } from '../types';
+import { Project, ApprovalItem, ApprovalType } from '../types';
 
 interface ApprovalsViewProps {
   project: Project;
   onRefreshData?: () => void;
 }
 
+interface ReviewerSessionIdentity {
+  id: string;
+  name: string;
+  roles: string[];
+  kind: 'HUMAN' | 'AGENT';
+  roleSource: string;
+}
+
 export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefreshData }) => {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
-  const [error,setError] = useState('');
-  const [humanConfirmed,setHumanConfirmed] = useState(false);
+  const [sessionIdentity, setSessionIdentity] = useState<ReviewerSessionIdentity | null>(null);
+  const [authStatus, setAuthStatus] = useState<'UNAUTHENTICATED' | 'FORBIDDEN' | ''>('');
+  const [error, setError] = useState('');
+  const [humanConfirmed, setHumanConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUPERSEDED'>('PENDING');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
 
@@ -43,6 +42,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const [decisionType, setDecisionType] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [decisionComment, setDecisionComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Reissue Modal
+  const [showReissueModal, setShowReissueModal] = useState(false);
+  const [reissueItem, setReissueItem] = useState<ApprovalItem | null>(null);
+  const [reissueConfirmed, setReissueConfirmed] = useState(false);
+  const [reissueJustification, setReissueJustification] = useState('');
 
   // Request New Approval Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -53,30 +58,198 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const [reqImpact, setReqImpact] = useState('');
   const [reqUrgency, setReqUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
 
-  const fetchApprovals = async () => {
+  const activeProjectIdRef = React.useRef(project.id);
+  const requestGenerationRef = React.useRef(0);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const submissionGenerationRef = React.useRef(0);
+
+  activeProjectIdRef.current = project.id;
+
+  const fetchSession = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(`/api/projects/${project.id}/approvals`);
+      const res = await fetch('/api/governance/session');
       if (res.ok) {
         const data = await res.json();
-        setApprovals(data);
-        if (selectedItem) {
-          const updated = data.find((a: ApprovalItem) => a.id === selectedItem.id);
-          if (updated) setSelectedItem(updated);
-        }
+        setSessionIdentity(data.identity || null);
       }
     } catch (err) {
-      console.error('Failed to fetch approvals:', err);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch governance session:', err);
     }
   };
 
+  const fetchApprovalsForProject = React.useCallback(async (targetProjectId: string, preserveSelection = false) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentGen = ++requestGenerationRef.current;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${targetProjectId}/approvals`, {
+        signal: controller.signal,
+      });
+      if (res.status === 401) {
+        if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+          setAuthStatus('UNAUTHENTICATED');
+          setApprovals([]);
+          setSelectedItem(null);
+        }
+        return;
+      }
+      if (res.status === 403) {
+        if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+          setAuthStatus('FORBIDDEN');
+          setApprovals([]);
+          setSelectedItem(null);
+        }
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data: ApprovalItem[] = await res.json();
+
+      // Check strictly after response.json() completes:
+      if (activeProjectIdRef.current !== targetProjectId || requestGenerationRef.current !== currentGen) {
+        return; // Discard stale response
+      }
+
+      setAuthStatus('');
+      setApprovals(data);
+      if (preserveSelection) {
+        setSelectedItem((prev) => {
+          if (prev && prev.projectId === targetProjectId) {
+            const updated = data.find((a) => a.id === prev.id);
+            return updated || null;
+          }
+          return null;
+        });
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        return;
+      }
+      if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+        console.error('Failed to fetch approvals:', err);
+      }
+    } finally {
+      if (activeProjectIdRef.current === targetProjectId && requestGenerationRef.current === currentGen) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
-    fetchApprovals();
-  }, [project.id]);
+    activeProjectIdRef.current = project.id;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    ++requestGenerationRef.current;
+    ++submissionGenerationRef.current;
+
+    setSelectedItem(null);
+    setError('');
+    setShowDecisionModal(false);
+    setShowRequestModal(false);
+    setShowReissueModal(false);
+    setReissueItem(null);
+    setReissueConfirmed(false);
+    setReissueJustification('');
+    setHumanConfirmed(false);
+    setSubmitting(false);
+    setApprovals([]);
+    setAuthStatus('');
+
+    fetchApprovalsForProject(project.id, false);
+    fetchSession();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [project.id, fetchApprovalsForProject]);
+
+  const getQuorumProgress = (item: ApprovalItem) => {
+    if (item.status === 'SUPERSEDED') {
+      return {
+        status: 'SUPERSEDED' as const,
+        hasQuorum: false,
+        required: ['Security Officer', 'Lead Architect'],
+        satisfied: [],
+        pending: [],
+        reason: 'Approval request has been superseded by a replacement sign-off request',
+      };
+    }
+
+    if (item.quorum) {
+      return {
+        status: item.quorum.status,
+        hasQuorum: item.quorum.hasQuorum,
+        required: ['Security Officer', 'Lead Architect'],
+        satisfied: item.quorum.satisfiedRoles || [],
+        pending: item.quorum.pendingRoles || [],
+        reason: item.quorum.reason,
+        reissueRequired: item.quorum.reissueRequired ?? item.reissueRequired,
+        reissueReason: item.quorum.reissueReason ?? item.reissueReason,
+      };
+    }
+
+    const required = ['Security Officer', 'Lead Architect'];
+    if (
+      item.policyVersion !== 'LOCAL_SESSION_V1' ||
+      !Array.isArray(item.requiredRoles) ||
+      item.requiredRoles.length !== 2 ||
+      item.requiredRoles[0] !== required[0] ||
+      item.requiredRoles[1] !== required[1] ||
+      !item.targetDigest
+    ) {
+      return {
+        status: 'INVALID' as const,
+        hasQuorum: false,
+        required,
+        satisfied: [],
+        pending: required,
+        reason: 'Invalid or unsupported approval policy metadata',
+      };
+    }
+
+    const satisfied: string[] = [];
+    const usedIdentities = new Set<string>();
+
+    for (const sig of item.approvalsCollected || []) {
+      if (
+        sig.decision === 'APPROVED' &&
+        required.includes(sig.role) &&
+        typeof sig.identityId === 'string' &&
+        sig.identityId.trim() &&
+        sig.roleSource === 'LOCAL_SERVER_ROSTER'
+      ) {
+        if (!usedIdentities.has(sig.identityId) && !satisfied.includes(sig.role)) {
+          usedIdentities.add(sig.identityId);
+          satisfied.push(sig.role);
+        }
+      }
+    }
+
+    const pending = required.filter((r) => !satisfied.includes(r));
+    const hasQuorum = required.length > 0 && pending.length === 0;
+    const status = item.status === 'REJECTED'
+      ? 'REJECTED'
+      : hasQuorum
+      ? 'SATISFIED'
+      : satisfied.length > 0
+      ? 'PARTIAL'
+      : 'PENDING';
+
+    return { status, hasQuorum, required, satisfied, pending, reason: undefined };
+  };
 
   const handleOpenDecision = (item: ApprovalItem, decision: 'APPROVED' | 'REJECTED') => {
+    setError('');
     setHumanConfirmed(false);
     setSelectedItem(item);
     setDecisionType(decision);
@@ -91,10 +264,20 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const submitDecision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    const targetApvId = selectedItem.id;
+    const targetProjId = selectedItem.projectId;
+
+    if (targetProjId !== project.id || activeProjectIdRef.current !== project.id) {
+      setError('Active approval item belongs to a different project; submission cancelled.');
+      setSelectedItem(null);
+      return;
+    }
+    setError('');
+    const opGen = ++submissionGenerationRef.current;
 
     try {
       setSubmitting(true);
-      const res = await fetch(`/api/projects/${project.id}/approvals/${selectedItem.id}/decide`, {
+      const res = await fetch(`/api/projects/${targetProjId}/approvals/${targetApvId}/decide`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,61 +287,167 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         }),
       });
 
-      if (!res.ok) {const data = await res.json();setError(data.error);return;}
-      if (res.ok) {
-        setShowDecisionModal(false);
-        await fetchApprovals();
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Decision failed with status ${res.status}`);
+        }
+        return;
+      }
+
+      setShowDecisionModal(false);
+      await fetchApprovalsForProject(targetProjId, true);
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
         if (onRefreshData) onRefreshData();
       }
-    } catch (err) {
-      console.error('Decision submission failed:', err);
+    } catch (err: any) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        console.error('Decision submission failed:', err);
+        setError(err?.message || 'Decision submission failed');
+      }
     } finally {
-      setSubmitting(false);
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        setSubmitting(false);
+      }
+    }
+  };
+
+  const handleOpenReissue = (item: ApprovalItem) => {
+    setError('');
+    setReissueConfirmed(false);
+    setReissueJustification('');
+    setReissueItem(item);
+    setShowReissueModal(true);
+  };
+
+  const submitReissue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reissueItem) return;
+    const targetApvId = reissueItem.id;
+    const targetProjId = reissueItem.projectId;
+
+    if (targetProjId !== project.id || activeProjectIdRef.current !== project.id) {
+      setError('Active approval item belongs to a different project; reissue cancelled.');
+      setReissueItem(null);
+      setShowReissueModal(false);
+      return;
+    }
+    setError('');
+    const opGen = ++submissionGenerationRef.current;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/projects/${targetProjId}/approvals/${targetApvId}/reissue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          humanConfirmed: reissueConfirmed,
+          justification: reissueJustification.trim(),
+        }),
+      });
+
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Reissue failed with status ${res.status}`);
+        }
+        return;
+      }
+
+      setShowReissueModal(false);
+      setReissueItem(null);
+      setReissueConfirmed(false);
+      setReissueJustification('');
+      await fetchApprovalsForProject(targetProjId, false);
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        if (onRefreshData) onRefreshData();
+      }
+    } catch (err: any) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        console.error('Reissue submission failed:', err);
+        setError(err?.message || 'Reissue submission failed');
+      }
+    } finally {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        setSubmitting(false);
+      }
     }
   };
 
   const submitNewRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reqTitle.trim()) return;
+    setError('');
+
+    if (!reqTitle.trim()) {
+      setError('Title is required');
+      return;
+    }
+    if (!reqTargetId.trim()) {
+      setError('Target Entity ID is required; select a canonical requirement, ADR, risk, or override.');
+      return;
+    }
+
+    const targetProjId = project.id;
+    if (activeProjectIdRef.current !== targetProjId) return;
+
+    const opGen = ++submissionGenerationRef.current;
 
     try {
       setSubmitting(true);
-      let targetEntityType: 'GATE' | 'REQUIREMENT' | 'ADR' | 'RISK' | 'OVERRIDE' | 'RELEASE' = 'REQUIREMENT';
-      if (reqType === 'GATE_TRANSITION') targetEntityType = 'GATE';
-      else if (reqType === 'ADR_SIGN_OFF') targetEntityType = 'ADR';
+      let targetEntityType: 'REQUIREMENT' | 'ADR' | 'RISK' | 'OVERRIDE' = 'REQUIREMENT';
+      if (reqType === 'ADR_SIGN_OFF') targetEntityType = 'ADR';
       else if (reqType === 'SECURITY_OVERRIDE') targetEntityType = 'OVERRIDE';
       else if (reqType === 'RISK_ACCEPTANCE') targetEntityType = 'RISK';
-      else if (reqType === 'RELEASE_SIGNOFF') targetEntityType = 'RELEASE';
 
-      const res = await fetch(`/api/projects/${project.id}/approvals`, {
+      const res = await fetch(`/api/projects/${targetProjId}/approvals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: reqTitle,
+          title: reqTitle.trim(),
           type: reqType,
-          targetEntityId: reqTargetId || 'REQ-SEC-019',
+          targetEntityId: reqTargetId.trim(),
           targetEntityType,
-          description: reqDescription,
-          impactAnalysis: reqImpact,
+          description: reqDescription.trim(),
+          impactAnalysis: reqImpact.trim(),
           urgency: reqUrgency,
-          riskLevel: reqUrgency === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-          requestedBy: 'Lead Engineer',
-          requiredRoles: ['Security Officer', 'Lead Architect'],
         }),
       });
 
-      if (res.ok) {
-        setShowRequestModal(false);
-        setReqTitle('');
-        setReqDescription('');
-        setReqImpact('');
-        setReqTargetId('');
-        await fetchApprovals();
+      if (activeProjectIdRef.current !== targetProjId || submissionGenerationRef.current !== opGen) {
+        return;
       }
-    } catch (err) {
-      console.error('Failed to create approval request:', err);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+          setError(data.error || `Request failed with status ${res.status}`);
+        }
+        return;
+      }
+
+      setShowRequestModal(false);
+      setReqTitle('');
+      setReqDescription('');
+      setReqImpact('');
+      setReqTargetId('');
+      await fetchApprovalsForProject(targetProjId, false);
+    } catch (err: any) {
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        console.error('Failed to create approval request:', err);
+        setError(err?.message || 'Failed to create approval request');
+      }
     } finally {
-      setSubmitting(false);
+      if (activeProjectIdRef.current === targetProjId && submissionGenerationRef.current === opGen) {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -182,8 +471,43 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <label className="text-sm block"><input type="checkbox" checked={humanConfirmed} onChange={e=>setHumanConfirmed(e.target.checked)}/> I am an authorized human reviewer, signing in my assigned role.</label>
+      {error && (
+        <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Reviewer Session Identity Banner */}
+      {sessionIdentity ? (
+        <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-blue-900 text-xs flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-700 shrink-0" />
+            <span>
+              <strong>Authenticated Human Reviewer:</strong> {sessionIdentity.name} ({sessionIdentity.id})
+            </span>
+            <span className="font-mono text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200">
+              Roles: {sessionIdentity.roles.join(', ')}
+            </span>
+          </div>
+          <span className="text-[10px] font-mono font-bold text-blue-700 uppercase tracking-wider">
+            LOCAL ROSTER SESSION
+          </span>
+        </div>
+      ) : (
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-xs flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>No active human reviewer session. Sign in as a configured reviewer to sign decisions.</span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400 uppercase">UNAUTHENTICATED</span>
+        </div>
+      )}
 
       {/* View Header */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -204,14 +528,14 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
         <div className="flex items-center gap-2">
           <button
-            onClick={fetchApprovals}
+            onClick={() => { fetchApprovalsForProject(project.id, true); fetchSession(); }}
             disabled={loading}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
           <button
-            onClick={() => setShowRequestModal(true)}
+            onClick={() => { setError(''); setShowRequestModal(true); }}
             className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Request Sign-Off
@@ -272,7 +596,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
               Enforcement Policy
             </span>
             <span className="text-xs font-bold text-slate-800">
-              Dual-Role Quorum Required
+              Distinct Security Officer & Lead Architect
             </span>
           </div>
         </div>
@@ -281,7 +605,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-1.5 overflow-x-auto">
-          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((st) => (
+          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUPERSEDED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -310,19 +634,63 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
       {/* Main Grid: Approvals List & Inspection Drawer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left List (6 or 7 cols) */}
+        {/* Left List (6 cols) */}
         <div className="lg:col-span-6 space-y-3">
-          {filteredApprovals.length === 0 ? (
+          {authStatus === 'UNAUTHENTICATED' ? (
+            <div data-testid="approvals-auth-unauthenticated" className="p-8 text-center bg-amber-50/50 rounded-xl border border-amber-200 text-amber-900 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-amber-700 font-semibold text-sm">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                Authentication Required
+              </div>
+              <p className="text-xs text-amber-800 max-w-md mx-auto">
+                Viewing the governance approval inbox requires an active authenticated session. Please sign in or re-check your session.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchSession();
+                  fetchApprovalsForProject(project.id, false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Re-check Session
+              </button>
+            </div>
+          ) : authStatus === 'FORBIDDEN' ? (
+            <div data-testid="approvals-auth-forbidden" className="p-8 text-center bg-red-50/50 rounded-xl border border-red-200 text-red-900 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-red-700 font-semibold text-sm">
+                <XCircle className="w-5 h-5 text-red-600" />
+                Governance Access Forbidden
+              </div>
+              <p className="text-xs text-red-800 max-w-md mx-auto">
+                Your session identity lacks governance reviewer authorization (Security Officer or Lead Architect) to access the approval inbox.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchSession();
+                  fetchApprovalsForProject(project.id, false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Re-check Session
+              </button>
+            </div>
+          ) : filteredApprovals.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-400 text-xs">
-              No governance sign-off requests are pending. Imported AI proposals must first be reviewed and accepted into canonical project state before sign-off can be requested.
+              No governance sign-off requests are pending. Select a canonical requirement, ADR, risk, or override to request sign-off.
             </div>
           ) : (
             filteredApprovals.map((item) => {
               const isSelected = selectedItem?.id === item.id;
-              const hasQuorum = item.approvalsCollected.length >= item.requiredRoles.length;
+              const q = getQuorumProgress(item);
+              const isReissue = item.status === 'PENDING' && Boolean(item.reissueRequired ?? q.reissueRequired);
               return (
                 <div
                   key={item.id}
+                  data-testid={`approval-card-${item.id}`}
                   onClick={() => setSelectedItem(item)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     isSelected
@@ -363,19 +731,64 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     <div className="text-right shrink-0">
                       <span
                         className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full inline-block ${
-                          item.status === 'APPROVED'
+                          item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                            ? 'bg-slate-100 text-slate-700'
+                            : isReissue
+                            ? 'bg-red-100 text-red-800'
+                            : q.status === 'INVALID'
+                            ? 'bg-red-100 text-red-800'
+                            : q.status === 'STALE'
+                            ? 'bg-amber-100 text-amber-800'
+                            : item.status === 'APPROVED' || q.status === 'SATISFIED'
                             ? 'bg-emerald-100 text-emerald-800'
-                            : item.status === 'REJECTED'
+                            : item.status === 'REJECTED' || q.status === 'REJECTED'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {item.status}
+                        {item.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                          ? 'SUPERSEDED'
+                          : isReissue
+                          ? 'REISSUE REQUIRED'
+                          : q.status === 'INVALID'
+                          ? 'INVALID POLICY'
+                          : q.status === 'STALE'
+                          ? 'STALE TARGET'
+                          : item.status}
                       </span>
-                      <div className="text-[10px] text-slate-400 mt-1 font-mono">
-                        {item.approvalsCollected.length}/{item.requiredRoles.length} signed
+                      <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                        {item.status === 'SUPERSEDED'
+                          ? 'historical / superseded'
+                          : isReissue
+                          ? 'reissue required'
+                          : q.status === 'INVALID'
+                          ? 'policy invalid'
+                          : q.status === 'STALE'
+                          ? 'target stale'
+                          : `${q.satisfied.length}/${q.required.length} roles ratified`}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Quorum Role Status Pills */}
+                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                    {q.required.map((role) => {
+                      const isSat = q.satisfied.includes(role);
+                      return (
+                        <span
+                          key={role}
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded border ${
+                            q.status === 'INVALID'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : isSat
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}
+                        >
+                          {role}: {q.status === 'INVALID' ? '⚠️ INVALID' : isSat ? '✓ RATIFIED' : '⏳ PENDING'}
+                        </span>
+                      );
+                    })}
                   </div>
 
                   {item.status === 'PENDING' && (
@@ -384,25 +797,59 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                         Requested by <strong>{item.requestedBy}</strong>
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDecision(item, 'REJECTED');
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 rounded border border-red-200"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDecision(item, 'APPROVED');
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs"
-                        >
-                          Sign & Ratify
-                        </button>
+                        {isReissue ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-red-600">
+                              Policy invalid: fresh sign-off required
+                            </span>
+                            <button
+                              data-testid={`reissue-btn-${item.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenReissue(item);
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-2xs cursor-pointer"
+                            >
+                              Reissue Sign-Off
+                            </button>
+                          </div>
+                        ) : q.status === 'INVALID' ? (
+                          <span className="text-[11px] font-semibold text-red-600">
+                            Policy invalid: fresh sign-off required
+                          </span>
+                        ) : q.status === 'STALE' ? (
+                          <span className="text-[11px] font-semibold text-amber-600">
+                            Target modified: fresh sign-off required
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDecision(item, 'REJECTED');
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 rounded border border-red-200 cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDecision(item, 'APPROVED');
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs cursor-pointer"
+                            >
+                              Sign Decision
+                            </button>
+                          </>
+                        )}
                       </div>
+                    </div>
+                  )}
+                  {item.status === 'SUPERSEDED' && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Historical record: superseded by <strong>{item.supersededBy || 'replacement'}</strong></span>
+                      <span className="font-semibold text-slate-500">Non-actionable</span>
                     </div>
                   )}
                 </div>
@@ -412,165 +859,274 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         </div>
 
         {/* Right Inspector (6 cols) */}
-        <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-5">
-          {selectedItem ? (
-            <>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-400">{selectedItem.id}</span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                        selectedItem.status === 'APPROVED'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : selectedItem.status === 'REJECTED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {selectedItem.status}
-                    </span>
-                  </div>
-                  <h2 className="text-sm font-bold text-slate-900 mt-1">
-                    {selectedItem.title}
-                  </h2>
-                </div>
-
-                {selectedItem.status === 'PENDING' && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleOpenDecision(selectedItem, 'REJECTED')}
-                      className="px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 rounded-lg border border-red-200"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => handleOpenDecision(selectedItem, 'APPROVED')}
-                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs"
-                    >
-                      Approve
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Description & Impact */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                    Sign-Off Context & Intent
-                  </span>
-                  <p className="text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    {selectedItem.description}
-                  </p>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                    Downstream Impact Analysis
-                  </span>
-                  <p className="text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 font-mono text-[11px]">
-                    {selectedItem.impactAnalysis || 'No formal impact assessment attached.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Target Entity & Risk Metadata */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Target Entity
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-900 block mt-0.5">
-                    {selectedItem.targetEntityId} ({selectedItem.targetEntityType})
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Risk Classification
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-900 block mt-0.5">
-                    {selectedItem.riskLevel}
-                  </span>
-                </div>
-              </div>
-
-              {/* Policy Gates Verification */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Automated Pre-Flight Policy Gates
-                </span>
-                <div className="space-y-1.5 text-xs">
-                  {selectedItem.policyGates.map((gate, i) => (
-                    <div
-                      key={i}
-                      className="p-2.5 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between gap-3"
-                    >
+        <div data-testid="approval-inspector-panel" className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-5">
+          {selectedItem && selectedItem.projectId === project.id ? (
+            (() => {
+              const q = getQuorumProgress(selectedItem);
+              const isReissue = selectedItem.status === 'PENDING' && Boolean(selectedItem.reissueRequired ?? q.reissueRequired);
+              return (
+                <>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
                       <div className="flex items-center gap-2">
-                        {gate.passed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        )}
-                        <div>
-                          <span className="font-bold text-slate-800 text-[11px] block">{gate.gateName}</span>
-                          <span className="text-[10px] text-slate-500 block">{gate.details}</span>
-                        </div>
+                        <span className="font-mono text-xs font-bold text-slate-400">{selectedItem.id}</span>
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                            selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                              ? 'bg-slate-100 text-slate-700'
+                              : isReissue
+                              ? 'bg-red-100 text-red-800'
+                              : q.status === 'INVALID'
+                              ? 'bg-red-100 text-red-800'
+                              : q.status === 'STALE'
+                              ? 'bg-amber-100 text-amber-800'
+                              : selectedItem.status === 'APPROVED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : selectedItem.status === 'REJECTED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {selectedItem.status === 'SUPERSEDED' || q.status === 'SUPERSEDED'
+                            ? 'SUPERSEDED'
+                            : isReissue
+                            ? 'REISSUE REQUIRED'
+                            : q.status === 'INVALID'
+                            ? 'INVALID POLICY'
+                            : q.status === 'STALE'
+                            ? 'STALE TARGET'
+                            : selectedItem.status}
+                        </span>
                       </div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-slate-500">
-                        {gate.passed ? 'PASSED' : 'PENDING'}
+                      <h2 className="text-sm font-bold text-slate-900 mt-1">
+                        {selectedItem.title}
+                      </h2>
+                    </div>
+
+                    {isReissue && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          data-testid="inspector-reissue-btn"
+                          onClick={() => handleOpenReissue(selectedItem)}
+                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs cursor-pointer"
+                        >
+                          Reissue Sign-Off
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedItem.status === 'PENDING' && !isReissue && q.status !== 'INVALID' && q.status !== 'STALE' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenDecision(selectedItem, 'REJECTED')}
+                          className="px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => handleOpenDecision(selectedItem, 'APPROVED')}
+                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedItem.status === 'SUPERSEDED' && (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-slate-800">
+                        <Clock className="w-4 h-4 text-slate-500" />
+                        Superseded Approval Record (Historical)
+                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        This approval was superseded on {selectedItem.supersededAt || 'prior record'} by <strong>{selectedItem.supersededBy || 'replacement request'}</strong>.
+                      </p>
+                      {selectedItem.supersededReason && (
+                        <p className="text-[11px] text-slate-600 italic">
+                          Reason: {selectedItem.supersededReason}
+                        </p>
+                      )}
+                      <span className="text-[10px] font-semibold text-slate-500 block">
+                        All historical signatures and evidence remain preserved for audit. This record is non-actionable.
                       </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sign-Off Quorum Ledger */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Sign-Off Quorum Signatures
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    Required Roles: {selectedItem.requiredRoles.join(', ')}
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  {selectedItem.approvalsCollected.length === 0 ? (
-                    <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-lg text-amber-800 text-xs">
-                      No signatures collected yet. Pending review from assigned roles.
-                    </div>
-                  ) : (
-                    selectedItem.approvalsCollected.map((sig, i) => (
-                      <div
-                        key={i}
-                        className={`p-3 rounded-lg border ${
-                          sig.decision === 'APPROVED'
-                            ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                            : 'bg-red-50/50 border-red-200 text-red-950'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs">
-                            {sig.approver} ({sig.role})
-                          </span>
-                          <span className="font-mono text-[10px] font-bold uppercase">
-                            {sig.decision} • {sig.timestamp.substring(0, 10)}
-                          </span>
-                        </div>
-                        {sig.comment && (
-                          <p className="text-[11px] opacity-85 mt-1 italic">
-                            "{sig.comment}"
-                          </p>
-                        )}
-                      </div>
-                    ))
                   )}
-                </div>
-              </div>
-            </>
+
+                  {isReissue && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-red-800">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        Approval Record Corrupted — Reissue Required
+                      </div>
+                      <p className="text-[11px] text-red-700">
+                        {selectedItem.reissueReason || q.reissueReason || q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-red-600 block">
+                        Action available: An authorized reviewer may reissue this request. Existing signatures and historical evidence will be preserved.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedItem.status === 'PENDING' && !isReissue && q.status === 'INVALID' && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-red-800">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        Invalid Governance Policy / Sign-Off Blocked
+                      </div>
+                      <p className="text-[11px] text-red-700">
+                        {q.reason || 'Approval metadata or stored signatures failed integrity verification.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-red-600 block">
+                        Action blocked: This record cannot be signed or reissued directly. A fresh valid sign-off request must be initiated.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedItem.status === 'PENDING' && q.status === 'STALE' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-amber-800">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        Stale Target Entity Revision
+                      </div>
+                      <p className="text-[11px] text-amber-800">
+                        {q.reason || 'Target entity was modified after sign-off was requested.'}
+                      </p>
+                      <span className="text-[10px] font-semibold text-slate-600 block">
+                        Action required: A fresh authorized sign-off request must be initiated.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Quorum Progress Breakdown */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Dual-Role Quorum Progress
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">
+                        {q.satisfied.length} of {q.required.length} Roles Satisfied
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {q.required.map((role) => {
+                        const isSat = q.satisfied.includes(role);
+                        return (
+                          <div
+                            key={role}
+                            className={`p-2 rounded-lg border text-xs font-mono flex items-center justify-between ${
+                              isSat
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                                : 'bg-white border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            <span className="font-bold">{role}</span>
+                            <span className={isSat ? 'text-emerald-700 font-bold' : 'text-amber-600 font-semibold'}>
+                              {isSat ? '✓ SATISFIED' : '⏳ PENDING'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-200">
+                      Rule: Quorum requires distinct human reviewer identities for Security Officer and Lead Architect.
+                    </p>
+                  </div>
+
+                  {/* Description & Impact */}
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Sign-Off Context & Intent
+                      </span>
+                      <p className="text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        {selectedItem.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Downstream Impact Analysis
+                      </span>
+                      <p className="text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 font-mono text-[11px]">
+                        {selectedItem.impactAnalysis || 'No formal impact assessment attached.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Target Entity & Risk Metadata */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Target Entity
+                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-900 block mt-0.5">
+                        {selectedItem.targetEntityId} ({selectedItem.targetEntityType})
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Risk Classification
+                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-900 block mt-0.5">
+                        {selectedItem.riskLevel}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sign-Off Quorum Ledger */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Sign-Off Quorum Ledger
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        Required Roles: {q.required.join(', ')}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      {selectedItem.approvalsCollected.length === 0 ? (
+                        <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                          No signatures collected yet. Pending review from assigned roles.
+                        </div>
+                      ) : (
+                        selectedItem.approvalsCollected.map((sig, i) => (
+                          <div
+                            key={i}
+                            className={`p-3 rounded-lg border ${
+                              sig.decision === 'APPROVED'
+                                ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                                : 'bg-red-50/50 border-red-200 text-red-950'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs">
+                                {sig.approver} ({sig.role})
+                              </span>
+                              <span className="font-mono text-[10px] font-bold uppercase">
+                                {sig.decision} • {sig.timestamp ? sig.timestamp.substring(0, 10) : ''}
+                              </span>
+                            </div>
+                            {sig.identityId && (
+                              <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                                Identity ID: {sig.identityId} ({sig.roleSource || 'LOCAL_SERVER_ROSTER'})
+                              </div>
+                            )}
+                            {sig.comment && (
+                              <p className="text-[11px] opacity-85 mt-1 italic">
+                                "{sig.comment}"
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()
           ) : (
             <div className="p-16 text-center text-xs text-slate-400">
               Select an item from the inbox to inspect policy criteria and sign off.
@@ -597,8 +1153,23 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
             </div>
 
             <form onSubmit={submitDecision} className="p-5 space-y-4 text-xs">
-              {error && <p role="alert" className="text-red-700">{error}</p>}
-              <label className="block"><input type="checkbox" required checked={humanConfirmed} onChange={e=>setHumanConfirmed(e.target.checked)} /> I confirm this decision as the named human reviewer.</label>
+              {error && (
+                <div role="alert" className="p-2.5 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <label className="block font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  required
+                  checked={humanConfirmed}
+                  onChange={(e) => setHumanConfirmed(e.target.checked)}
+                  className="mr-2"
+                />
+                I confirm this decision as an authorized human reviewer.
+              </label>
+
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
                 <span className="font-bold text-slate-900 block">{selectedItem.title}</span>
                 <span className="font-mono text-[10px] text-slate-500 block">
@@ -606,15 +1177,26 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                 </span>
               </div>
 
-              <p>Your signed-in identity and assigned role will be recorded by the server.</p>
+              {sessionIdentity ? (
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-xs">
+                  Reviewer: <strong>{sessionIdentity.name}</strong> ({sessionIdentity.id})
+                  <div className="text-[10px] font-mono text-blue-700 mt-0.5">
+                    Authorized roles: {sessionIdentity.roles.join(', ')}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                  Note: Decision requires an active reviewer session.
+                </p>
+              )}
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Rationale & Governance Audit Note
+                  Rationale & Governance Audit Note {decisionType === 'REJECTED' && <span className="text-red-600">*</span>}
                 </label>
                 <textarea
                   rows={3}
-                  required
+                  required={decisionType === 'REJECTED'}
                   value={decisionComment}
                   onChange={(e) => setDecisionComment(e.target.value)}
                   placeholder="Record justification for audit trail and compliance verification..."
@@ -665,6 +1247,12 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
             </div>
 
             <form onSubmit={submitNewRequest} className="p-5 space-y-4 text-xs">
+              {error && (
+                <div role="alert" className="p-2.5 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
                   Proposal Title
@@ -689,12 +1277,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                     onChange={(e) => setReqType(e.target.value as ApprovalType)}
                     className="w-full p-2 rounded-lg border border-slate-200 bg-white font-medium"
                   >
-                    <option value="GATE_TRANSITION">GATE_TRANSITION</option>
-                    <option value="REQUIREMENT_BASELINE">REQUIREMENT_BASELINE</option>
-                    <option value="ADR_SIGN_OFF">ADR_SIGN_OFF</option>
-                    <option value="SECURITY_OVERRIDE">SECURITY_OVERRIDE</option>
-                    <option value="RISK_ACCEPTANCE">RISK_ACCEPTANCE</option>
-                    <option value="RELEASE_SIGNOFF">RELEASE_SIGNOFF</option>
+                    <option value="REQUIREMENT_BASELINE">Requirement Baseline</option>
+                    <option value="ADR_SIGN_OFF">Architectural Decision Record (ADR)</option>
+                    <option value="SECURITY_OVERRIDE">Security Override</option>
+                    <option value="RISK_ACCEPTANCE">Risk Acceptance</option>
                   </select>
                 </div>
 
@@ -712,6 +1298,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                   />
                 </div>
               </div>
+
+              <p className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                Note: Release promotion and Gate 7 transitions require dedicated ceremonies and cannot be initiated from this inbox.
+              </p>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
@@ -754,6 +1344,98 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
                   className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold shadow-xs cursor-pointer"
                 >
                   {submitting ? 'Submitting...' : 'Submit Sign-Off Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Governed Reissue Modal */}
+      {showReissueModal && reissueItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Governed Sign-Off Reissue
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReissueModal(false);
+                  setReissueItem(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <span className="font-bold block">Approval Record Requires Reissue</span>
+              <p className="text-[11px] text-amber-800">
+                This pending request (<strong>{reissueItem.id}</strong>) is corrupted and cannot receive signatures.
+                Reissuing will mark this record as <strong>SUPERSEDED</strong> and create a fresh pending sign-off request.
+              </p>
+              <p className="text-[11px] font-semibold text-amber-700">
+                ✓ All historical signatures and evidence remain permanently preserved for audit.
+              </p>
+            </div>
+
+            <form onSubmit={submitReissue} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Recovery Justification <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reissueJustification}
+                  onChange={(e) => setReissueJustification(e.target.value)}
+                  placeholder="Explain why this approval request is being reissued (e.g. malformed signatures, corrupted ingestion)..."
+                  rows={3}
+                  required
+                  className="w-full p-2.5 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:border-slate-400 font-medium"
+                />
+              </div>
+
+              <div className="flex items-start gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <input
+                  type="checkbox"
+                  id="reissue-confirm"
+                  checked={reissueConfirmed}
+                  onChange={(e) => setReissueConfirmed(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                />
+                <label htmlFor="reissue-confirm" className="text-xs text-slate-700 cursor-pointer font-medium leading-relaxed">
+                  I confirm that I am an authorized governance reviewer and explicitly authorize superseding this corrupted approval with a fresh dual-role sign-off request.
+                </label>
+              </div>
+
+              {error && (
+                <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReissueModal(false);
+                    setReissueItem(null);
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!reissueConfirmed || !reissueJustification.trim() || submitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-2xs cursor-pointer flex items-center gap-1.5"
+                >
+                  {submitting ? 'Reissuing...' : 'Confirm & Reissue Sign-Off'}
                 </button>
               </div>
             </form>

@@ -140,7 +140,7 @@ Permanent **DMK IDs** identify tasks immutably across re-organizations. The **WB
 #### `DMK-197` — Batch 3 — Approval Inbox & Canonical Quorum Synchronization
 - **WBS Path:** `13.06.11`
 - **Type:** `FEATURE` | **Priority:** `P1` | **Risk:** `HIGH`
-- **Status:** `IN_PROGRESS`
+- **Status:** `VERIFICATION_PENDING` (Evidence: `docs/07_verification/DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md, docs/07_verification/dmk-197-closure-transition-candidate.json`)
 - **Dependencies:** `DMK-196`
 - **Requirements:** `REQ-GOV-QUORUM-001` | **Architecture:** `CMP-01`, `CMP-04` | **Controls:** `SEC-CTRL-020`
 - **Description:** Approval Inbox UI with distinct human dual-signoff quorum verification.

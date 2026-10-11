@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "workItemId": "DMK-197",
+  "wbsPath": "13.06.11",
+  "decision": "APPROVE",
+  "decisionAuthority": "Human operator",
+  "decisionSource": "Explicit human operator approval of DMK-197 closure transition candidate in governed review session",
+  "fromStatus": "IN_PROGRESS",
+  "toStatus": "VERIFICATION_PENDING",
+  "approvedCandidateDigest": "0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7",
+  "candidateFile": "docs/07_verification/dmk-197-closure-transition-candidate.json",
+  "implementationHeadSha": "dab159041b9b2616c42d2654598d0949e5778d85",
+  "implementationCiRunId": 38150032624,
+  "implementationCiAttempt": 1,
+  "implementationCiConclusion": "success",
+  "preClosureBranchSha": "153c4c5c97df44d367725c4aa94aef4bde81717e",
+  "baseMasterSha": "7e45da9b0d4d8553745e5b7c25597eb48c94d6af",
+  "acceptanceCriterion": "Distinct Security Officer and Lead Architect human identities required for quorum",
+  "verificationEvidence": [
+    "docs/07_verification/DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md",
+    "docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md"
+  ],
+  "implementationChangedDuringClosure": false,
+  "preClosureCanonicalWbsSha256": "c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087",
+  "postClosureCanonicalWbsSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+  "liveReconciliationExecuted": false,
+  "runtimeWorkItemMutationCount": 0,
+  "gate7Changed": false,
+  "releaseChanged": false,
+  "applied": true,
+  "appliedAt": "2026-10-12T01:40:03Z"
+}

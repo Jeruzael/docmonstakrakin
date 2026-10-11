@@ -29,8 +29,8 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-const historicalPostApplyOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'IN_PROGRESS' };
-const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'VERIFICATION_PENDING' };
+const historicalPostApplyOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-197': 'IN_PROGRESS', 'DMK-208': 'IN_PROGRESS' };
+const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-197': 'IN_PROGRESS', 'DMK-208': 'VERIFICATION_PENDING' };
 
 // ==========================================
 // Part 1: Application Receipt Scenarios A - L
@@ -761,18 +761,19 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-208': 'V
   console.log('✓ [Scenario AS] DMK-196 VERIFIED without post-merge receipt fails.');
 }
 
-// Scenario AT: DMK-197 VERIFICATION_PENDING fails
+// Scenario AT: DMK-197 VERIFICATION_PENDING with missing closure receipt fails
 {
   assert.throws(
     () => {
       verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, {
         simulateStatusOverrides: { 'DMK-197': 'VERIFICATION_PENDING' },
+        customDmk197ClosureReceipt: null,
       });
     },
-    /TRANSITION item DMK-197 status mismatch/i,
+    /closure receipt is missing/i,
     'Scenario AT failed'
   );
-  console.log('✓ [Scenario AT] DMK-197 VERIFICATION_PENDING fails.');
+  console.log('✓ [Scenario AT] DMK-197 VERIFICATION_PENDING with missing closure receipt fails.');
 }
 
 // Scenario AU: DMK-197 VERIFIED fails

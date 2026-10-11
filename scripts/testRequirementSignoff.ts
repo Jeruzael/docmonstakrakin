@@ -563,51 +563,50 @@ try {
 // Part 4: Scope-Isolation & Policy Contract Invariants (Scenarios N & O)
 // ---------------------------------------------------------------------------
 
+const HISTORICAL_DMK196_BASE_SHA = '970c6cdbef21c3cc4cd9701c180d849b9ea69e41';
+const HISTORICAL_DMK196_PR25_HEAD_SHA = '8d6d240559983c53162a52b5c1c9064cae509fae';
+
 let changedFiles: string[] = [];
 try {
-  changedFiles = execSync('git diff 970c6cdbef21c3cc4cd9701c180d849b9ea69e41...HEAD --name-only', { encoding: 'utf8', cwd: root })
+  changedFiles = execSync(`git diff ${HISTORICAL_DMK196_BASE_SHA}...${HISTORICAL_DMK196_PR25_HEAD_SHA} --name-only`, { encoding: 'utf8', cwd: root })
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
-} catch {
-  try {
-    changedFiles = execSync('git diff origin/master...HEAD --name-only', { encoding: 'utf8', cwd: root })
-      .split(/\r?\n/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  } catch {
-    changedFiles = [];
+  if (changedFiles.length === 0) {
+    throw new Error('Historical git diff returned empty list');
   }
+} catch (gitErr) {
+  throw new Error(`Failed to read historical git diff ${HISTORICAL_DMK196_BASE_SHA}...${HISTORICAL_DMK196_PR25_HEAD_SHA}: ${gitErr}`);
 }
 
-// Scenario N [Scope Isolation]: ADR approval implementation is outside DMK-196 scope; ArchitectureView.tsx was not modified
+// Scenario N [Scope Isolation]: ADR approval implementation is outside DMK-196 scope; ArchitectureView.tsx was not modified in PR #25
 try {
   assert.equal(
     changedFiles.includes('src/components/ArchitectureView.tsx'),
     false,
-    'src/components/ArchitectureView.tsx must NOT be modified in DMK-196 branch'
+    'src/components/ArchitectureView.tsx must NOT be modified in historical DMK-196 PR #25'
   );
   pass('N [Scope Isolation]: ADR approval implementation is outside DMK-196 scope; ArchitectureView.tsx was not modified by this PR');
 } catch (err) {
   fail('N [Scope Isolation]: ADR approval scope isolation check', err);
 }
 
-// Scenario O [Scope Isolation]: Quorum, reviewer-session, and Approval Inbox implementations are unchanged; governance-policy returns required roles
+// Scenario O [Scope Isolation]: Quorum, reviewer-session, and Approval Inbox implementations are unchanged in DMK-196; governance-policy returns required roles
 try {
   assert.equal(
     changedFiles.includes('server/proposals/signoff.ts'),
     false,
-    'server/proposals/signoff.ts must NOT be modified in DMK-196 branch'
+    'server/proposals/signoff.ts must NOT be modified in historical DMK-196 PR #25'
   );
   assert.equal(
     changedFiles.includes('server/proposals/identity.ts'),
     false,
-    'server/proposals/identity.ts must NOT be modified in DMK-196 branch'
+    'server/proposals/identity.ts must NOT be modified in historical DMK-196 PR #25'
   );
   assert.equal(
     changedFiles.includes('src/components/ApprovalsView.tsx'),
     false,
-    'src/components/ApprovalsView.tsx must NOT be modified in DMK-196 branch'
+    'src/components/ApprovalsView.tsx must NOT be modified in historical DMK-196 PR #25'
   );
 
   // Assert governance-policy route returns production roles

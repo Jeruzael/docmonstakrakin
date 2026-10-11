@@ -613,7 +613,7 @@ export type ApprovalType =
   | 'STANDARD_UPDATE'
   | 'RELEASE_SIGNOFF';
 
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'SUPERSEDED';
 
 export interface ApprovalItem {
   id: string;
@@ -636,15 +636,35 @@ export interface ApprovalItem {
     timestamp: string;
     decision: 'APPROVED' | 'REJECTED';
     comment?: string;
+    identityId?: string;
+    roleSource?: string;
   }[];
   policyGates: {
     gateName: string;
     passed: boolean;
     details: string;
   }[];
+  policyVersion?: string;
+  targetDigest?: string;
+  postRatificationDigest?: string;
   resolvedAt?: string;
   resolvedBy?: string;
   resolutionNotes?: string;
+  supersededApprovalId?: string;
+  supersededBy?: string;
+  supersededAt?: string;
+  supersededReason?: string;
+  reissueRequired?: boolean;
+  reissueReason?: string;
+  quorum?: {
+    status: 'PENDING' | 'PARTIAL' | 'SATISFIED' | 'REJECTED' | 'STALE' | 'INVALID';
+    hasQuorum: boolean;
+    satisfiedRoles: string[];
+    pendingRoles: string[];
+    reason?: string;
+    reissueRequired?: boolean;
+    reissueReason?: string;
+  };
 }
 
 export interface AgentRole {
