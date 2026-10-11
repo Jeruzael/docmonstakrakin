@@ -7,10 +7,11 @@
 **Canonical Acceptance Criterion:** Distinct Security Officer and Lead Architect human identities required for quorum  
 **Base Master SHA:** `7e45da9b0d4d8553745e5b7c25597eb48c94d6af` (merge commit of PR #26)  
 **Base Master CI Run:** `37909221729` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Frozen Implementation HEAD:** `ae9f536b6bb0dcde11f96dbf319a70f89dbd2a00`  
-**Frozen Implementation CI Run:** `38144817899` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
-**Deterministic Candidate Digest (SHA-256):** `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8`  
+**Frozen Implementation HEAD:** `dab159041b9b2616c42d2654598d0949e5778d85`  
+**Frozen Implementation CI Run:** `38150032624` (Attempt 1: Quality & Build PASS, Controlled Docs PASS, Complete Regression PASS)  
+**Deterministic Candidate Digest (SHA-256):** `0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7`  
 **Superseded Candidate Lineage:**
+- Superseded Candidate 4: `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8` (HEAD: `ae9f536b6bb0dcde11f96dbf319a70f89dbd2a00`, CI: `38144817899`)
 - Superseded Candidate 3: `b6c3aa4874f05813767e12015cda4ffa1996684c48be30defcd210e65296f0d7` (HEAD: `407b64e583d61e7881751c9d312bc00ec8828cb7`, CI: `38055400742`)
 - Superseded Candidate 2: `36e8d05f6d70644966808c5436fbe9d22de4f418d41537d9b0e8e48ee243f891` (HEAD: `da1d1973a7ec161dd45d807ba99d5d2c20c2386d`, CI: `38033744079`)
 - Superseded Candidate 1: `5c7664aeacb9151ce37426571bbb8be4c0498499b87dae39de380b47b96457ec` (HEAD: `c84e9cfc8af202688698cddaf64f80dc2c155549`, CI: `37965723187`)
@@ -230,14 +231,37 @@ Following operator review finding `Decision: REQUIRE_REMEDIATION`, a targeted re
   - Added Scenarios 81 and 82 in `scripts/testDmk197Quorum.ts` (82/82 total).
   - Added Playwright UI scenario UI-24 in `scripts/testDmk197ApprovalInboxUi.ts` (24/24 total).
 
+### 4.9 Final Governance Consistency Remediation Pass
+
+Following operator review finding `Decision: REQUIRE_REMEDIATION`, a targeted remediation pass was implemented and verified for decision-time canonical approval type validation, synchronized governed reissue eligibility, and pending ratification metadata policy:
+- **Correction A — Decision-Time Canonical Approval Type Validation (`server/proposals/signoff.ts`):**
+  - In `POST /api/projects/:id/approvals/:apvId/decide`, resolve canonical target mapping using `spec` helper (`mapping[item.targetEntityType]`).
+  - Reject unsupported target entity types with HTTP 409 `REISSUE_REQUIRED`.
+  - Verify `item.type === spec[1]`.
+  - If mismatched, reject with HTTP 409 `REISSUE_REQUIRED` without appending signatures, changing status, mutating targets, incrementing `stateVersion`, or creating audit events (applies to both 0 and 1 signature cases).
+- **Correction B — Governed Reissue Eligibility & Pending Ratification Metadata Policy Synchronized (`server/proposals/quorum.ts` & `server/proposals/signoff.ts`):**
+  - In `server/proposals/quorum.ts`, enforce that for `item.status === 'PENDING'`, `postRatificationDigest` must NOT exist (`status = 'INVALID'`, `reason = 'Pending approvals must not contain postRatificationDigest'`).
+  - In `POST .../decide`, reject if `item.status === 'PENDING' && item.postRatificationDigest !== undefined` with HTTP 409 `REISSUE_REQUIRED`.
+  - In `POST .../approvals` (deduplication), check `prior.postRatificationDigest === undefined`.
+  - In `GET /api/projects/:id/approvals`, project `reissueRequired: true` strictly when canonical target exists and is fresh (`currentTargetDigest === item.targetDigest`), supported target type, eligible override, no conflicting active pending approvals, item is pending, un-superseded, and corrupted. For stale targets, missing targets, or conflicting active approvals, project `reissueRequired: false`.
+  - In `POST .../approvals/:apvId/reissue`, validate consistent corruption rules including unexpected `postRatificationDigest`.
+- **Correction C — Remove Unsafe UI Recovery Fallback (`src/components/ApprovalsView.tsx`):**
+  - Rely strictly on authoritative `item.status === 'PENDING' && Boolean(item.reissueRequired ?? q.reissueRequired)` for displaying `Reissue Sign-Off`.
+  - Removed `q.status === 'INVALID'` fallback from enabling reissue.
+  - Suppress normal decision buttons (`Approve`, `Reject`) when `item.status === 'PENDING' && (isReissue || q.status === 'INVALID' || q.status === 'STALE')`.
+  - Display appropriate blocked/invalid/stale warnings without `Reissue Sign-Off` when invalid but ineligible.
+- **Correction D — Deterministic Regression Scenarios:**
+  - Added Scenarios 83–86 in `scripts/testDmk197Quorum.ts` (86/86 total).
+  - Added Playwright UI scenario UI-25 in `scripts/testDmk197ApprovalInboxUi.ts` (25/25 total).
+
 ---
 
 ## 5. Verification Test Matrix
 
 | Test Suite | File | Command | Scope | Result |
 |---|---|---|---|---|
-| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–82 (Quorum invariants, security hardening, read auth, signature provenance, deduplication, governed reissue, malformed projection & canonical type mapping) | **82/82 PASS** |
-| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-24 (reissue modal, superseded inspection, malformed signature UI projection & project-switch isolation) | **24/24 PASS** |
+| **DMK-197 Quorum Suite** | `scripts/testDmk197Quorum.ts` | `npm run test:dmk-197` | Scenarios 1–86 (Quorum invariants, security hardening, read auth, signature provenance, deduplication, governed reissue, malformed projection, canonical type validation & metadata policy) | **86/86 PASS** |
+| **DMK-197 Inbox UI Suite** | `scripts/testDmk197ApprovalInboxUi.ts` | `npm run test:dmk-197:ui` | Playwright UI tests UI-1 through UI-25 (reissue modal, superseded inspection, malformed signature UI projection, recovery fallback removal & project-switch isolation) | **25/25 PASS** |
 | **DMK-197 Persistence Suite** | `scripts/testDmk197Persistence.ts` | `npm run test:dmk-197:persistence` | Real `.local/project-state.json` restart recovery & write rollback (PERSIST-1 through PERSIST-3) | **3/3 PASS** |
 | **DMK-197 Closure Candidate Verifier** | `scripts/verifyDmk197ClosureCandidate.ts` | `npm run verify:dmk-197-closure-candidate` | DMK-197 closure candidate verification (21 invariants) | **21/21 PASS** |
 | **DMK-197 Candidate Regression** | `scripts/testDmk197ClosureCandidate.ts` | `npm run test:dmk-197-closure-candidate` | Scenarios 1–20 (isolated receipt test & superseded digest check) | **20/20 PASS** |
@@ -252,20 +276,20 @@ Following operator review finding `Decision: REQUIRE_REMEDIATION`, a targeted re
 | **Type Check & Lint** | `tsc --noEmit` | `npm run lint` | Full codebase TypeScript compilation | **PASS (0 errors)** |
 | **Production Build** | `vite build && esbuild` | `npm run build` | Frontend and backend build | **PASS (0 errors)** |
 | **Controlled Docs Suite** | `scripts/testControlledDocs.ts` | `npm run test:controlled-docs` | Controlled documents integrity (87 checks) | **PASS** |
-| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1198/1198 assertions PASS** |
+| **Complete Regression** | `scripts/runCompleteRegression.ts` | `npm run test:complete` | Full system regression suite | **51/51 suites PASS, 1203/1203 assertions PASS** |
 
 ---
 
 ## 6. Controlled Docs Audit & Governance Checkpoint
 
 The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL-002`) was updated through an authenticated Controlled Documents API transaction:
-- **AuditEventId:** `AUD-MV3W06J0-B41N`
+- **AuditEventId:** `AUD-MV3YTOGT-S6TM`
 - **DocumentId:** `DOC-CTRL-002`
-- **Previous SHA-256:** `18a54793e400d2e957de0caf4f709ae89168d9171b377e9ce903cbd5ef712ea9`
-- **New SHA-256:** `b35006fb08f7b58a2f63abf8a08c73d36350c7572ba8e7c358d799d6b8d199a8`
-- **Project stateVersion:** 110 -> 111
-- **Audit Count:** 116 -> 117
-- **Reverse Audit Chain:** 117 / 117 entries valid (`REVERSE_CHRONOLOGICAL`)
+- **Previous SHA-256:** `b35006fb08f7b58a2f63abf8a08c73d36350c7572ba8e7c358d799d6b8d199a8`
+- **New SHA-256:** `83ab7ed41719f8d9aa9d76763a3275d655de1ea68adfd53df70f1488b2cd7a1d`
+- **Project stateVersion:** 111 -> 112
+- **Audit Count:** 117 -> 118
+- **Reverse Audit Chain:** 118 / 118 entries valid (`REVERSE_CHRONOLOGICAL`)
 - **Byte Invariant:** `desiredSha256 == governedSha256 == finalSha256` confirmed. Zero direct manual edits were made outside the Controlled Docs transaction.
 
 ---
@@ -275,7 +299,7 @@ The living project state document (`docs/00_control/PROJECT_STATE.md`, `DOC-CTRL
 This PR remains in **DRAFT** status on branch `dmk-197-approval-inbox-quorum` awaiting human operator inspection.
 
 **Current Next Actions:**
-1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `4f808143eb07c2770df238fc4f641de75896bba389f39f99cdc8bb9d92791ad8`).
+1. Human-review the corrected PR #27 exact HEAD and closure transition candidate `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7`).
 2. Verify fresh full CI.
 3. Review the updated security and implementation evidence in `docs/07_verification/DMK_197_CLOSURE_TRANSITION_REVIEW.md`.
 4. Decide whether DMK-197 may transition from `IN_PROGRESS` to `VERIFICATION_PENDING`.
