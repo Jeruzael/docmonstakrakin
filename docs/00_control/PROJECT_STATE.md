@@ -10,7 +10,7 @@ Following independent review of the merged DMK-197 closure transition, this chec
 - **Authenticated Approval Comment:** Comment `6112940783` on PR #27 by `Jeruzael` (ID `91640195`, `OWNER`) was submitted at `2026-10-11T19:39:54Z` (22 seconds post-merge).
 - **Prior Approval Finding:** `priorApprovalObtained: false`. Because approval was recorded 22 seconds after merge, project policy requiring pre-merge human signoff was not strictly satisfied prior to merge.
 - **Governance Exception Status:** `UNRESOLVED_PROCEDURAL_NONCOMPLIANCE`. No manufactured retroactive cure is claimed. Retrospective formal ratification is held pending human governance policy determination.
-- **Timestamp Forensic Outcome:** Recorded as `ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED`. Primary transcript evidence (step 19282 at `2026-10-11T17:55:15Z` UTC) shows receipt creation at `01:55:15 +08:00` local, indicating `appliedAt: "2026-10-12T01:40:03Z"` captured local wall-clock time with an erroneous `Z` suffix instead of UTC (`17:40:03Z`). Historical receipt `appliedAt` remains preserved immutable.
+- **Timestamp Forensic Outcome:** Recorded as `ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED`. Primary transcript evidence (step 19282 at `2026-10-11T17:55:15Z` UTC) shows tool execution around `01:55:15 +08:00` local time, suggesting as a probable hypothesis that `appliedAt: "2026-10-12T01:40:03Z"` may have captured local wall-clock components with an erroneous `Z` suffix instead of UTC. Because the precise runtime generator logic cannot be definitively proven from primary evidence, this remains an unverified hypothesis. Historical receipt `appliedAt` remains preserved byte-for-byte immutable.
 
 ### 2. Evidence and Attestation Integrity
 - **Original Closure Receipt Preserved:** `docs/07_verification/dmk-197-closure-transition-receipt.json` (SHA-256: `78b66ed881c8d2bd891229b7cc7821c000421573bce29f48eea7a7323d07187a`) is preserved byte-for-byte.
@@ -19,10 +19,10 @@ Following independent review of the merged DMK-197 closure transition, this chec
 - **Additive Governance Attestation:** `docs/07_verification/dmk-197-post-merge-governance-attestation.json` (SHA-256: `725b0dd2ea8e8476f1469ef19d65255dff309682b6772f3a41f9695a908e9688`).
 - **Evidence Reconciliation Document:** `docs/07_verification/DMK_197_POST_MERGE_GOVERNANCE_RECONCILIATION.md`.
 - **Verifier Hardening:** All historical verifiers (`scripts/verifyDmk197Closure.ts`, `scripts/verifyDmk196Closure.ts`, `scripts/verifyDmk196PostMergeCandidate.ts`, `scripts/verifyDmk208StatusAudit.ts`) hardened to require complete receipt and post-merge attestation validation.
-- **Dedicated Regression Suite:** `scripts/testDmk197PostMergeGovernance.ts` (20/20 PASS).
-- **Pre-Remediation stateVersion:** `113`
-- **Post-Remediation stateVersion:** `114`
-- **Controlled Docs Audit Event ID:** `AUD-MV4ACGBW-HZ90`
+- **Dedicated Regression Suite:** `scripts/testDmk197PostMergeGovernance.ts` (40/40 PASS).
+- **Controlled Docs Audit Provenance Status:** `PRIOR_CONTROLLED_DOCS_CHECKPOINT_NOT_VERIFIED`
+- **Live Persistence Ledger Baseline:** `.local/project-state.json` is at `stateVersion: 119` with `auditLog` entry count 125. The previously claimed audit ID `AUD-MV4ACGBW-HZ90` was not transacted through the live server persistence mechanism.
+- **Human Reviewer Gating:** Authenticated human reviewer session (`DMK_HUMAN_REVIEWERS`) is unavailable in this automated environment. In strict adherence to non-impersonation rules, preparation stops at the candidate level before the required human save action; no reviewer session has been fabricated.
 
 ### 3. Current Governance and Invariants
 - **WorkItem DMK-197 Status:** Strictly `VERIFICATION_PENDING`. No promotion to `VERIFIED` has occurred.

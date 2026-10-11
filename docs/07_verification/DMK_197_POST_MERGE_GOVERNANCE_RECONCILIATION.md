@@ -96,11 +96,11 @@ Inspection of the system transcript log (`transcript.jsonl`) reveals:
    `created_at: 2026-10-11T17:55:15Z` (UTC).
 2. **Local Wall-Clock Time:** The environment operates in Philippine Standard Time (`Asia/Manila`, UTC+08:00).
    `2026-10-11T17:55:15Z` UTC corresponds to `2026-10-12 01:55:15 +08:00` local time.
-3. **Root Cause Analysis:** The agent generated the string `2026-10-12T01:40:03Z` by capturing local wall-clock components (`01:40:03`) and appending an erroneous `Z` (Zulu/UTC) designator rather than formatting the actual UTC timestamp (`2026-10-11T17:40:03Z`).
-4. **Determination:** While the timezone hypothesis (`01:40:03 +08:00` = `17:40:03 UTC`) is strongly supported by the transcript log, replacing the immutable receipt string with a reconstructed timestamp would violate the non-fabrication rule.
+3. **Probable Hypothesis Analysis:** A probable hypothesis is that the agent or environment generated `2026-10-12T01:40:03Z` by capturing local wall-clock components (`01:40:03`) and appending an erroneous `Z` designator rather than formatting UTC (`2026-10-11T17:40:03Z`). However, because the precise runtime generator logic cannot be definitively proven from primary evidence, this remains an unverified hypothesis rather than an established certainty.
+4. **Determination:** While this timezone explanation is a plausible and probable hypothesis, replacing the immutable receipt string with a reconstructed timestamp would violate the non-fabrication rule.
 5. **Disposition:**
    - The original receipt is preserved byte-for-byte with its literal `appliedAt` value (`2026-10-12T01:40:03Z`).
-   - The supplemental attestation explicitly marks this finding as:
+   - The supplemental attestation and project state record this finding strictly as:
      `"timestampInterpretation": "ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED"`.
 
 ---
@@ -147,11 +147,16 @@ Previously, historical verifiers admitted DMK-197 under a permissive condition (
 1. **`scripts/verifyDmk197Closure.ts`**:
    - Must validate the integrity of `dmk-197-closure-transition-receipt.json`.
    - Must validate `dmk-197-post-merge-governance-attestation.json` and its exact cryptographic bindings.
+   - Enforces `projectId` (`PRJ-DOCMONSTAKRAKIN`), `masterCiAttempt` (`1`), and the structure/values of `masterCiJobs` (exact keys and 'success' status).
+   - Enforces fail-closed validation of the disk receipt (missing, unreadable, empty, invalid JSON, or altered raw bytes).
    - Rejects any claim that approval preceded merge (`priorApprovalObtained: true` without pre-merge proof).
    - Rejects tampered comment IDs, author logins, author IDs, or commit SHAs.
 2. **`scripts/verifyDmk196Closure.ts`**, **`scripts/verifyDmk196PostMergeCandidate.ts`**, and **`scripts/verifyDmk208StatusAudit.ts`**:
    - Must invoke the complete receipt and attestation validation contract.
    - Fail closed if the attestation file is missing, tampered, or mismatched.
+3. **Dedicated Regression Suite (`scripts/testDmk197PostMergeGovernance.ts`)**:
+   - 40/40 negative and positive boundary scenarios passing.
+   - Demonstrates fail-closed behavior across all tampered fields, missing artifacts, and cross-verifier integrations.
 
 ---
 

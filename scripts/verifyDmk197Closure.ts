@@ -10,9 +10,11 @@ export interface VerifyDmk197ClosureOptions {
   customAttestation?: any;
   customWbsYamlContent?: string;
   allowMissingEvidenceFile?: boolean;
+  allowMissingReceiptFile?: boolean;
 }
 
 export const EXPECTED_SCHEMA_VERSION = '1.0';
+export const EXPECTED_PROJECT_ID = 'PRJ-DOCMONSTAKRAKIN';
 export const EXPECTED_WORK_ITEM_ID = 'DMK-197';
 export const EXPECTED_WBS_PATH = '13.06.11';
 export const EXPECTED_DECISION = 'APPROVE';
@@ -58,7 +60,13 @@ export const EXPECTED_RETROSPECTIVE_INTERVAL_SECONDS = 22;
 export const EXPECTED_RETROSPECTIVE_GOVERNANCE_STATUS = 'UNRESOLVED_PROCEDURAL_NONCOMPLIANCE';
 export const EXPECTED_TIMESTAMP_INTERPRETATION = 'ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED';
 export const EXPECTED_MASTER_CI_RUN_ID = 38168952638;
+export const EXPECTED_MASTER_CI_ATTEMPT = 1;
 export const EXPECTED_MASTER_CI_CONCLUSION = 'success';
+export const EXPECTED_MASTER_CI_JOBS: Record<string, string> = {
+  'Controlled Docs': 'success',
+  'Quality & Build': 'success',
+  'Complete Regression': 'success',
+};
 
 export function canonicalJsonStringify(obj: any): string {
   if (obj === null || typeof obj !== 'object') {
@@ -177,7 +185,7 @@ export function validateDmk197ClosureReceipt(
 
 export function validateDmk197PostMergeAttestation(
   attestation: any,
-  options: { workspaceRoot?: string } = {}
+  options: { workspaceRoot?: string; allowMissingReceiptFile?: boolean } = {}
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   if (!attestation || typeof attestation !== 'object') {
@@ -190,6 +198,9 @@ export function validateDmk197PostMergeAttestation(
   }
   if (attestation.attestationType !== EXPECTED_ATTESTATION_TYPE) {
     errors.push(`attestation.attestationType must be "${EXPECTED_ATTESTATION_TYPE}", found "${attestation.attestationType}"`);
+  }
+  if (attestation.projectId !== EXPECTED_PROJECT_ID) {
+    errors.push(`attestation.projectId must be "${EXPECTED_PROJECT_ID}", found "${attestation.projectId}"`);
   }
   if (attestation.workItemId !== EXPECTED_WORK_ITEM_ID) {
     errors.push(`attestation.workItemId must be "${EXPECTED_WORK_ITEM_ID}", found "${attestation.workItemId}"`);
@@ -257,8 +268,25 @@ export function validateDmk197PostMergeAttestation(
   if (attestation.masterCiRunId !== EXPECTED_MASTER_CI_RUN_ID) {
     errors.push(`attestation.masterCiRunId must be ${EXPECTED_MASTER_CI_RUN_ID}, found ${attestation.masterCiRunId}`);
   }
+  if (attestation.masterCiAttempt !== EXPECTED_MASTER_CI_ATTEMPT) {
+    errors.push(`attestation.masterCiAttempt must be ${EXPECTED_MASTER_CI_ATTEMPT}, found ${attestation.masterCiAttempt}`);
+  }
   if (attestation.masterCiConclusion !== EXPECTED_MASTER_CI_CONCLUSION) {
     errors.push(`attestation.masterCiConclusion must be "${EXPECTED_MASTER_CI_CONCLUSION}", found "${attestation.masterCiConclusion}"`);
+  }
+  if (!attestation.masterCiJobs || typeof attestation.masterCiJobs !== 'object' || Array.isArray(attestation.masterCiJobs)) {
+    errors.push(`attestation.masterCiJobs must be an object with required CI jobs, found ${typeof attestation.masterCiJobs}`);
+  } else {
+    for (const [jobName, expectedConclusion] of Object.entries(EXPECTED_MASTER_CI_JOBS)) {
+      if (attestation.masterCiJobs[jobName] !== expectedConclusion) {
+        errors.push(`attestation.masterCiJobs["${jobName}"] must be "${expectedConclusion}", found "${attestation.masterCiJobs[jobName]}"`);
+      }
+    }
+    for (const jobName of Object.keys(attestation.masterCiJobs)) {
+      if (!Object.prototype.hasOwnProperty.call(EXPECTED_MASTER_CI_JOBS, jobName)) {
+        errors.push(`attestation.masterCiJobs contains unexpected job "${jobName}"`);
+      }
+    }
   }
   if (attestation.canonicalStatus !== EXPECTED_TO_STATUS) {
     errors.push(`attestation.canonicalStatus must be "${EXPECTED_TO_STATUS}", found "${attestation.canonicalStatus}"`);
@@ -276,18 +304,31 @@ export function validateDmk197PostMergeAttestation(
     errors.push(`attestation.releaseChanged must be false, found ${attestation.releaseChanged}`);
   }
 
-  // Cross-check receipt digest if receipt file exists in workspace
+  // Cross-check receipt on disk against attestation.originalReceiptSha256
   const root = options.workspaceRoot || process.cwd();
   const receiptFile = path.join(root, RECEIPT_FILE_PATH);
-  if (fs.existsSync(receiptFile)) {
-    try {
-      const receiptContent = fs.readFileSync(receiptFile, 'utf8');
-      const computedReceiptSha = crypto.createHash('sha256').update(Buffer.from(receiptContent)).digest('hex');
-      if (computedReceiptSha !== attestation.originalReceiptSha256) {
-        errors.push(`attestation.originalReceiptSha256 mismatch with disk receipt: computed="${computedReceiptSha}", attestation="${attestation.originalReceiptSha256}"`);
+  if (!options.allowMissingReceiptFile) {
+    if (!fs.existsSync(receiptFile)) {
+      errors.push(`Original receipt file missing at ${receiptFile}`);
+    } else {
+      try {
+        const receiptContent = fs.readFileSync(receiptFile, 'utf8');
+        if (!receiptContent.trim()) {
+          errors.push(`Original receipt file at ${receiptFile} is empty`);
+        } else {
+          try {
+            JSON.parse(receiptContent);
+          } catch (err: any) {
+            errors.push(`Failed to parse original receipt file JSON at ${receiptFile}: ${err.message}`);
+          }
+          const computedReceiptSha = crypto.createHash('sha256').update(Buffer.from(receiptContent)).digest('hex');
+          if (computedReceiptSha !== attestation.originalReceiptSha256) {
+            errors.push(`attestation.originalReceiptSha256 mismatch with disk receipt: computed="${computedReceiptSha}", attestation="${attestation.originalReceiptSha256}"`);
+          }
+        }
+      } catch (err: any) {
+        errors.push(`Failed to read original receipt file at ${receiptFile}: ${err.message}`);
       }
-    } catch {
-      // ignore read error
     }
   }
 
@@ -300,7 +341,7 @@ export function validateDmk197PostMergeAttestation(
 export function validateDmk197ClosureComplete(
   receipt: any,
   attestation: any,
-  options: { workspaceRoot?: string } = {}
+  options: { workspaceRoot?: string; allowMissingReceiptFile?: boolean } = {}
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   const receiptRes = validateDmk197ClosureReceipt(receipt, options);
@@ -323,7 +364,7 @@ export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): {
   const errors: string[] = [];
 
   let receipt = options.customReceipt;
-  if (!receipt) {
+  if (receipt === undefined) {
     if (!fs.existsSync(receiptPath)) {
       errors.push(`Closure receipt does not exist at ${receiptPath}`);
       return { valid: false, errors };
@@ -334,6 +375,9 @@ export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): {
       errors.push(`Failed to parse closure receipt JSON: ${e.message}`);
       return { valid: false, errors };
     }
+  } else if (receipt === null) {
+    errors.push('Closure receipt is missing');
+    return { valid: false, errors };
   }
 
   const receiptValidation = validateDmk197ClosureReceipt(receipt, { workspaceRoot: root });
@@ -359,7 +403,10 @@ export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): {
   }
 
   if (attestation) {
-    const attestationValidation = validateDmk197PostMergeAttestation(attestation, { workspaceRoot: root });
+    const attestationValidation = validateDmk197PostMergeAttestation(attestation, {
+      workspaceRoot: root,
+      allowMissingReceiptFile: options.allowMissingReceiptFile,
+    });
     if (!attestationValidation.valid) {
       errors.push(...attestationValidation.errors);
     }
