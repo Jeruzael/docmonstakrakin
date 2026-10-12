@@ -1,5 +1,5 @@
 import React from 'react';
-import {FolderKanban,Plus,ArrowRight,CheckCircle2} from 'lucide-react';
+import {FolderKanban,Plus,ArrowRight,CheckCircle2,RefreshCw} from 'lucide-react';
 import type {Project} from '../types';
 
 interface ProjectsViewProps {
@@ -10,15 +10,32 @@ interface ProjectsViewProps {
   onSelectProject:(id:string)=>void;
   onCreateProject:()=>void;
   onRetry:()=>void;
+  onRefreshProjects?:()=>void;
 }
 const button='inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors';
 
 /** A projection of the canonical list. Selection and loading belong to App. */
-export function ProjectsView({projects,activeProjectId,loading,error,onSelectProject,onCreateProject,onRetry}:ProjectsViewProps) {
+export function ProjectsView({projects,activeProjectId,loading,error,onSelectProject,onCreateProject,onRetry,onRefreshProjects}:ProjectsViewProps) {
   return <section className="space-y-6" aria-label="Projects workspace" aria-busy={loading}>
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><h1 className="text-xl font-bold tracking-tight text-slate-900">Projects</h1><p className="mt-1 text-sm text-slate-500">Browse your projects and open their requirements, work and evidence.</p></div>
-      <button className={`${button} bg-white text-emerald-700`} onClick={onCreateProject}><Plus className="w-4 h-4"/>New Project</button>
+      <div className="flex items-center gap-2">
+        {onRefreshProjects && (
+          <button
+            type="button"
+            data-testid="btn-refresh-project-list"
+            disabled={loading}
+            className={`${button} bg-white text-slate-700 disabled:opacity-50`}
+            onClick={onRefreshProjects}
+            title="Refresh projects"
+            aria-label="Refresh projects"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`}/>
+            <span>Refresh projects</span>
+          </button>
+        )}
+        <button className={`${button} bg-white text-emerald-700`} onClick={onCreateProject}><Plus className="w-4 h-4"/>New Project</button>
+      </div>
     </div>
     {loading && <p role="status" className="text-sm text-slate-600">Loading projects…</p>}
     {error && <div role="alert" className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-800"><p>{error}</p><button className={`${button} mt-3 bg-white`} onClick={onRetry}>Retry</button></div>}

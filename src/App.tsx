@@ -514,6 +514,37 @@ export default function App() {
     } finally {if(sequence===listSequence.current)setProjectsLoading(false);}
   },[handleSelectProject]);
 
+  // Refresh projects list in-place without resetting active project or navigating away.
+  const handleRefreshProjectList = useCallback(async () => {
+    const sequence = ++listSequence.current;
+    setProjectsLoading(true);
+    setProjectsError('');
+    try {
+      const data = await readProjectList();
+      if (sequence !== listSequence.current) return;
+
+      const { acceptedProjects, staleProjects } = reconcileProjectList(
+        data,
+        acceptedProjectsRef.current,
+        confirmedVersionsRef.current
+      );
+      acceptedProjectsRef.current = acceptedProjects;
+      setProjects(acceptedProjects);
+
+      if (staleProjects.length > 0) {
+        setStaleSnapshotWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      }
+    } catch (error) {
+      if (sequence === listSequence.current) {
+        setProjectsError(error instanceof Error ? error.message : 'Cannot load projects.');
+      }
+    } finally {
+      if (sequence === listSequence.current) {
+        setProjectsLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(()=>{
     void fetchProjects();
     return ()=>{listSequence.current++;loader.current!.invalidate();};
@@ -789,7 +820,18 @@ export default function App() {
             </div>
           )}
           {projectMounted && projectLoading && <p role="status" className="mb-4 text-sm text-slate-600">Refreshing selected project…</p>}
-          {currentView === 'projects' ? <ProjectsView projects={projects} activeProjectId={projectReady ? activeProjectId : ''} loading={projectsLoading} error={projectsError} onSelectProject={handleSelectProject} onCreateProject={handleOpenCreateWizard} onRetry={()=>void fetchProjects()}/> : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
+          {currentView === 'projects' ? (
+            <ProjectsView
+              projects={projects}
+              activeProjectId={projectReady ? activeProjectId : ''}
+              loading={projectsLoading}
+              error={projectsError}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleOpenCreateWizard}
+              onRetry={() => void handleRefreshProjectList()}
+              onRefreshProjects={handleRefreshProjectList}
+            />
+          ) : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
             <div className="h-full min-h-[480px] flex items-center justify-center p-6">
               <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-2xs space-y-6">

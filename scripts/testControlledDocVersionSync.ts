@@ -115,10 +115,14 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let currentDocSummary = structuredClone(DOC_SUMMARY_002);
 
   const saveCalls: any[] = [];
+  let projectListFetchCount = 0;
   let projectAFetchCount = 0;
   let projectAHoldPromise: Promise<void> | null = null;
   let auditFetchCount = 0;
   let auditHoldPromise: Promise<void> | null = null;
+
+  let projectListHoldPromise: Promise<void> | null = null;
+  let dynamicProjectListResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null = null;
 
   let dynamicProjectAResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null =
     options.projectAResponseOverride ?? null;
@@ -154,7 +158,17 @@ async function createHarness(options: TestHarnessOptions = {}) {
       await route.fulfill({ status, json: body }).catch(() => {});
     };
 
-    if (url === '/api/projects') {
+    if (method === 'GET' && url === '/api/projects') {
+      projectListFetchCount++;
+      if (projectListHoldPromise) {
+        await projectListHoldPromise;
+      }
+      if (dynamicProjectListResponseOverride) {
+        const custom = await dynamicProjectListResponseOverride(projectListFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
       return send(projectsList);
     }
 
@@ -355,6 +369,13 @@ async function createHarness(options: TestHarnessOptions = {}) {
     },
     setProjectsList: (l: any) => {
       projectsList = l;
+    },
+    getProjectListFetchCount: () => projectListFetchCount,
+    holdProjectListResponse: (p: Promise<void> | null) => {
+      projectListHoldPromise = p;
+    },
+    setProjectListResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectListResponseOverride = fn;
     },
     close: async () => {
       await page.close();
@@ -1278,19 +1299,31 @@ await test('Scenario 20 (Test A): Audit response with mismatched fields (wrong t
   }
 });
 
-// Scenario 21 (Test B): Project-List Staleness Handling
-await test('Scenario 21 (Test B): Project list returning stale v120 with outdated metadata preserves confirmed v121 and previously accepted metadata', async () => {
+// Scenario 21 (Blocker 2): Genuine Project-List Integration Request & Staleness Rejection
+await test('Scenario 21 (Blocker 2): Genuine project-list request rejects stale metadata and accepts fresh metadata without navigating away (Tests A-E)', async () => {
   const harness = await createHarness({ initialStateVersion: 120 });
   try {
     const { page } = harness;
     const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
 
-    // Save to version 121
+    // Step 2: Confirm at least one initial GET /api/projects occurred
+    const initialListFetches = harness.getProjectListFetchCount();
+    assert.ok(initialListFetches >= 1, `At least one initial GET /api/projects request must have occurred (was: ${initialListFetches})`);
+
+    // Step 3 & 4: Save to version 121
     await executeSaveWorkflow(page);
     await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
     assert.match(await topBarProjectBtn.innerText(), /v121/);
 
-    // Provide stale project list with version 120 and outdated name / description
+    // Navigate to Projects workspace via sidebar
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /Active project/);
+
+    // -------------------------------------------------------------
+    // Test A: Stale project list (v120) rejected via real request
+    // -------------------------------------------------------------
     harness.setProjectsList([
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
@@ -1307,18 +1340,37 @@ await test('Scenario 21 (Test B): Project list returning stale v120 with outdate
       },
     ]);
 
-    // Trigger popstate or project list fetch via browser history navigation or selector
-    await page.evaluate(() => {
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
-    await page.waitForTimeout(300);
+    const countBeforeRefresh = harness.getProjectListFetchCount();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
 
-    // Assert TopBar still displays v121
+    // Verify request count increments through an actual GET /api/projects call
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    const countAfterRefresh = harness.getProjectListFetchCount();
+    assert.ok(
+      countAfterRefresh > countBeforeRefresh,
+      `No additional GET /api/projects request occurred: count before was ${countBeforeRefresh}, count after was ${countAfterRefresh}`
+    );
+
+    // Stale metadata rejected: Project card retains confirmed v121 and legitimate metadata
+    assert.match(await cardA.innerText(), /121/, 'Project card must preserve confirmed stateVersion 121');
+    assert.doesNotMatch(await cardA.innerText(), /STALE OUTDATED NAME/, 'Project card must NOT adopt stale name');
+    assert.doesNotMatch(await cardA.innerText(), /STALE OUTDATED DESCRIPTION/, 'Project card must NOT adopt stale description');
+    assert.match(await cardA.innerText(), /Active project/, 'Active project must remain intact');
+
+    // TopBar preserves confirmed v121 and active project identity
     assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121');
-    // Assert outdated name was NOT adopted in TopBar
     assert.doesNotMatch(await topBarProjectBtn.innerText(), /STALE OUTDATED NAME/, 'TopBar must NOT adopt stale project name');
 
-    // Deliver fresh v121 project list with updated metadata
+    // User remains in Projects workspace (no reset or redirect)
+    assert.ok(await page.locator('[aria-label="Projects workspace"]').isVisible(), 'Must remain in Projects workspace');
+
+    // -------------------------------------------------------------
+    // Test B: Fresh project list (v121) accepted via real request
+    // -------------------------------------------------------------
     harness.setProjectsList([
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
@@ -1335,14 +1387,103 @@ await test('Scenario 21 (Test B): Project list returning stale v120 with outdate
       },
     ]);
 
-    await page.evaluate(() => {
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
-    await page.waitForTimeout(300);
+    const countBeforeFresh = harness.getProjectListFetchCount();
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('FRESH CONFIRMED NAME'));
 
-    // Assert confirmed v121 remains intact
+    const countAfterFresh = harness.getProjectListFetchCount();
+    assert.ok(countAfterFresh > countBeforeFresh, 'Fresh refresh must issue actual GET /api/projects');
+
+    // Fresh metadata accepted and displayed on card
+    assert.match(await cardA.innerText(), /FRESH CONFIRMED NAME/, 'Card must display fresh accepted name');
+    assert.match(await cardA.innerText(), /FRESH CONFIRMED DESCRIPTION/, 'Card must display fresh accepted description');
+    assert.match(await cardA.innerText(), /121/, 'Card must display confirmed stateVersion 121');
+    assert.match(await cardA.innerText(), /Active project/, 'Active project must remain intact');
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121');
+
+    // -------------------------------------------------------------
+    // Test C: Delayed / deferred response handling & loading state
+    // -------------------------------------------------------------
+    let resolveHold!: () => void;
+    const holdPromise = new Promise<void>((r) => (resolveHold = r));
+    harness.holdProjectListResponse(holdPromise);
+
+    await refreshBtn.click();
+    // Verify loading indicator and disabled button while request is in flight
+    assert.strictEqual(await refreshBtn.isDisabled(), true, 'Refresh button must be disabled while fetch is in-flight');
+    const spinIcon = refreshBtn.locator('svg.animate-spin');
+    assert.ok((await spinIcon.count()) > 0, 'Spin animation must be active during in-flight fetch');
+
+    // Release in-flight response
+    resolveHold();
+    harness.holdProjectListResponse(null);
+
+    // Wait for button to re-enable
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.strictEqual(await refreshBtn.isDisabled(), false, 'Refresh button must re-enable once resolved');
+
+    // -------------------------------------------------------------
+    // Test D: HTTP 500 error & recovery via retry button
+    // -------------------------------------------------------------
+    harness.setProjectListResponseOverride(async () => ({
+      status: 500,
+      body: { error: 'Failed to fetch project list (simulated HTTP 500)' },
+    }));
+
+    await refreshBtn.click();
+    await page.waitForSelector('[role="alert"]');
+    const alert = page.locator('[role="alert"]');
+    assert.match(await alert.innerText(), /Cannot load the project list/);
+
+    const retryBtn = alert.getByRole('button', { name: 'Retry' });
+    assert.ok((await retryBtn.count()) > 0, 'Retry button must exist in error alert');
+
+    // Clear override and click retry
+    harness.setProjectListResponseOverride(null);
+    await retryBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[role="alert"]'));
+
+    // Card remains intact and active
+    assert.match(await cardA.innerText(), /Active project/);
+    assert.ok(await page.locator('[aria-label="Projects workspace"]').isVisible());
+
+    // -------------------------------------------------------------
+    // Test E: Cross-project isolation & no side effects
+    // -------------------------------------------------------------
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'FRESH CONFIRMED NAME',
+        description: 'FRESH CONFIRMED DESCRIPTION',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Isolated Update',
+        description: 'Updated Project B metadata',
+        stateVersion: 51,
+      },
+    ]);
+
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Isolated Update'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /Fixture B Isolated Update/);
+    assert.match(await cardB.innerText(), /51/);
+    assert.doesNotMatch(await cardB.innerText(), /Active project/, 'Project B must not become active');
+
+    // Project A is still active and untouched
+    assert.match(await cardA.innerText(), /Active project/);
     assert.match(await topBarProjectBtn.innerText(), /v121/);
   } finally {
+    harness.holdProjectListResponse(null);
+    harness.setProjectListResponseOverride(null);
     await harness.close();
   }
 });
