@@ -49,7 +49,11 @@ import {
   reconcileAuditEvents,
   combineRequiredAuditAcks,
 } from './utils/auditValidation';
-import { reconcileProjectList } from './utils/projectListReconciliation';
+import {
+  reconcileProjectList,
+  reconcileListFreshness,
+  UnresolvedListFreshness,
+} from './utils/projectListReconciliation';
 
 export default function App() {
   // Navigation & Shell State
@@ -164,6 +168,7 @@ export default function App() {
   const projectAuditStatusRef = useRef<Record<string, 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>>({});
   const projectAuditErrorRef = useRef<Record<string, string>>({});
   const acceptedProjectsRef = useRef<Project[]>([]);
+  const unresolvedListFreshnessRef = useRef<UnresolvedListFreshness>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
   const listSequence = useRef(0);
@@ -495,22 +500,31 @@ export default function App() {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
 
+      const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
       const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
-        confirmedVersionsRef.current
+        confirmedVersionsRef.current,
+        unresolvedIds
+      );
+      unresolvedListFreshnessRef.current = reconcileListFreshness(
+        unresolvedListFreshnessRef.current,
+        data,
+        confirmedVersionsRef.current,
+        staleIncomingProjectIds
       );
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
-      if (staleIncomingProjectIds.length > 0) {
+      const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+      if (hasUnresolved) {
         setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
       } else {
         setProjectListStaleWarning('');
       }
 
       if (acceptedProjects.length === 0) {
-        if (data.length > 0 && staleIncomingProjectIds.length > 0) {
+        if (hasUnresolved || staleProjects.length > 0) {
           setProjectsUnavailable(true);
         } else {
           setProjectsUnavailable(false);
@@ -526,6 +540,8 @@ export default function App() {
 
       if (matched) {
         handleSelectProject(matched.id, false, 'replace');
+      } else if (requestedId && unresolvedListFreshnessRef.current[requestedId] !== undefined) {
+        // Do NOT switch away from requestedId if it is unresolved / pending freshness
       } else {
         // Fall back to first project only when there is no valid requested/remembered project
         handleSelectProject(acceptedProjects[0]?.id || '', false, 'replace');
@@ -544,25 +560,39 @@ export default function App() {
       const data = await readProjectList();
       if (sequence !== listSequence.current) return;
 
+      const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
       const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
-        confirmedVersionsRef.current
+        confirmedVersionsRef.current,
+        unresolvedIds
+      );
+      unresolvedListFreshnessRef.current = reconcileListFreshness(
+        unresolvedListFreshnessRef.current,
+        data,
+        confirmedVersionsRef.current,
+        staleIncomingProjectIds
       );
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
-      if (staleIncomingProjectIds.length > 0) {
+      const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+      if (hasUnresolved) {
         setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
       } else {
         setProjectListStaleWarning('');
       }
 
-      if (acceptedProjects.length === 0 && data.length > 0 && staleIncomingProjectIds.length > 0) {
-        setProjectsUnavailable(true);
-      } else {
-        setProjectsUnavailable(false);
+      if (acceptedProjects.length === 0) {
+        if (hasUnresolved || staleProjects.length > 0) {
+          setProjectsUnavailable(true);
+        } else {
+          setProjectsUnavailable(false);
+          handleSelectProject('', false, 'replace');
+        }
+        return;
       }
+      setProjectsUnavailable(false);
     } catch (error) {
       if (sequence === listSequence.current) {
         setProjectsError(error instanceof Error ? error.message : 'Cannot load projects.');
@@ -572,7 +602,7 @@ export default function App() {
         setProjectsLoading(false);
       }
     }
-  }, []);
+  }, [handleSelectProject]);
 
   useEffect(()=>{
     void fetchProjects();
@@ -841,10 +871,11 @@ export default function App() {
               </div>
               <button
                 data-testid="btn-retry-project-list"
-                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0"
+                disabled={projectsLoading}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0 disabled:opacity-50"
                 onClick={() => void handleRefreshProjectList()}
               >
-                Retry project list
+                {projectsLoading ? 'Refreshing…' : 'Retry project list'}
               </button>
             </div>
           )}
@@ -860,10 +891,11 @@ export default function App() {
               </div>
               <button
                 data-testid="btn-retry-project-fetch"
-                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0"
+                disabled={projectLoading}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0 disabled:opacity-50"
                 onClick={() => void fetchProjectData(activeProjectId)}
               >
-                Retry to refresh
+                {projectLoading ? 'Refreshing…' : 'Retry to refresh'}
               </button>
             </div>
           )}
@@ -900,11 +932,12 @@ export default function App() {
                 </div>
                 <div className="pt-2">
                   <button
-                    data-testid="btn-retry-project-list"
+                    data-testid="btn-retry-global-unavailable-project-list"
+                    disabled={projectsLoading}
                     onClick={() => void handleRefreshProjectList()}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    Retry project list
+                    {projectsLoading ? 'Refreshing…' : 'Retry project list'}
                   </button>
                 </div>
               </div>

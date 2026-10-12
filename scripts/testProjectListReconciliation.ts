@@ -97,4 +97,75 @@ assert.equal(res4.acceptedProjects.length, 2);
 assert.equal(res4.acceptedProjects[0].description, 'Current description at v121');
 assert.equal(res4.acceptedProjects[1].description, 'Fixture B at v50');
 
+// Case 5: reconcileListFreshness tests
+import { reconcileListFreshness } from '../src/utils/projectListReconciliation';
+
+// Rule A: Newly stale project records required version
+const freshUnresolved = {};
+const unres1 = reconcileListFreshness(
+  freshUnresolved,
+  [incomingStaleProject],
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  ['PRJ-DOCMONSTAKRAKIN']
+);
+assert.equal(unres1['PRJ-DOCMONSTAKRAKIN'], 121, 'Rule A: must record required version 121');
+
+// Rule B: Still stale project retains existing entry and preserves max required version
+const unres2 = reconcileListFreshness(
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  [incomingStaleProject],
+  { 'PRJ-DOCMONSTAKRAKIN': 122 },
+  ['PRJ-DOCMONSTAKRAKIN']
+);
+assert.equal(unres2['PRJ-DOCMONSTAKRAKIN'], 122, 'Rule B: must preserve higher confirmed version 122');
+
+// Rule C & E: Absent from response retains unresolved entry (omission is not verified deletion)
+const unres3 = reconcileListFreshness(
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  [otherFreshProject], // PRJ-DOCMONSTAKRAKIN omitted
+  { 'PRJ-DOCMONSTAKRAKIN': 121, 'PRJ-FIXTURE-B': 50 },
+  []
+);
+assert.equal(unres3['PRJ-DOCMONSTAKRAKIN'], 121, 'Rule C: omitted project remains unresolved');
+
+// Empty response also retains unresolved entry
+const unres3Empty = reconcileListFreshness(
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  [], // Empty response
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  []
+);
+assert.equal(unres3Empty['PRJ-DOCMONSTAKRAKIN'], 121, 'Rule C: empty response retains unresolved entry');
+
+// Rule D: Fresh metadata at or above required clears unresolved entry
+const unres4 = reconcileListFreshness(
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  [incomingFreshProject],
+  { 'PRJ-DOCMONSTAKRAKIN': 121 },
+  []
+);
+assert.equal(unres4['PRJ-DOCMONSTAKRAKIN'], undefined, 'Rule D: fresh version 121 clears unresolved entry');
+
+// Case 6: reconcileProjectList with omitted unresolved project
+// When safe cache exists: preserves safe cache
+const res6Safe = reconcileProjectList(
+  [otherFreshProject], // PRJ-DOCMONSTAKRAKIN omitted
+  [prevProject, otherFreshProject],
+  { 'PRJ-DOCMONSTAKRAKIN': 121, 'PRJ-FIXTURE-B': 50 },
+  ['PRJ-DOCMONSTAKRAKIN']
+);
+assert.equal(res6Safe.acceptedProjects.length, 2);
+assert.ok(res6Safe.acceptedProjects.some(p => p.id === 'PRJ-DOCMONSTAKRAKIN' && p.stateVersion === 121));
+
+// When NO safe cache exists: marked as stale, excluded from accepted
+const res6NoSafe = reconcileProjectList(
+  [otherFreshProject], // PRJ-DOCMONSTAKRAKIN omitted
+  [otherFreshProject], // No safe cache for PRJ-DOCMONSTAKRAKIN
+  { 'PRJ-DOCMONSTAKRAKIN': 121, 'PRJ-FIXTURE-B': 50 },
+  ['PRJ-DOCMONSTAKRAKIN']
+);
+assert.equal(res6NoSafe.acceptedProjects.length, 1);
+assert.equal(res6NoSafe.staleProjects.length, 1);
+assert.equal(res6NoSafe.staleProjects[0].id, 'PRJ-DOCMONSTAKRAKIN');
+
 console.log('All project list reconciliation unit tests passed!');

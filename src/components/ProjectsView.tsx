@@ -47,11 +47,12 @@ export function ProjectsView({projects,activeProjectId,loading,error,unavailable
         <p className="text-sm text-amber-800">Incoming project list metadata is stale and could not be verified. Authoritative project data is currently unavailable.</p>
         <button
           type="button"
-          data-testid="btn-retry-project-list"
-          className={`${button} bg-amber-600 text-white hover:bg-amber-700`}
+          data-testid="btn-retry-unavailable-project-list"
+          disabled={loading}
+          className={`${button} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50`}
           onClick={onRetry}
         >
-          Retry project list
+          {loading ? 'Refreshing…' : 'Retry project list'}
         </button>
       </div>
     )}
