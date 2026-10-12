@@ -372,6 +372,9 @@ async function createHarness(options: TestHarnessOptions = {}) {
     setProjectAData: (d: any) => {
       projectAData = d;
     },
+    setProjectBData: (d: any) => {
+      projectBData = d;
+    },
     setProjectsList: (l: any) => {
       projectsList = l;
     },
@@ -2917,32 +2920,56 @@ await test('Scenario 37 (RED Scenario B - Blocker 3): Empty list response does n
 });
 
 // Scenario 38 (Blocker 3): Multiple stale projects retain warning until all confirmed watermarks are satisfied
+// Scenario 38 (Blocker 3 v1.1): Two genuine stale floors (A 121, B 51), partial recovery (A recovers, warning remains for B), full recovery (both fresh -> warning clears)
 await test('Scenario 38 (Blocker 3): Multiple stale projects retain warning until all confirmed watermarks are satisfied', async () => {
   const harness = await createHarness({ initialStateVersion: 120, projectBVersion: 50 });
   try {
     const { page } = harness;
 
-    // Save confirms Project A at 121
+    // Step 1: Save confirms Project A at 121
     await executeSaveWorkflow(page);
     await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
 
-    // Navigate to Projects workspace
+    // Step 2: Establish Project B's floor at 51 via real list acceptance (NO save on B)
     await page.getByRole('button', { name: 'Projects' }).click();
     await page.locator('[aria-label="Projects workspace"]').waitFor();
     const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
 
-    // Introduce staleness for Project A (120 < 121)
     harness.setProjectsList([
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
         id: 'PRJ-DOCMONSTAKRAKIN',
-        name: 'STALE A',
+        name: 'Docmonstakrakin v121',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Accepted v51',
+        description: 'Accepted metadata at v51',
+        stateVersion: 51,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Accepted v51'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /51/);
+    assert.match(await cardB.innerText(), /Fixture B Accepted v51/);
+
+    // Step 3: Now server returns BOTH projects as stale: A at v120 (< 121) and B at v50 (< 51)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE A v120',
         stateVersion: 120,
       },
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
         id: 'PRJ-FIXTURE-B',
-        name: 'Fixture B',
+        name: 'STALE B v50',
+        description: 'Stale metadata at v50',
         stateVersion: 50,
       },
     ]);
@@ -2954,55 +2981,65 @@ await test('Scenario 38 (Blocker 3): Multiple stale projects retain warning unti
 
     const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
     await listWarning.waitFor({ timeout: 4000 });
-    assert.ok(await listWarning.isVisible(), 'Warning must be visible for stale Project A');
+    assert.ok(await listWarning.isVisible(), 'Warning must be visible when A and B are both stale');
 
-    // Next response updates Project B to 51, but Project A remains at 120
+    // Both cards must retain their previously accepted safe metadata (A 121, B 51)
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /121/);
+    assert.doesNotMatch(await cardA.innerText(), /STALE A v120/);
+    assert.match(await cardB.innerText(), /51/, 'Card B must retain accepted version 51');
+    assert.doesNotMatch(await cardB.innerText(), /STALE B v50/, 'Card B must NOT adopt stale name');
+
+    // Step 4: Partial recovery: Project A recovers to fresh v121, but Project B remains at stale v50
     harness.setProjectsList([
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
         id: 'PRJ-DOCMONSTAKRAKIN',
-        name: 'STALE A',
-        stateVersion: 120,
-      },
-      {
-        ...structuredClone(INITIAL_PROJECTS[0]),
-        id: 'PRJ-FIXTURE-B',
-        name: 'Fixture B Updated',
-        stateVersion: 51,
-      },
-    ]);
-    await refreshBtn.click();
-    await page.waitForFunction(() => {
-      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
-      return btn && !btn.disabled;
-    });
-
-    // Warning MUST persist because Project A is still unresolved
-    assert.ok(await listWarning.isVisible(), 'Warning must persist while Project A remains unresolved');
-
-    // Finally, Project A provides fresh v121
-    harness.setProjectsList([
-      {
-        ...structuredClone(INITIAL_PROJECTS[0]),
-        id: 'PRJ-DOCMONSTAKRAKIN',
-        name: 'Fresh A',
+        name: 'Fresh A v121',
         stateVersion: 121,
       },
       {
         ...structuredClone(INITIAL_PROJECTS[0]),
         id: 'PRJ-FIXTURE-B',
-        name: 'Fixture B Updated',
+        name: 'STALE B v50',
+        description: 'Stale metadata at v50',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fresh A v121'));
+
+    // Project A shows fresh metadata
+    assert.match(await cardA.innerText(), /Fresh A v121/);
+    // Project B still retains safe accepted metadata
+    assert.match(await cardB.innerText(), /51/);
+    assert.doesNotMatch(await cardB.innerText(), /STALE B v50/);
+
+    // Crucial check: Warning MUST persist because Project B is still unresolved!
+    assert.ok(await listWarning.isVisible(), 'Warning must persist while Project B remains unresolved');
+
+    // Step 5: Full recovery: Project B now provides fresh v51
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Fresh A v121',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fresh B v51',
+        description: 'Fresh metadata at v51',
         stateVersion: 51,
       },
     ]);
     await refreshBtn.click();
-    await page.waitForFunction(() => {
-      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
-      return btn && !btn.disabled;
-    });
+    await page.waitForFunction(() => document.body.textContent?.includes('Fresh B v51'));
 
-    // Warning clears only after all confirmed requirements are satisfied
+    // Warning clears only after both A and B are resolved
     assert.ok(!(await listWarning.isVisible()), 'Warning must clear when all projects reach confirmed versions');
+    assert.match(await cardB.innerText(), /Fresh B v51/);
   } finally {
     await harness.close();
   }
@@ -3160,6 +3197,202 @@ await test('Scenario 40 (Blocker 3): Retry controls have unique identities and a
       return btn && !btn.disabled;
     });
     assert.strictEqual(await bannerRetryBtn.isDisabled(), false, 'Banner retry button re-enables when request completes');
+  } finally {
+    harness.holdProjectListResponse(null);
+    await harness.close();
+  }
+});
+
+// Scenario 41 (MONO-14): Malformed list stateVersion is rejected without mutating accepted state; valid v0 is supported
+await test('Scenario 41 (MONO-14): Malformed list stateVersion is rejected without mutating accepted state; valid v0 is supported', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // 1. Malformed stateVersion (-1) in list response
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'MALFORMED VERSION',
+        stateVersion: -1,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForSelector('[role="alert"]');
+    const alert = page.locator('[role="alert"]').filter({ hasText: 'The server returned an invalid project list.' });
+    assert.ok(await alert.isVisible(), 'Must show recoverable error for invalid stateVersion');
+
+    // Safe metadata preserved
+    assert.match(await cardA.innerText(), /120/, 'Card must preserve previously accepted version 120');
+    assert.doesNotMatch(await cardA.innerText(), /MALFORMED VERSION/);
+
+    // 2. Valid version 0 accepted for new project
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-ZERO-001',
+        name: 'Zero Project',
+        stateVersion: 0,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Zero Project'));
+    const cardZero = page.locator('article').filter({ hasText: 'PRJ-ZERO-001' });
+    assert.match(await cardZero.innerText(), /Zero Project/);
+    assert.match(await cardZero.innerText(), /0/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 42 (MONO-15): List-accepted B v51 rejects subsequent snapshot B v50 as a whole with project warning
+await test('Scenario 42 (MONO-15): List-accepted B v51 rejects subsequent snapshot B v50 as a whole with project warning', async () => {
+  const harness = await createHarness({ initialStateVersion: 120, projectBVersion: 50 });
+  try {
+    const { page } = harness;
+
+    // Accept B at v51 in list
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Accepted v51',
+        description: 'Accepted list metadata v51',
+        stateVersion: 51,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Accepted v51'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /51/);
+    assert.match(await cardB.innerText(), /Fixture B Accepted v51/);
+
+    // Set B snapshot to return stale v50
+    harness.setProjectBData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-FIXTURE-B',
+      name: 'Stale Snapshot v50',
+      description: 'Stale snapshot description',
+      stateVersion: 50,
+    });
+
+    // Switch to Project B via TopBar dropdown
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+
+    // Stale snapshot warning appears
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must appear when snapshot is below accepted list floor');
+
+    // Stale snapshot data must NOT be accepted as canonical current project
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), /Stale Snapshot v50/);
+
+    // Now Project B snapshot recovers to v51
+    harness.setProjectBData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-FIXTURE-B',
+      name: 'Fresh B Snapshot v51',
+      description: 'Fresh snapshot description',
+      stateVersion: 51,
+    });
+
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => {
+      const banner = document.querySelector('[data-testid="stale-snapshot-warning"]');
+      return !banner;
+    });
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on recovery');
+    assert.match(await topBarProjectBtn.innerText(), /Fresh B Snapshot v51/);
+    assert.match(await topBarProjectBtn.innerText(), /v51/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 43 (MONO-09): Late list response cannot overwrite a newer accepted version
+await test('Scenario 43 (MONO-09): Late list response cannot overwrite a newer accepted version', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // First response advances to v121
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Slow Response v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Slow Response v121'));
+    assert.match(await cardA.innerText(), /121/);
+
+    // Second response advances to v122
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Fast Response v122',
+        stateVersion: 122,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fast Response v122'));
+    assert.match(await cardA.innerText(), /122/);
+
+    // Stale lower version v121 arrives; rejected, v122 survives
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Late Response v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Card A preserves v122 and Fast Response name; Late Response v121 is rejected
+    assert.match(await cardA.innerText(), /122/, 'Must preserve newer v122');
+    assert.match(await cardA.innerText(), /Fast Response v122/);
+    assert.doesNotMatch(await cardA.innerText(), /Late Response v121/);
   } finally {
     harness.holdProjectListResponse(null);
     await harness.close();

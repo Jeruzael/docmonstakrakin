@@ -1,4 +1,5 @@
 import type {Project,Question,Requirement,Risk,WorkItem,Evidence,AuditEvent,RecommendedNextAction,ADR,ArchitectureComponent,ApprovalItem,Feature,StandardControl,Threat} from '../types';
+import { isValidStateVersion } from '../utils/projectListReconciliation';
 
 export interface ProjectSnapshot {
   project:Project;
@@ -22,7 +23,7 @@ export async function readProjectList(request:typeof fetch=fetch):Promise<Projec
   const response=await request('/api/projects',{method:'GET',signal:AbortSignal.timeout(20000)});
   if(!response.ok)throw new Error('Cannot load the project list. Retry when the server is available.');
   const projects=await response.json();
-  if(!Array.isArray(projects) || projects.some(p=>!p || typeof p.id!=='string' || !p.id || typeof p.name!=='string') || new Set(projects.map(p=>p.id)).size!==projects.length)throw new Error('The server returned an invalid project list.');
+  if(!Array.isArray(projects) || projects.some(p=>!p || typeof p.id!=='string' || !p.id || typeof p.name!=='string' || !isValidStateVersion(p.stateVersion)) || new Set(projects.map(p=>p.id)).size!==projects.length)throw new Error('The server returned an invalid project list.');
   return projects;
 }
 
@@ -54,7 +55,7 @@ export function createProjectLoader(request:typeof fetch=fetch) {
             throw new Error(`Cannot load selected project ${projectId}${suffix}. Retry or select another project.`);
           }
           const value=await response.json();
-          if(key==='project' ? !value || value.id!==projectId : key==='nextAction' ? !value || typeof value!=='object' || Array.isArray(value) : !Array.isArray(value))throw new Error(`Invalid ${key} response for selected project ${projectId}.`);
+          if(key==='project' ? !value || value.id!==projectId || !isValidStateVersion(value.stateVersion) : key==='nextAction' ? !value || typeof value!=='object' || Array.isArray(value) : !Array.isArray(value))throw new Error(`Invalid ${key} response for selected project ${projectId}.`);
           return [key,value];
         }));
         if(current===sequence && isSelected())callbacks.onCommit(Object.fromEntries(entries) as unknown as ProjectSnapshot);

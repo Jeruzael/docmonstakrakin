@@ -53,6 +53,8 @@ import {
   reconcileProjectList,
   reconcileListFreshness,
   UnresolvedListFreshness,
+  calculateEffectiveVersionFloors,
+  isValidStateVersion,
 } from './utils/projectListReconciliation';
 
 export default function App() {
@@ -168,6 +170,7 @@ export default function App() {
   const projectAuditStatusRef = useRef<Record<string, 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>>({});
   const projectAuditErrorRef = useRef<Record<string, string>>({});
   const acceptedProjectsRef = useRef<Project[]>([]);
+  const acceptedProjectVersionFloorsRef = useRef<Record<string, number>>({});
   const unresolvedListFreshnessRef = useRef<UnresolvedListFreshness>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
@@ -303,6 +306,10 @@ export default function App() {
     const currentConfirmed = confirmedVersionsRef.current[projectId] ?? 0;
     const nextVersion = Math.max(currentConfirmed, saveResponse.stateVersion);
     confirmedVersionsRef.current[projectId] = nextVersion;
+    acceptedProjectVersionFloorsRef.current[projectId] = Math.max(
+      acceptedProjectVersionFloorsRef.current[projectId] ?? 0,
+      nextVersion
+    );
 
     if (selectedProjectRef.current === projectId) {
       setCurrentProject(prev => {
@@ -313,15 +320,13 @@ export default function App() {
       });
     }
 
-    setProjects(prevProjects => {
-      const updated = prevProjects.map(p =>
-        p.id === projectId
-          ? { ...p, stateVersion: Math.max(p.stateVersion ?? 0, nextVersion) }
-          : p
-      );
-      acceptedProjectsRef.current = updated;
-      return updated;
-    });
+    const updatedProjects = acceptedProjectsRef.current.map(p =>
+      p.id === projectId
+        ? { ...p, stateVersion: Math.max(p.stateVersion ?? 0, nextVersion) }
+        : p
+    );
+    acceptedProjectsRef.current = updatedProjects;
+    setProjects(updatedProjects);
 
     if (saveResponse.auditEventId) {
       const newAck: ExpectedAuditAcknowledgment = {
@@ -353,10 +358,14 @@ export default function App() {
     await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
       onStart:()=>{setProjectLoading(true);setLoadError('');},
       onCommit:data=>{
-        const confirmed = confirmedVersionsRef.current[data.project.id] ?? 0;
-        const incomingVersion = data.project.stateVersion ?? 0;
+        const effectiveFloor = Math.max(
+          confirmedVersionsRef.current[data.project.id] ?? 0,
+          acceptedProjectVersionFloorsRef.current[data.project.id] ?? 0,
+          unresolvedListFreshnessRef.current[data.project.id] ?? 0
+        );
+        const incomingVersion = data.project.stateVersion;
 
-        if (incomingVersion < confirmed) {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) {
           // Reject stale snapshot as a whole to prevent overwriting confirmed canonical data
           setProjectLoading(false);
           const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
@@ -371,6 +380,10 @@ export default function App() {
         if (selectedProjectRef.current === data.project.id) {
           setActiveSnapshotStaleWarning('');
         }
+        acceptedProjectVersionFloorsRef.current[data.project.id] = Math.max(
+          acceptedProjectVersionFloorsRef.current[data.project.id] ?? 0,
+          incomingVersion
+        );
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
 
@@ -415,11 +428,9 @@ export default function App() {
 
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
         setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
-        setProjects(previous => {
-          const updated = previous.map(p => p.id === data.project.id ? data.project : p);
-          acceptedProjectsRef.current = updated;
-          return updated;
-        });
+        const updatedProjects = acceptedProjectsRef.current.map(p => p.id === data.project.id ? data.project : p);
+        acceptedProjectsRef.current = updatedProjects;
+        setProjects(updatedProjects);
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
@@ -500,19 +511,32 @@ export default function App() {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
 
+      const effectiveFloors = calculateEffectiveVersionFloors(
+        confirmedVersionsRef.current,
+        acceptedProjectVersionFloorsRef.current,
+        unresolvedListFreshnessRef.current
+      );
       const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
       const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
-        confirmedVersionsRef.current,
+        effectiveFloors,
         unresolvedIds
       );
       unresolvedListFreshnessRef.current = reconcileListFreshness(
         unresolvedListFreshnessRef.current,
         data,
-        confirmedVersionsRef.current,
+        effectiveFloors,
         staleIncomingProjectIds
       );
+      for (const p of acceptedProjects) {
+        if (isValidStateVersion(p.stateVersion)) {
+          acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+            acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+            p.stateVersion
+          );
+        }
+      }
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
@@ -560,19 +584,32 @@ export default function App() {
       const data = await readProjectList();
       if (sequence !== listSequence.current) return;
 
+      const effectiveFloors = calculateEffectiveVersionFloors(
+        confirmedVersionsRef.current,
+        acceptedProjectVersionFloorsRef.current,
+        unresolvedListFreshnessRef.current
+      );
       const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
       const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
-        confirmedVersionsRef.current,
+        effectiveFloors,
         unresolvedIds
       );
       unresolvedListFreshnessRef.current = reconcileListFreshness(
         unresolvedListFreshnessRef.current,
         data,
-        confirmedVersionsRef.current,
+        effectiveFloors,
         staleIncomingProjectIds
       );
+      for (const p of acceptedProjects) {
+        if (isValidStateVersion(p.stateVersion)) {
+          acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+            acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+            p.stateVersion
+          );
+        }
+      }
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
@@ -631,8 +668,16 @@ export default function App() {
       });
       if (res.ok) {
         const created: Project = await res.json();
-        listSequence.current++;setProjectsLoading(false);setProjectsError('');
-        setProjects((prev) => [created, ...prev.filter(p=>p.id!==created.id)]);
+        if (!created || typeof created.id !== 'string' || !created.id || !isValidStateVersion(created.stateVersion)) {
+          throw new Error('Invalid project creation response.');
+        }
+        acceptedProjectVersionFloorsRef.current[created.id] = created.stateVersion;
+        const updatedProjects = [created, ...acceptedProjectsRef.current.filter(p => p.id !== created.id)];
+        acceptedProjectsRef.current = updatedProjects;
+        listSequence.current++;
+        setProjectsLoading(false);
+        setProjectsError('');
+        setProjects(updatedProjects);
         handleSelectProject(created.id);
         setCurrentView('overview');
         handleCloseCreateWizard();
