@@ -82,6 +82,8 @@ interface TestHarnessOptions {
   sessionAuthenticated?: boolean;
   saveResponseOverride?: (reqBody: any) => Promise<{ status: number; body: any }>;
   refreshFails?: boolean;
+  projectAResponseOverride?: (callCount: number) => Promise<{ status: number; body: any } | null>;
+  auditResponseOverride?: (projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>;
 }
 
 async function createHarness(options: TestHarnessOptions = {}) {
@@ -113,6 +115,36 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let currentDocSummary = structuredClone(DOC_SUMMARY_002);
 
   const saveCalls: any[] = [];
+  let projectAFetchCount = 0;
+  let projectAHoldPromise: Promise<void> | null = null;
+  let auditFetchCount = 0;
+  let auditHoldPromise: Promise<void> | null = null;
+
+  let dynamicProjectAResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null =
+    options.projectAResponseOverride ?? null;
+  let dynamicAuditResponseOverride: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null =
+    options.auditResponseOverride ?? null;
+
+  const projectAAuditLogs: any[] = [
+    {
+      id: 'AUD-INIT-001',
+      actor: 'Lead Architect',
+      timestamp: new Date().toISOString(),
+      action: 'PROJECT_INITIALIZED',
+      target: 'PRJ-DOCMONSTAKRAKIN',
+      stateHash: 'init-state-hash',
+    },
+  ];
+  const projectBAuditLogs: any[] = [
+    {
+      id: 'AUD-INIT-002',
+      actor: 'Lead Architect',
+      timestamp: new Date().toISOString(),
+      action: 'PROJECT_INITIALIZED',
+      target: 'PRJ-FIXTURE-B',
+      stateHash: 'init-b-state-hash',
+    },
+  ];
 
   await page.route('**/api/**', async (route: Route) => {
     const url = new URL(route.request().url()).pathname;
@@ -140,10 +172,45 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
     // Projects endpoints
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN') {
+      projectAFetchCount++;
+      if (projectAHoldPromise) {
+        await projectAHoldPromise;
+      }
+      if (dynamicProjectAResponseOverride) {
+        const custom = await dynamicProjectAResponseOverride(projectAFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
       return send(projectAData);
     }
     if (url === '/api/projects/PRJ-FIXTURE-B') {
       return send(projectBData);
+    }
+
+    // Authoritative Audit endpoints
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/audit') {
+      auditFetchCount++;
+      if (auditHoldPromise) {
+        await auditHoldPromise;
+      }
+      if (dynamicAuditResponseOverride) {
+        const custom = await dynamicAuditResponseOverride('PRJ-DOCMONSTAKRAKIN', auditFetchCount, saveCalls.length);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectAAuditLogs);
+    }
+
+    if (url === '/api/projects/PRJ-FIXTURE-B/audit') {
+      if (dynamicAuditResponseOverride) {
+        const custom = await dynamicAuditResponseOverride('PRJ-FIXTURE-B', 1, saveCalls.length);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectBAuditLogs);
     }
 
     // Controlled docs catalog
@@ -201,6 +268,21 @@ async function createHarness(options: TestHarnessOptions = {}) {
         auditEventId: 'AUD-SYNC-TEST-001',
         timestamp: new Date().toISOString(),
       };
+
+      projectAAuditLogs.push({
+        id: resp.auditEventId,
+        actor: 'Lead Architect',
+        timestamp: resp.timestamp,
+        action: 'DOCUMENT_UPDATED',
+        target: resp.documentId,
+        stateHash: resp.newSha256,
+        details: {
+          path: resp.path,
+          previousSha256: resp.previousSha256,
+          stateVersion: resp.stateVersion,
+        },
+      });
+
       return send(resp);
     }
 
@@ -234,6 +316,22 @@ async function createHarness(options: TestHarnessOptions = {}) {
   return {
     page,
     saveCalls,
+    getProjectAFetchCount: () => projectAFetchCount,
+    holdProjectAResponse: (p: Promise<void> | null) => {
+      projectAHoldPromise = p;
+    },
+    setProjectAResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectAResponseOverride = fn;
+    },
+    getAuditFetchCount: () => auditFetchCount,
+    holdAuditResponse: (p: Promise<void> | null) => {
+      auditHoldPromise = p;
+    },
+    setAuditResponseOverride: (fn: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicAuditResponseOverride = fn;
+    },
+    getProjectAAuditLogs: () => projectAAuditLogs,
+    getProjectBAuditLogs: () => projectBAuditLogs,
     setProjectAData: (d: any) => {
       projectAData = d;
     },
@@ -513,8 +611,8 @@ await test('Scenario 8: Switching to Project B while Project A save is in flight
   }
 });
 
-// Scenario 9: Out-of-Order Stale Responses (Monotonic Protection)
-await test('Scenario 9: Delayed stale snapshot cannot downgrade a newer confirmed stateVersion', async () => {
+// Scenario 9: Out-of-Order Stale Responses (Monotonic & Whole-Snapshot Rejection)
+await test('Scenario 9: Asynchronous stale snapshot is rejected as a whole and does not overwrite confirmed state', async () => {
   const harness = await createHarness({ initialStateVersion: 120 });
   try {
     const { page } = harness;
@@ -525,22 +623,68 @@ await test('Scenario 9: Delayed stale snapshot cannot downgrade a newer confirme
     await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
     assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar updated to v121');
 
-    // Simulate background fetch returning older snapshot (stateVersion 120)
-    harness.setProjectAData({
-      ...structuredClone(INITIAL_PROJECTS[0]),
-      id: 'PRJ-DOCMONSTAKRAKIN',
-      name: 'docmonstakrakin',
-      stateVersion: 120,
+    // Baseline project request count
+    const baselineFetches = harness.getProjectAFetchCount();
+    assert.ok(baselineFetches >= 1, 'Initial load issued at least 1 project fetch');
+
+    // Configure override to return stale snapshot with modified description on next fetch
+    harness.setProjectAResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          ...structuredClone(INITIAL_PROJECTS[0]),
+          id: 'PRJ-DOCMONSTAKRAKIN',
+          name: 'docmonstakrakin',
+          description: 'STALE OUTDATED DESCRIPTION',
+          stateVersion: 120, // Stale!
+        },
+      };
     });
 
-    // Trigger re-fetch of project data
+    // Trigger asynchronous project fetch via window.__dmkTriggerProjectReload()
     await page.evaluate(() => {
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      return (window as any).__dmkTriggerProjectReload();
     });
-    await page.waitForTimeout(200);
 
-    // TopBar must STILL display v121
-    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must not downgrade to v120');
+    // Assert that the request count increased (genuine network request sent)
+    assert.ok(
+      harness.getProjectAFetchCount() > baselineFetches,
+      `Request count must increase (was ${baselineFetches}, now ${harness.getProjectAFetchCount()})`
+    );
+
+    // Stale snapshot warning must be shown
+    const staleWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await staleWarning.waitFor({ timeout: 4000 });
+    const warningText = await staleWarning.innerText();
+    assert.match(warningText, /Project state snapshot is older than the confirmed version/);
+
+    // Verify stale snapshot was rejected as a whole:
+    // 1. TopBar still displays v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must remain v121');
+    // 2. UI does not show stale description
+    const contentText = await page.locator('main').innerText();
+    assert.doesNotMatch(contentText, /STALE OUTDATED DESCRIPTION/, 'UI must NOT adopt stale description');
+
+    // Deliver authoritative snapshot with stateVersion: 121 and updated description
+    harness.setProjectAResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          ...structuredClone(INITIAL_PROJECTS[0]),
+          id: 'PRJ-DOCMONSTAKRAKIN',
+          name: 'docmonstakrakin',
+          description: 'FRESH AUTHORITATIVE DESCRIPTION',
+          stateVersion: 121,
+        },
+      };
+    });
+
+    // Click retry button in stale warning banner
+    await page.locator('[data-testid="btn-retry-project-fetch"]').click();
+
+    // Verify warning cleared and UI updated
+    await staleWarning.waitFor({ state: 'detached', timeout: 4000 });
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar still v121');
   } finally {
     await harness.close();
   }
@@ -633,6 +777,384 @@ await test('Scenario 12: Saved auditEventId and stateVersion match server acknow
 
     assert.match(bannerText, /AUD-SYNC-TEST-001/, 'Banner must display confirmed audit event ID');
     assert.match(bannerText, /121/, 'Banner must display confirmed stateVersion');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 13 (Case A): Successful Audit Refresh
+await test('Scenario 13 (Case A): Successful controlled document save synchronizes authoritative audit ledger in EvidenceView without reload', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Save-success banner rendered
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit tab in Sidebar
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+
+    // Switch to Append-Only Audit sub-tab
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Assert audit status badge shows LEDGER SYNCHRONIZED
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Assert AUD-SYNC-TEST-001 is present in the table
+    const auditTableText = await page.locator('table').innerText();
+    assert.match(auditTableText, /AUD-SYNC-TEST-001/, 'Committed auditEventId must appear in audit ledger table');
+    assert.match(auditTableText, /DOCUMENT_UPDATED/);
+
+    // Assert warning is NOT displayed
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    assert.equal(await warning.isVisible(), false, 'Warning must not be displayed on successful audit sync');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 14 (Case B): Delayed Audit Refresh
+await test('Scenario 14 (Case B): Delayed audit response displays refreshing status while preserving save confirmation, then transitions to synchronized', async () => {
+  let resolveAudit!: () => void;
+  const auditHoldPromise = new Promise<void>((r) => (resolveAudit = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // Hold audit response
+    harness.holdAuditResponse(auditHoldPromise);
+
+    // Execute save workflow
+    await executeSaveWorkflow(page);
+
+    // Save banner is visible and TopBar shows v121
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // While held, refreshing indicator must be displayed and badge says LEDGER SYNCHRONIZING...
+    const refreshingIndicator = page.locator('[data-testid="audit-sync-refreshing"]');
+    await refreshingIndicator.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZING/);
+
+    // Release audit response
+    resolveAudit();
+
+    // Status updates to LEDGER SYNCHRONIZED and refreshing indicator detaches
+    await refreshingIndicator.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const auditTableText = await page.locator('table').innerText();
+    assert.match(auditTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 15 (Case C): Failed Audit Refresh (HTTP 500)
+await test('Scenario 15 (Case C): Audit refresh failure displays recoverable warning, preserves existing audit records, and retry succeeds', async () => {
+  let auditCallCount = 0;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _call, saveCallsCount) => {
+      if (saveCallsCount === 0) {
+        return null;
+      }
+      auditCallCount++;
+      if (auditCallCount === 1) {
+        // First post-save audit fetch fails with HTTP 500
+        return { status: 500, body: { error: 'Internal audit service error' } };
+      }
+      // Subsequent fetch succeeds (returns default Project A audit logs)
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Save banner remains visible and TopBar is v121
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Status is unconfirmed and warning banner is shown
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+
+    // Existing audit records (AUD-INIT-001) must be preserved!
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/, 'Existing audit events must be preserved during refresh failure');
+
+    // Click retry button
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+
+    // Warning disappears, status becomes LEDGER SYNCHRONIZED, and new event is displayed
+    await warning.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const updatedTableText = await page.locator('table').innerText();
+    assert.match(updatedTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 16 (Case D): Audit Response Missing Committed Event
+await test('Scenario 16 (Case D): Audit response omitting the committed event leaves status unconfirmed with warning', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async () => {
+      // Returns 200 array but omitting AUD-SYNC-TEST-001
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: new Date().toISOString(),
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Status is unconfirmed and warning banner is shown
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 17 (Case E): Project Switching Isolation
+await test('Scenario 17 (Case E): Project switching during audit refresh isolates audit state and does not leak events into Project B', async () => {
+  let resolveAuditA!: () => void;
+  const auditAHoldPromise = new Promise<void>((r) => (resolveAuditA = r));
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Hold audit response for Project A
+    harness.holdAuditResponse(auditAHoldPromise);
+
+    // Save on Project A
+    await executeSaveWorkflow(page);
+
+    // Switch to Project B while Project A's audit fetch is holding
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', 'PRJ-FIXTURE-B');
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    // Wait for Project B to load
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Release Project A's audit response
+    resolveAuditA();
+    await page.waitForTimeout(300);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B must show its own audit events, NEVER Project A's AUD-SYNC-TEST-001!
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-002/, 'Project B must show its own audit events');
+    assert.doesNotMatch(tableText, /AUD-SYNC-TEST-001/, 'Project A audit event must NOT leak into Project B');
+    assert.match(await topBarProjectBtn.innerText(), /Fixture B/);
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 18 (Case F): Out-of-Order Audit Responses
+await test('Scenario 18 (Case F): Consecutive saves handle out-of-order audit responses preserving the newer audit state', async () => {
+  let saveCount = 0;
+  let postSaveAuditCount = 0;
+  let resolveAudit1!: () => void;
+  const audit1HoldPromise = new Promise<void>((r) => (resolveAudit1 = r));
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      saveCount++;
+      const nextVer = 120 + saveCount;
+      const eventId = `AUD-CONSEC-${nextVer}`;
+      harness.getProjectAAuditLogs().push({
+        id: eventId,
+        actor: 'Lead Architect',
+        timestamp: new Date().toISOString(),
+        action: 'DOCUMENT_UPDATED',
+        target: 'DOC-CTRL-002',
+        stateHash: '5'.repeat(64),
+      });
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: '5'.repeat(64),
+          stateVersion: nextVer,
+          auditEventId: eventId,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) {
+        return null;
+      }
+      postSaveAuditCount++;
+      if (postSaveAuditCount === 1) {
+        // Save 1's audit fetch is delayed
+        await audit1HoldPromise;
+        // When released, returns list containing only Save 1
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-CONSEC-121',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '5'.repeat(64),
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save 1 (v121) - audit response held
+    await executeSaveWorkflow(page, 'Save 1');
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Save 2 (v122) - audit response resolves immediately
+    await page.locator('[data-testid="btn-edit-document"]').waitFor();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('Save 2 edit content');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Save 2');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+
+    // Wait for v122
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v122'));
+    assert.match(await topBarProjectBtn.innerText(), /v122/);
+
+    // Now release the delayed Save 1 audit response
+    resolveAudit1();
+    await page.waitForTimeout(300);
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Verify AUD-CONSEC-122 is present in the table (never overwritten by delayed Save 1 response!)
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-CONSEC-122/, 'Newer audit state must be preserved over delayed earlier response');
+    assert.match(tableText, /AUD-CONSEC-121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 19 (Cases I & J): Negative Outcomes & No Duplication / Synthesis
+await test('Scenario 19 (Cases I & J): Failed saves do not trigger false audit sync and ledger contains zero duplicated or synthetic records', async () => {
+  let auditTriggered = false;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async () => ({
+      status: 409,
+      body: { error: 'DOCUMENT_STALE: Base SHA mismatch.' },
+    }),
+    auditResponseOverride: async (_projId, callCount) => {
+      if (callCount > 1) {
+        auditTriggered = true;
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Stale error banner is shown
+    await page.locator('[data-testid="canonical-refresh-error"]').waitFor();
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Verify audit status is CURRENT (no pending sync failed or unconfirmed)
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    assert.equal(auditTriggered, false, 'Failed save must not trigger audit sync');
+
+    // Verify table has exactly 1 event (AUD-INIT-001) with zero duplicates
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/);
+    assert.doesNotMatch(tableText, /DOCUMENT_UPDATED/);
   } finally {
     await harness.close();
   }

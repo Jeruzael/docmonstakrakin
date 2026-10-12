@@ -22,7 +22,7 @@ import { FeaturesView } from './components/FeaturesView';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { OverrideModal } from './components/OverrideModal';
 import { PackageTransferModal } from './components/PackageTransferModal';
-import { FolderPlus, Plus } from 'lucide-react';
+import { FolderPlus, Plus, AlertTriangle } from 'lucide-react';
 
 import {
   Project,
@@ -153,6 +153,8 @@ export default function App() {
   // Selection stays in App. Refs only guard async callbacks and request ordering.
   const selectedProjectRef = useRef<string>(getProjectFromUrl());
   const confirmedVersionsRef = useRef<Record<string, number>>({});
+  const auditRefreshSeqRef = useRef<Record<string, number>>({});
+  const pendingAuditEventRef = useRef<Record<string, { eventId: string; docId: string; path: string; version: number; newSha256: string }>>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
   const listSequence = useRef(0);
@@ -160,9 +162,67 @@ export default function App() {
   const [projectsError,setProjectsError] = useState('');
   const [projectLoading,setProjectLoading] = useState(false);
   const [loadError,setLoadError] = useState('');
+  const [auditSyncStatus, setAuditSyncStatus] = useState<'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>('CURRENT');
+  const [auditSyncError, setAuditSyncError] = useState<string>('');
+  const [staleSnapshotWarning, setStaleSnapshotWarning] = useState<string>('');
   const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
+
+  const performAuditRefresh = useCallback(async (projectId: string, seq: number) => {
+    try {
+      const res = await fetch(`/api/projects/${encodeURIComponent(projectId)}/audit`);
+      if (!res.ok) {
+        throw new Error(`Audit endpoint returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        throw new Error('Audit endpoint returned non-array payload');
+      }
+
+      if (seq !== auditRefreshSeqRef.current[projectId] || selectedProjectRef.current !== projectId) {
+        return;
+      }
+
+      const pending = pendingAuditEventRef.current[projectId];
+      if (pending) {
+        const found = data.some(
+          e =>
+            e &&
+            e.id === pending.eventId &&
+            (e.action === 'DOCUMENT_UPDATED' || e.action?.includes('DOCUMENT'))
+        );
+        if (!found) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(
+            'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.'
+          );
+          return;
+        }
+      }
+
+      setAuditLogs(data);
+      setAuditSyncStatus('CURRENT');
+      setAuditSyncError('');
+    } catch {
+      if (seq !== auditRefreshSeqRef.current[projectId] || selectedProjectRef.current !== projectId) {
+        return;
+      }
+      setAuditSyncStatus('REFRESH_FAILED');
+      setAuditSyncError(
+        'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.'
+      );
+    }
+  }, []);
+
+  const handleRetryAuditRefresh = useCallback(() => {
+    const projId = selectedProjectRef.current;
+    if (!projId) return;
+    const nextSeq = (auditRefreshSeqRef.current[projId] ?? 0) + 1;
+    auditRefreshSeqRef.current[projId] = nextSeq;
+    setAuditSyncStatus('REFRESHING');
+    void performAuditRefresh(projId, nextSeq);
+  }, [performAuditRefresh]);
 
   const handleControlledDocumentCommitted = useCallback((projectId: string, saveResponse: DocumentSaveResponse) => {
     if (
@@ -197,31 +257,67 @@ export default function App() {
           : p
       )
     );
-  }, []);
+
+    if (saveResponse.auditEventId) {
+      pendingAuditEventRef.current[projectId] = {
+        eventId: saveResponse.auditEventId,
+        docId: saveResponse.documentId,
+        path: saveResponse.path,
+        version: nextVersion,
+        newSha256: saveResponse.newSha256,
+      };
+      const nextSeq = (auditRefreshSeqRef.current[projectId] ?? 0) + 1;
+      auditRefreshSeqRef.current[projectId] = nextSeq;
+      if (selectedProjectRef.current === projectId) {
+        setAuditSyncStatus('REFRESHING');
+      }
+      void performAuditRefresh(projectId, nextSeq);
+    }
+  }, [performAuditRefresh]);
 
   const fetchProjectData = useCallback(async (projectId:string) => {
     await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
       onStart:()=>{setProjectLoading(true);setLoadError('');},
       onCommit:data=>{
         const confirmed = confirmedVersionsRef.current[data.project.id] ?? 0;
-        const safeVersion = Math.max(data.project.stateVersion ?? 0, confirmed);
-        const safeProject = safeVersion !== data.project.stateVersion
-          ? { ...data.project, stateVersion: safeVersion }
-          : data.project;
-        setCurrentProject(safeProject);setQuestions(data.questions);setRequirements(data.requirements);
+        const incomingVersion = data.project.stateVersion ?? 0;
+
+        if (incomingVersion < confirmed) {
+          // Reject stale snapshot as a whole to prevent overwriting confirmed canonical data
+          setProjectLoading(false);
+          setStaleSnapshotWarning('Project state snapshot is older than the confirmed version. Retry to refresh.');
+          return;
+        }
+
+        setStaleSnapshotWarning('');
+        setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);setAuditLogs(data.audit);
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
         setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
-        setProjects(previous=>previous.map(p=>p.id===data.project.id?safeProject:p));
+        setProjects(previous=>previous.map(p=>p.id===data.project.id?data.project:p));
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
   },[]);
 
+  // Expose test hook for deterministic asynchronous project reload triggers in integration tests
+  useEffect(() => {
+    (window as any).__dmkTriggerProjectReload = (id?: string) => {
+      const target = id || selectedProjectRef.current;
+      if (target) return fetchProjectData(target);
+    };
+    return () => {
+      delete (window as any).__dmkTriggerProjectReload;
+    };
+  }, [fetchProjectData]);
+
   const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
     if (syncHistory !== 'none') {
       syncProjectUrl(id, syncHistory === 'replace');
     }
+    setAuditSyncStatus('CURRENT');
+    setAuditSyncError('');
+    setStaleSnapshotWarning('');
     if(id && id===selectedProjectRef.current && !replaceBaseline) {
       setCurrentView(view=>view==='projects'?'overview':view);
       void fetchProjectData(id);
@@ -271,7 +367,19 @@ export default function App() {
           ? { ...p, stateVersion: confirmed }
           : p;
       });
-      setProjects(safeData);
+      setProjects(prevProjects => {
+        return safeData.map(p => {
+          const confirmed = confirmedVersionsRef.current[p.id] ?? 0;
+          if (confirmed > (p.stateVersion ?? 0)) {
+            const existing = prevProjects.find(ep => ep.id === p.id);
+            if (existing && (existing.stateVersion ?? 0) >= confirmed) {
+              return existing;
+            }
+            return { ...p, stateVersion: confirmed };
+          }
+          return p;
+        });
+      });
 
       if (safeData.length === 0) {
         handleSelectProject('', false, 'replace');
@@ -548,6 +656,25 @@ export default function App() {
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>void fetchProjectData(activeProjectId)}>Retry selected project</button></div>}
+          {staleSnapshotWarning && (
+            <div
+              data-testid="stale-snapshot-warning"
+              role="alert"
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-950 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{staleSnapshotWarning}</span>
+              </div>
+              <button
+                data-testid="btn-retry-project-fetch"
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0"
+                onClick={() => void fetchProjectData(activeProjectId)}
+              >
+                Retry to refresh
+              </button>
+            </div>
+          )}
           {projectMounted && projectLoading && <p role="status" className="mb-4 text-sm text-slate-600">Refreshing selected project…</p>}
           {currentView === 'projects' ? <ProjectsView projects={projects} activeProjectId={projectReady ? activeProjectId : ''} loading={projectsLoading} error={projectsError} onSelectProject={handleSelectProject} onCreateProject={handleOpenCreateWizard} onRetry={()=>void fetchProjects()}/> : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
@@ -693,7 +820,13 @@ export default function App() {
           )}
 
           {currentView === 'evidence' && (
-            <EvidenceView evidenceList={evidenceList} auditLogs={auditLogs} />
+            <EvidenceView
+              evidenceList={evidenceList}
+              auditLogs={auditLogs}
+              auditSyncStatus={auditSyncStatus}
+              auditSyncError={auditSyncError}
+              onRetryAuditRefresh={handleRetryAuditRefresh}
+            />
           )}
 
           {currentView === 'compiler' && (
