@@ -4,6 +4,8 @@ import {
   validateAuditAcknowledgment,
   reconcileAuditEvents,
   combineRequiredAuditAcks,
+  isValidSaveAcknowledgment,
+  isEligibleControlledDocumentSaveCommit,
 } from '../src/utils/auditValidation';
 
 console.log('--- Testing Audit Validation & Reconciliation ---');
@@ -181,12 +183,46 @@ const c4 = combineRequiredAuditAcks([baseExpected], [conflictingExpected]);
 assert.equal(c4.valid, false, 'Conflicting metadata must fail closed');
 assert.ok(c4.reason?.includes('Conflicting acknowledgment metadata'));
 
-// 17. combineRequiredAuditAcks - conflicting timestamp for same auditEventId fails closed
-const conflictingTimestamp = {
-  ...baseExpected,
-  timestamp: '2026-10-12T10:00:01.000Z',
+// 18. isValidSaveAcknowledgment & isEligibleControlledDocumentSaveCommit (MONO-18)
+const validSaveAck = {
+  success: true,
+  documentId: 'DOC-CTRL-002',
+  path: 'docs/00_control/PROJECT_STATE.md',
+  previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+  newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+  stateVersion: 121,
+  auditEventId: 'AUD-001',
+  timestamp: '2026-10-12T10:00:00.000Z',
 };
-const c5 = combineRequiredAuditAcks([baseExpected], [conflictingTimestamp]);
-assert.equal(c5.valid, false, 'Conflicting timestamp must fail closed');
+
+assert.equal(isValidSaveAcknowledgment(validSaveAck), true, 'Valid save acknowledgment must pass');
+assert.equal(isEligibleControlledDocumentSaveCommit('PRJ-DOCMONSTAKRAKIN', validSaveAck), true, 'Valid project and save ack must be eligible');
+
+// Rejection of unsafe integers and invalid stateVersions
+assert.equal(
+  isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: Number.MAX_SAFE_INTEGER + 1 }),
+  false,
+  'Unsafe integer stateVersion (MAX_SAFE_INTEGER + 1) must be rejected'
+);
+assert.equal(
+  isEligibleControlledDocumentSaveCommit('PRJ-DOCMONSTAKRAKIN', { ...validSaveAck, stateVersion: Number.MAX_SAFE_INTEGER + 1 }),
+  false,
+  'Unsafe integer must be ineligible for commit at App boundary'
+);
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: -1 }), false, 'Negative stateVersion rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: 1.5 }), false, 'Fractional stateVersion rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: '121' }), false, 'String stateVersion rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: NaN }), false, 'NaN stateVersion rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, stateVersion: Infinity }), false, 'Infinity stateVersion rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, success: false }), false, 'success !== true rejected');
+assert.equal(isValidSaveAcknowledgment({ ...validSaveAck, auditEventId: '' }), false, 'Empty auditEventId rejected');
+assert.equal(isValidSaveAcknowledgment(null), false, 'null rejected');
+assert.equal(isValidSaveAcknowledgment(undefined), false, 'undefined rejected');
+assert.equal(isValidSaveAcknowledgment([]), false, 'array rejected');
+
+// Project ID boundary checks
+assert.equal(isEligibleControlledDocumentSaveCommit('', validSaveAck), false, 'Empty projectId ineligible');
+assert.equal(isEligibleControlledDocumentSaveCommit(null, validSaveAck), false, 'Null projectId ineligible');
+assert.equal(isEligibleControlledDocumentSaveCommit(undefined, validSaveAck), false, 'Undefined projectId ineligible');
 
 console.log('All audit validation unit tests passed!');

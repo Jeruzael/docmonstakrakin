@@ -3,7 +3,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { ProjectsView } from './components/ProjectsView';
-import { createProjectLoader, readProjectList, projectContentReady } from './data/projectWorkspace';
+import {
+  createProjectLoader,
+  readProjectList,
+  projectContentReady,
+  createProjectListCoordinator,
+  ProjectListCoordinator,
+} from './data/projectWorkspace';
 import { DashboardView } from './components/DashboardView';
 import { ProjectWizard } from './components/ProjectWizard';
 import { QuestionnaireView } from './components/QuestionnaireView';
@@ -48,6 +54,7 @@ import {
   ExpectedAuditAcknowledgment,
   reconcileAuditEvents,
   combineRequiredAuditAcks,
+  isValidSaveAcknowledgment,
 } from './utils/auditValidation';
 import {
   reconcileProjectList,
@@ -174,7 +181,9 @@ export default function App() {
   const unresolvedListFreshnessRef = useRef<UnresolvedListFreshness>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
-  const listSequence = useRef(0);
+  const listCoordinator = useRef<ProjectListCoordinator | null>(null);
+  if (!listCoordinator.current) listCoordinator.current = createProjectListCoordinator();
+  const acceptedCanonicalSnapshotVersionsRef = useRef<Record<string, number>>({});
   const [projectsLoading,setProjectsLoading] = useState(true);
   const [projectsError,setProjectsError] = useState('');
   const [projectLoading,setProjectLoading] = useState(false);
@@ -185,7 +194,16 @@ export default function App() {
   const projectSnapshotStaleIssuesRef = useRef<Record<string, string>>({});
   const [projectListStaleWarning, setProjectListStaleWarning] = useState<string>('');
   const [projectsUnavailable, setProjectsUnavailable] = useState<boolean>(false);
-  const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
+  const activeFloor = Math.max(
+    confirmedVersionsRef.current[activeProjectId] ?? 0,
+    acceptedProjectVersionFloorsRef.current[activeProjectId] ?? 0,
+    unresolvedListFreshnessRef.current[activeProjectId] ?? 0
+  );
+  const certifiedSnapshotVersion = acceptedCanonicalSnapshotVersionsRef.current[activeProjectId];
+  const projectReady = projectContentReady(activeProjectId, currentProject, projectLoading, loadError)
+    && certifiedSnapshotVersion !== undefined
+    && certifiedSnapshotVersion >= activeFloor;
+  const isCanonicalMutationView = !['documents', 'evidence', 'projects'].includes(currentView);
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
 
@@ -294,11 +312,7 @@ export default function App() {
     if (
       !projectId ||
       typeof projectId !== 'string' ||
-      !saveResponse ||
-      saveResponse.success !== true ||
-      typeof saveResponse.stateVersion !== 'number' ||
-      !Number.isInteger(saveResponse.stateVersion) ||
-      saveResponse.stateVersion < 0
+      !isValidSaveAcknowledgment(saveResponse)
     ) {
       return;
     }
@@ -308,6 +322,10 @@ export default function App() {
     confirmedVersionsRef.current[projectId] = nextVersion;
     acceptedProjectVersionFloorsRef.current[projectId] = Math.max(
       acceptedProjectVersionFloorsRef.current[projectId] ?? 0,
+      nextVersion
+    );
+    acceptedCanonicalSnapshotVersionsRef.current[projectId] = Math.max(
+      acceptedCanonicalSnapshotVersionsRef.current[projectId] ?? 0,
       nextVersion
     );
 
@@ -384,6 +402,7 @@ export default function App() {
           acceptedProjectVersionFloorsRef.current[data.project.id] ?? 0,
           incomingVersion
         );
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
 
@@ -505,146 +524,182 @@ export default function App() {
 
   // Fetch projects list without falling back to seeded/demo identities.
   const fetchProjects = useCallback(async () => {
-    const sequence=++listSequence.current;
-    setProjectsLoading(true);setProjectsError('');
-    try {
-      const data=await readProjectList();
-      if(sequence!==listSequence.current)return;
+    await listCoordinator.current?.load({
+      onStart: () => {
+        setProjectsLoading(true);
+        setProjectsError('');
+      },
+      onCommit: (data) => {
+        const effectiveFloors = calculateEffectiveVersionFloors(
+          confirmedVersionsRef.current,
+          acceptedProjectVersionFloorsRef.current,
+          unresolvedListFreshnessRef.current
+        );
+        const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
+        const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
+          data,
+          acceptedProjectsRef.current,
+          effectiveFloors,
+          unresolvedIds
+        );
+        unresolvedListFreshnessRef.current = reconcileListFreshness(
+          unresolvedListFreshnessRef.current,
+          data,
+          effectiveFloors,
+          staleIncomingProjectIds
+        );
+        for (const p of acceptedProjects) {
+          if (isValidStateVersion(p.stateVersion)) {
+            acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+              acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+              p.stateVersion
+            );
+          }
+        }
+        acceptedProjectsRef.current = acceptedProjects;
+        setProjects(acceptedProjects);
 
-      const effectiveFloors = calculateEffectiveVersionFloors(
-        confirmedVersionsRef.current,
-        acceptedProjectVersionFloorsRef.current,
-        unresolvedListFreshnessRef.current
-      );
-      const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
-      const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
-        data,
-        acceptedProjectsRef.current,
-        effectiveFloors,
-        unresolvedIds
-      );
-      unresolvedListFreshnessRef.current = reconcileListFreshness(
-        unresolvedListFreshnessRef.current,
-        data,
-        effectiveFloors,
-        staleIncomingProjectIds
-      );
-      for (const p of acceptedProjects) {
-        if (isValidStateVersion(p.stateVersion)) {
-          acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
-            acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
-            p.stateVersion
+        const activeId = selectedProjectRef.current;
+        if (activeId) {
+          const currentSnapVer = acceptedCanonicalSnapshotVersionsRef.current[activeId] ?? 0;
+          const currentFloor = Math.max(
+            confirmedVersionsRef.current[activeId] ?? 0,
+            acceptedProjectVersionFloorsRef.current[activeId] ?? 0,
+            unresolvedListFreshnessRef.current[activeId] ?? 0
           );
+          if (currentSnapVer < currentFloor) {
+            const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+            projectSnapshotStaleIssuesRef.current[activeId] = warnMsg;
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
         }
-      }
-      acceptedProjectsRef.current = acceptedProjects;
-      setProjects(acceptedProjects);
 
-      const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
-      if (hasUnresolved) {
-        setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
-      } else {
-        setProjectListStaleWarning('');
-      }
-
-      if (acceptedProjects.length === 0) {
-        if (hasUnresolved || staleProjects.length > 0) {
-          setProjectsUnavailable(true);
+        const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+        if (hasUnresolved) {
+          setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
         } else {
-          setProjectsUnavailable(false);
-          handleSelectProject('', false, 'replace');
+          setProjectListStaleWarning('');
         }
-        return;
-      }
-      setProjectsUnavailable(false);
 
-      // Check URL query param first, then ref
-      const requestedId = getProjectFromUrl() || selectedProjectRef.current;
-      const matched = acceptedProjects.find(p => p.id === requestedId);
+        if (acceptedProjects.length === 0) {
+          if (hasUnresolved || staleProjects.length > 0) {
+            setProjectsUnavailable(true);
+          } else {
+            setProjectsUnavailable(false);
+            handleSelectProject('', false, 'replace');
+          }
+          return;
+        }
+        setProjectsUnavailable(false);
 
-      if (matched) {
-        handleSelectProject(matched.id, false, 'replace');
-      } else if (requestedId && unresolvedListFreshnessRef.current[requestedId] !== undefined) {
-        // Do NOT switch away from requestedId if it is unresolved / pending freshness
-      } else {
-        // Fall back to first project only when there is no valid requested/remembered project
-        handleSelectProject(acceptedProjects[0]?.id || '', false, 'replace');
-      }
-    } catch(error) {
-      if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
-    } finally {if(sequence===listSequence.current)setProjectsLoading(false);}
-  },[handleSelectProject]);
+        // Check URL query param first, then ref
+        const requestedId = getProjectFromUrl() || selectedProjectRef.current;
+        const matched = acceptedProjects.find(p => p.id === requestedId);
+
+        if (matched) {
+          handleSelectProject(matched.id, false, 'replace');
+        } else if (requestedId && unresolvedListFreshnessRef.current[requestedId] !== undefined) {
+          // Do NOT switch away from requestedId if it is unresolved / pending freshness
+        } else {
+          // Fall back to first project only when there is no valid requested/remembered project
+          handleSelectProject(acceptedProjects[0]?.id || '', false, 'replace');
+        }
+      },
+      onError: (errMsg) => {
+        setProjectsError(errMsg);
+      },
+      onSettled: () => {
+        setProjectsLoading(false);
+      },
+    });
+  }, [handleSelectProject]);
 
   // Refresh projects list in-place without resetting active project or navigating away.
   const handleRefreshProjectList = useCallback(async () => {
-    const sequence = ++listSequence.current;
-    setProjectsLoading(true);
-    setProjectsError('');
-    try {
-      const data = await readProjectList();
-      if (sequence !== listSequence.current) return;
+    await listCoordinator.current?.load({
+      onStart: () => {
+        setProjectsLoading(true);
+        setProjectsError('');
+      },
+      onCommit: (data) => {
+        const effectiveFloors = calculateEffectiveVersionFloors(
+          confirmedVersionsRef.current,
+          acceptedProjectVersionFloorsRef.current,
+          unresolvedListFreshnessRef.current
+        );
+        const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
+        const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
+          data,
+          acceptedProjectsRef.current,
+          effectiveFloors,
+          unresolvedIds
+        );
+        unresolvedListFreshnessRef.current = reconcileListFreshness(
+          unresolvedListFreshnessRef.current,
+          data,
+          effectiveFloors,
+          staleIncomingProjectIds
+        );
+        for (const p of acceptedProjects) {
+          if (isValidStateVersion(p.stateVersion)) {
+            acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+              acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+              p.stateVersion
+            );
+          }
+        }
+        acceptedProjectsRef.current = acceptedProjects;
+        setProjects(acceptedProjects);
 
-      const effectiveFloors = calculateEffectiveVersionFloors(
-        confirmedVersionsRef.current,
-        acceptedProjectVersionFloorsRef.current,
-        unresolvedListFreshnessRef.current
-      );
-      const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
-      const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
-        data,
-        acceptedProjectsRef.current,
-        effectiveFloors,
-        unresolvedIds
-      );
-      unresolvedListFreshnessRef.current = reconcileListFreshness(
-        unresolvedListFreshnessRef.current,
-        data,
-        effectiveFloors,
-        staleIncomingProjectIds
-      );
-      for (const p of acceptedProjects) {
-        if (isValidStateVersion(p.stateVersion)) {
-          acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
-            acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
-            p.stateVersion
+        const activeId = selectedProjectRef.current;
+        if (activeId) {
+          const currentSnapVer = acceptedCanonicalSnapshotVersionsRef.current[activeId] ?? 0;
+          const currentFloor = Math.max(
+            confirmedVersionsRef.current[activeId] ?? 0,
+            acceptedProjectVersionFloorsRef.current[activeId] ?? 0,
+            unresolvedListFreshnessRef.current[activeId] ?? 0
           );
+          if (currentSnapVer < currentFloor) {
+            const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+            projectSnapshotStaleIssuesRef.current[activeId] = warnMsg;
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
         }
-      }
-      acceptedProjectsRef.current = acceptedProjects;
-      setProjects(acceptedProjects);
 
-      const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
-      if (hasUnresolved) {
-        setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
-      } else {
-        setProjectListStaleWarning('');
-      }
-
-      if (acceptedProjects.length === 0) {
-        if (hasUnresolved || staleProjects.length > 0) {
-          setProjectsUnavailable(true);
+        const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+        if (hasUnresolved) {
+          setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
         } else {
-          setProjectsUnavailable(false);
-          handleSelectProject('', false, 'replace');
+          setProjectListStaleWarning('');
         }
-        return;
-      }
-      setProjectsUnavailable(false);
-    } catch (error) {
-      if (sequence === listSequence.current) {
-        setProjectsError(error instanceof Error ? error.message : 'Cannot load projects.');
-      }
-    } finally {
-      if (sequence === listSequence.current) {
+
+        if (acceptedProjects.length === 0) {
+          if (hasUnresolved || staleProjects.length > 0) {
+            setProjectsUnavailable(true);
+          } else {
+            setProjectsUnavailable(false);
+            handleSelectProject('', false, 'replace');
+          }
+          return;
+        }
+        setProjectsUnavailable(false);
+      },
+      onError: (errMsg) => {
+        setProjectsError(errMsg);
+      },
+      onSettled: () => {
         setProjectsLoading(false);
-      }
-    }
+      },
+    });
   }, [handleSelectProject]);
 
-  useEffect(()=>{
+  useEffect(() => {
     void fetchProjects();
-    return ()=>{listSequence.current++;loader.current!.invalidate();};
-  },[fetchProjects]);
+    return () => {
+      listCoordinator.current?.invalidate();
+      loader.current!.invalidate();
+    };
+  }, [fetchProjects]);
 
   // Keyboard shortcut Ctrl+K for Global Search
   useEffect(() => {
@@ -672,9 +727,10 @@ export default function App() {
           throw new Error('Invalid project creation response.');
         }
         acceptedProjectVersionFloorsRef.current[created.id] = created.stateVersion;
+        acceptedCanonicalSnapshotVersionsRef.current[created.id] = created.stateVersion;
         const updatedProjects = [created, ...acceptedProjectsRef.current.filter(p => p.id !== created.id)];
         acceptedProjectsRef.current = updatedProjects;
-        listSequence.current++;
+        listCoordinator.current?.invalidate();
         setProjectsLoading(false);
         setProjectsError('');
         setProjects(updatedProjects);
@@ -1017,7 +1073,7 @@ export default function App() {
               </div>
             </div>
           ) : !projectMounted ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
-            <div key={currentProject.id} inert={!projectReady} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
+            <div key={currentProject.id} inert={!projectReady && isCanonicalMutationView} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
               {currentView === 'overview' && (
             <DashboardView
               project={currentProject}

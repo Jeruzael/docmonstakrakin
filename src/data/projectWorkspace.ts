@@ -66,3 +66,46 @@ export function createProjectLoader(request:typeof fetch=fetch) {
     },
   };
 }
+
+export interface ProjectListCoordinatorCallbacks {
+  onStart?: () => void;
+  onCommit: (projects: Project[]) => void;
+  onError?: (message: string) => void;
+  onSettled?: () => void;
+}
+
+export interface ProjectListCoordinator {
+  load(callbacks: ProjectListCoordinatorCallbacks): Promise<void>;
+  invalidate(): void;
+}
+
+/** Production request generation coordinator for project list fetching (MONO-09). */
+export function createProjectListCoordinator(
+  fetcher: () => Promise<Project[]> = readProjectList
+): ProjectListCoordinator {
+  let generation = 0;
+
+  const invalidate = () => {
+    generation++;
+  };
+
+  return {
+    invalidate,
+    async load(callbacks: ProjectListCoordinatorCallbacks): Promise<void> {
+      const currentGen = ++generation;
+      callbacks.onStart?.();
+      try {
+        const data = await fetcher();
+        if (currentGen === generation) {
+          callbacks.onCommit(data);
+          callbacks.onSettled?.();
+        }
+      } catch (err) {
+        if (currentGen === generation) {
+          callbacks.onError?.(err instanceof Error ? err.message : 'Cannot load projects.');
+          callbacks.onSettled?.();
+        }
+      }
+    },
+  };
+}

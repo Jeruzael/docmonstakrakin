@@ -30,6 +30,7 @@ import type {
   ReviewerSessionInfo,
 } from '../types.js';
 import { createControlledDocsLoader } from '../data/controlledDocsClient.js';
+import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 import { DocumentsView } from './DocumentsView';
 
 type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
@@ -421,9 +422,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         onSaveCommitted &&
         saveResp &&
         saveResp.success === true &&
-        typeof saveResp.stateVersion === 'number' &&
-        Number.isInteger(saveResp.stateVersion) &&
-        saveResp.stateVersion >= 0
+        isValidStateVersion(saveResp.stateVersion)
       ) {
         try {
           onSaveCommitted(projectId, saveResp);

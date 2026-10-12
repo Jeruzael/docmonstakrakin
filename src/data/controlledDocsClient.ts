@@ -13,6 +13,7 @@ import type {
   ReviewerSessionInfo,
   DetectedEol,
 } from '../types.js';
+import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -154,11 +155,7 @@ function validateDocumentSaveResponse(data: any): DocumentSaveResponse {
   if (typeof data.newSha256 !== 'string' || !SHA256_REGEX.test(data.newSha256)) {
     throw new Error('Invalid controlled document save response.');
   }
-  if (
-    typeof data.stateVersion !== 'number' ||
-    !Number.isInteger(data.stateVersion) ||
-    data.stateVersion < 0
-  ) {
+  if (!isValidStateVersion(data.stateVersion)) {
     throw new Error('Invalid controlled document save response.');
   }
   if (typeof data.auditEventId !== 'string' || data.auditEventId.length === 0) {

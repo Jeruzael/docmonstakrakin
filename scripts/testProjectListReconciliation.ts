@@ -6,6 +6,7 @@ import {
   calculateEffectiveVersionFloors,
   isValidStateVersion,
 } from '../src/utils/projectListReconciliation';
+import { createProjectListCoordinator } from '../src/data/projectWorkspace';
 
 console.log('--- Testing Project-List Stale Metadata Reconciliation ---');
 
@@ -287,5 +288,125 @@ unresolvedFreshness = reconcileListFreshness(
   []
 );
 assert.equal(unresolvedFreshness['PRJ-FIXTURE-B'], undefined, 'Recovery at v51 must clear unresolved entry');
+
+// Case 12: createProjectListCoordinator production concurrency tests (MONO-09)
+async function runCoordinatorTests() {
+  console.log('--- Testing Project-List Coordinator Concurrency & Sequencing ---');
+
+  // Test 12.1: Request 1 (v51) and Request 2 (v52) overlap; Request 2 resolves first
+  let resolve1: (val: Project[]) => void = () => {};
+  let resolve2: (val: Project[]) => void = () => {};
+  const p1 = new Promise<Project[]>((resolve) => { resolve1 = resolve; });
+  const p2 = new Promise<Project[]>((resolve) => { resolve2 = resolve; });
+
+  let callCount = 0;
+  const fetcher = async () => {
+    callCount++;
+    return callCount === 1 ? p1 : p2;
+  };
+
+  const coordinator = createProjectListCoordinator(fetcher);
+
+  const commits: Project[][] = [];
+  const errors: string[] = [];
+  const settlements: number[] = [];
+
+  // Start Request 1
+  const load1 = coordinator.load({
+    onCommit: (projects) => commits.push(projects),
+    onError: (err) => errors.push(err),
+    onSettled: () => settlements.push(1),
+  });
+
+  // Start Request 2 while Request 1 is still pending
+  const load2 = coordinator.load({
+    onCommit: (projects) => commits.push(projects),
+    onError: (err) => errors.push(err),
+    onSettled: () => settlements.push(2),
+  });
+
+  // Resolve Request 2 FIRST with v52
+  const projectsV52 = [{ id: 'PRJ-FIXTURE-B', stateVersion: 52 } as Project];
+  resolve2(projectsV52);
+  await load2;
+
+  assert.equal(commits.length, 1, 'Only Request 2 should have committed so far');
+  assert.equal(commits[0][0].stateVersion, 52);
+  assert.deepEqual(settlements, [2]);
+
+  // Resolve Request 1 AFTERWARD with v51
+  const projectsV51 = [{ id: 'PRJ-FIXTURE-B', stateVersion: 51 } as Project];
+  resolve1(projectsV51);
+  await load1;
+
+  assert.equal(commits.length, 1, 'Older Request 1 must be discarded and NOT committed');
+  assert.equal(errors.length, 0, 'No errors should have been recorded');
+
+  // Test 12.2: Older request destined to reject; newer succeeds
+  let rejectOlder: (err: any) => void = () => {};
+  let resolveNewer: (val: Project[]) => void = () => {};
+  const pOlder = new Promise<Project[]>((_, reject) => { rejectOlder = reject; });
+  const pNewer = new Promise<Project[]>((resolve) => { resolveNewer = resolve; });
+
+  let callCount2 = 0;
+  const coordinator2 = createProjectListCoordinator(async () => {
+    callCount2++;
+    return callCount2 === 1 ? pOlder : pNewer;
+  });
+
+  const commits2: Project[][] = [];
+  const errors2: string[] = [];
+
+  const loadOlder = coordinator2.load({
+    onCommit: (projects) => commits2.push(projects),
+    onError: (err) => errors2.push(err),
+  });
+
+  const loadNewer = coordinator2.load({
+    onCommit: (projects) => commits2.push(projects),
+    onError: (err) => errors2.push(err),
+  });
+
+  resolveNewer([{ id: 'PRJ-A', stateVersion: 10 } as Project]);
+  await loadNewer;
+
+  assert.equal(commits2.length, 1);
+  assert.equal(errors2.length, 0);
+
+  // Older rejects now
+  rejectOlder(new Error('Network error on old request'));
+  await loadOlder;
+
+  assert.equal(errors2.length, 0, 'Older error must be discarded when superseded by newer request');
+
+  // Test 12.3: invalidate() revokes in-flight request
+  let resolvePending: (val: Project[]) => void = () => {};
+  const pPending = new Promise<Project[]>((resolve) => { resolvePending = resolve; });
+  const coordinator3 = createProjectListCoordinator(async () => pPending);
+
+  const commits3: Project[][] = [];
+  const errors3: string[] = [];
+  const settlements3: number[] = [];
+
+  const loadPending = coordinator3.load({
+    onCommit: (projects) => commits3.push(projects),
+    onError: (err) => errors3.push(err),
+    onSettled: () => settlements3.push(1),
+  });
+
+  // Call invalidate() while request is in flight
+  coordinator3.invalidate();
+
+  resolvePending([{ id: 'PRJ-PENDING', stateVersion: 1 } as Project]);
+  await loadPending;
+
+  assert.equal(commits3.length, 0, 'Invalidated request must not commit');
+  assert.equal(errors3.length, 0, 'Invalidated request must not report error');
+  assert.equal(settlements3.length, 0, 'Invalidated request must not settle callbacks');
+
+  console.log('All coordinator concurrency tests passed!');
+}
+
+await runCoordinatorTests();
 
 console.log('All project list reconciliation unit tests passed!');

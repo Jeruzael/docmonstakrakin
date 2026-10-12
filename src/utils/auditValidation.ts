@@ -1,3 +1,30 @@
+import { isValidStateVersion } from './projectListReconciliation';
+import type { DocumentSaveResponse } from '../types';
+
+const SHA256_REGEX = /^[0-9a-fA-F]{64}$/;
+
+export function isValidSaveAcknowledgment(response: unknown): response is DocumentSaveResponse {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) return false;
+  const r = response as Record<string, any>;
+  if (r.success !== true) return false;
+  if (typeof r.documentId !== 'string' || r.documentId.length === 0) return false;
+  if (typeof r.path !== 'string' || r.path.length === 0) return false;
+  if (typeof r.previousSha256 !== 'string' || !SHA256_REGEX.test(r.previousSha256)) return false;
+  if (typeof r.newSha256 !== 'string' || !SHA256_REGEX.test(r.newSha256)) return false;
+  if (!isValidStateVersion(r.stateVersion)) return false;
+  if (typeof r.auditEventId !== 'string' || r.auditEventId.length === 0) return false;
+  if (typeof r.timestamp !== 'string' || Number.isNaN(Date.parse(r.timestamp))) return false;
+  return true;
+}
+
+export function isEligibleControlledDocumentSaveCommit(
+  projectId: unknown,
+  response: unknown
+): response is DocumentSaveResponse {
+  if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) return false;
+  return isValidSaveAcknowledgment(response);
+}
+
 export interface ExpectedAuditAcknowledgment {
   auditEventId: string;
   documentId: string;

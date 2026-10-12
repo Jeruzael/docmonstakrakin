@@ -111,13 +111,22 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let projectsList = options.initialProjects ?? [projectA, projectB];
   let projectAData = structuredClone(projectA);
   let projectBData = structuredClone(projectB);
+  let projectCData = {
+    ...structuredClone(INITIAL_PROJECTS[0]),
+    id: 'PRJ-CREATED-001',
+    name: 'Synthetic Project C',
+    stateVersion: 1,
+  };
 
   let currentDocContent = structuredClone(DOC_CONTENT_002);
   let currentDocSummary = structuredClone(DOC_SUMMARY_002);
 
   const saveCalls: any[] = [];
+  const postProjectsCalls: any[] = [];
+  let dynamicPostProjectResponseOverride: ((draft: any) => Promise<{ status: number; body: any } | null>) | null = null;
   let projectListFetchCount = 0;
   let projectAFetchCount = 0;
+  let projectCFetchCount = 0;
   let projectAHoldPromise: Promise<void> | null = null;
   let auditFetchCount = 0;
   let auditHoldPromise: Promise<void> | null = null;
@@ -127,6 +136,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
   let dynamicProjectAResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null =
     options.projectAResponseOverride ?? null;
+  let dynamicProjectCResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null = null;
   let dynamicAuditResponseOverride: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null =
     options.auditResponseOverride ?? null;
 
@@ -158,6 +168,26 @@ async function createHarness(options: TestHarnessOptions = {}) {
     const send = async (body: any, status = 200) => {
       await route.fulfill({ status, json: body }).catch(() => {});
     };
+
+    if (method === 'POST' && url === '/api/projects') {
+      const draft = route.request().postDataJSON();
+      postProjectsCalls.push(draft);
+      if (dynamicPostProjectResponseOverride) {
+        const custom = await dynamicPostProjectResponseOverride(draft);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      const createdProject = {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-CREATED-001',
+        name: draft.name || 'Synthetic Project C',
+        description: draft.description || 'Synthetic description',
+        stateVersion: 1,
+      };
+      projectCData = structuredClone(createdProject);
+      return send(createdProject, 201);
+    }
 
     if (method === 'GET' && url === '/api/projects') {
       projectListFetchCount++;
@@ -202,6 +232,16 @@ async function createHarness(options: TestHarnessOptions = {}) {
     if (url === '/api/projects/PRJ-FIXTURE-B') {
       return send(projectBData);
     }
+    if (url === '/api/projects/PRJ-CREATED-001') {
+      projectCFetchCount++;
+      if (dynamicProjectCResponseOverride) {
+        const custom = await dynamicProjectCResponseOverride(projectCFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectCData);
+    }
 
     // Authoritative Audit endpoints
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/audit') {
@@ -229,7 +269,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
     }
 
     // Controlled docs catalog
-    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs' || url === '/api/projects/PRJ-FIXTURE-B/docs') {
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs' || url === '/api/projects/PRJ-FIXTURE-B/docs' || url === '/api/projects/PRJ-CREATED-001/docs') {
       if (options.refreshFails && saveCalls.length > 0) {
         return send({ error: 'Catalog refresh failed.' }, 500);
       }
@@ -328,7 +368,11 @@ async function createHarness(options: TestHarnessOptions = {}) {
     }
 
     // Project sub-resources
-    if (url.startsWith('/api/projects/PRJ-DOCMONSTAKRAKIN/') || url.startsWith('/api/projects/PRJ-FIXTURE-B/')) {
+    if (
+      url.startsWith('/api/projects/PRJ-DOCMONSTAKRAKIN/') ||
+      url.startsWith('/api/projects/PRJ-FIXTURE-B/') ||
+      url.startsWith('/api/projects/PRJ-CREATED-001/')
+    ) {
       const suffix = url.split('/').pop();
       if (suffix === 'next-action') {
         return send({ id: 'ACT-01', title: 'Review', reason: 'None', blocks: [], priority: 'LOW' });
@@ -353,6 +397,17 @@ async function createHarness(options: TestHarnessOptions = {}) {
   return {
     page,
     saveCalls,
+    getPostProjectsCalls: () => postProjectsCalls,
+    setPostProjectResponseOverride: (fn: ((draft: any) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicPostProjectResponseOverride = fn;
+    },
+    setProjectCData: (d: any) => {
+      projectCData = d;
+    },
+    setProjectCResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectCResponseOverride = fn;
+    },
+    getProjectCFetchCount: () => projectCFetchCount,
     getProjectAFetchCount: () => projectAFetchCount,
     holdProjectAResponse: (p: Promise<void> | null) => {
       projectAHoldPromise = p;
@@ -3395,6 +3450,222 @@ await test('Scenario 43 (MONO-09): Late list response cannot overwrite a newer a
     assert.doesNotMatch(await cardA.innerText(), /Late Response v121/);
   } finally {
     harness.holdProjectListResponse(null);
+    await harness.close();
+  }
+});
+
+// Scenario 44 (MONO-17): List floor advance disables canonical readiness on stale mounted snapshot
+await test('Scenario 44 (MONO-17): List floor advance disables canonical readiness on stale mounted snapshot', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Initial state: mounted at v120, ready
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible(), 'Export package button visible when projectReady is true');
+
+    // List advances A to v121
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('docmonstakrakin List v121'));
+
+    // TopBar displays safe list metadata v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar shows safe list version');
+    assert.match(await topBarProjectBtn.innerText(), /docmonstakrakin List v121/);
+
+    // Canonical readiness becomes FALSE: export package button becomes hidden/inert
+    assert.ok(!(await packageBtn.isVisible()), 'Export package button must be hidden when projectReady is false');
+
+    // Snapshot stale warning appears (project-scoped, not global list warning)
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Project-scoped snapshot warning must appear');
+    const globalListWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(!(await globalListWarning.isVisible()), 'Global list warning must not appear for valid list');
+
+    // Stale snapshot retry with v120 keeps non-ready state
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Stale Snapshot v120',
+      stateVersion: 120,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForTimeout(300);
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning remains when snapshot retry is stale v120');
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot is stale');
+
+    // Fresh snapshot retry with v121 recovers readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'Readiness restored on v121 snapshot recovery');
+    assert.match(await topBarProjectBtn.innerText(), /Fresh Snapshot v121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejected with zero false save or version effects
+await test('Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejected with zero false save or version effects', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+          stateVersion: Number.MAX_SAFE_INTEGER + 1, // Unsafe integer!
+          auditEventId: 'AUD-UNSAFE-001',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    const initialAuditCalls = harness.getAuditFetchCount();
+    // Execute save workflow with unsafe save response override
+    await executeSaveWorkflow(page, 'Test unsafe save rejection');
+
+    // Confirm that error is shown and success banner is NOT displayed
+    const successBanner = page.locator('[data-testid="save-success-banner"]');
+    assert.ok(!(await successBanner.isVisible()), 'Save success banner must not be shown for unsafe stateVersion');
+
+    // TopBar must remain v120 (not updated to unsafe integer)
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), new RegExp(String(Number.MAX_SAFE_INTEGER + 1)));
+
+    // No audit ledger synchronization for unsafe acknowledgment
+    assert.equal(harness.getAuditFetchCount(), initialAuditCalls, 'No audit refresh should be triggered for rejected save');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 46 (MONO-13): Genuine Project Wizard creation establishes floor, protects against downgrade, and handles invalid responses
+await test('Scenario 46 (MONO-13): Genuine Project Wizard creation establishes floor, protects against downgrade, and handles invalid responses', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // 1. Positive creation through 6-step ProjectWizard
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    const nameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await nameInput.fill('Project C Synthetic');
+
+    // Step 1 -> 2
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 2 -> 3
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 3 -> 4
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 4 -> 5
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 5 -> 6
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    // Step 6: Launch
+    const launchBtn = page.getByRole('button', { name: 'Launch Project Control Plane' });
+    await launchBtn.click();
+
+    // Verify POST was called exactly once with the draft
+    await page.waitForFunction(() => !document.querySelector('[aria-label="Close project creation drawer"]'));
+    assert.equal(harness.getPostProjectsCalls().length, 1);
+    assert.equal(harness.getPostProjectsCalls()[0].name, 'Project C Synthetic');
+
+    // Verify selected project is Project C at v1
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /Project C Synthetic/);
+    assert.match(await topBarProjectBtn.innerText(), /v1/);
+
+    // List downgrade rejection: list returns Project C at v0
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-CREATED-001',
+        name: 'Stale C v0',
+        stateVersion: 0, // Stale!
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForTimeout(300);
+
+    const cardC = page.locator('article').filter({ hasText: 'PRJ-CREATED-001' });
+    assert.match(await cardC.innerText(), /1/, 'Card C must preserve accepted floor v1');
+    assert.doesNotMatch(await cardC.innerText(), /Stale C v0/);
+
+    // Negative creation test: wizard response with invalid stateVersion (-1)
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    harness.setPostProjectResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          id: 'PRJ-INVALID-001',
+          name: 'Invalid Project',
+          stateVersion: -1, // Invalid!
+        },
+      };
+    });
+
+    const invalidNameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await invalidNameInput.fill('Project Invalid Draft');
+
+    // Navigate to step 6
+    for (let i = 0; i < 5; i++) {
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
+    await page.getByRole('button', { name: 'Launch Project Control Plane' }).click();
+
+    // Verify wizard error shown and draft preserved
+    const alert = page.locator('[role="alert"]').filter({ hasText: 'Project creation failed' });
+    await alert.waitFor({ timeout: 4000 });
+    assert.ok(await alert.isVisible(), 'Error alert must be visible on invalid creation response');
+
+    // Drawer is still open and draft is retained
+    assert.ok(await page.locator('[aria-label="Close project creation drawer"]').isVisible());
+  } finally {
     await harness.close();
   }
 });
