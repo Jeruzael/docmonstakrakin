@@ -191,14 +191,14 @@ async function createHarness(options: TestHarnessOptions = {}) {
     // Authoritative Audit endpoints
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/audit') {
       auditFetchCount++;
-      if (auditHoldPromise) {
-        await auditHoldPromise;
-      }
       if (dynamicAuditResponseOverride) {
         const custom = await dynamicAuditResponseOverride('PRJ-DOCMONSTAKRAKIN', auditFetchCount, saveCalls.length);
         if (custom) {
           return send(custom.body, custom.status);
         }
+      }
+      if (auditHoldPromise) {
+        await auditHoldPromise;
       }
       return send(projectAAuditLogs);
     }
@@ -258,6 +258,8 @@ async function createHarness(options: TestHarnessOptions = {}) {
       }
 
       const nextVersion = 121;
+      projectAData.stateVersion = nextVersion;
+      projectA.stateVersion = nextVersion;
       const resp: DocumentSaveResponse = {
         success: true,
         documentId: 'DOC-CTRL-002',
@@ -279,6 +281,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
         details: {
           path: resp.path,
           previousSha256: resp.previousSha256,
+          newSha256: resp.newSha256,
           stateVersion: resp.stateVersion,
         },
       });
@@ -611,8 +614,8 @@ await test('Scenario 8: Switching to Project B while Project A save is in flight
   }
 });
 
-// Scenario 9: Out-of-Order Stale Responses (Monotonic & Whole-Snapshot Rejection)
-await test('Scenario 9: Asynchronous stale snapshot is rejected as a whole and does not overwrite confirmed state', async () => {
+// Scenario 9 (Test E): Out-of-Order Stale Responses (Monotonic & Whole-Snapshot Rejection via TopBar Selector)
+await test('Scenario 9 (Test E): UI-triggered project fetch rejecting deferred stale snapshot as a whole, preserving confirmed state, and recovering via retry', async () => {
   const harness = await createHarness({ initialStateVersion: 120 });
   try {
     const { page } = harness;
@@ -627,30 +630,40 @@ await test('Scenario 9: Asynchronous stale snapshot is rejected as a whole and d
     const baselineFetches = harness.getProjectAFetchCount();
     assert.ok(baselineFetches >= 1, 'Initial load issued at least 1 project fetch');
 
-    // Configure override to return stale snapshot with modified description on next fetch
+    // Prepare deferred promise to hold the network request
+    let resolveStaleFetch!: () => void;
+    const staleHoldPromise = new Promise<void>((r) => (resolveStaleFetch = r));
+    harness.holdProjectAResponse(staleHoldPromise);
+
+    // Configure override to return stale snapshot with modified name/description
     harness.setProjectAResponseOverride(async () => {
       return {
         status: 200,
         body: {
           ...structuredClone(INITIAL_PROJECTS[0]),
           id: 'PRJ-DOCMONSTAKRAKIN',
-          name: 'docmonstakrakin',
+          name: 'OUTDATED STALE NAME',
           description: 'STALE OUTDATED DESCRIPTION',
           stateVersion: 120, // Stale!
         },
       };
     });
 
-    // Trigger asynchronous project fetch via window.__dmkTriggerProjectReload()
-    await page.evaluate(() => {
-      return (window as any).__dmkTriggerProjectReload();
-    });
+    // Trigger genuine asynchronous project fetch via official user-facing TopBar project selector
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
 
-    // Assert that the request count increased (genuine network request sent)
+    // Assert that the request count increased while the request is in flight
     assert.ok(
       harness.getProjectAFetchCount() > baselineFetches,
-      `Request count must increase (was ${baselineFetches}, now ${harness.getProjectAFetchCount()})`
+      `Request count must increase via TopBar selector (was ${baselineFetches}, now ${harness.getProjectAFetchCount()})`
     );
+
+    // Release the deferred stale response
+    resolveStaleFetch();
+    harness.holdProjectAResponse(null);
 
     // Stale snapshot warning must be shown
     const staleWarning = page.locator('[data-testid="stale-snapshot-warning"]');
@@ -661,9 +674,10 @@ await test('Scenario 9: Asynchronous stale snapshot is rejected as a whole and d
     // Verify stale snapshot was rejected as a whole:
     // 1. TopBar still displays v121
     assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must remain v121');
-    // 2. UI does not show stale description
+    // 2. UI does not show stale name or description
     const contentText = await page.locator('main').innerText();
     assert.doesNotMatch(contentText, /STALE OUTDATED DESCRIPTION/, 'UI must NOT adopt stale description');
+    assert.doesNotMatch(contentText, /OUTDATED STALE NAME/, 'UI must NOT adopt stale name');
 
     // Deliver authoritative snapshot with stateVersion: 121 and updated description
     harness.setProjectAResponseOverride(async () => {
@@ -1020,13 +1034,22 @@ await test('Scenario 18 (Case F): Consecutive saves handle out-of-order audit re
       saveCount++;
       const nextVer = 120 + saveCount;
       const eventId = `AUD-CONSEC-${nextVer}`;
+      const nowIso = new Date().toISOString();
+      const newHash = '5'.repeat(60) + String(nextVer).padStart(4, '0');
+
       harness.getProjectAAuditLogs().push({
         id: eventId,
         actor: 'Lead Architect',
-        timestamp: new Date().toISOString(),
+        timestamp: nowIso,
         action: 'DOCUMENT_UPDATED',
         target: 'DOC-CTRL-002',
-        stateHash: '5'.repeat(64),
+        stateHash: newHash,
+        details: {
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: newHash,
+          stateVersion: nextVer,
+        },
       });
 
       return {
@@ -1036,10 +1059,10 @@ await test('Scenario 18 (Case F): Consecutive saves handle out-of-order audit re
           documentId: 'DOC-CTRL-002',
           path: 'docs/00_control/PROJECT_STATE.md',
           previousSha256: body.baseSha256,
-          newSha256: '5'.repeat(64),
+          newSha256: newHash,
           stateVersion: nextVer,
           auditEventId: eventId,
-          timestamp: new Date().toISOString(),
+          timestamp: nowIso,
         },
       };
     },
@@ -1155,6 +1178,329 @@ await test('Scenario 19 (Cases I & J): Failed saves do not trigger false audit s
     const tableText = await page.locator('table').innerText();
     assert.match(tableText, /AUD-INIT-001/);
     assert.doesNotMatch(tableText, /DOCUMENT_UPDATED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 20 (Test A): Exact Audit Identity - Isolated Invalid Fixtures
+await test('Scenario 20 (Test A): Audit response with mismatched fields (wrong target, duplicate IDs) is rejected and leaves ledger UNCONFIRMED', async () => {
+  let auditAttempt = 0;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) return null;
+      auditAttempt++;
+      if (auditAttempt === 1) {
+        // Fixture 1: Wrong target
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-SYNC-TEST-001',
+              actor: 'Lead Architect',
+              timestamp: '2026-10-12T10:00:00.000Z',
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-WRONG-TARGET',
+              stateHash: 'valid-chain-hash',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '0'.repeat(64),
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      } else if (auditAttempt === 2) {
+        // Fixture 2: Duplicate event ID
+        const validItem = {
+          id: 'AUD-SYNC-TEST-001',
+          actor: 'Lead Architect',
+          timestamp: '2026-10-12T10:00:00.000Z',
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          stateHash: 'valid-chain-hash',
+          details: {
+            path: 'docs/00_control/PROJECT_STATE.md',
+            previousSha256: '0'.repeat(64),
+            newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+            stateVersion: 121,
+          },
+        };
+        return {
+          status: 200,
+          body: [validItem, { ...validItem }],
+        };
+      }
+      // Authoritative valid item
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Fixture 1 rejected -> LEDGER UNCONFIRMED
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/, 'Mismatched target must produce UNCONFIRMED');
+
+    // Retry -> Fixture 2 (duplicate event ID) rejected -> LEDGER UNCONFIRMED
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForTimeout(300);
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/, 'Duplicate event ID must produce UNCONFIRMED');
+
+    // Retry -> Authoritative valid item -> LEDGER SYNCHRONIZED
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 21 (Test B): Project-List Staleness Handling
+await test('Scenario 21 (Test B): Project list returning stale v120 with outdated metadata preserves confirmed v121 and previously accepted metadata', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Provide stale project list with version 120 and outdated name / description
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        description: 'STALE OUTDATED DESCRIPTION',
+        stateVersion: 120, // Stale!
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    // Trigger popstate or project list fetch via browser history navigation or selector
+    await page.evaluate(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await page.waitForTimeout(300);
+
+    // Assert TopBar still displays v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121');
+    // Assert outdated name was NOT adopted in TopBar
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), /STALE OUTDATED NAME/, 'TopBar must NOT adopt stale project name');
+
+    // Deliver fresh v121 project list with updated metadata
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'FRESH CONFIRMED NAME',
+        description: 'FRESH CONFIRMED DESCRIPTION',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    await page.evaluate(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await page.waitForTimeout(300);
+
+    // Assert confirmed v121 remains intact
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 22 (Test C): Same-Project Re-selection Preserves Unconfirmed Audit State
+await test('Scenario 22 (Test C): Re-selecting active project through TopBar preserves unconfirmed audit status when project snapshot omits audit event', async () => {
+  let resolveAudit!: () => void;
+  const auditHoldPromise = new Promise<void>((r) => (resolveAudit = r));
+  let postSaveAuditCalls = 0;
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // First post-save call is performAuditRefresh() -> hold it
+        await auditHoldPromise;
+        return null;
+      }
+      if (postSaveAuditCalls === 2) {
+        // Second post-save call is fetchProjectData() from project re-selection -> return snapshot omitting the committed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // Save document (advances to v121, performAuditRefresh holding)
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Re-select the same project through TopBar selector
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
+
+    // Wait for project snapshot reload to complete
+    await page.waitForTimeout(400);
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Crucial check: audit status must NOT be prematurely reset to CURRENT!
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    const badgeTextAfter = await statusBadge.innerText();
+    assert.ok(
+      badgeTextAfter.includes('SYNCHRONIZING') || badgeTextAfter.includes('UNCONFIRMED'),
+      `Status must remain unconfirmed after same-project re-selection (was: "${badgeTextAfter}")`
+    );
+
+    // Now release the authoritative audit response
+    resolveAudit();
+
+    // Status transitions to LEDGER SYNCHRONIZED
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 23 (Test D): A -> B -> A Navigation & Pending State Preservation
+await test('Scenario 23 (Test D): Navigation from Project A -> B -> A preserves Project A pending audit state without cross-project leakage and recovers upon valid refresh', async () => {
+  let resolveAuditA!: () => void;
+  const auditAHoldPromise = new Promise<void>((r) => (resolveAuditA = r));
+  let postSaveAuditCallsA = 0;
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId === 'PRJ-FIXTURE-B') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCallsA++;
+      if (postSaveAuditCallsA === 1) {
+        // Project A post-save refresh is held
+        await auditAHoldPromise;
+        return null;
+      }
+      if (postSaveAuditCallsA === 2) {
+        // Project A reload snapshot omits the committed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save in Project A
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Switch to Project B via TopBar dropdown
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+
+    // Verify Project B is active
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B shows its own audit events, NEVER Project A's event
+    const bTableText = await page.locator('table').innerText();
+    assert.match(bTableText, /AUD-INIT-002/);
+    assert.doesNotMatch(bTableText, /AUD-SYNC-TEST-001/);
+
+    // Switch back to Project A via TopBar dropdown
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Verify Project A is active and shows v121
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit in Project A
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project A is NOT prematurely marked synchronized while audit response is held!
+    const aStatusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await aStatusBadge.waitFor();
+    const aStatusText = await aStatusBadge.innerText();
+    assert.ok(
+      aStatusText.includes('SYNCHRONIZING') || aStatusText.includes('UNCONFIRMED'),
+      `Project A must not be prematurely marked synchronized upon returning (was: "${aStatusText}")`
+    );
+
+    // Release Project A audit response
+    resolveAuditA();
+
+    // Status transitions to LEDGER SYNCHRONIZED
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await aStatusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const aTableText = await page.locator('table').innerText();
+    assert.match(aTableText, /AUD-SYNC-TEST-001/);
   } finally {
     await harness.close();
   }

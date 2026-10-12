@@ -44,8 +44,8 @@ import {
   RequirementStatus,
   DocumentSaveResponse,
 } from './types';
-
-
+import { ExpectedAuditAcknowledgment, reconcileAuditEvents } from './utils/auditValidation';
+import { reconcileProjectList } from './utils/projectListReconciliation';
 
 export default function App() {
   // Navigation & Shell State
@@ -154,7 +154,11 @@ export default function App() {
   const selectedProjectRef = useRef<string>(getProjectFromUrl());
   const confirmedVersionsRef = useRef<Record<string, number>>({});
   const auditRefreshSeqRef = useRef<Record<string, number>>({});
-  const pendingAuditEventRef = useRef<Record<string, { eventId: string; docId: string; path: string; version: number; newSha256: string }>>({});
+  const outstandingAuditAcksRef = useRef<Record<string, ExpectedAuditAcknowledgment[]>>({});
+  const projectAuditRecordsRef = useRef<Record<string, AuditEvent[]>>({});
+  const projectAuditStatusRef = useRef<Record<string, 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>>({});
+  const projectAuditErrorRef = useRef<Record<string, string>>({});
+  const acceptedProjectsRef = useRef<Project[]>([]);
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
   const listSequence = useRef(0);
@@ -180,38 +184,46 @@ export default function App() {
         throw new Error('Audit endpoint returned non-array payload');
       }
 
-      if (seq !== auditRefreshSeqRef.current[projectId] || selectedProjectRef.current !== projectId) {
+      if (seq !== auditRefreshSeqRef.current[projectId]) {
         return;
       }
 
-      const pending = pendingAuditEventRef.current[projectId];
-      if (pending) {
-        const found = data.some(
-          e =>
-            e &&
-            e.id === pending.eventId &&
-            (e.action === 'DOCUMENT_UPDATED' || e.action?.includes('DOCUMENT'))
-        );
-        if (!found) {
+      const outstanding = outstandingAuditAcksRef.current[projectId] ?? [];
+      const reconciliation = reconcileAuditEvents(data, outstanding);
+
+      if (!reconciliation.valid) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] =
+          'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.';
+        if (selectedProjectRef.current === projectId) {
           setAuditSyncStatus('REFRESH_FAILED');
-          setAuditSyncError(
-            'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.'
-          );
-          return;
+          setAuditSyncError(projectAuditErrorRef.current[projectId]);
         }
-      }
-
-      setAuditLogs(data);
-      setAuditSyncStatus('CURRENT');
-      setAuditSyncError('');
-    } catch {
-      if (seq !== auditRefreshSeqRef.current[projectId] || selectedProjectRef.current !== projectId) {
         return;
       }
-      setAuditSyncStatus('REFRESH_FAILED');
-      setAuditSyncError(
-        'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.'
-      );
+
+      // Satisfied: clear outstanding acknowledgments and store accepted audit records
+      outstandingAuditAcksRef.current[projectId] = [];
+      projectAuditRecordsRef.current[projectId] = data;
+      projectAuditStatusRef.current[projectId] = 'CURRENT';
+      projectAuditErrorRef.current[projectId] = '';
+
+      if (selectedProjectRef.current === projectId) {
+        setAuditLogs(data);
+        setAuditSyncStatus('CURRENT');
+        setAuditSyncError('');
+      }
+    } catch {
+      if (seq !== auditRefreshSeqRef.current[projectId]) {
+        return;
+      }
+      projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+      projectAuditErrorRef.current[projectId] =
+        'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.';
+      if (selectedProjectRef.current === projectId) {
+        setAuditSyncStatus('REFRESH_FAILED');
+        setAuditSyncError(projectAuditErrorRef.current[projectId]);
+      }
     }
   }, []);
 
@@ -220,7 +232,10 @@ export default function App() {
     if (!projId) return;
     const nextSeq = (auditRefreshSeqRef.current[projId] ?? 0) + 1;
     auditRefreshSeqRef.current[projId] = nextSeq;
+    projectAuditStatusRef.current[projId] = 'REFRESHING';
+    projectAuditErrorRef.current[projId] = '';
     setAuditSyncStatus('REFRESHING');
+    setAuditSyncError('');
     void performAuditRefresh(projId, nextSeq);
   }, [performAuditRefresh]);
 
@@ -250,26 +265,37 @@ export default function App() {
       });
     }
 
-    setProjects(prevProjects =>
-      prevProjects.map(p =>
+    setProjects(prevProjects => {
+      const updated = prevProjects.map(p =>
         p.id === projectId
           ? { ...p, stateVersion: Math.max(p.stateVersion ?? 0, nextVersion) }
           : p
-      )
-    );
+      );
+      acceptedProjectsRef.current = updated;
+      return updated;
+    });
 
     if (saveResponse.auditEventId) {
-      pendingAuditEventRef.current[projectId] = {
-        eventId: saveResponse.auditEventId,
-        docId: saveResponse.documentId,
+      const newAck: ExpectedAuditAcknowledgment = {
+        auditEventId: saveResponse.auditEventId,
+        documentId: saveResponse.documentId,
         path: saveResponse.path,
-        version: nextVersion,
+        previousSha256: saveResponse.previousSha256,
         newSha256: saveResponse.newSha256,
+        timestamp: saveResponse.timestamp,
+        stateVersion: nextVersion,
       };
+      const existingAcks = outstandingAuditAcksRef.current[projectId] ?? [];
+      outstandingAuditAcksRef.current[projectId] = [...existingAcks, newAck];
+
       const nextSeq = (auditRefreshSeqRef.current[projectId] ?? 0) + 1;
       auditRefreshSeqRef.current[projectId] = nextSeq;
+      projectAuditStatusRef.current[projectId] = 'REFRESHING';
+      projectAuditErrorRef.current[projectId] = '';
+
       if (selectedProjectRef.current === projectId) {
         setAuditSyncStatus('REFRESHING');
+        setAuditSyncError('');
       }
       void performAuditRefresh(projectId, nextSeq);
     }
@@ -291,34 +317,57 @@ export default function App() {
 
         setStaleSnapshotWarning('');
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
-        setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);setAuditLogs(data.audit);
+        setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
+
+        // Validate snapshot audit against outstanding acknowledgments
+        const outstanding = outstandingAuditAcksRef.current[data.project.id] ?? [];
+        const auditReconciliation = reconcileAuditEvents(data.audit, outstanding);
+
+        if (auditReconciliation.valid) {
+          outstandingAuditAcksRef.current[data.project.id] = [];
+          projectAuditRecordsRef.current[data.project.id] = data.audit;
+          projectAuditStatusRef.current[data.project.id] = 'CURRENT';
+          projectAuditErrorRef.current[data.project.id] = '';
+          setAuditLogs(data.audit);
+          setAuditSyncStatus('CURRENT');
+          setAuditSyncError('');
+        } else {
+          // Keep previously accepted audit logs; do not erase or overwrite with omitting snapshot
+          const preservedLogs = projectAuditRecordsRef.current[data.project.id] || [];
+          setAuditLogs(preservedLogs);
+          projectAuditStatusRef.current[data.project.id] = 'REFRESH_FAILED';
+          projectAuditErrorRef.current[data.project.id] =
+            'Project data snapshot omitted unconfirmed audit event. Refresh audit records to confirm.';
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(projectAuditErrorRef.current[data.project.id]);
+        }
+
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
         setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
-        setProjects(previous=>previous.map(p=>p.id===data.project.id?data.project:p));
+        setProjects(previous => {
+          const updated = previous.map(p => p.id === data.project.id ? data.project : p);
+          acceptedProjectsRef.current = updated;
+          return updated;
+        });
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
   },[]);
 
-  // Expose test hook for deterministic asynchronous project reload triggers in integration tests
-  useEffect(() => {
-    (window as any).__dmkTriggerProjectReload = (id?: string) => {
-      const target = id || selectedProjectRef.current;
-      if (target) return fetchProjectData(target);
-    };
-    return () => {
-      delete (window as any).__dmkTriggerProjectReload;
-    };
-  }, [fetchProjectData]);
-
   const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
     if (syncHistory !== 'none') {
       syncProjectUrl(id, syncHistory === 'replace');
     }
-    setAuditSyncStatus('CURRENT');
-    setAuditSyncError('');
     setStaleSnapshotWarning('');
+
     if(id && id===selectedProjectRef.current && !replaceBaseline) {
+      // Same-project re-selection:
+      // Preserve project's own audit status & error instead of resetting to CURRENT
+      const currentStatus = projectAuditStatusRef.current[id] || 'CURRENT';
+      const currentError = projectAuditErrorRef.current[id] || '';
+      setAuditSyncStatus(currentStatus);
+      setAuditSyncError(currentError);
+
       setCurrentView(view=>view==='projects'?'overview':view);
       void fetchProjectData(id);
       return;
@@ -330,9 +379,24 @@ export default function App() {
     setRequirementsSubTab('canonical');setIsSearchOpen(false);setOverrideGate(null);setIsPackageModalOpen(false);
     setCurrentView(view=>view==='projects'?'overview':view);
     setActiveProjectId(id);setLoadError('');setProjectLoading(Boolean(id));
-    if(id)void fetchProjectData(id);
-    else {setCurrentProject(null);setProjectLoading(false);}
-  },[fetchProjectData]);
+    if(id) {
+      // Restore target project's own audit records & status
+      const targetStatus = projectAuditStatusRef.current[id] || 'CURRENT';
+      const targetError = projectAuditErrorRef.current[id] || '';
+      const targetLogs = projectAuditRecordsRef.current[id] || [];
+      setAuditSyncStatus(targetStatus);
+      setAuditSyncError(targetError);
+      setAuditLogs(targetLogs);
+
+      void fetchProjectData(id);
+    } else {
+      setCurrentProject(null);
+      setProjectLoading(false);
+      setAuditSyncStatus('CURRENT');
+      setAuditSyncError('');
+      setAuditLogs([]);
+    }
+  },[fetchProjectData, performAuditRefresh]);
 
   // Browser back / forward buttons close or open the drawer accordingly & restore project
   useEffect(() => {
@@ -361,40 +425,33 @@ export default function App() {
     try {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
-      const safeData = data.map(p => {
-        const confirmed = confirmedVersionsRef.current[p.id] ?? 0;
-        return confirmed > (p.stateVersion ?? 0)
-          ? { ...p, stateVersion: confirmed }
-          : p;
-      });
-      setProjects(prevProjects => {
-        return safeData.map(p => {
-          const confirmed = confirmedVersionsRef.current[p.id] ?? 0;
-          if (confirmed > (p.stateVersion ?? 0)) {
-            const existing = prevProjects.find(ep => ep.id === p.id);
-            if (existing && (existing.stateVersion ?? 0) >= confirmed) {
-              return existing;
-            }
-            return { ...p, stateVersion: confirmed };
-          }
-          return p;
-        });
-      });
 
-      if (safeData.length === 0) {
+      const { acceptedProjects, staleProjects } = reconcileProjectList(
+        data,
+        acceptedProjectsRef.current,
+        confirmedVersionsRef.current
+      );
+      acceptedProjectsRef.current = acceptedProjects;
+      setProjects(acceptedProjects);
+
+      if (staleProjects.length > 0) {
+        setStaleSnapshotWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      }
+
+      if (acceptedProjects.length === 0) {
         handleSelectProject('', false, 'replace');
         return;
       }
 
       // Check URL query param first, then ref
       const requestedId = getProjectFromUrl() || selectedProjectRef.current;
-      const matched = safeData.find(p => p.id === requestedId);
+      const matched = acceptedProjects.find(p => p.id === requestedId);
 
       if (matched) {
         handleSelectProject(matched.id, false, 'replace');
       } else {
         // Fall back to first project only when there is no valid requested/remembered project
-        handleSelectProject(safeData[0]?.id || '', false, 'replace');
+        handleSelectProject(acceptedProjects[0]?.id || '', false, 'replace');
       }
     } catch(error) {
       if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
