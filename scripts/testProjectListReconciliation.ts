@@ -62,6 +62,10 @@ assert.equal(
   'Must NOT accept the stale incoming object'
 );
 assert.equal(res2.staleProjects.length, 0, 'Resolved via previous accepted object');
+assert.ok(
+  Array.isArray((res2 as any).staleIncomingProjectIds) && (res2 as any).staleIncomingProjectIds.includes('PRJ-DOCMONSTAKRAKIN'),
+  'staleIncomingProjectIds must report incoming stale project IDs even when preserved via safe cache'
+);
 
 // Case 3: Stale incoming data with NO previous object
 // Must hold stale entry out of accepted list

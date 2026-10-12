@@ -3,6 +3,7 @@ import { Project } from '../types';
 export interface ProjectListReconciliationResult {
   acceptedProjects: Project[];
   staleProjects: Project[];
+  staleIncomingProjectIds: string[];
 }
 
 /**
@@ -15,7 +16,8 @@ export interface ProjectListReconciliationResult {
  *    - Do NOT accept its stale project name, description, profiles, ownership, or metadata.
  *    - Preserve the previously accepted project object if its version is >= confirmed.
  *    - If no safe previously accepted object exists, hold the stale entry out of the accepted list.
- * 3. Returns acceptedProjects (safe, authoritative) and staleProjects (unresolved stale entries).
+ * 3. Returns acceptedProjects (safe, authoritative), staleProjects (unresolved stale entries without cache),
+ *    and staleIncomingProjectIds (all project IDs whose incoming payload was older than confirmed).
  */
 export function reconcileProjectList(
   incomingProjects: Project[],
@@ -31,6 +33,7 @@ export function reconcileProjectList(
 
   const acceptedProjects: Project[] = [];
   const staleProjects: Project[] = [];
+  const staleIncomingProjectIds: string[] = [];
 
   for (const incoming of incomingProjects) {
     if (!incoming || !incoming.id) continue;
@@ -39,6 +42,7 @@ export function reconcileProjectList(
     const incomingVersion = incoming.stateVersion ?? 0;
 
     if (incomingVersion < confirmed) {
+      staleIncomingProjectIds.push(incoming.id);
       // Stale incoming project data
       const prev = prevMap.get(incoming.id);
       if (prev && (prev.stateVersion ?? 0) >= confirmed) {
@@ -54,5 +58,5 @@ export function reconcileProjectList(
     }
   }
 
-  return { acceptedProjects, staleProjects };
+  return { acceptedProjects, staleProjects, staleIncomingProjectIds };
 }

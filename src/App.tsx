@@ -173,7 +173,10 @@ export default function App() {
   const [loadError,setLoadError] = useState('');
   const [auditSyncStatus, setAuditSyncStatus] = useState<'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>('CURRENT');
   const [auditSyncError, setAuditSyncError] = useState<string>('');
-  const [staleSnapshotWarning, setStaleSnapshotWarning] = useState<string>('');
+  const [activeSnapshotStaleWarning, setActiveSnapshotStaleWarning] = useState<string>('');
+  const projectSnapshotStaleIssuesRef = useRef<Record<string, string>>({});
+  const [projectListStaleWarning, setProjectListStaleWarning] = useState<string>('');
+  const [projectsUnavailable, setProjectsUnavailable] = useState<boolean>(false);
   const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
@@ -351,11 +354,18 @@ export default function App() {
         if (incomingVersion < confirmed) {
           // Reject stale snapshot as a whole to prevent overwriting confirmed canonical data
           setProjectLoading(false);
-          setStaleSnapshotWarning('Project state snapshot is older than the confirmed version. Retry to refresh.');
+          const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+          projectSnapshotStaleIssuesRef.current[data.project.id] = warnMsg;
+          if (selectedProjectRef.current === data.project.id) {
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
           return;
         }
 
-        setStaleSnapshotWarning('');
+        delete projectSnapshotStaleIssuesRef.current[data.project.id];
+        if (selectedProjectRef.current === data.project.id) {
+          setActiveSnapshotStaleWarning('');
+        }
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
 
@@ -414,8 +424,6 @@ export default function App() {
     if (syncHistory !== 'none') {
       syncProjectUrl(id, syncHistory === 'replace');
     }
-    setStaleSnapshotWarning('');
-
     if(id && id===selectedProjectRef.current && !replaceBaseline) {
       // Same-project re-selection:
       // Preserve project's own audit status & error instead of resetting to CURRENT
@@ -423,6 +431,9 @@ export default function App() {
       const currentError = projectAuditErrorRef.current[id] || '';
       setAuditSyncStatus(currentStatus);
       setAuditSyncError(currentError);
+
+      const currentSnapshotWarning = projectSnapshotStaleIssuesRef.current[id] || '';
+      setActiveSnapshotStaleWarning(currentSnapshotWarning);
 
       setCurrentView(view=>view==='projects'?'overview':view);
       void fetchProjectData(id);
@@ -435,6 +446,8 @@ export default function App() {
     setRequirementsSubTab('canonical');setIsSearchOpen(false);setOverrideGate(null);setIsPackageModalOpen(false);
     setCurrentView(view=>view==='projects'?'overview':view);
     setActiveProjectId(id);setLoadError('');setProjectLoading(Boolean(id));
+    const targetSnapshotWarning = id ? (projectSnapshotStaleIssuesRef.current[id] || '') : '';
+    setActiveSnapshotStaleWarning(targetSnapshotWarning);
     if(id) {
       // Restore target project's own audit records & status
       const targetStatus = projectAuditStatusRef.current[id] || 'CURRENT';
@@ -482,7 +495,7 @@ export default function App() {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
 
-      const { acceptedProjects, staleProjects } = reconcileProjectList(
+      const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
         confirmedVersionsRef.current
@@ -490,14 +503,22 @@ export default function App() {
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
-      if (staleProjects.length > 0) {
-        setStaleSnapshotWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      if (staleIncomingProjectIds.length > 0) {
+        setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      } else {
+        setProjectListStaleWarning('');
       }
 
       if (acceptedProjects.length === 0) {
-        handleSelectProject('', false, 'replace');
+        if (data.length > 0 && staleIncomingProjectIds.length > 0) {
+          setProjectsUnavailable(true);
+        } else {
+          setProjectsUnavailable(false);
+          handleSelectProject('', false, 'replace');
+        }
         return;
       }
+      setProjectsUnavailable(false);
 
       // Check URL query param first, then ref
       const requestedId = getProjectFromUrl() || selectedProjectRef.current;
@@ -523,7 +544,7 @@ export default function App() {
       const data = await readProjectList();
       if (sequence !== listSequence.current) return;
 
-      const { acceptedProjects, staleProjects } = reconcileProjectList(
+      const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
         data,
         acceptedProjectsRef.current,
         confirmedVersionsRef.current
@@ -531,8 +552,16 @@ export default function App() {
       acceptedProjectsRef.current = acceptedProjects;
       setProjects(acceptedProjects);
 
-      if (staleProjects.length > 0) {
-        setStaleSnapshotWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      if (staleIncomingProjectIds.length > 0) {
+        setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+      } else {
+        setProjectListStaleWarning('');
+      }
+
+      if (acceptedProjects.length === 0 && data.length > 0 && staleIncomingProjectIds.length > 0) {
+        setProjectsUnavailable(true);
+      } else {
+        setProjectsUnavailable(false);
       }
     } catch (error) {
       if (sequence === listSequence.current) {
@@ -800,7 +829,26 @@ export default function App() {
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>void fetchProjectData(activeProjectId)}>Retry selected project</button></div>}
-          {staleSnapshotWarning && (
+          {projectListStaleWarning && (
+            <div
+              data-testid="stale-project-list-warning"
+              role="alert"
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-950 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{projectListStaleWarning}</span>
+              </div>
+              <button
+                data-testid="btn-retry-project-list"
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0"
+                onClick={() => void handleRefreshProjectList()}
+              >
+                Retry project list
+              </button>
+            </div>
+          )}
+          {activeSnapshotStaleWarning && (
             <div
               data-testid="stale-snapshot-warning"
               role="alert"
@@ -808,7 +856,7 @@ export default function App() {
             >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>{staleSnapshotWarning}</span>
+                <span>{activeSnapshotStaleWarning}</span>
               </div>
               <button
                 data-testid="btn-retry-project-fetch"
@@ -826,12 +874,42 @@ export default function App() {
               activeProjectId={projectReady ? activeProjectId : ''}
               loading={projectsLoading}
               error={projectsError}
+              unavailable={projectsUnavailable}
               onSelectProject={handleSelectProject}
               onCreateProject={handleOpenCreateWizard}
               onRetry={() => void handleRefreshProjectList()}
               onRefreshProjects={handleRefreshProjectList}
             />
-          ) : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
+          ) : projectsLoading && projects.length===0 ? (
+            <p role="status">Loading projects…</p>
+          ) : projectsError && projects.length===0 ? (
+            <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div>
+          ) : projectsUnavailable ? (
+            <div role="alert" className="h-full min-h-[480px] flex items-center justify-center p-6">
+              <div className="max-w-md w-full bg-white rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center shadow-2xs space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 mx-auto flex items-center justify-center shadow-2xs">
+                  <AlertTriangle className="w-7 h-7" />
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                    Project Data Unavailable
+                  </h1>
+                  <p className="text-xs text-amber-900 leading-relaxed">
+                    Incoming project metadata is older than confirmed versions. Authoritative project data is currently unavailable.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    data-testid="btn-retry-project-list"
+                    onClick={() => void handleRefreshProjectList()}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Retry project list
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
             <div className="h-full min-h-[480px] flex items-center justify-center p-6">
               <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-2xs space-y-6">

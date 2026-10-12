@@ -7,6 +7,7 @@ interface ProjectsViewProps {
   activeProjectId:string;
   loading:boolean;
   error:string;
+  unavailable?:boolean;
   onSelectProject:(id:string)=>void;
   onCreateProject:()=>void;
   onRetry:()=>void;
@@ -15,7 +16,7 @@ interface ProjectsViewProps {
 const button='inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors';
 
 /** A projection of the canonical list. Selection and loading belong to App. */
-export function ProjectsView({projects,activeProjectId,loading,error,onSelectProject,onCreateProject,onRetry,onRefreshProjects}:ProjectsViewProps) {
+export function ProjectsView({projects,activeProjectId,loading,error,unavailable,onSelectProject,onCreateProject,onRetry,onRefreshProjects}:ProjectsViewProps) {
   return <section className="space-y-6" aria-label="Projects workspace" aria-busy={loading}>
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><h1 className="text-xl font-bold tracking-tight text-slate-900">Projects</h1><p className="mt-1 text-sm text-slate-500">Browse your projects and open their requirements, work and evidence.</p></div>
@@ -39,7 +40,22 @@ export function ProjectsView({projects,activeProjectId,loading,error,onSelectPro
     </div>
     {loading && <p role="status" className="text-sm text-slate-600">Loading projects…</p>}
     {error && <div role="alert" className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-800"><p>{error}</p><button className={`${button} mt-3 bg-white`} onClick={onRetry}>Retry</button></div>}
-    {!loading && !error && projects.length===0 && <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-4"><FolderKanban className="w-8 h-8 text-emerald-600 mx-auto"/><h2 className="text-base font-bold">No projects yet</h2><p className="text-sm text-slate-500">Create a project to begin building its baseline.</p><button className={`${button} text-emerald-700`} onClick={onCreateProject}>Create New Project</button></div>}
+    {!loading && !error && unavailable && (
+      <div role="alert" className="bg-amber-50 rounded-xl border border-amber-200 p-8 text-center space-y-4">
+        <FolderKanban className="w-8 h-8 text-amber-600 mx-auto"/>
+        <h2 className="text-base font-bold text-amber-950">Project Data Unavailable</h2>
+        <p className="text-sm text-amber-800">Incoming project list metadata is stale and could not be verified. Authoritative project data is currently unavailable.</p>
+        <button
+          type="button"
+          data-testid="btn-retry-project-list"
+          className={`${button} bg-amber-600 text-white hover:bg-amber-700`}
+          onClick={onRetry}
+        >
+          Retry project list
+        </button>
+      </div>
+    )}
+    {!loading && !error && !unavailable && projects.length===0 && <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-4"><FolderKanban className="w-8 h-8 text-emerald-600 mx-auto"/><h2 className="text-base font-bold">No projects yet</h2><p className="text-sm text-slate-500">Create a project to begin building its baseline.</p><button className={`${button} text-emerald-700`} onClick={onCreateProject}>Create New Project</button></div>}
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       {projects.map(project=>{
         const active=project.id===activeProjectId;

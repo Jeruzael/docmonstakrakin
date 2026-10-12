@@ -2267,6 +2267,417 @@ await test('Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Save
   }
 });
 
+// Scenario 29 (RED Test A - Blocker 3): Premature Warning Reset
+await test('Scenario 29 (RED Test A - Blocker 3): Same-project selection does not clear unresolved snapshot warning while refresh is in-flight', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Trigger project fetch returning stale snapshot v120
+    let resolveStaleFetch!: () => void;
+    const staleHold = new Promise<void>((r) => (resolveStaleFetch = r));
+    harness.holdProjectAResponse(staleHold);
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    resolveStaleFetch();
+    harness.holdProjectAResponse(null);
+
+    // Stale snapshot warning appears
+    const staleWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await staleWarning.waitFor({ timeout: 4000 });
+    assert.match(await staleWarning.innerText(), /Project state snapshot is older than the confirmed version/);
+
+    // Step 3: Re-select Project A while holding subsequent response
+    let resolvePendingFetch!: () => void;
+    const pendingHold = new Promise<void>((r) => (resolvePendingFetch = r));
+    harness.holdProjectAResponse(pendingHold);
+
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Give UI a moment to process the selection click
+    await page.waitForTimeout(200);
+
+    // Expected: Warning remains visible while the refresh is pending
+    // Current defect: handleSelectProject() wipes setStaleSnapshotWarning('') immediately!
+    assert.ok(
+      await staleWarning.isVisible(),
+      'Stale snapshot warning must remain visible while re-selection refresh is in-flight'
+    );
+
+    resolvePendingFetch();
+    harness.holdProjectAResponse(null);
+  } finally {
+    harness.holdProjectAResponse(null);
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 30 (RED Test B - Blocker 3): Wrong Retry Endpoint
+await test('Scenario 30 (RED Test B - Blocker 3): Project-list warning retries GET /api/projects instead of individual-project endpoint', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121 (establishes confirmed version 121)
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Mock project list returning stale entries without safe cache
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+
+    // Refresh projects to establish stale list warning
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Check project-list warning is visible
+    const warning = page.locator('[data-testid="stale-project-list-warning"]');
+    await warning.waitFor({ timeout: 4000 });
+
+    const listFetchesBefore = harness.getProjectListFetchCount();
+    const projectAFetchesBefore = harness.getProjectAFetchCount();
+
+    // Click retry inside warning
+    const retryBtn = warning.locator('[data-testid="btn-retry-project-list"]');
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    const listFetchesAfter = harness.getProjectListFetchCount();
+    const projectAFetchesAfter = harness.getProjectAFetchCount();
+
+    // Expected: Retrying a project-list warning must issue GET /api/projects
+    assert.ok(
+      listFetchesAfter > listFetchesBefore,
+      `Project list retry must issue GET /api/projects (was ${listFetchesBefore}, now ${listFetchesAfter})`
+    );
+    assert.equal(
+      projectAFetchesAfter,
+      projectAFetchesBefore,
+      'Project list retry must NOT request individual project resources'
+    );
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 31 (RED Test C - Blocker 3): Stale List Hidden by Safe Cache
+await test('Scenario 31 (RED Test C - Blocker 3): Stale project-list warning appears even when safe cached metadata is preserved', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121 (establishes confirmed version 121 and safe cache)
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Step 3: Mock project-list returning stale v120 (older than confirmed 121)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+
+    // Step 4: Refresh project list
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Step 5: Safe cache keeps v121 on the card
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /121/);
+
+    // Step 6: Expected: UI must still report that its latest project-list response was stale!
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(
+      await listWarning.isVisible(),
+      'Stale project list warning must be visible even when safe cached metadata is displayed'
+    );
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 32 (Tests D & J - Blocker 3): Project switching and workspace navigation preserves unresolved snapshot warning
+await test('Scenario 32 (Tests D & J - Blocker 3): Project switching and workspace navigation preserves unresolved snapshot warning', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Make Project A snapshot stale (v120) and trigger reload
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    // Trigger fetch for Project A
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Verify Project A snapshot warning is visible
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible());
+
+    // Step 3: Switch to Project B
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+
+    // Project B is fresh, so snapshot warning is NOT visible
+    assert.ok(!(await snapshotWarning.isVisible()));
+
+    // Step 4: Switch back to Project A
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+
+    // Project A unresolved warning is preserved and visible!
+    assert.ok(await snapshotWarning.isVisible(), 'Unresolved Project A warning must be preserved when navigating back');
+
+    // Step 5: Navigate between workspaces (e.g. Evidence & Audit, Risks)
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must persist across workspace tab navigation');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 33 (Tests E, F, G - Blocker 3): Simultaneous list and snapshot warnings with independent recovery
+await test('Scenario 33 (Tests E, F, G - Blocker 3): Simultaneous list and snapshot warnings with independent recovery', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Step 2: Trigger snapshot staleness on Project A
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+
+    // Step 3: Trigger project list staleness
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    await listWarning.waitFor({ timeout: 4000 });
+
+    // Both warnings visible simultaneously (Test E)
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must be visible');
+    assert.ok(await listWarning.isVisible(), 'Project list warning must be visible simultaneously');
+
+    // Step 4: Recover project list by returning fresh list (v121) and clicking list retry (Test F)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    ]);
+    const listRetryBtn = listWarning.locator('[data-testid="btn-retry-project-list"]');
+    await listRetryBtn.click();
+    await page.waitForTimeout(300);
+
+    // List warning clears, snapshot warning remains visible
+    assert.ok(!(await listWarning.isVisible()), 'Project list warning must clear after fresh list response');
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must remain visible when only list was recovered');
+
+    // Step 5: Recover snapshot by returning fresh snapshot (v121) and clicking snapshot retry (Test G)
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    }));
+    const snapshotRetryBtn = snapshotWarning.locator('[data-testid="btn-retry-project-fetch"]');
+    await snapshotRetryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Snapshot warning clears
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear after fresh snapshot response');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 34 (Test I - Blocker 3): Failed retry preserves warning and allows repeated retry attempts
+await test('Scenario 34 (Test I - Blocker 3): Failed retry preserves warning and allows repeated retry attempts', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Step 2: Trigger snapshot staleness on Project A
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible());
+
+    // Step 3: First retry fails with remaining stale response
+    const retryBtn = snapshotWarning.locator('[data-testid="btn-retry-project-fetch"]');
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Warning remains visible after failed retry
+    assert.ok(await snapshotWarning.isVisible(), 'Warning must remain visible after failed retry');
+
+    // Step 4: Second retry succeeds with fresh v121
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    }));
+
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Warning clears
+    assert.ok(!(await snapshotWarning.isVisible()), 'Warning must clear after successful second retry');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 35 (Test H - Blocker 3): Unavailable project list without cache shows explicit alert instead of zero projects welcome screen
+await test('Scenario 35 (Test H - Blocker 3): Unavailable project list without cache shows explicit alert instead of zero projects welcome screen', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Verify initial state has projects
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.ok(await cardA.isVisible());
+
+    // Verify "No projects yet" and "Zero Projects Registered" are NOT shown
+    const emptyHeading = page.getByRole('heading', { name: 'No projects yet' });
+    assert.ok(!(await emptyHeading.isVisible()));
+    const zeroProjectsText = page.getByText('Zero Projects Registered');
+    assert.ok(!(await zeroProjectsText.isVisible()));
+  } finally {
+    await harness.close();
+  }
+});
+
 await browser.close();
 await vite.close();
 
