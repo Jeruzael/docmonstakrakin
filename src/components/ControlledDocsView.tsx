@@ -38,6 +38,7 @@ export interface ControlledDocsViewProps {
   projectId: string;
   loader?: ReturnType<typeof createControlledDocsLoader>;
   dynamicProjectionsProps?: DynamicProjectionsProps;
+  onSaveCommitted?: (projectId: string, result: DocumentSaveResponse) => void;
 }
 
 export type DocsWorkspaceTab = 'REPOSITORY' | 'PROJECTIONS';
@@ -54,6 +55,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   projectId,
   loader,
   dynamicProjectionsProps,
+  onSaveCommitted,
 }) => {
   // Stable API loader
   const api = useMemo(() => loader ?? createControlledDocsLoader(), [loader]);
@@ -413,6 +415,22 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
       // Lock editing during post-save refresh (Section 3)
       setCanonicalRefreshRequired(true);
+
+      // Notify parent of confirmed save transaction (isolated failure domain)
+      if (
+        onSaveCommitted &&
+        saveResp &&
+        saveResp.success === true &&
+        typeof saveResp.stateVersion === 'number' &&
+        Number.isInteger(saveResp.stateVersion) &&
+        saveResp.stateVersion >= 0
+      ) {
+        try {
+          onSaveCommitted(projectId, saveResp);
+        } catch (callbackErr) {
+          console.error('ControlledDocsView: onSaveCommitted parent callback threw an error:', callbackErr);
+        }
+      }
     } catch (err: any) {
       setIsSaving(false);
       const isUncertain = err.name === 'AbortError' || err.message?.includes('timed out');
@@ -1197,7 +1215,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
             {/* Error Message */}
             {saveError && (
-              <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
+              <div
+                data-testid="save-error-banner"
+                role="alert"
+                className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs"
+              >
                 {saveError}
               </div>
             )}

@@ -42,6 +42,7 @@ import {
   ApprovalItem,
   Feature,
   RequirementStatus,
+  DocumentSaveResponse,
 } from './types';
 
 
@@ -151,6 +152,7 @@ export default function App() {
 
   // Selection stays in App. Refs only guard async callbacks and request ordering.
   const selectedProjectRef = useRef<string>(getProjectFromUrl());
+  const confirmedVersionsRef = useRef<Record<string, number>>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
   const listSequence = useRef(0);
@@ -162,15 +164,55 @@ export default function App() {
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
 
+  const handleControlledDocumentCommitted = useCallback((projectId: string, saveResponse: DocumentSaveResponse) => {
+    if (
+      !projectId ||
+      typeof projectId !== 'string' ||
+      !saveResponse ||
+      saveResponse.success !== true ||
+      typeof saveResponse.stateVersion !== 'number' ||
+      !Number.isInteger(saveResponse.stateVersion) ||
+      saveResponse.stateVersion < 0
+    ) {
+      return;
+    }
+
+    const currentConfirmed = confirmedVersionsRef.current[projectId] ?? 0;
+    const nextVersion = Math.max(currentConfirmed, saveResponse.stateVersion);
+    confirmedVersionsRef.current[projectId] = nextVersion;
+
+    if (selectedProjectRef.current === projectId) {
+      setCurrentProject(prev => {
+        if (!prev || prev.id !== projectId) return prev;
+        const currentVersion = prev.stateVersion ?? 0;
+        const targetVersion = Math.max(currentVersion, nextVersion);
+        return prev.stateVersion === targetVersion ? prev : { ...prev, stateVersion: targetVersion };
+      });
+    }
+
+    setProjects(prevProjects =>
+      prevProjects.map(p =>
+        p.id === projectId
+          ? { ...p, stateVersion: Math.max(p.stateVersion ?? 0, nextVersion) }
+          : p
+      )
+    );
+  }, []);
+
   const fetchProjectData = useCallback(async (projectId:string) => {
     await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
       onStart:()=>{setProjectLoading(true);setLoadError('');},
       onCommit:data=>{
-        setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
+        const confirmed = confirmedVersionsRef.current[data.project.id] ?? 0;
+        const safeVersion = Math.max(data.project.stateVersion ?? 0, confirmed);
+        const safeProject = safeVersion !== data.project.stateVersion
+          ? { ...data.project, stateVersion: safeVersion }
+          : data.project;
+        setCurrentProject(safeProject);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);setAuditLogs(data.audit);
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
         setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
-        setProjects(previous=>previous.map(p=>p.id===data.project.id?data.project:p));
+        setProjects(previous=>previous.map(p=>p.id===data.project.id?safeProject:p));
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
@@ -223,22 +265,28 @@ export default function App() {
     try {
       const data=await readProjectList();
       if(sequence!==listSequence.current)return;
-      setProjects(data);
+      const safeData = data.map(p => {
+        const confirmed = confirmedVersionsRef.current[p.id] ?? 0;
+        return confirmed > (p.stateVersion ?? 0)
+          ? { ...p, stateVersion: confirmed }
+          : p;
+      });
+      setProjects(safeData);
 
-      if (data.length === 0) {
+      if (safeData.length === 0) {
         handleSelectProject('', false, 'replace');
         return;
       }
 
       // Check URL query param first, then ref
       const requestedId = getProjectFromUrl() || selectedProjectRef.current;
-      const matched = data.find(p => p.id === requestedId);
+      const matched = safeData.find(p => p.id === requestedId);
 
       if (matched) {
         handleSelectProject(matched.id, false, 'replace');
       } else {
         // Fall back to first project only when there is no valid requested/remembered project
-        handleSelectProject(data[0]?.id || '', false, 'replace');
+        handleSelectProject(safeData[0]?.id || '', false, 'replace');
       }
     } catch(error) {
       if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
@@ -666,6 +714,7 @@ export default function App() {
             <ControlledDocsView
               key={`controlled-docs-${currentProject.id}`}
               projectId={currentProject.id}
+              onSaveCommitted={handleControlledDocumentCommitted}
               dynamicProjectionsProps={{
                 project: currentProject,
                 requirements,

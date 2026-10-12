@@ -37,11 +37,14 @@ function Harness() {
   const [projectId, setProjectId] = useState('PRJ-DOCMONSTAKRAKIN');
   const [mounted, setMounted] = useState(true);
   const [customLoader, setCustomLoader] = useState<any>(null);
+  const [saveCallback, setSaveCallback] = useState<any>(null);
 
   useEffect(() => {
     (window as any).__setProjectId = (id: string) => setProjectId(id);
     (window as any).__setMounted = (m: boolean) => setMounted(m);
     (window as any).__setCustomLoader = (ldr: any) => setCustomLoader(() => ldr);
+    (window as any).__setSaveCallback = (cb: any) => setSaveCallback(() => cb);
+    (window as any).__committedSaves = [];
   }, []);
 
   if (!mounted) return <div id="unmounted-marker">Unmounted</div>;
@@ -51,6 +54,11 @@ function Harness() {
       <ControlledDocsView
         projectId={projectId}
         loader={customLoader || undefined}
+        onSaveCommitted={(pid, res) => {
+          (window as any).__committedSaves = (window as any).__committedSaves || [];
+          (window as any).__committedSaves.push({ projectId: pid, result: res });
+          if (saveCallback) saveCallback(pid, res);
+        }}
       />
     </div>
   );
@@ -1338,6 +1346,86 @@ try {
       const tdCode = td.locator('code');
       assert.strictEqual(await tdCode.count(), 1, 'one code element in table cells');
       assert.strictEqual((await tdCode.textContent())?.trim(), 'CMP-01', 'td code text = CMP-01');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 16A: onSaveCommitted is invoked on successful save with projectId and validated save response
+  await runTest('Test 16A: onSaveCommitted is invoked on successful save with projectId and response', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.locator('[data-testid="draft-editor-textarea"]').fill('# test\nupdated');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Testing onSaveCommitted invocation');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
+      const committedSaves = await ctx.page.evaluate(() => (window as any).__committedSaves);
+      assert.equal(committedSaves.length, 1, 'onSaveCommitted was called exactly once');
+      assert.equal(committedSaves[0].projectId, 'PRJ-DOCMONSTAKRAKIN');
+      assert.equal(committedSaves[0].result.stateVersion, 32);
+      assert.equal(committedSaves[0].result.auditEventId, 'AUD-TEST-EVENT-001');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 16B: onSaveCommitted is NOT invoked on failed or rejected save
+  await runTest('Test 16B: onSaveCommitted is NOT invoked on save error or stale document rejection', async () => {
+    const ctx = await setupPage();
+    ctx.setSaveFailsDocStale(true);
+    try {
+      await ctx.start();
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.locator('[data-testid="draft-editor-textarea"]').fill('# test\nstale');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Stale save test');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      // Stale document rejection banner
+      await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
+      const committedSaves = await ctx.page.evaluate(() => (window as any).__committedSaves || []);
+      assert.equal(committedSaves.length, 0, 'onSaveCommitted was not called on stale document rejection');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // Test 16C: Exception in onSaveCommitted callback does not prevent save-success banner or post-save refresh
+  await runTest('Test 16C: Parent callback exception does not fail the committed save or crash view', async () => {
+    const ctx = await setupPage();
+    try {
+      await ctx.start();
+      await ctx.page.evaluate(() => {
+        (window as any).__setSaveCallback(() => {
+          throw new Error('Exploding parent callback error');
+        });
+      });
+      await ctx.page.click('[data-testid="doc-item-DOC-CTRL-002"]');
+      await ctx.page.click('[data-testid="btn-edit-document"]');
+      await ctx.page.locator('[data-testid="draft-editor-textarea"]').fill('# test\nexception isolation');
+      await ctx.page.click('[data-testid="btn-preview-diff"]');
+      await ctx.page.click('[data-testid="btn-validate"]');
+      await ctx.page.click('[data-testid="btn-proceed-to-save"]');
+      await ctx.page.fill('[data-testid="modal-save-reason"]', 'Exception isolation test');
+      await ctx.page.check('[data-testid="modal-confirm-checkbox"]');
+      await ctx.page.click('[data-testid="btn-confirm-save"]');
+
+      // Despite the parent callback throwing, the save success banner MUST still display!
+      await ctx.page.waitForSelector('[data-testid="save-success-banner"]');
+      const bannerText = await ctx.page.textContent('[data-testid="save-success-banner"]');
+      assert(bannerText?.includes('AUD-TEST-EVENT-001'), 'Save success banner still rendered');
     } finally {
       await ctx.close();
     }
