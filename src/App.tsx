@@ -44,7 +44,11 @@ import {
   RequirementStatus,
   DocumentSaveResponse,
 } from './types';
-import { ExpectedAuditAcknowledgment, reconcileAuditEvents } from './utils/auditValidation';
+import {
+  ExpectedAuditAcknowledgment,
+  reconcileAuditEvents,
+  combineRequiredAuditAcks,
+} from './utils/auditValidation';
 import { reconcileProjectList } from './utils/projectListReconciliation';
 
 export default function App() {
@@ -155,6 +159,7 @@ export default function App() {
   const confirmedVersionsRef = useRef<Record<string, number>>({});
   const auditRefreshSeqRef = useRef<Record<string, number>>({});
   const outstandingAuditAcksRef = useRef<Record<string, ExpectedAuditAcknowledgment[]>>({});
+  const confirmedAuditAcksRef = useRef<Record<string, ExpectedAuditAcknowledgment[]>>({});
   const projectAuditRecordsRef = useRef<Record<string, AuditEvent[]>>({});
   const projectAuditStatusRef = useRef<Record<string, 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>>({});
   const projectAuditErrorRef = useRef<Record<string, string>>({});
@@ -173,6 +178,12 @@ export default function App() {
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
 
+  const getRequiredAcksForProject = useCallback((projectId: string) => {
+    const confirmed = confirmedAuditAcksRef.current[projectId] ?? [];
+    const outstanding = outstandingAuditAcksRef.current[projectId] ?? [];
+    return combineRequiredAuditAcks(confirmed, outstanding);
+  }, []);
+
   const performAuditRefresh = useCallback(async (projectId: string, seq: number) => {
     try {
       const res = await fetch(`/api/projects/${encodeURIComponent(projectId)}/audit`);
@@ -188,8 +199,18 @@ export default function App() {
         return;
       }
 
-      const outstanding = outstandingAuditAcksRef.current[projectId] ?? [];
-      const reconciliation = reconcileAuditEvents(data, outstanding);
+      const combo = getRequiredAcksForProject(projectId);
+      if (!combo.valid) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] = combo.reason;
+        if (selectedProjectRef.current === projectId) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(combo.reason);
+        }
+        return;
+      }
+
+      const reconciliation = reconcileAuditEvents(data, combo.requiredAcks);
 
       if (!reconciliation.valid) {
         projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
@@ -202,7 +223,26 @@ export default function App() {
         return;
       }
 
-      // Satisfied: clear outstanding acknowledgments and store accepted audit records
+      const previouslyAccepted = projectAuditRecordsRef.current[projectId] ?? [];
+      const dataIds = new Set(data.map((e: any) => e?.id));
+      if (previouslyAccepted.some(e => !dataIds.has(e.id))) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] =
+          'Audit response omitted previously accepted audit record. Refresh audit records to confirm.';
+        if (selectedProjectRef.current === projectId) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(projectAuditErrorRef.current[projectId]);
+        }
+        return;
+      }
+
+      // Satisfied: promote newly satisfied outstanding acknowledgments to confirmedAuditAcksRef
+      const currentConfirmed = confirmedAuditAcksRef.current[projectId] ?? [];
+      const currentOutstanding = outstandingAuditAcksRef.current[projectId] ?? [];
+      const promoteCombo = combineRequiredAuditAcks(currentConfirmed, currentOutstanding);
+      if (promoteCombo.valid) {
+        confirmedAuditAcksRef.current[projectId] = promoteCombo.requiredAcks;
+      }
       outstandingAuditAcksRef.current[projectId] = [];
       projectAuditRecordsRef.current[projectId] = data;
       projectAuditStatusRef.current[projectId] = 'CURRENT';
@@ -225,7 +265,7 @@ export default function App() {
         setAuditSyncError(projectAuditErrorRef.current[projectId]);
       }
     }
-  }, []);
+  }, [getRequiredAcksForProject]);
 
   const handleRetryAuditRefresh = useCallback(() => {
     const projId = selectedProjectRef.current;
@@ -319,11 +359,23 @@ export default function App() {
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
         setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
 
-        // Validate snapshot audit against outstanding acknowledgments
-        const outstanding = outstandingAuditAcksRef.current[data.project.id] ?? [];
-        const auditReconciliation = reconcileAuditEvents(data.audit, outstanding);
+        // Validate snapshot audit against confirmed and outstanding acknowledgments
+        const combo = getRequiredAcksForProject(data.project.id);
+        const auditReconciliation = combo.valid
+          ? reconcileAuditEvents(data.audit, combo.requiredAcks)
+          : { valid: false, reason: combo.reason, satisfiedAckIds: [] };
 
-        if (auditReconciliation.valid) {
+        const previouslyAccepted = projectAuditRecordsRef.current[data.project.id] ?? [];
+        const dataIds = new Set((data.audit || []).map((e: any) => e?.id));
+        const missingPreviouslyAccepted = previouslyAccepted.some(e => !dataIds.has(e.id));
+
+        if (auditReconciliation.valid && !missingPreviouslyAccepted) {
+          const currentConfirmed = confirmedAuditAcksRef.current[data.project.id] ?? [];
+          const currentOutstanding = outstandingAuditAcksRef.current[data.project.id] ?? [];
+          const promoteCombo = combineRequiredAuditAcks(currentConfirmed, currentOutstanding);
+          if (promoteCombo.valid) {
+            confirmedAuditAcksRef.current[data.project.id] = promoteCombo.requiredAcks;
+          }
           outstandingAuditAcksRef.current[data.project.id] = [];
           projectAuditRecordsRef.current[data.project.id] = data.audit;
           projectAuditStatusRef.current[data.project.id] = 'CURRENT';
@@ -336,10 +388,14 @@ export default function App() {
           const preservedLogs = projectAuditRecordsRef.current[data.project.id] || [];
           setAuditLogs(preservedLogs);
           projectAuditStatusRef.current[data.project.id] = 'REFRESH_FAILED';
-          projectAuditErrorRef.current[data.project.id] =
-            'Project data snapshot omitted unconfirmed audit event. Refresh audit records to confirm.';
+          const errMsg = !combo.valid
+            ? combo.reason
+            : missingPreviouslyAccepted
+            ? 'Project data snapshot omitted previously accepted audit record. Refresh audit records to confirm.'
+            : 'Project data snapshot omitted confirmed audit event. Refresh audit records to confirm.';
+          projectAuditErrorRef.current[data.project.id] = errMsg;
           setAuditSyncStatus('REFRESH_FAILED');
-          setAuditSyncError(projectAuditErrorRef.current[data.project.id]);
+          setAuditSyncError(errMsg);
         }
 
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
@@ -352,7 +408,7 @@ export default function App() {
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
-  },[]);
+  },[getRequiredAcksForProject]);
 
   const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
     if (syncHistory !== 'none') {

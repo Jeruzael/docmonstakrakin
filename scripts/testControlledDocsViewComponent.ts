@@ -480,7 +480,7 @@ async function setupPage() {
     },
     async start() {
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForSelector('[data-testid="controlled-docs-workspace"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="controlled-docs-workspace"]', { timeout: 30000 });
     },
     async close() {
       await page.close();

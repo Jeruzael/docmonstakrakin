@@ -254,6 +254,21 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
       if (options.saveResponseOverride) {
         const custom = await options.saveResponseOverride(body);
+        if (custom.body?.stateVersion) {
+          projectAData.stateVersion = custom.body.stateVersion;
+          projectA.stateVersion = custom.body.stateVersion;
+        }
+        if (custom.body?.newSha256) {
+          currentDocContent = {
+            ...currentDocContent,
+            rawSha256: custom.body.newSha256,
+            document: {
+              ...currentDocContent.document,
+              sha256Digest: custom.body.newSha256,
+              currentSha256: custom.body.newSha256,
+            },
+          };
+        }
         return route.fulfill({ status: custom.status, json: custom.body }).catch(() => {});
       }
 
@@ -1501,6 +1516,611 @@ await test('Scenario 23 (Test D): Navigation from Project A -> B -> A preserves 
     assert.match(await aStatusBadge.innerText(), /LEDGER SYNCHRONIZED/);
     const aTableText = await page.locator('table').innerText();
     assert.match(aTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 24 (Test A - Blocker 1): Previously Confirmed Event Is Retained Across Later Project Refreshes
+await test('Scenario 24 (Test A - Blocker 1): Previously Confirmed Event Is Retained Across Later Project Refreshes', async () => {
+  let postSaveAuditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-FRESHNESS-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // Initial post-save authoritative audit refresh returns the confirmed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-FRESHNESS-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (postSaveAuditCalls === 2) {
+        // Second call is from later project-data refresh snapshot -> returns audit array omitting AUD-FRESHNESS-001!
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // Step 2 & 3: Perform successful save returning AUD-FRESHNESS-001 at v121
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Step 5: Confirm application displays LEDGER SYNCHRONIZED and contains AUD-FRESHNESS-001
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    let tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-FRESHNESS-001/);
+
+    // Step 6: Trigger a later project-data refresh through the existing TopBar project selector
+    const baselineFetches = harness.getProjectAFetchCount();
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
+
+    // Verify a genuine project-data request occurred
+    await page.waitForTimeout(400);
+    assert.ok(harness.getProjectAFetchCount() > baselineFetches, 'Must issue a genuine project-data request');
+
+    // Step 7 & 8: Incomplete audit snapshot arrived omitting AUD-FRESHNESS-001.
+    // Core Invariant: The application must NOT accept the incomplete audit array as synchronized.
+    // It must reject the audit portion, preserve AUD-FRESHNESS-001, and report LEDGER UNCONFIRMED.
+    const badgeTextAfter = await statusBadge.innerText();
+    assert.doesNotMatch(badgeTextAfter, /SYNCHRONIZED/, 'Application must NOT report LEDGER SYNCHRONIZED when snapshot omits confirmed save event');
+    assert.match(badgeTextAfter, /UNCONFIRMED/, 'Status must become LEDGER UNCONFIRMED');
+    tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-FRESHNESS-001/, 'Previously confirmed event must NOT be erased from displayed ledger');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed Event Rejected & Recovery to Synchronized State
+await test('Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed Event Rejected & Recovery to Synchronized State', async () => {
+  let auditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-ALT-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      auditCalls++;
+      if (auditCalls === 1) {
+        // Initial post-save authoritative audit refresh returns authentic event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-ALT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (auditCalls === 2) {
+        // Second call: project-data snapshot with ALTERED newSha256 digest
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-ALT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: 'tampered-sha256-digest-that-does-not-match-saved-ack',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      // Third call: user clicks retry -> authoritative audit endpoint returns authentic records
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+          {
+            id: 'AUD-ALT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'DOCUMENT_UPDATED',
+            target: 'DOC-CTRL-002',
+            stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+            details: {
+              path: 'docs/00_control/PROJECT_STATE.md',
+              previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+              newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+              stateVersion: 121,
+            },
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Trigger later project refresh returning tampered/altered event
+    const baselineFetches = harness.getProjectAFetchCount();
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForTimeout(400);
+    assert.ok(harness.getProjectAFetchCount() > baselineFetches);
+
+    // Test B: Altered previously confirmed event rejected -> LEDGER UNCONFIRMED
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+
+    // Test C: Recovery to synchronized state upon subsequent valid authoritative audit response
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await warning.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-ALT-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 26 (Tests D & E - Blocker 1): Multiple Confirmed Saves Watermark & Unverified Save Coexistence
+await test('Scenario 26 (Tests D & E - Blocker 1): Multiple Confirmed Saves Watermark & Unverified Save Coexistence', async () => {
+  let saveCount = 0;
+  let auditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+  const sha1 = '1'.repeat(60) + '0121';
+  const sha2 = '2'.repeat(60) + '0122';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      saveCount++;
+      const nextVer = 120 + saveCount;
+      const sha = nextVer === 121 ? sha1 : sha2;
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: sha,
+        stateVersion: nextVer,
+        auditEventId: `AUD-MULTI-00${saveCount}`,
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      auditCalls++;
+      if (saveCount === 1) {
+        // After Save 1: returns Save 1
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-MULTI-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: sha1,
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: sha1,
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (saveCount === 2) {
+        if (auditCalls === 2) {
+          // Post-save 2 refresh: returns both Save 1 and Save 2
+          return {
+            status: 200,
+            body: [
+              {
+                id: 'AUD-INIT-001',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'PROJECT_INITIALIZED',
+                target: 'PRJ-DOCMONSTAKRAKIN',
+                stateHash: 'init-state-hash',
+              },
+              {
+                id: 'AUD-MULTI-001',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'DOCUMENT_UPDATED',
+                target: 'DOC-CTRL-002',
+                stateHash: sha1,
+                details: {
+                  path: 'docs/00_control/PROJECT_STATE.md',
+                  previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                  newSha256: sha1,
+                  stateVersion: 121,
+                },
+              },
+              {
+                id: 'AUD-MULTI-002',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'DOCUMENT_UPDATED',
+                target: 'DOC-CTRL-002',
+                stateHash: sha2,
+                details: {
+                  path: 'docs/00_control/PROJECT_STATE.md',
+                  previousSha256: sha1,
+                  newSha256: sha2,
+                  stateVersion: 122,
+                },
+              },
+            ],
+          };
+        }
+        // auditCalls >= 3: snapshot omitting Save 1, containing only Save 2
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-MULTI-002',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: sha2,
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: sha1,
+                newSha256: sha2,
+                stateVersion: 122,
+              },
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // 1. Save A at v121
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // 2. Save B at v122
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+    await page.locator('[data-testid="doc-item-DOC-CTRL-002"]').click();
+    await page.locator('[data-testid="btn-edit-document"]').waitFor();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('# Project State\n\nSave 2 content\n');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Second save');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // 3. Trigger project refresh returning snapshot containing B but omitting A
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForTimeout(400);
+
+    // Test D: Both A and B must remain required freshness evidence; omitting A is rejected!
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    let tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-MULTI-001/, 'Save A must remain preserved in displayed ledger');
+    assert.match(tableText, /AUD-MULTI-002/, 'Save B must remain preserved in displayed ledger');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 27 (Test F - Blocker 1): Navigation (A -> B -> A) Preserves Confirmed Audit Watermark
+await test('Scenario 27 (Test F - Blocker 1): Navigation (A -> B -> A) Preserves Confirmed Audit Watermark', async () => {
+  let postSaveAuditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-NAV-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // Initial post-save refresh in Project A: returns verified event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-NAV-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      // When navigating back to Project A, snapshot omits AUD-NAV-001!
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // 1. Confirm event AUD-NAV-001 in Project A
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    assert.match(await page.locator('table').innerText(), /AUD-NAV-001/);
+
+    // 2. Switch to Project B
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B table must show its own events and NOT AUD-NAV-001
+    const bTableText = await page.locator('table').innerText();
+    assert.match(bTableText, /AUD-INIT-002/);
+    assert.doesNotMatch(bTableText, /AUD-NAV-001/);
+
+    // 3. Switch back to Project A
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+
+    // Navigate to Evidence & Audit in Project A
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // 4. Project A snapshot arrived omitting AUD-NAV-001 -> rejected!
+    await page.waitForTimeout(400);
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    const aTableText = await page.locator('table').innerText();
+    assert.match(aTableText, /AUD-NAV-001/, 'AUD-NAV-001 watermark preserved in Project A across navigation');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Saves Loads Cleanly
+await test('Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Saves Loads Cleanly', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+  });
+
+  try {
+    const { page } = harness;
+    // Navigate directly to Evidence & Audit tab without any saves
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Ordinary initial audit event is displayed
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/);
+
+    // No warning banner or retry button exists
+    assert.equal(await page.locator('[data-testid="audit-sync-warning"]').count(), 0);
   } finally {
     await harness.close();
   }

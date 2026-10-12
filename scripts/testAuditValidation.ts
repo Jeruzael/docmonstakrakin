@@ -3,6 +3,7 @@ import {
   ExpectedAuditAcknowledgment,
   validateAuditAcknowledgment,
   reconcileAuditEvents,
+  combineRequiredAuditAcks,
 } from '../src/utils/auditValidation';
 
 console.log('--- Testing Audit Validation & Reconciliation ---');
@@ -153,5 +154,39 @@ assert.equal(r4.valid, false, 'Partial satisfaction of multiple saves must fail'
 const r5 = reconcileAuditEvents([validEvent, validEvent2], [baseExpected, expected2]);
 assert.equal(r5.valid, true, 'Both satisfied must pass');
 assert.deepEqual(r5.satisfiedAckIds, ['AUD-001', 'AUD-002']);
+
+// 13. combineRequiredAuditAcks - empty confirmed & empty outstanding
+const c1 = combineRequiredAuditAcks([], []);
+assert.equal(c1.valid, true);
+assert.equal(c1.requiredAcks.length, 0);
+
+// 14. combineRequiredAuditAcks - distinct confirmed and outstanding
+const c2 = combineRequiredAuditAcks([baseExpected], [expected2]);
+assert.equal(c2.valid, true);
+assert.equal(c2.requiredAcks.length, 2);
+assert.deepEqual(c2.requiredAcks.map(a => a.auditEventId), ['AUD-001', 'AUD-002']);
+
+// 15. combineRequiredAuditAcks - identical confirmed and outstanding deduplicated
+const c3 = combineRequiredAuditAcks([baseExpected], [{ ...baseExpected }]);
+assert.equal(c3.valid, true);
+assert.equal(c3.requiredAcks.length, 1);
+assert.equal(c3.requiredAcks[0].auditEventId, 'AUD-001');
+
+// 16. combineRequiredAuditAcks - conflicting metadata for same auditEventId fails closed
+const conflictingExpected = {
+  ...baseExpected,
+  newSha256: '9999999999999999999999999999999999999999999999999999999999999999',
+};
+const c4 = combineRequiredAuditAcks([baseExpected], [conflictingExpected]);
+assert.equal(c4.valid, false, 'Conflicting metadata must fail closed');
+assert.ok(c4.reason?.includes('Conflicting acknowledgment metadata'));
+
+// 17. combineRequiredAuditAcks - conflicting timestamp for same auditEventId fails closed
+const conflictingTimestamp = {
+  ...baseExpected,
+  timestamp: '2026-10-12T10:00:01.000Z',
+};
+const c5 = combineRequiredAuditAcks([baseExpected], [conflictingTimestamp]);
+assert.equal(c5.valid, false, 'Conflicting timestamp must fail closed');
 
 console.log('All audit validation unit tests passed!');

@@ -101,3 +101,47 @@ export function reconcileAuditEvents(
 
   return { valid: true, satisfiedAckIds };
 }
+
+export interface CombinedAuditAcksResult {
+  valid: boolean;
+  reason?: string;
+  requiredAcks: ExpectedAuditAcknowledgment[];
+}
+
+/**
+ * Combines confirmed and outstanding audit acknowledgments into a single required set.
+ * Deduplicates by auditEventId. If the same ID has conflicting metadata, fails closed with valid: false.
+ */
+export function combineRequiredAuditAcks(
+  confirmed: ExpectedAuditAcknowledgment[] = [],
+  outstanding: ExpectedAuditAcknowledgment[] = []
+): CombinedAuditAcksResult {
+  const map = new Map<string, ExpectedAuditAcknowledgment>();
+
+  for (const ack of [...confirmed, ...outstanding]) {
+    const existing = map.get(ack.auditEventId);
+    if (!existing) {
+      map.set(ack.auditEventId, ack);
+    } else {
+      if (
+        existing.documentId !== ack.documentId ||
+        existing.path !== ack.path ||
+        existing.previousSha256 !== ack.previousSha256 ||
+        existing.newSha256 !== ack.newSha256 ||
+        existing.timestamp !== ack.timestamp ||
+        existing.stateVersion !== ack.stateVersion
+      ) {
+        return {
+          valid: false,
+          reason: `Conflicting acknowledgment metadata for audit event ${ack.auditEventId}`,
+          requiredAcks: [],
+        };
+      }
+    }
+  }
+
+  return {
+    valid: true,
+    requiredAcks: Array.from(map.values()),
+  };
+}
