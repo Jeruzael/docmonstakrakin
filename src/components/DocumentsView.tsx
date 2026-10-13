@@ -33,6 +33,7 @@ import {
 
 interface DocumentsViewProps {
   project: Project;
+  canonicalReady?: boolean;
   requirements?: Requirement[];
   risks?: Risk[];
   workItems?: WorkItem[];
@@ -45,6 +46,7 @@ interface DocumentsViewProps {
 
 export const DocumentsView: React.FC<DocumentsViewProps> = ({
   project,
+  canonicalReady = true,
   requirements = [],
   risks = [],
   workItems = [],
@@ -90,7 +92,14 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
     }
   }, [selectedDoc, fetchReleaseGates]);
 
+  useEffect(() => {
+    if (!canonicalReady && isSignoffModalOpen) {
+      setIsSignoffModalOpen(false);
+    }
+  }, [canonicalReady, isSignoffModalOpen]);
+
   const handleExecuteSignoff = async () => {
+    if (!canonicalReady) return;
     try {
       setSigningOff(true);
       setSignoffError(null);
@@ -135,7 +144,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 **Target Milestone:** v0.1 Local-First MVP
 **Projection Generated:** ${timestamp}
 **Governance:** SEC-CTRL-020 (Gate 7 Separation of Roles) / DMK-165
-**Audit Ledger Chain Integrity:** ${releaseReport?.auditChainIntegrity.valid ? 'VERIFIED (0 breaks)' : 'CHECKING'}
+**Audit Ledger Chain Integrity:** ${releaseReport?.auditChainIntegrity?.valid ? 'VERIFIED (0 breaks)' : 'CHECKING'}
 **Overall Release Status:** ${signed ? 'APPROVED & SIGNED OFF' : releaseReport?.releaseReady ? 'READY FOR SIGNOFF' : 'INCOMPLETE'}
 ${releaseReport?.signoffDetails ? `**Signed Off By:** ${releaseReport.signoffDetails.actor} at ${releaseReport.signoffDetails.timestamp}\n**Audit Event:** \`${releaseReport.signoffDetails.auditEventId}\`` : ''}
 
@@ -466,7 +475,9 @@ ${components
               {releaseReport?.releaseReady && !releaseReport?.signedOff && (
                 <button
                   onClick={() => setIsSignoffModalOpen(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
+                  disabled={!canonicalReady}
+                  title={!canonicalReady ? 'Canonical data snapshot is stale. Refresh canonical project data before sign-off.' : undefined}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span>Execute v0.1 DoD Sign-Off</span>
@@ -670,7 +681,7 @@ ${components
               <button
                 type="button"
                 onClick={handleExecuteSignoff}
-                disabled={signingOff || !signoffActor.trim()}
+                disabled={signingOff || !signoffActor.trim() || !canonicalReady}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs"
               >
                 {signingOff ? 'Recording Ceremony...' : 'Authorize & Seal v0.1 Release'}

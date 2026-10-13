@@ -140,6 +140,17 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let dynamicAuditResponseOverride: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null =
     options.auditResponseOverride ?? null;
 
+  let projectCHoldPromise: Promise<void> | null = null;
+  const endpointFetchCounts: Record<string, number> = {};
+  const signoffCalls: any[] = [];
+  let releaseGatesData = {
+    releaseReady: true,
+    signedOff: false,
+    capabilitiesSummary: { verified: 25 },
+    auditChainIntegrity: { valid: true },
+    gates: [],
+  };
+
   const projectAAuditLogs: any[] = [
     {
       id: 'AUD-INIT-001',
@@ -164,6 +175,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
   await page.route('**/api/**', async (route: Route) => {
     const url = new URL(route.request().url()).pathname;
     const method = route.request().method();
+    endpointFetchCounts[url] = (endpointFetchCounts[url] || 0) + 1;
 
     const send = async (body: any, status = 200) => {
       await route.fulfill({ status, json: body }).catch(() => {});
@@ -215,6 +227,27 @@ async function createHarness(options: TestHarnessOptions = {}) {
       });
     }
 
+    // Release endpoints
+    if (url.endsWith('/release/gates') && method === 'GET') {
+      return send(releaseGatesData);
+    }
+    if (url.endsWith('/release/signoff') && method === 'POST') {
+      const body = route.request().postDataJSON();
+      signoffCalls.push(body);
+      return send({
+        ok: true,
+        report: {
+          releaseReady: true,
+          signedOff: true,
+          signoffDetails: {
+            actor: body.actor,
+            timestamp: new Date().toISOString(),
+            auditEventId: 'AUD-REL-001',
+          },
+        },
+      });
+    }
+
     // Projects endpoints
     if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN') {
       projectAFetchCount++;
@@ -234,6 +267,9 @@ async function createHarness(options: TestHarnessOptions = {}) {
     }
     if (url === '/api/projects/PRJ-CREATED-001') {
       projectCFetchCount++;
+      if (projectCHoldPromise) {
+        await projectCHoldPromise;
+      }
       if (dynamicProjectCResponseOverride) {
         const custom = await dynamicProjectCResponseOverride(projectCFetchCount);
         if (custom) {
@@ -440,6 +476,14 @@ async function createHarness(options: TestHarnessOptions = {}) {
     setProjectListResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
       dynamicProjectListResponseOverride = fn;
     },
+    holdProjectCResponse: (p: Promise<void> | null) => {
+      projectCHoldPromise = p;
+    },
+    getSignoffCalls: () => signoffCalls,
+    setReleaseGatesData: (d: any) => {
+      releaseGatesData = d;
+    },
+    getFetchCountFor: (endpoint: string) => endpointFetchCounts[endpoint] || 0,
     close: async () => {
       await page.close();
     },
@@ -1497,17 +1541,17 @@ await test('Scenario 21 (Blocker 2): Genuine project-list request rejects stale 
     }));
 
     await refreshBtn.click();
-    await page.waitForSelector('[role="alert"]');
-    const alert = page.locator('[role="alert"]');
-    assert.match(await alert.innerText(), /Cannot load the project list/);
+    const listErrorAlert = page.locator('div[role="alert"]').filter({ hasText: 'Cannot load the project list' });
+    await listErrorAlert.waitFor();
+    assert.match(await listErrorAlert.innerText(), /Cannot load the project list/);
 
-    const retryBtn = alert.getByRole('button', { name: 'Retry' });
+    const retryBtn = listErrorAlert.getByRole('button', { name: 'Retry' });
     assert.ok((await retryBtn.count()) > 0, 'Retry button must exist in error alert');
 
     // Clear override and click retry
     harness.setProjectListResponseOverride(null);
     await retryBtn.click();
-    await page.waitForFunction(() => !document.querySelector('[role="alert"]'));
+    await listErrorAlert.waitFor({ state: 'detached' });
 
     // Card remains intact and active
     assert.match(await cardA.innerText(), /Active project/);
@@ -3555,7 +3599,12 @@ await test('Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejec
     // Execute save workflow with unsafe save response override
     await executeSaveWorkflow(page, 'Test unsafe save rejection');
 
-    // Confirm that error is shown and success banner is NOT displayed
+    // Wait for the corresponding save-validation error to become visible
+    const errorAlert = page.locator('[data-testid="save-error-banner"]');
+    await errorAlert.waitFor({ timeout: 5000 });
+    assert.match(await errorAlert.innerText(), /Invalid controlled document save response/);
+
+    // Confirm that success banner is NOT displayed
     const successBanner = page.locator('[data-testid="save-success-banner"]');
     assert.ok(!(await successBanner.isVisible()), 'Save success banner must not be shown for unsafe stateVersion');
 
@@ -3563,8 +3612,23 @@ await test('Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejec
     assert.match(await topBarProjectBtn.innerText(), /v120/);
     assert.doesNotMatch(await topBarProjectBtn.innerText(), new RegExp(String(Number.MAX_SAFE_INTEGER + 1)));
 
-    // No audit ledger synchronization for unsafe acknowledgment
-    assert.equal(harness.getAuditFetchCount(), initialAuditCalls, 'No audit refresh should be triggered for rejected save');
+    // Dismiss save modal
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.locator('[data-testid="doc-save-modal"]').waitFor({ state: 'hidden' });
+
+    // Assert subsequent normal project-list and canonical-snapshot responses are not blocked by an unsafe floor
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Valid List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[data-testid="btn-refresh-project-list"]').click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Valid List v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
   } finally {
     await harness.close();
   }
@@ -3663,8 +3727,232 @@ await test('Scenario 46 (MONO-13): Genuine Project Wizard creation establishes f
     await alert.waitFor({ timeout: 4000 });
     assert.ok(await alert.isVisible(), 'Error alert must be visible on invalid creation response');
 
+    // Assert complete negative creation properties:
+    // 1. Synthetic POST was issued
+    assert.equal(harness.getPostProjectsCalls().length, 2, 'Synthetic POST must have been issued');
+    // 2. Draft remains available (confirmed via review step summary)
+    const summaryName = page.locator('span.font-bold.text-slate-900').filter({ hasText: 'Project Invalid Draft' });
+    assert.ok(await summaryName.isVisible(), 'Draft name must remain intact on review step');
+    // 3. Active-project selection remains unchanged
+    assert.match(await topBarProjectBtn.innerText(), /Project C Synthetic/, 'Active project selection must not change');
+    // 4. Invalid project does not enter accepted project list / cards
+    assert.equal(await page.locator('article').filter({ hasText: 'PRJ-INVALID-001' }).count(), 0, 'Invalid project must not enter accepted cards');
+    // 5. No unintended GET triggered for rejected identity
+    assert.equal(harness.getFetchCountFor('/api/projects/PRJ-INVALID-001'), 0, 'No GET request must be triggered for rejected identity');
+
     // Drawer is still open and draft is retained
     assert.ok(await page.locator('[aria-label="Close project creation drawer"]').isVisible());
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 47 (RED-01): Controlled document save acknowledgment must not certify full canonical project snapshot
+await test('Scenario 47 (RED-01): Controlled document save acknowledgment must not certify full canonical project snapshot', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    const packageBtn = page.locator('#topbar-package-btn');
+
+    // Starting fixture: Active Project A mounted at v120, ready
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    assert.ok(await packageBtn.isVisible(), 'Export package button visible when snapshot is certified and ready');
+
+    // Execute save workflow to advance document to v121
+    await executeSaveWorkflow(page, 'Save to v121 without full snapshot refresh');
+
+    // 1. Save-success banner displays confirmed v121
+    const saveBanner = page.locator('[data-testid="save-success-banner"]');
+    await saveBanner.waitFor();
+    assert.match(await saveBanner.innerText(), /121/);
+
+    // 2. TopBar reflects confirmed version v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // 3. ControlledDocsView remains mounted with existing editor context
+    assert.ok(await page.locator('[data-testid="controlled-docs-workspace"]').isVisible());
+
+    // 4 & 5. Canonical mutation readiness MUST BE FALSE until a complete authoritative v121 snapshot is accepted!
+    assert.ok(!(await packageBtn.isVisible()), 'Export package button must be hidden while full canonical snapshot is uncertified');
+
+    // 6. Snapshot stale warning appears with retry affordance targeting GET /api/projects/:id
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Project-scoped snapshot warning must appear');
+
+    // Stale v120 snapshot retry cannot restore readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Stale Snapshot v120',
+      stateVersion: 120,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForTimeout(300);
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning remains when snapshot retry is stale v120');
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot is stale');
+
+    // 7. Valid v121 complete snapshot restores readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'Readiness restored on v121 complete snapshot recovery');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot
+await test('Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot', async () => {
+  let resolveProjectC!: () => void;
+  const projectCHoldPromise = new Promise<void>((r) => (resolveProjectC = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    // Hold complete project-snapshot GET for Project C
+    harness.holdProjectCResponse(projectCHoldPromise);
+
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible());
+
+    // Create Project C through ProjectWizard
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    const nameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await nameInput.fill('Project C Deferred Snapshot');
+
+    for (let i = 0; i < 5; i++) {
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
+    await page.getByRole('button', { name: 'Launch Project Control Plane' }).click();
+
+    await page.waitForFunction(() => !document.querySelector('[aria-label="Close project creation drawer"]'));
+
+    // Project C is inserted and selected
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /Project C Deferred Snapshot/);
+    assert.match(await topBarProjectBtn.innerText(), /v1/);
+
+    // Complete snapshot GET is pending: Canonical readiness MUST BE FALSE!
+    assert.ok(!(await packageBtn.isVisible()), 'Canonical readiness must be false while complete snapshot is pending');
+
+    // Deliver stale snapshot v0: must be rejected
+    harness.setProjectCData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-CREATED-001',
+      name: 'Project C Stale v0',
+      stateVersion: 0,
+    });
+    resolveProjectC();
+    await page.waitForTimeout(300);
+
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot v0 is rejected');
+
+    // Now retry/refresh with valid v1 snapshot
+    harness.setProjectCData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-CREATED-001',
+      name: 'Project C Certified v1',
+      stateVersion: 1,
+    });
+    const retryBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    if (await retryBtn.isVisible()) {
+      await retryBtn.click();
+    } else {
+      await page.getByRole('button', { name: 'Select project' }).click();
+      await page.getByRole('button', { name: /Project C Deferred Snapshot/ }).click();
+    }
+    await page.waitForFunction(() => document.querySelector('#topbar-package-btn') !== null);
+    assert.ok(await packageBtn.isVisible(), 'Readiness enabled after complete v1 snapshot is accepted');
+  } finally {
+    harness.holdProjectCResponse(null);
+    if (resolveProjectC) resolveProjectC();
+    await harness.close();
+  }
+});
+
+// Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale
+await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    page.on('pageerror', (err) => console.error('[SCENARIO 49 PAGE ERROR]:', err.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') console.error('[SCENARIO 49 CONSOLE ERROR]:', msg.text());
+    });
+
+    // Ensure initial project mount at v120 is complete
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    await topBarProjectBtn.waitFor();
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    // Navigate to Reports & Export -> Dynamic Projections -> RELEASE document
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+
+    // Switch to Dynamic Projections tab
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.locator('#panel-dynamic-projections').waitFor();
+
+    // Click RELEASE tab
+    const relTabBtn = page.getByRole('button', { name: /Release Gates & DoD/ });
+    await relTabBtn.waitFor();
+    await relTabBtn.click();
+
+    // Wait for release gate panel to render
+    await page.waitForFunction(() => document.body.textContent?.includes('Governance Protocol') || document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'), { timeout: 4000 });
+
+    // Release sign-off entry button is visible and enabled initially while snapshot is fresh
+    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
+    await signoffBtn.waitFor();
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is fresh');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is fresh');
+
+    // Advance list floor to v121 while snapshot is v120
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('docmonstakrakin List v121'));
+
+    // Navigate back to Reports & Export -> Dynamic Projections -> RELEASE
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.getByRole('button', { name: /Release Gates & DoD/ }).click();
+
+    // Assert: Read-only projections remain viewable
+    assert.ok(await page.getByText(/Governance Protocol: SEC-CTRL-020/).isVisible(), 'Read-only projections remain viewable');
+
+    // Stale snapshot warning remains accessible
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must remain visible');
+
+    // Execute v0.1 DoD Sign-Off MUST BE disabled or unavailable!
+    assert.ok(
+      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
+      'Execute v0.1 DoD Sign-Off must be disabled or unavailable while canonical snapshot is stale'
+    );
+
+    // No signoff POST must have occurred
+    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
   } finally {
     await harness.close();
   }

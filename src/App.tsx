@@ -324,10 +324,15 @@ export default function App() {
       acceptedProjectVersionFloorsRef.current[projectId] ?? 0,
       nextVersion
     );
-    acceptedCanonicalSnapshotVersionsRef.current[projectId] = Math.max(
-      acceptedCanonicalSnapshotVersionsRef.current[projectId] ?? 0,
-      nextVersion
-    );
+
+    const certifiedSnapshotVersion = acceptedCanonicalSnapshotVersionsRef.current[projectId];
+    if (certifiedSnapshotVersion === undefined || certifiedSnapshotVersion < nextVersion) {
+      const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+      projectSnapshotStaleIssuesRef.current[projectId] = warnMsg;
+      if (selectedProjectRef.current === projectId) {
+        setActiveSnapshotStaleWarning(warnMsg);
+      }
+    }
 
     if (selectedProjectRef.current === projectId) {
       setCurrentProject(prev => {
@@ -727,7 +732,6 @@ export default function App() {
           throw new Error('Invalid project creation response.');
         }
         acceptedProjectVersionFloorsRef.current[created.id] = created.stateVersion;
-        acceptedCanonicalSnapshotVersionsRef.current[created.id] = created.stateVersion;
         const updatedProjects = [created, ...acceptedProjectsRef.current.filter(p => p.id !== created.id)];
         acceptedProjectsRef.current = updatedProjects;
         listCoordinator.current?.invalidate();
@@ -1004,7 +1008,7 @@ export default function App() {
           {currentView === 'projects' ? (
             <ProjectsView
               projects={projects}
-              activeProjectId={projectReady ? activeProjectId : ''}
+              activeProjectId={activeProjectId}
               loading={projectsLoading}
               error={projectsError}
               unavailable={projectsUnavailable}
@@ -1214,19 +1218,23 @@ export default function App() {
             <ControlledDocsView
               key={`controlled-docs-${currentProject.id}`}
               projectId={currentProject.id}
+              canonicalReady={projectReady}
               onSaveCommitted={handleControlledDocumentCommitted}
               dynamicProjectionsProps={{
                 project: currentProject,
+                canonicalReady: projectReady,
                 requirements,
                 risks,
                 workItems,
                 adrs,
                 components,
                 approvals,
-                onOpenPackageModal: () => {
-                  setPackageMode('export');
-                  setIsPackageModalOpen(true);
-                },
+                onOpenPackageModal: projectReady
+                  ? () => {
+                      setPackageMode('export');
+                      setIsPackageModalOpen(true);
+                    }
+                  : undefined,
                 onSignoffSuccess: () => fetchProjectData(currentProject.id),
               }}
             />

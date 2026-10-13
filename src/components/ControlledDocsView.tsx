@@ -37,6 +37,7 @@ type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
 
 export interface ControlledDocsViewProps {
   projectId: string;
+  canonicalReady?: boolean;
   loader?: ReturnType<typeof createControlledDocsLoader>;
   dynamicProjectionsProps?: DynamicProjectionsProps;
   onSaveCommitted?: (projectId: string, result: DocumentSaveResponse) => void;
@@ -54,6 +55,7 @@ export type WorkflowStep =
 
 export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   projectId,
+  canonicalReady = true,
   loader,
   dynamicProjectionsProps,
   onSaveCommitted,
@@ -1332,7 +1334,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         hidden={workspaceTab !== 'PROJECTIONS'}
         className={workspaceTab !== 'PROJECTIONS' ? 'hidden' : undefined}
       >
-        <DocumentsView key={`projections-${dynamicProjectionsProps.project.id}`} {...dynamicProjectionsProps} />
+        <DocumentsView
+          key={`projections-${dynamicProjectionsProps.project.id}`}
+          {...dynamicProjectionsProps}
+          canonicalReady={dynamicProjectionsProps.canonicalReady ?? canonicalReady}
+        />
       </div>
     </div>
   );
