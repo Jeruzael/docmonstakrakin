@@ -1,6 +1,7 @@
 import {sanitizeAndHashAudit} from './server/security/sanitizedAudit.js';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { generateUniqueRequirementId, validateRequirementId } from './server/requirementId.ts';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
@@ -575,9 +576,25 @@ async function startServer() {
     validateGenerated(body.acceptanceCriteria);
     if (body.status && body.status !== 'PROPOSED') return res.status(403).json({error: 'New requirements must be PROPOSED; use Request Sign-Off'});
     const reqList = store.requirements[req.params.id] || [];
+
+    let reqId: string;
+    if (body.id !== undefined) {
+      const validation = validateRequirementId(body.id, reqList);
+      if (!validation.valid) {
+        return res.status(validation.status || 400).json({ error: validation.error || 'Invalid requirement ID' });
+      }
+      reqId = validation.id!;
+    } else {
+      try {
+        reqId = generateUniqueRequirementId(reqList);
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message || 'Failed to generate unique requirement ID' });
+      }
+    }
+
     // Honest manual entry: NO fabricated riskLinks, standardLinks, or workItems
     const newReq: Requirement = {
-      id: body.id || `REQ-GEN-${Math.floor(100 + Math.random() * 900)}`,
+      id: reqId,
       title: body.title,
       statement: body.statement,
       category: body.category || 'FUNCTIONAL',
@@ -610,11 +627,16 @@ async function startServer() {
       return res.status(404).json({ error: 'Project not found' });
     }
     const reqList = store.requirements[req.params.id] || [];
-    const target = reqList.find((r) => r.id === req.params.reqId);
+    const matching = reqList.filter((r) => r.id === req.params.reqId);
 
-    if (!target) {
+    if (matching.length === 0) {
       return res.status(404).json({ error: 'Requirement not found' });
     }
+    if (matching.length > 1) {
+      return res.status(409).json({ error: `Ambiguous requirement ID: multiple requirements found with ID ${req.params.reqId}` });
+    }
+
+    const target = matching[0];
 
     const previousStatus = target.status;
     target.status = status;
