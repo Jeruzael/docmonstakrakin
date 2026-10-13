@@ -3,7 +3,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { ProjectsView } from './components/ProjectsView';
-import { createProjectLoader, readProjectList, projectContentReady } from './data/projectWorkspace';
+import {
+  createProjectLoader,
+  readProjectList,
+  projectContentReady,
+  createProjectListCoordinator,
+  ProjectListCoordinator,
+} from './data/projectWorkspace';
 import { DashboardView } from './components/DashboardView';
 import { ProjectWizard } from './components/ProjectWizard';
 import { QuestionnaireView } from './components/QuestionnaireView';
@@ -22,7 +28,7 @@ import { FeaturesView } from './components/FeaturesView';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { OverrideModal } from './components/OverrideModal';
 import { PackageTransferModal } from './components/PackageTransferModal';
-import { FolderPlus, Plus } from 'lucide-react';
+import { FolderPlus, Plus, AlertTriangle } from 'lucide-react';
 
 import {
   Project,
@@ -42,9 +48,21 @@ import {
   ApprovalItem,
   Feature,
   RequirementStatus,
+  DocumentSaveResponse,
 } from './types';
-
-
+import {
+  ExpectedAuditAcknowledgment,
+  reconcileAuditEvents,
+  combineRequiredAuditAcks,
+  isValidSaveAcknowledgment,
+} from './utils/auditValidation';
+import {
+  reconcileProjectList,
+  reconcileListFreshness,
+  UnresolvedListFreshness,
+  calculateEffectiveVersionFloors,
+  isValidStateVersion,
+} from './utils/projectListReconciliation';
 
 export default function App() {
   // Navigation & Shell State
@@ -151,36 +169,312 @@ export default function App() {
 
   // Selection stays in App. Refs only guard async callbacks and request ordering.
   const selectedProjectRef = useRef<string>(getProjectFromUrl());
+  const confirmedVersionsRef = useRef<Record<string, number>>({});
+  const auditRefreshSeqRef = useRef<Record<string, number>>({});
+  const outstandingAuditAcksRef = useRef<Record<string, ExpectedAuditAcknowledgment[]>>({});
+  const confirmedAuditAcksRef = useRef<Record<string, ExpectedAuditAcknowledgment[]>>({});
+  const projectAuditRecordsRef = useRef<Record<string, AuditEvent[]>>({});
+  const projectAuditStatusRef = useRef<Record<string, 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>>({});
+  const projectAuditErrorRef = useRef<Record<string, string>>({});
+  const acceptedProjectsRef = useRef<Project[]>([]);
+  const acceptedProjectVersionFloorsRef = useRef<Record<string, number>>({});
+  const unresolvedListFreshnessRef = useRef<UnresolvedListFreshness>({});
   const loader = useRef<ReturnType<typeof createProjectLoader> | null>(null);
   if (!loader.current) loader.current = createProjectLoader();
-  const listSequence = useRef(0);
+  const listCoordinator = useRef<ProjectListCoordinator | null>(null);
+  if (!listCoordinator.current) listCoordinator.current = createProjectListCoordinator();
+  const acceptedCanonicalSnapshotVersionsRef = useRef<Record<string, number>>({});
   const [projectsLoading,setProjectsLoading] = useState(true);
   const [projectsError,setProjectsError] = useState('');
   const [projectLoading,setProjectLoading] = useState(false);
   const [loadError,setLoadError] = useState('');
-  const projectReady = projectContentReady(activeProjectId,currentProject,projectLoading,loadError);
+  const [auditSyncStatus, setAuditSyncStatus] = useState<'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED'>('CURRENT');
+  const [auditSyncError, setAuditSyncError] = useState<string>('');
+  const [activeSnapshotStaleWarning, setActiveSnapshotStaleWarning] = useState<string>('');
+  const projectSnapshotStaleIssuesRef = useRef<Record<string, string>>({});
+  const [projectListStaleWarning, setProjectListStaleWarning] = useState<string>('');
+  const [projectsUnavailable, setProjectsUnavailable] = useState<boolean>(false);
+  const activeFloor = Math.max(
+    confirmedVersionsRef.current[activeProjectId] ?? 0,
+    acceptedProjectVersionFloorsRef.current[activeProjectId] ?? 0,
+    unresolvedListFreshnessRef.current[activeProjectId] ?? 0
+  );
+  const certifiedSnapshotVersion = acceptedCanonicalSnapshotVersionsRef.current[activeProjectId];
+  const projectReady = projectContentReady(activeProjectId, currentProject, projectLoading, loadError)
+    && certifiedSnapshotVersion !== undefined
+    && certifiedSnapshotVersion >= activeFloor;
+  const isCanonicalMutationView = !['documents', 'evidence', 'projects'].includes(currentView);
   // A refresh keeps the last complete matching tree mounted, but never ready.
   const projectMounted = Boolean(activeProjectId && currentProject?.id === activeProjectId);
+
+  const getRequiredAcksForProject = useCallback((projectId: string) => {
+    const confirmed = confirmedAuditAcksRef.current[projectId] ?? [];
+    const outstanding = outstandingAuditAcksRef.current[projectId] ?? [];
+    return combineRequiredAuditAcks(confirmed, outstanding);
+  }, []);
+
+  const performAuditRefresh = useCallback(async (projectId: string, seq: number) => {
+    try {
+      const res = await fetch(`/api/projects/${encodeURIComponent(projectId)}/audit`);
+      if (!res.ok) {
+        throw new Error(`Audit endpoint returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        throw new Error('Audit endpoint returned non-array payload');
+      }
+
+      if (seq !== auditRefreshSeqRef.current[projectId]) {
+        return;
+      }
+
+      const combo = getRequiredAcksForProject(projectId);
+      if (!combo.valid) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] = combo.reason;
+        if (selectedProjectRef.current === projectId) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(combo.reason);
+        }
+        return;
+      }
+
+      const reconciliation = reconcileAuditEvents(data, combo.requiredAcks);
+
+      if (!reconciliation.valid) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] =
+          'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.';
+        if (selectedProjectRef.current === projectId) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(projectAuditErrorRef.current[projectId]);
+        }
+        return;
+      }
+
+      const previouslyAccepted = projectAuditRecordsRef.current[projectId] ?? [];
+      const dataIds = new Set(data.map((e: any) => e?.id));
+      if (previouslyAccepted.some(e => !dataIds.has(e.id))) {
+        projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+        projectAuditErrorRef.current[projectId] =
+          'Audit response omitted previously accepted audit record. Refresh audit records to confirm.';
+        if (selectedProjectRef.current === projectId) {
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(projectAuditErrorRef.current[projectId]);
+        }
+        return;
+      }
+
+      // Satisfied: promote newly satisfied outstanding acknowledgments to confirmedAuditAcksRef
+      const currentConfirmed = confirmedAuditAcksRef.current[projectId] ?? [];
+      const currentOutstanding = outstandingAuditAcksRef.current[projectId] ?? [];
+      const promoteCombo = combineRequiredAuditAcks(currentConfirmed, currentOutstanding);
+      if (promoteCombo.valid) {
+        confirmedAuditAcksRef.current[projectId] = promoteCombo.requiredAcks;
+      }
+      outstandingAuditAcksRef.current[projectId] = [];
+      projectAuditRecordsRef.current[projectId] = data;
+      projectAuditStatusRef.current[projectId] = 'CURRENT';
+      projectAuditErrorRef.current[projectId] = '';
+
+      if (selectedProjectRef.current === projectId) {
+        setAuditLogs(data);
+        setAuditSyncStatus('CURRENT');
+        setAuditSyncError('');
+      }
+    } catch {
+      if (seq !== auditRefreshSeqRef.current[projectId]) {
+        return;
+      }
+      projectAuditStatusRef.current[projectId] = 'REFRESH_FAILED';
+      projectAuditErrorRef.current[projectId] =
+        'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.';
+      if (selectedProjectRef.current === projectId) {
+        setAuditSyncStatus('REFRESH_FAILED');
+        setAuditSyncError(projectAuditErrorRef.current[projectId]);
+      }
+    }
+  }, [getRequiredAcksForProject]);
+
+  const handleRetryAuditRefresh = useCallback(() => {
+    const projId = selectedProjectRef.current;
+    if (!projId) return;
+    const nextSeq = (auditRefreshSeqRef.current[projId] ?? 0) + 1;
+    auditRefreshSeqRef.current[projId] = nextSeq;
+    projectAuditStatusRef.current[projId] = 'REFRESHING';
+    projectAuditErrorRef.current[projId] = '';
+    setAuditSyncStatus('REFRESHING');
+    setAuditSyncError('');
+    void performAuditRefresh(projId, nextSeq);
+  }, [performAuditRefresh]);
+
+  const handleControlledDocumentCommitted = useCallback((projectId: string, saveResponse: DocumentSaveResponse) => {
+    if (
+      !projectId ||
+      typeof projectId !== 'string' ||
+      !isValidSaveAcknowledgment(saveResponse)
+    ) {
+      return;
+    }
+
+    const currentConfirmed = confirmedVersionsRef.current[projectId] ?? 0;
+    const nextVersion = Math.max(currentConfirmed, saveResponse.stateVersion);
+    confirmedVersionsRef.current[projectId] = nextVersion;
+    acceptedProjectVersionFloorsRef.current[projectId] = Math.max(
+      acceptedProjectVersionFloorsRef.current[projectId] ?? 0,
+      nextVersion
+    );
+
+    const certifiedSnapshotVersion = acceptedCanonicalSnapshotVersionsRef.current[projectId];
+    if (certifiedSnapshotVersion === undefined || certifiedSnapshotVersion < nextVersion) {
+      const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+      projectSnapshotStaleIssuesRef.current[projectId] = warnMsg;
+      if (selectedProjectRef.current === projectId) {
+        setActiveSnapshotStaleWarning(warnMsg);
+      }
+    }
+
+    if (selectedProjectRef.current === projectId) {
+      setCurrentProject(prev => {
+        if (!prev || prev.id !== projectId) return prev;
+        const currentVersion = prev.stateVersion ?? 0;
+        const targetVersion = Math.max(currentVersion, nextVersion);
+        return prev.stateVersion === targetVersion ? prev : { ...prev, stateVersion: targetVersion };
+      });
+    }
+
+    const updatedProjects = acceptedProjectsRef.current.map(p =>
+      p.id === projectId
+        ? { ...p, stateVersion: Math.max(p.stateVersion ?? 0, nextVersion) }
+        : p
+    );
+    acceptedProjectsRef.current = updatedProjects;
+    setProjects(updatedProjects);
+
+    if (saveResponse.auditEventId) {
+      const newAck: ExpectedAuditAcknowledgment = {
+        auditEventId: saveResponse.auditEventId,
+        documentId: saveResponse.documentId,
+        path: saveResponse.path,
+        previousSha256: saveResponse.previousSha256,
+        newSha256: saveResponse.newSha256,
+        timestamp: saveResponse.timestamp,
+        stateVersion: nextVersion,
+      };
+      const existingAcks = outstandingAuditAcksRef.current[projectId] ?? [];
+      outstandingAuditAcksRef.current[projectId] = [...existingAcks, newAck];
+
+      const nextSeq = (auditRefreshSeqRef.current[projectId] ?? 0) + 1;
+      auditRefreshSeqRef.current[projectId] = nextSeq;
+      projectAuditStatusRef.current[projectId] = 'REFRESHING';
+      projectAuditErrorRef.current[projectId] = '';
+
+      if (selectedProjectRef.current === projectId) {
+        setAuditSyncStatus('REFRESHING');
+        setAuditSyncError('');
+      }
+      void performAuditRefresh(projectId, nextSeq);
+    }
+  }, [performAuditRefresh]);
 
   const fetchProjectData = useCallback(async (projectId:string) => {
     await loader.current!.load(projectId,()=>selectedProjectRef.current===projectId,{
       onStart:()=>{setProjectLoading(true);setLoadError('');},
       onCommit:data=>{
+        const effectiveFloor = Math.max(
+          confirmedVersionsRef.current[data.project.id] ?? 0,
+          acceptedProjectVersionFloorsRef.current[data.project.id] ?? 0,
+          unresolvedListFreshnessRef.current[data.project.id] ?? 0
+        );
+        const incomingVersion = data.project.stateVersion;
+
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) {
+          // Reject stale snapshot as a whole to prevent overwriting confirmed canonical data
+          setProjectLoading(false);
+          const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+          projectSnapshotStaleIssuesRef.current[data.project.id] = warnMsg;
+          if (selectedProjectRef.current === data.project.id) {
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
+          return;
+        }
+
+        delete projectSnapshotStaleIssuesRef.current[data.project.id];
+        if (selectedProjectRef.current === data.project.id) {
+          setActiveSnapshotStaleWarning('');
+        }
+        acceptedProjectVersionFloorsRef.current[data.project.id] = Math.max(
+          acceptedProjectVersionFloorsRef.current[data.project.id] ?? 0,
+          incomingVersion
+        );
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
         setCurrentProject(data.project);setQuestions(data.questions);setRequirements(data.requirements);
-        setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);setAuditLogs(data.audit);
+        setRisks(data.risks);setWorkItems(data.workItems);setEvidenceList(data.evidence);
+
+        // Validate snapshot audit against confirmed and outstanding acknowledgments
+        const combo = getRequiredAcksForProject(data.project.id);
+        const auditReconciliation = combo.valid
+          ? reconcileAuditEvents(data.audit, combo.requiredAcks)
+          : { valid: false, reason: combo.reason, satisfiedAckIds: [] };
+
+        const previouslyAccepted = projectAuditRecordsRef.current[data.project.id] ?? [];
+        const dataIds = new Set((data.audit || []).map((e: any) => e?.id));
+        const missingPreviouslyAccepted = previouslyAccepted.some(e => !dataIds.has(e.id));
+
+        if (auditReconciliation.valid && !missingPreviouslyAccepted) {
+          const currentConfirmed = confirmedAuditAcksRef.current[data.project.id] ?? [];
+          const currentOutstanding = outstandingAuditAcksRef.current[data.project.id] ?? [];
+          const promoteCombo = combineRequiredAuditAcks(currentConfirmed, currentOutstanding);
+          if (promoteCombo.valid) {
+            confirmedAuditAcksRef.current[data.project.id] = promoteCombo.requiredAcks;
+          }
+          outstandingAuditAcksRef.current[data.project.id] = [];
+          projectAuditRecordsRef.current[data.project.id] = data.audit;
+          projectAuditStatusRef.current[data.project.id] = 'CURRENT';
+          projectAuditErrorRef.current[data.project.id] = '';
+          setAuditLogs(data.audit);
+          setAuditSyncStatus('CURRENT');
+          setAuditSyncError('');
+        } else {
+          // Keep previously accepted audit logs; do not erase or overwrite with omitting snapshot
+          const preservedLogs = projectAuditRecordsRef.current[data.project.id] || [];
+          setAuditLogs(preservedLogs);
+          projectAuditStatusRef.current[data.project.id] = 'REFRESH_FAILED';
+          const errMsg = !combo.valid
+            ? combo.reason
+            : missingPreviouslyAccepted
+            ? 'Project data snapshot omitted previously accepted audit record. Refresh audit records to confirm.'
+            : 'Project data snapshot omitted confirmed audit event. Refresh audit records to confirm.';
+          projectAuditErrorRef.current[data.project.id] = errMsg;
+          setAuditSyncStatus('REFRESH_FAILED');
+          setAuditSyncError(errMsg);
+        }
+
         setNextAction(data.nextAction);setAdrs(data.adrs);setComponents(data.components);setApprovals(data.approvals);
         setFeatures(data.features);setStandards(data.standards);setThreats(data.threats);setProjectLoading(false);
-        setProjects(previous=>previous.map(p=>p.id===data.project.id?data.project:p));
+        const updatedProjects = acceptedProjectsRef.current.map(p => p.id === data.project.id ? data.project : p);
+        acceptedProjectsRef.current = updatedProjects;
+        setProjects(updatedProjects);
       },
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
-  },[]);
+  },[getRequiredAcksForProject]);
 
   const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
     if (syncHistory !== 'none') {
       syncProjectUrl(id, syncHistory === 'replace');
     }
     if(id && id===selectedProjectRef.current && !replaceBaseline) {
+      // Same-project re-selection:
+      // Preserve project's own audit status & error instead of resetting to CURRENT
+      const currentStatus = projectAuditStatusRef.current[id] || 'CURRENT';
+      const currentError = projectAuditErrorRef.current[id] || '';
+      setAuditSyncStatus(currentStatus);
+      setAuditSyncError(currentError);
+
+      const currentSnapshotWarning = projectSnapshotStaleIssuesRef.current[id] || '';
+      setActiveSnapshotStaleWarning(currentSnapshotWarning);
+
       setCurrentView(view=>view==='projects'?'overview':view);
       void fetchProjectData(id);
       return;
@@ -192,9 +486,26 @@ export default function App() {
     setRequirementsSubTab('canonical');setIsSearchOpen(false);setOverrideGate(null);setIsPackageModalOpen(false);
     setCurrentView(view=>view==='projects'?'overview':view);
     setActiveProjectId(id);setLoadError('');setProjectLoading(Boolean(id));
-    if(id)void fetchProjectData(id);
-    else {setCurrentProject(null);setProjectLoading(false);}
-  },[fetchProjectData]);
+    const targetSnapshotWarning = id ? (projectSnapshotStaleIssuesRef.current[id] || '') : '';
+    setActiveSnapshotStaleWarning(targetSnapshotWarning);
+    if(id) {
+      // Restore target project's own audit records & status
+      const targetStatus = projectAuditStatusRef.current[id] || 'CURRENT';
+      const targetError = projectAuditErrorRef.current[id] || '';
+      const targetLogs = projectAuditRecordsRef.current[id] || [];
+      setAuditSyncStatus(targetStatus);
+      setAuditSyncError(targetError);
+      setAuditLogs(targetLogs);
+
+      void fetchProjectData(id);
+    } else {
+      setCurrentProject(null);
+      setProjectLoading(false);
+      setAuditSyncStatus('CURRENT');
+      setAuditSyncError('');
+      setAuditLogs([]);
+    }
+  },[fetchProjectData, performAuditRefresh]);
 
   // Browser back / forward buttons close or open the drawer accordingly & restore project
   useEffect(() => {
@@ -218,37 +529,182 @@ export default function App() {
 
   // Fetch projects list without falling back to seeded/demo identities.
   const fetchProjects = useCallback(async () => {
-    const sequence=++listSequence.current;
-    setProjectsLoading(true);setProjectsError('');
-    try {
-      const data=await readProjectList();
-      if(sequence!==listSequence.current)return;
-      setProjects(data);
+    await listCoordinator.current?.load({
+      onStart: () => {
+        setProjectsLoading(true);
+        setProjectsError('');
+      },
+      onCommit: (data) => {
+        const effectiveFloors = calculateEffectiveVersionFloors(
+          confirmedVersionsRef.current,
+          acceptedProjectVersionFloorsRef.current,
+          unresolvedListFreshnessRef.current
+        );
+        const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
+        const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
+          data,
+          acceptedProjectsRef.current,
+          effectiveFloors,
+          unresolvedIds
+        );
+        unresolvedListFreshnessRef.current = reconcileListFreshness(
+          unresolvedListFreshnessRef.current,
+          data,
+          effectiveFloors,
+          staleIncomingProjectIds
+        );
+        for (const p of acceptedProjects) {
+          if (isValidStateVersion(p.stateVersion)) {
+            acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+              acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+              p.stateVersion
+            );
+          }
+        }
+        acceptedProjectsRef.current = acceptedProjects;
+        setProjects(acceptedProjects);
 
-      if (data.length === 0) {
-        handleSelectProject('', false, 'replace');
-        return;
-      }
+        const activeId = selectedProjectRef.current;
+        if (activeId) {
+          const currentSnapVer = acceptedCanonicalSnapshotVersionsRef.current[activeId] ?? 0;
+          const currentFloor = Math.max(
+            confirmedVersionsRef.current[activeId] ?? 0,
+            acceptedProjectVersionFloorsRef.current[activeId] ?? 0,
+            unresolvedListFreshnessRef.current[activeId] ?? 0
+          );
+          if (currentSnapVer < currentFloor) {
+            const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+            projectSnapshotStaleIssuesRef.current[activeId] = warnMsg;
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
+        }
 
-      // Check URL query param first, then ref
-      const requestedId = getProjectFromUrl() || selectedProjectRef.current;
-      const matched = data.find(p => p.id === requestedId);
+        const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+        if (hasUnresolved) {
+          setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+        } else {
+          setProjectListStaleWarning('');
+        }
 
-      if (matched) {
-        handleSelectProject(matched.id, false, 'replace');
-      } else {
-        // Fall back to first project only when there is no valid requested/remembered project
-        handleSelectProject(data[0]?.id || '', false, 'replace');
-      }
-    } catch(error) {
-      if(sequence===listSequence.current)setProjectsError(error instanceof Error?error.message:'Cannot load projects.');
-    } finally {if(sequence===listSequence.current)setProjectsLoading(false);}
-  },[handleSelectProject]);
+        if (acceptedProjects.length === 0) {
+          if (hasUnresolved || staleProjects.length > 0) {
+            setProjectsUnavailable(true);
+          } else {
+            setProjectsUnavailable(false);
+            handleSelectProject('', false, 'replace');
+          }
+          return;
+        }
+        setProjectsUnavailable(false);
 
-  useEffect(()=>{
+        // Check URL query param first, then ref
+        const requestedId = getProjectFromUrl() || selectedProjectRef.current;
+        const matched = acceptedProjects.find(p => p.id === requestedId);
+
+        if (matched) {
+          handleSelectProject(matched.id, false, 'replace');
+        } else if (requestedId && unresolvedListFreshnessRef.current[requestedId] !== undefined) {
+          // Do NOT switch away from requestedId if it is unresolved / pending freshness
+        } else {
+          // Fall back to first project only when there is no valid requested/remembered project
+          handleSelectProject(acceptedProjects[0]?.id || '', false, 'replace');
+        }
+      },
+      onError: (errMsg) => {
+        setProjectsError(errMsg);
+      },
+      onSettled: () => {
+        setProjectsLoading(false);
+      },
+    });
+  }, [handleSelectProject]);
+
+  // Refresh projects list in-place without resetting active project or navigating away.
+  const handleRefreshProjectList = useCallback(async () => {
+    await listCoordinator.current?.load({
+      onStart: () => {
+        setProjectsLoading(true);
+        setProjectsError('');
+      },
+      onCommit: (data) => {
+        const effectiveFloors = calculateEffectiveVersionFloors(
+          confirmedVersionsRef.current,
+          acceptedProjectVersionFloorsRef.current,
+          unresolvedListFreshnessRef.current
+        );
+        const unresolvedIds = Object.keys(unresolvedListFreshnessRef.current);
+        const { acceptedProjects, staleProjects, staleIncomingProjectIds } = reconcileProjectList(
+          data,
+          acceptedProjectsRef.current,
+          effectiveFloors,
+          unresolvedIds
+        );
+        unresolvedListFreshnessRef.current = reconcileListFreshness(
+          unresolvedListFreshnessRef.current,
+          data,
+          effectiveFloors,
+          staleIncomingProjectIds
+        );
+        for (const p of acceptedProjects) {
+          if (isValidStateVersion(p.stateVersion)) {
+            acceptedProjectVersionFloorsRef.current[p.id] = Math.max(
+              acceptedProjectVersionFloorsRef.current[p.id] ?? 0,
+              p.stateVersion
+            );
+          }
+        }
+        acceptedProjectsRef.current = acceptedProjects;
+        setProjects(acceptedProjects);
+
+        const activeId = selectedProjectRef.current;
+        if (activeId) {
+          const currentSnapVer = acceptedCanonicalSnapshotVersionsRef.current[activeId] ?? 0;
+          const currentFloor = Math.max(
+            confirmedVersionsRef.current[activeId] ?? 0,
+            acceptedProjectVersionFloorsRef.current[activeId] ?? 0,
+            unresolvedListFreshnessRef.current[activeId] ?? 0
+          );
+          if (currentSnapVer < currentFloor) {
+            const warnMsg = 'Project state snapshot is older than the confirmed version. Retry to refresh.';
+            projectSnapshotStaleIssuesRef.current[activeId] = warnMsg;
+            setActiveSnapshotStaleWarning(warnMsg);
+          }
+        }
+
+        const hasUnresolved = Object.keys(unresolvedListFreshnessRef.current).length > 0;
+        if (hasUnresolved) {
+          setProjectListStaleWarning('Some project list items are older than confirmed versions. Refreshing authoritative data...');
+        } else {
+          setProjectListStaleWarning('');
+        }
+
+        if (acceptedProjects.length === 0) {
+          if (hasUnresolved || staleProjects.length > 0) {
+            setProjectsUnavailable(true);
+          } else {
+            setProjectsUnavailable(false);
+            handleSelectProject('', false, 'replace');
+          }
+          return;
+        }
+        setProjectsUnavailable(false);
+      },
+      onError: (errMsg) => {
+        setProjectsError(errMsg);
+      },
+      onSettled: () => {
+        setProjectsLoading(false);
+      },
+    });
+  }, [handleSelectProject]);
+
+  useEffect(() => {
     void fetchProjects();
-    return ()=>{listSequence.current++;loader.current!.invalidate();};
-  },[fetchProjects]);
+    return () => {
+      listCoordinator.current?.invalidate();
+      loader.current!.invalidate();
+    };
+  }, [fetchProjects]);
 
   // Keyboard shortcut Ctrl+K for Global Search
   useEffect(() => {
@@ -272,8 +728,16 @@ export default function App() {
       });
       if (res.ok) {
         const created: Project = await res.json();
-        listSequence.current++;setProjectsLoading(false);setProjectsError('');
-        setProjects((prev) => [created, ...prev.filter(p=>p.id!==created.id)]);
+        if (!created || typeof created.id !== 'string' || !created.id || !isValidStateVersion(created.stateVersion)) {
+          throw new Error('Invalid project creation response.');
+        }
+        acceptedProjectVersionFloorsRef.current[created.id] = created.stateVersion;
+        const updatedProjects = [created, ...acceptedProjectsRef.current.filter(p => p.id !== created.id)];
+        acceptedProjectsRef.current = updatedProjects;
+        listCoordinator.current?.invalidate();
+        setProjectsLoading(false);
+        setProjectsError('');
+        setProjects(updatedProjects);
         handleSelectProject(created.id);
         setCurrentView('overview');
         handleCloseCreateWizard();
@@ -500,8 +964,90 @@ export default function App() {
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>void fetchProjectData(activeProjectId)}>Retry selected project</button></div>}
+          {projectListStaleWarning && (
+            <div
+              data-testid="stale-project-list-warning"
+              role="alert"
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-950 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{projectListStaleWarning}</span>
+              </div>
+              <button
+                data-testid="btn-retry-project-list"
+                disabled={projectsLoading}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0 disabled:opacity-50"
+                onClick={() => void handleRefreshProjectList()}
+              >
+                {projectsLoading ? 'Refreshing…' : 'Retry project list'}
+              </button>
+            </div>
+          )}
+          {activeSnapshotStaleWarning && (
+            <div
+              data-testid="stale-snapshot-warning"
+              role="alert"
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-950 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{activeSnapshotStaleWarning}</span>
+              </div>
+              <button
+                data-testid="btn-retry-project-fetch"
+                disabled={projectLoading}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0 disabled:opacity-50"
+                onClick={() => void fetchProjectData(activeProjectId)}
+              >
+                {projectLoading ? 'Refreshing…' : 'Retry to refresh'}
+              </button>
+            </div>
+          )}
           {projectMounted && projectLoading && <p role="status" className="mb-4 text-sm text-slate-600">Refreshing selected project…</p>}
-          {currentView === 'projects' ? <ProjectsView projects={projects} activeProjectId={projectReady ? activeProjectId : ''} loading={projectsLoading} error={projectsError} onSelectProject={handleSelectProject} onCreateProject={handleOpenCreateWizard} onRetry={()=>void fetchProjects()}/> : projectsLoading && projects.length===0 ? <p role="status">Loading projects…</p> : projectsError && projects.length===0 ? <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div> : projects.length === 0 ? (
+          {currentView === 'projects' ? (
+            <ProjectsView
+              projects={projects}
+              activeProjectId={activeProjectId}
+              loading={projectsLoading}
+              error={projectsError}
+              unavailable={projectsUnavailable}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleOpenCreateWizard}
+              onRetry={() => void handleRefreshProjectList()}
+              onRefreshProjects={handleRefreshProjectList}
+            />
+          ) : projectsLoading && projects.length===0 ? (
+            <p role="status">Loading projects…</p>
+          ) : projectsError && projects.length===0 ? (
+            <div role="alert"><p>{projectsError}</p><button className="mt-2 underline" onClick={()=>void fetchProjects()}>Retry project list</button></div>
+          ) : projectsUnavailable ? (
+            <div role="alert" className="h-full min-h-[480px] flex items-center justify-center p-6">
+              <div className="max-w-md w-full bg-white rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center shadow-2xs space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 mx-auto flex items-center justify-center shadow-2xs">
+                  <AlertTriangle className="w-7 h-7" />
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                    Project Data Unavailable
+                  </h1>
+                  <p className="text-xs text-amber-900 leading-relaxed">
+                    Incoming project metadata is older than confirmed versions. Authoritative project data is currently unavailable.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    data-testid="btn-retry-global-unavailable-project-list"
+                    disabled={projectsLoading}
+                    onClick={() => void handleRefreshProjectList()}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {projectsLoading ? 'Refreshing…' : 'Retry project list'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : projects.length === 0 ? (
             /* First-ever application use / zero projects empty state */
             <div className="h-full min-h-[480px] flex items-center justify-center p-6">
               <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-2xs space-y-6">
@@ -531,7 +1077,7 @@ export default function App() {
               </div>
             </div>
           ) : !projectMounted ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
-            <div key={currentProject.id} inert={!projectReady} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
+            <div key={currentProject.id} inert={!projectReady && isCanonicalMutationView} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
               {currentView === 'overview' && (
             <DashboardView
               project={currentProject}
@@ -645,7 +1191,13 @@ export default function App() {
           )}
 
           {currentView === 'evidence' && (
-            <EvidenceView evidenceList={evidenceList} auditLogs={auditLogs} />
+            <EvidenceView
+              evidenceList={evidenceList}
+              auditLogs={auditLogs}
+              auditSyncStatus={auditSyncStatus}
+              auditSyncError={auditSyncError}
+              onRetryAuditRefresh={handleRetryAuditRefresh}
+            />
           )}
 
           {currentView === 'compiler' && (
@@ -666,18 +1218,23 @@ export default function App() {
             <ControlledDocsView
               key={`controlled-docs-${currentProject.id}`}
               projectId={currentProject.id}
+              canonicalReady={projectReady}
+              onSaveCommitted={handleControlledDocumentCommitted}
               dynamicProjectionsProps={{
                 project: currentProject,
+                canonicalReady: projectReady,
                 requirements,
                 risks,
                 workItems,
                 adrs,
                 components,
                 approvals,
-                onOpenPackageModal: () => {
-                  setPackageMode('export');
-                  setIsPackageModalOpen(true);
-                },
+                onOpenPackageModal: projectReady
+                  ? () => {
+                      setPackageMode('export');
+                      setIsPackageModalOpen(true);
+                    }
+                  : undefined,
                 onSignoffSuccess: () => fetchProjectData(currentProject.id),
               }}
             />

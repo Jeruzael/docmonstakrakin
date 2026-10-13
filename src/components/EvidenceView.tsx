@@ -10,15 +10,26 @@ import {
   GitCommit,
   Lock,
   ExternalLink,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { Evidence, AuditEvent } from '../types';
 
 interface EvidenceViewProps {
   evidenceList?: Evidence[];
   auditLogs?: AuditEvent[];
+  auditSyncStatus?: 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED';
+  auditSyncError?: string;
+  onRetryAuditRefresh?: () => void;
 }
 
-export const EvidenceView: React.FC<EvidenceViewProps> = ({ evidenceList = [], auditLogs = [] }) => {
+export const EvidenceView: React.FC<EvidenceViewProps> = ({
+  evidenceList = [],
+  auditLogs = [],
+  auditSyncStatus = 'CURRENT',
+  auditSyncError = '',
+  onRetryAuditRefresh,
+}) => {
   const [tab, setTab] = useState<'EVIDENCE' | 'AUDIT'>('EVIDENCE');
   const [filterActor, setFilterActor] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -136,11 +147,62 @@ export const EvidenceView: React.FC<EvidenceViewProps> = ({ evidenceList = [], a
       {/* 2. Audit Ledger */}
       {tab === 'AUDIT' && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs space-y-4 p-5">
+          {/* Audit Synchronization Status Warnings */}
+          {auditSyncStatus === 'REFRESH_FAILED' && (
+            <div
+              data-testid="audit-sync-warning"
+              role="alert"
+              className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  {auditSyncError ||
+                    'Document save succeeded, but the audit ledger has not finished synchronizing. Refresh audit records to confirm the latest event.'}
+                </span>
+              </div>
+              {onRetryAuditRefresh && (
+                <button
+                  data-testid="btn-retry-audit-sync"
+                  onClick={onRetryAuditRefresh}
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs cursor-pointer shrink-0"
+                >
+                  Refresh audit records
+                </button>
+              )}
+            </div>
+          )}
+
+          {auditSyncStatus === 'REFRESHING' && (
+            <div
+              data-testid="audit-sync-refreshing"
+              role="status"
+              className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+              <span>Synchronizing authoritative audit ledger...</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Lock className="w-4 h-4 text-slate-400" />
               <span className="font-bold text-slate-700">Audit Invariant:</span>
               <span className="text-slate-500">Append-only; mutation and deletion disabled by system policy.</span>
+              <span
+                data-testid="audit-sync-status-badge"
+                className={`ml-2 font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  auditSyncStatus === 'CURRENT'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}
+              >
+                {auditSyncStatus === 'CURRENT'
+                  ? 'LEDGER SYNCHRONIZED'
+                  : auditSyncStatus === 'REFRESHING'
+                  ? 'LEDGER SYNCHRONIZING...'
+                  : 'LEDGER UNCONFIRMED'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">

@@ -30,14 +30,17 @@ import type {
   ReviewerSessionInfo,
 } from '../types.js';
 import { createControlledDocsLoader } from '../data/controlledDocsClient.js';
+import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 import { DocumentsView } from './DocumentsView';
 
 type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
 
 export interface ControlledDocsViewProps {
   projectId: string;
+  canonicalReady?: boolean;
   loader?: ReturnType<typeof createControlledDocsLoader>;
   dynamicProjectionsProps?: DynamicProjectionsProps;
+  onSaveCommitted?: (projectId: string, result: DocumentSaveResponse) => void;
 }
 
 export type DocsWorkspaceTab = 'REPOSITORY' | 'PROJECTIONS';
@@ -52,8 +55,10 @@ export type WorkflowStep =
 
 export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   projectId,
+  canonicalReady = true,
   loader,
   dynamicProjectionsProps,
+  onSaveCommitted,
 }) => {
   // Stable API loader
   const api = useMemo(() => loader ?? createControlledDocsLoader(), [loader]);
@@ -413,6 +418,20 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
       // Lock editing during post-save refresh (Section 3)
       setCanonicalRefreshRequired(true);
+
+      // Notify parent of confirmed save transaction (isolated failure domain)
+      if (
+        onSaveCommitted &&
+        saveResp &&
+        saveResp.success === true &&
+        isValidStateVersion(saveResp.stateVersion)
+      ) {
+        try {
+          onSaveCommitted(projectId, saveResp);
+        } catch (callbackErr) {
+          console.error('ControlledDocsView: onSaveCommitted parent callback threw an error:', callbackErr);
+        }
+      }
     } catch (err: any) {
       setIsSaving(false);
       const isUncertain = err.name === 'AbortError' || err.message?.includes('timed out');
@@ -1197,7 +1216,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
             {/* Error Message */}
             {saveError && (
-              <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
+              <div
+                data-testid="save-error-banner"
+                role="alert"
+                className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs"
+              >
                 {saveError}
               </div>
             )}
@@ -1311,7 +1334,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         hidden={workspaceTab !== 'PROJECTIONS'}
         className={workspaceTab !== 'PROJECTIONS' ? 'hidden' : undefined}
       >
-        <DocumentsView key={`projections-${dynamicProjectionsProps.project.id}`} {...dynamicProjectionsProps} />
+        <DocumentsView
+          key={`projections-${dynamicProjectionsProps.project.id}`}
+          {...dynamicProjectionsProps}
+          canonicalReady={dynamicProjectionsProps.canonicalReady ?? canonicalReady}
+        />
       </div>
     </div>
   );

@@ -482,6 +482,8 @@ async function runTests(): Promise<void> {
       { ...validSave, newSha256: 'invalid' },
       { ...validSave, stateVersion: -1 },
       { ...validSave, stateVersion: 3.5 },
+      { ...validSave, stateVersion: Number.MAX_SAFE_INTEGER + 1 },
+      { ...validSave, stateVersion: '32' as any },
       { ...validSave, auditEventId: '' },
       { ...validSave, timestamp: 'invalid-date-string' },
     ];

@@ -46,6 +46,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors text-slate-800 text-xs md:text-sm font-semibold group shadow-2xs"
             aria-label="Select project"
+            data-testid="project-selector-dropdown-trigger"
           >
             <span className={`w-2 h-2 rounded-full ${currentProject ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
             <span className="max-w-[150px] sm:max-w-[200px] md:max-w-[240px] truncate">
@@ -78,6 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   projects.map((p) => (
                     <button
                       key={p.id}
+                      data-testid={`project-option-${p.id}`}
                       onClick={() => {
                         onSelectProject(p.id);
                         setDropdownOpen(false);

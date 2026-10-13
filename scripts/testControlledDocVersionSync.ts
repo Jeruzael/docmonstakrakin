@@ -1,0 +1,4305 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import ts from 'typescript';
+import { chromium, type Page, type Route } from 'playwright';
+import { createServer } from 'vite';
+import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
+import type {
+  ControlledDocumentSummary,
+  DocumentContentResponse,
+  DocumentDiffResponse,
+  DocumentValidationResponse,
+  DocumentSaveResponse,
+} from '../src/types.ts';
+
+// Integration test for Controlled Document Project Version Synchronization
+// Serves real App with real TopBar, ControlledDocsView, and Project State.
+const root = process.cwd();
+const vite = await createServer({
+  root,
+  server: { host: '127.0.0.1', port: 0 },
+  logLevel: 'error',
+});
+await vite.listen();
+const base = vite.resolvedUrls!.local[0];
+
+const executable =
+  process.env.DMK_TEST_BROWSER ||
+  ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((p) =>
+    fs.existsSync(p)
+  );
+
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: executable,
+});
+
+let passed = 0;
+let failed = 0;
+const results: { name: string; status: string; error?: string }[] = [];
+
+async function test(name: string, fn: () => Promise<void>) {
+  try {
+    await fn();
+    passed++;
+    results.push({ name, status: 'PASSED' });
+    console.log(`PASS: ${name}`);
+  } catch (err: any) {
+    failed++;
+    results.push({ name, status: 'FAILED', error: err.message });
+    console.error(`FAIL: ${name}`);
+    console.error(err);
+  }
+}
+
+// Synthetic Documents Catalog
+const DOC_SUMMARY_002: ControlledDocumentSummary = {
+  id: 'DOC-CTRL-002',
+  path: 'docs/00_control/PROJECT_STATE.md',
+  kind: 'CONTROL',
+  authority: 'REFERENCE',
+  editability: 'CONTROLLED_EDIT',
+  fileType: 'MARKDOWN',
+  title: 'Project State & Governance Baseline',
+  description: 'Current Project State',
+  integrityStatus: 'MATCH',
+  sha256Digest: '1111111111111111111111111111111111111111111111111111111111111111',
+  currentSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+  sizeBytes: 2048,
+  eol: 'LF',
+};
+
+const DOC_CONTENT_002: DocumentContentResponse = {
+  document: DOC_SUMMARY_002,
+  content: '# Project State\n\nBaseline version 120 content.\n',
+  rawSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+  sizeBytes: 42,
+  eol: 'LF',
+};
+
+interface TestHarnessOptions {
+  initialStateVersion?: number;
+  projectBVersion?: number;
+  initialProjects?: any[];
+  sessionAuthenticated?: boolean;
+  saveResponseOverride?: (reqBody: any) => Promise<{ status: number; body: any }>;
+  refreshFails?: boolean;
+  projectAResponseOverride?: (callCount: number) => Promise<{ status: number; body: any } | null>;
+  auditResponseOverride?: (projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>;
+}
+
+async function createHarness(options: TestHarnessOptions = {}) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.setDefaultTimeout(8000);
+
+  const initialVersion = options.initialStateVersion ?? 120;
+  const projectBVersion = options.projectBVersion ?? 50;
+
+  const projectA = {
+    ...structuredClone(INITIAL_PROJECTS[0]),
+    id: 'PRJ-DOCMONSTAKRAKIN',
+    name: 'docmonstakrakin',
+    stateVersion: initialVersion,
+  };
+
+  const projectB = {
+    ...structuredClone(INITIAL_PROJECTS[0]),
+    id: 'PRJ-FIXTURE-B',
+    name: 'Fixture B',
+    stateVersion: projectBVersion,
+  };
+
+  let projectsList = options.initialProjects ?? [projectA, projectB];
+  let projectAData = structuredClone(projectA);
+  let projectBData = structuredClone(projectB);
+  let projectCData = {
+    ...structuredClone(INITIAL_PROJECTS[0]),
+    id: 'PRJ-CREATED-001',
+    name: 'Synthetic Project C',
+    stateVersion: 1,
+  };
+
+  let currentDocContent = structuredClone(DOC_CONTENT_002);
+  let currentDocSummary = structuredClone(DOC_SUMMARY_002);
+
+  const saveCalls: any[] = [];
+  const postProjectsCalls: any[] = [];
+  let dynamicPostProjectResponseOverride: ((draft: any) => Promise<{ status: number; body: any } | null>) | null = null;
+  let projectListFetchCount = 0;
+  let projectAFetchCount = 0;
+  let projectCFetchCount = 0;
+  let projectAHoldPromise: Promise<void> | null = null;
+  let auditFetchCount = 0;
+  let auditHoldPromise: Promise<void> | null = null;
+
+  let projectListHoldPromise: Promise<void> | null = null;
+  let dynamicProjectListResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null = null;
+
+  let dynamicProjectAResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null =
+    options.projectAResponseOverride ?? null;
+  let dynamicProjectCResponseOverride: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null = null;
+  let dynamicAuditResponseOverride: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null =
+    options.auditResponseOverride ?? null;
+
+  let projectCHoldPromise: Promise<void> | null = null;
+  const endpointFetchCounts: Record<string, number> = {};
+  const signoffCalls: any[] = [];
+  let releaseGatesData = {
+    releaseReady: true,
+    signedOff: false,
+    capabilitiesSummary: { verified: 25 },
+    auditChainIntegrity: { valid: true },
+    gates: [],
+  };
+
+  const projectAAuditLogs: any[] = [
+    {
+      id: 'AUD-INIT-001',
+      actor: 'Lead Architect',
+      timestamp: new Date().toISOString(),
+      action: 'PROJECT_INITIALIZED',
+      target: 'PRJ-DOCMONSTAKRAKIN',
+      stateHash: 'init-state-hash',
+    },
+  ];
+  const projectBAuditLogs: any[] = [
+    {
+      id: 'AUD-INIT-002',
+      actor: 'Lead Architect',
+      timestamp: new Date().toISOString(),
+      action: 'PROJECT_INITIALIZED',
+      target: 'PRJ-FIXTURE-B',
+      stateHash: 'init-b-state-hash',
+    },
+  ];
+
+  await page.route('**/api/**', async (route: Route) => {
+    const url = new URL(route.request().url()).pathname;
+    const method = route.request().method();
+    endpointFetchCounts[url] = (endpointFetchCounts[url] || 0) + 1;
+
+    const send = async (body: any, status = 200) => {
+      await route.fulfill({ status, json: body }).catch(() => {});
+    };
+
+    if (method === 'POST' && url === '/api/projects') {
+      const draft = route.request().postDataJSON();
+      postProjectsCalls.push(draft);
+      if (dynamicPostProjectResponseOverride) {
+        const custom = await dynamicPostProjectResponseOverride(draft);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      const createdProject = {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-CREATED-001',
+        name: draft.name || 'Synthetic Project C',
+        description: draft.description || 'Synthetic description',
+        stateVersion: 1,
+      };
+      projectCData = structuredClone(createdProject);
+      return send(createdProject, 201);
+    }
+
+    if (method === 'GET' && url === '/api/projects') {
+      projectListFetchCount++;
+      if (projectListHoldPromise) {
+        await projectListHoldPromise;
+      }
+      if (dynamicProjectListResponseOverride) {
+        const custom = await dynamicProjectListResponseOverride(projectListFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectsList);
+    }
+
+    if (url === '/api/governance/session') {
+      if (options.sessionAuthenticated === false) {
+        return send({ identity: null });
+      }
+      return send({
+        identity: {
+          name: 'Lead Architect',
+          roles: ['LEAD_ARCHITECT'],
+        },
+      });
+    }
+
+    // Release endpoints
+    if (url.endsWith('/release/gates') && method === 'GET') {
+      return send(releaseGatesData);
+    }
+    if (url.endsWith('/release/signoff') && method === 'POST') {
+      const body = route.request().postDataJSON();
+      signoffCalls.push(body);
+      return send({
+        ok: true,
+        report: {
+          releaseReady: true,
+          signedOff: true,
+          signoffDetails: {
+            actor: body.actor,
+            timestamp: new Date().toISOString(),
+            auditEventId: 'AUD-REL-001',
+          },
+        },
+      });
+    }
+
+    // Projects endpoints
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN') {
+      projectAFetchCount++;
+      if (projectAHoldPromise) {
+        await projectAHoldPromise;
+      }
+      if (dynamicProjectAResponseOverride) {
+        const custom = await dynamicProjectAResponseOverride(projectAFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectAData);
+    }
+    if (url === '/api/projects/PRJ-FIXTURE-B') {
+      return send(projectBData);
+    }
+    if (url === '/api/projects/PRJ-CREATED-001') {
+      projectCFetchCount++;
+      if (projectCHoldPromise) {
+        await projectCHoldPromise;
+      }
+      if (dynamicProjectCResponseOverride) {
+        const custom = await dynamicProjectCResponseOverride(projectCFetchCount);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectCData);
+    }
+
+    // Authoritative Audit endpoints
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/audit') {
+      auditFetchCount++;
+      if (dynamicAuditResponseOverride) {
+        const custom = await dynamicAuditResponseOverride('PRJ-DOCMONSTAKRAKIN', auditFetchCount, saveCalls.length);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      if (auditHoldPromise) {
+        await auditHoldPromise;
+      }
+      return send(projectAAuditLogs);
+    }
+
+    if (url === '/api/projects/PRJ-FIXTURE-B/audit') {
+      if (dynamicAuditResponseOverride) {
+        const custom = await dynamicAuditResponseOverride('PRJ-FIXTURE-B', 1, saveCalls.length);
+        if (custom) {
+          return send(custom.body, custom.status);
+        }
+      }
+      return send(projectBAuditLogs);
+    }
+
+    // Controlled docs catalog
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs' || url === '/api/projects/PRJ-FIXTURE-B/docs' || url === '/api/projects/PRJ-CREATED-001/docs') {
+      if (options.refreshFails && saveCalls.length > 0) {
+        return send({ error: 'Catalog refresh failed.' }, 500);
+      }
+      return send([currentDocSummary]);
+    }
+
+    // Diff
+    if (url.endsWith('/diff') && method === 'POST') {
+      const body = route.request().postDataJSON();
+      return send({
+        documentId: 'DOC-CTRL-002',
+        oldHash: body.baseSha256,
+        candidateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+        isStale: false,
+        hasChanges: true,
+        additions: 1,
+        deletions: 0,
+        changedLines: 1,
+        unifiedDiff: '--- a/docs/00_control/PROJECT_STATE.md\n+++ b/docs/00_control/PROJECT_STATE.md\n@@ -1,2 +1,3 @@\n+updated line',
+      } as DocumentDiffResponse);
+    }
+
+    // Validate
+    if (url.endsWith('/validate') && method === 'POST') {
+      return send({
+        documentId: 'DOC-CTRL-002',
+        valid: true,
+        errors: [],
+        warnings: [],
+      } as DocumentValidationResponse);
+    }
+
+    // Save
+    if (url.endsWith('/save') && method === 'POST') {
+      const body = route.request().postDataJSON();
+      saveCalls.push(body);
+
+      if (options.saveResponseOverride) {
+        const custom = await options.saveResponseOverride(body);
+        if (custom.body?.stateVersion) {
+          projectAData.stateVersion = custom.body.stateVersion;
+          projectA.stateVersion = custom.body.stateVersion;
+        }
+        if (custom.body?.newSha256) {
+          currentDocContent = {
+            ...currentDocContent,
+            rawSha256: custom.body.newSha256,
+            document: {
+              ...currentDocContent.document,
+              sha256Digest: custom.body.newSha256,
+              currentSha256: custom.body.newSha256,
+            },
+          };
+        }
+        return route.fulfill({ status: custom.status, json: custom.body }).catch(() => {});
+      }
+
+      const nextVersion = 121;
+      projectAData.stateVersion = nextVersion;
+      projectA.stateVersion = nextVersion;
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: nextVersion,
+        auditEventId: 'AUD-SYNC-TEST-001',
+        timestamp: new Date().toISOString(),
+      };
+
+      projectAAuditLogs.push({
+        id: resp.auditEventId,
+        actor: 'Lead Architect',
+        timestamp: resp.timestamp,
+        action: 'DOCUMENT_UPDATED',
+        target: resp.documentId,
+        stateHash: resp.newSha256,
+        details: {
+          path: resp.path,
+          previousSha256: resp.previousSha256,
+          newSha256: resp.newSha256,
+          stateVersion: resp.stateVersion,
+        },
+      });
+
+      return send(resp);
+    }
+
+    // Controlled doc content
+    if (url === '/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002' || url === '/api/projects/PRJ-FIXTURE-B/docs/DOC-CTRL-002') {
+      if (options.refreshFails && saveCalls.length > 0) {
+        return send({ error: 'Content refresh failed.' }, 500);
+      }
+      return send(currentDocContent);
+    }
+
+    // Project sub-resources
+    if (
+      url.startsWith('/api/projects/PRJ-DOCMONSTAKRAKIN/') ||
+      url.startsWith('/api/projects/PRJ-FIXTURE-B/') ||
+      url.startsWith('/api/projects/PRJ-CREATED-001/')
+    ) {
+      const suffix = url.split('/').pop();
+      if (suffix === 'next-action') {
+        return send({ id: 'ACT-01', title: 'Review', reason: 'None', blocks: [], priority: 'LOW' });
+      }
+      return send([]);
+    }
+
+    return send({ error: 'Not found' }, 404);
+  });
+
+  if (options.initialProjects && options.initialProjects.length === 0) {
+    await page.goto(base, { waitUntil: 'domcontentloaded' });
+  } else {
+    await page.goto(`${base}?project=PRJ-DOCMONSTAKRAKIN`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Select project' }).waitFor();
+    await page.waitForFunction(() => {
+      const text = document.querySelector('header button')?.textContent || '';
+      return text.includes('docmonstakrakin') && !text.includes('No Active Projects');
+    });
+  }
+
+  return {
+    page,
+    saveCalls,
+    getPostProjectsCalls: () => postProjectsCalls,
+    setPostProjectResponseOverride: (fn: ((draft: any) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicPostProjectResponseOverride = fn;
+    },
+    setProjectCData: (d: any) => {
+      projectCData = d;
+    },
+    setProjectCResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectCResponseOverride = fn;
+    },
+    getProjectCFetchCount: () => projectCFetchCount,
+    getProjectAFetchCount: () => projectAFetchCount,
+    holdProjectAResponse: (p: Promise<void> | null) => {
+      projectAHoldPromise = p;
+    },
+    setProjectAResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectAResponseOverride = fn;
+    },
+    getAuditFetchCount: () => auditFetchCount,
+    holdAuditResponse: (p: Promise<void> | null) => {
+      auditHoldPromise = p;
+    },
+    setAuditResponseOverride: (fn: ((projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicAuditResponseOverride = fn;
+    },
+    getProjectAAuditLogs: () => projectAAuditLogs,
+    getProjectBAuditLogs: () => projectBAuditLogs,
+    setProjectAData: (d: any) => {
+      projectAData = d;
+    },
+    setProjectBData: (d: any) => {
+      projectBData = d;
+    },
+    setProjectsList: (l: any) => {
+      projectsList = l;
+    },
+    getProjectListFetchCount: () => projectListFetchCount,
+    holdProjectListResponse: (p: Promise<void> | null) => {
+      projectListHoldPromise = p;
+    },
+    setProjectListResponseOverride: (fn: ((callCount: number) => Promise<{ status: number; body: any } | null>) | null) => {
+      dynamicProjectListResponseOverride = fn;
+    },
+    holdProjectCResponse: (p: Promise<void> | null) => {
+      projectCHoldPromise = p;
+    },
+    getSignoffCalls: () => signoffCalls,
+    setReleaseGatesData: (d: any) => {
+      releaseGatesData = d;
+    },
+    getFetchCountFor: (endpoint: string) => endpointFetchCounts[endpoint] || 0,
+    close: async () => {
+      await page.close();
+    },
+  };
+}
+
+// Helper: navigate to Controlled Docs view and execute save workflow
+async function executeSaveWorkflow(page: Page, reason = 'Routine governance update') {
+  // Navigate to Controlled Documents view via sidebar
+  await page.getByRole('button', { name: 'Reports & Export' }).click();
+  await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+
+  // Select DOC-CTRL-002
+  await page.locator('[data-testid="doc-item-DOC-CTRL-002"]').click();
+  await page.locator('[data-testid="doc-title"]').waitFor();
+
+  // Step 2: Edit Draft
+  await page.locator('[data-testid="btn-edit-document"]').click();
+  const editor = page.locator('[data-testid="draft-editor-textarea"]');
+  await editor.waitFor();
+  await editor.fill('# Project State\n\nUpdated governance baseline content for version sync test.\n');
+
+  // Step 3: Preview Changes (Diff)
+  await page.locator('[data-testid="btn-preview-diff"]').click();
+  await page.locator('[data-testid="diff-view"]').waitFor();
+
+  // Step 4: Validate Changes
+  await page.locator('[data-testid="btn-validate"]').click();
+  await page.locator('[data-testid="validation-view"]').waitFor();
+
+  // Step 5: Proceed to Governance Save modal
+  await page.locator('[data-testid="btn-proceed-to-save"]').click();
+  await page.locator('[data-testid="doc-save-modal"]').waitFor();
+
+  // Fill reason and check confirmation
+  await page.locator('[data-testid="modal-save-reason"]').fill(reason);
+  await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+
+  // Step 6: Commit Save
+  const commitBtn = page.locator('[data-testid="btn-confirm-save"]');
+  await commitBtn.click();
+}
+
+console.log('------------------------------------------------------------');
+console.log('DMK Controlled Document Project Version Synchronization Test');
+console.log('------------------------------------------------------------');
+
+// Scenario 1 & 2: Successful Save and Success Banner Consistency
+await test('Scenario 1 & 2: Successful save updates TopBar to v121 and matches banner without reload', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    // Verify initial TopBar version is v120
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/, 'TopBar must start at v120');
+
+    // Execute save workflow
+    await executeSaveWorkflow(page);
+
+    // Save success banner displays version 121
+    const banner = page.locator('[data-testid="save-success-banner"]');
+    await banner.waitFor();
+    const bannerText = await banner.innerText();
+    assert.match(bannerText, /121/, 'Save banner must display confirmed version 121');
+
+    // TopBar MUST display v121 without any page refresh!
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must immediately display v121 after save');
+
+    // Project selector dropdown also reflects v121
+    await topBarProjectBtn.click();
+    const activeProjectInList = page.locator('button').filter({ hasText: 'docmonstakrakin' }).first();
+    assert.match(await activeProjectInList.innerText(), /docmonstakrakin/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 3: No Component Remount
+await test('Scenario 3: ControlledDocsView remains mounted, preserving editor context & success banner', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // ControlledDocsView is still mounted and showing save success
+    await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+    // Document DOC-CTRL-002 remains selected
+    assert.equal(await page.locator('[data-testid="doc-title"]').innerText(), 'Project State & Governance Baseline');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 4: Failed Save (HTTP 500)
+await test('Scenario 4: Failed save does not advance TopBar version', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async () => ({
+      status: 500,
+      body: { error: 'Internal server error during persistence.' },
+    }),
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    await executeSaveWorkflow(page);
+
+    // Modal shows error
+    await page.locator('[data-testid="doc-save-modal"]').waitFor();
+    const errorText = await page.locator('[data-testid="save-error-banner"]').innerText();
+    assert.match(errorText, /Internal server error/);
+
+    // TopBar remains v120
+    assert.match(await topBarProjectBtn.innerText(), /v120/, 'TopBar must remain v120 on failed save');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 5: Signed-Out Save (HTTP 401)
+await test('Scenario 5: Signed-Out Save disables save progression and preserves TopBar version', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    sessionAuthenticated: false,
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    // Navigate to docs and attempt to open save modal
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="doc-item-DOC-CTRL-002"]').click();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+
+    // The save dialog should show session error and disable commit
+    await page.locator('[data-testid="doc-save-modal"]').waitFor();
+    const commitBtn = page.locator('[data-testid="btn-confirm-save"]');
+    assert.equal(await commitBtn.isDisabled(), true, 'Save button must be disabled when signed out');
+
+    // TopBar remains v120
+    assert.match(await topBarProjectBtn.innerText(), /v120/, 'TopBar must remain v120');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 6: Stale Document (HTTP 409)
+await test('Scenario 6: Stale document response (HTTP 409) does not advance version', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async () => ({
+      status: 409,
+      body: { error: 'DOCUMENT_STALE: Base SHA mismatch.' },
+    }),
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    await executeSaveWorkflow(page);
+
+    // Shows stale error banner
+    await page.locator('[data-testid="canonical-refresh-error"]').waitFor();
+
+    // TopBar remains v120
+    assert.match(await topBarProjectBtn.innerText(), /v120/, 'TopBar must remain v120 on stale document response');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 7: Uncertain Save (Timeout)
+await test('Scenario 7: Uncertain save timeout does not update TopBar version', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async () => ({
+      status: 504,
+      body: { error: 'Controlled docs request timed out.' },
+    }),
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    await executeSaveWorkflow(page);
+
+    // Shows uncertain notice
+    await page.locator('[data-testid="uncertain-save-warning"]').waitFor();
+
+    // TopBar remains v120
+    assert.match(await topBarProjectBtn.innerText(), /v120/, 'TopBar must remain v120 on uncertain timeout');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 8: Project Switching
+await test('Scenario 8: Switching to Project B while Project A save is in flight preserves Project B', async () => {
+  let resolveSave!: () => void;
+  const saveHoldPromise = new Promise<void>((r) => (resolveSave = r));
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+    saveResponseOverride: async (body) => {
+      await saveHoldPromise;
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: '3333333333333333333333333333333333333333333333333333333333333333',
+          stateVersion: 121,
+          auditEventId: 'AUD-CROSS-PROJ-001',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Navigate to Controlled Docs in Project A and click save
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="doc-item-DOC-CTRL-002"]').click();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('Switching test draft');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Switching test');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+
+    // Trigger save (which holds)
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+
+    // Switch to Project B while save is holding
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', 'PRJ-FIXTURE-B');
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    // Verify Project B is active and showing v50
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/, 'Project B must show v50');
+
+    // Now release Project A's save response
+    resolveSave();
+    await page.waitForTimeout(300);
+
+    // Project B must STILL be active and show v50 (NOT Project A or v121!)
+    assert.match(await topBarProjectBtn.innerText(), /Fixture B/, 'Project B must remain active');
+    assert.match(await topBarProjectBtn.innerText(), /v50/, 'Project B must retain its own version v50');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 9 (Test E): Out-of-Order Stale Responses (Monotonic & Whole-Snapshot Rejection via TopBar Selector)
+await test('Scenario 9 (Test E): UI-triggered project fetch rejecting deferred stale snapshot as a whole, preserving confirmed state, and recovering via retry', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar updated to v121');
+
+    // Baseline project request count
+    const baselineFetches = harness.getProjectAFetchCount();
+    assert.ok(baselineFetches >= 1, 'Initial load issued at least 1 project fetch');
+
+    // Prepare deferred promise to hold the network request
+    let resolveStaleFetch!: () => void;
+    const staleHoldPromise = new Promise<void>((r) => (resolveStaleFetch = r));
+    harness.holdProjectAResponse(staleHoldPromise);
+
+    // Configure override to return stale snapshot with modified name/description
+    harness.setProjectAResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          ...structuredClone(INITIAL_PROJECTS[0]),
+          id: 'PRJ-DOCMONSTAKRAKIN',
+          name: 'OUTDATED STALE NAME',
+          description: 'STALE OUTDATED DESCRIPTION',
+          stateVersion: 120, // Stale!
+        },
+      };
+    });
+
+    // Trigger genuine asynchronous project fetch via official user-facing TopBar project selector
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
+
+    // Assert that the request count increased while the request is in flight
+    assert.ok(
+      harness.getProjectAFetchCount() > baselineFetches,
+      `Request count must increase via TopBar selector (was ${baselineFetches}, now ${harness.getProjectAFetchCount()})`
+    );
+
+    // Release the deferred stale response
+    resolveStaleFetch();
+    harness.holdProjectAResponse(null);
+
+    // Stale snapshot warning must be shown
+    const staleWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await staleWarning.waitFor({ timeout: 4000 });
+    const warningText = await staleWarning.innerText();
+    assert.match(warningText, /Project state snapshot is older than the confirmed version/);
+
+    // Verify stale snapshot was rejected as a whole:
+    // 1. TopBar still displays v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must remain v121');
+    // 2. UI does not show stale name or description
+    const contentText = await page.locator('main').innerText();
+    assert.doesNotMatch(contentText, /STALE OUTDATED DESCRIPTION/, 'UI must NOT adopt stale description');
+    assert.doesNotMatch(contentText, /OUTDATED STALE NAME/, 'UI must NOT adopt stale name');
+
+    // Deliver authoritative snapshot with stateVersion: 121 and updated description
+    harness.setProjectAResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          ...structuredClone(INITIAL_PROJECTS[0]),
+          id: 'PRJ-DOCMONSTAKRAKIN',
+          name: 'docmonstakrakin',
+          description: 'FRESH AUTHORITATIVE DESCRIPTION',
+          stateVersion: 121,
+        },
+      };
+    });
+
+    // Click retry button in stale warning banner
+    await page.locator('[data-testid="btn-retry-project-fetch"]').click();
+
+    // Verify warning cleared and UI updated
+    await staleWarning.waitFor({ state: 'detached', timeout: 4000 });
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar still v121');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 10: Consecutive Saves
+await test('Scenario 10: Consecutive saves advance version monotonically (120 -> 121 -> 122)', async () => {
+  let saveCount = 0;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      saveCount++;
+      const nextVer = 120 + saveCount;
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: '4'.repeat(60) + String(nextVer).padStart(4, '0'),
+          stateVersion: nextVer,
+          auditEventId: `AUD-CONSECUTIVE-${nextVer}`,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save 1 -> 121
+    await executeSaveWorkflow(page, 'First save');
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'First save must advance to v121');
+
+    // Save 2 -> 122
+    await page.locator('[data-testid="btn-edit-document"]').waitFor();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('Second save content');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Second save');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+
+    // TopBar updates to v122
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v122'));
+    assert.match(await topBarProjectBtn.innerText(), /v122/, 'Second save must advance to v122');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 11: Refresh Failure
+await test('Scenario 11: Save success followed by refresh failure preserves confirmed TopBar version', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    refreshFails: true, // Post-save canonical refresh fails
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    await executeSaveWorkflow(page);
+
+    // Canonical refresh error is shown
+    await page.locator('[data-testid="canonical-refresh-error"]').waitFor();
+
+    // BUT TopBar version was successfully updated to v121!
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121 despite refresh failure');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 12: Audit Consistency
+await test('Scenario 12: Saved auditEventId and stateVersion match server acknowledged response', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    const banner = page.locator('[data-testid="save-success-banner"]');
+    await banner.waitFor();
+    const bannerText = await banner.innerText();
+
+    assert.match(bannerText, /AUD-SYNC-TEST-001/, 'Banner must display confirmed audit event ID');
+    assert.match(bannerText, /121/, 'Banner must display confirmed stateVersion');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 13 (Case A): Successful Audit Refresh
+await test('Scenario 13 (Case A): Successful controlled document save synchronizes authoritative audit ledger in EvidenceView without reload', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Save-success banner rendered
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit tab in Sidebar
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+
+    // Switch to Append-Only Audit sub-tab
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Assert audit status badge shows LEDGER SYNCHRONIZED
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Assert AUD-SYNC-TEST-001 is present in the table
+    const auditTableText = await page.locator('table').innerText();
+    assert.match(auditTableText, /AUD-SYNC-TEST-001/, 'Committed auditEventId must appear in audit ledger table');
+    assert.match(auditTableText, /DOCUMENT_UPDATED/);
+
+    // Assert warning is NOT displayed
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    assert.equal(await warning.isVisible(), false, 'Warning must not be displayed on successful audit sync');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 14 (Case B): Delayed Audit Refresh
+await test('Scenario 14 (Case B): Delayed audit response displays refreshing status while preserving save confirmation, then transitions to synchronized', async () => {
+  let resolveAudit!: () => void;
+  const auditHoldPromise = new Promise<void>((r) => (resolveAudit = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // Hold audit response
+    harness.holdAuditResponse(auditHoldPromise);
+
+    // Execute save workflow
+    await executeSaveWorkflow(page);
+
+    // Save banner is visible and TopBar shows v121
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // While held, refreshing indicator must be displayed and badge says LEDGER SYNCHRONIZING...
+    const refreshingIndicator = page.locator('[data-testid="audit-sync-refreshing"]');
+    await refreshingIndicator.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZING/);
+
+    // Release audit response
+    resolveAudit();
+
+    // Status updates to LEDGER SYNCHRONIZED and refreshing indicator detaches
+    await refreshingIndicator.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const auditTableText = await page.locator('table').innerText();
+    assert.match(auditTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 15 (Case C): Failed Audit Refresh (HTTP 500)
+await test('Scenario 15 (Case C): Audit refresh failure displays recoverable warning, preserves existing audit records, and retry succeeds', async () => {
+  let auditCallCount = 0;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _call, saveCallsCount) => {
+      if (saveCallsCount === 0) {
+        return null;
+      }
+      auditCallCount++;
+      if (auditCallCount === 1) {
+        // First post-save audit fetch fails with HTTP 500
+        return { status: 500, body: { error: 'Internal audit service error' } };
+      }
+      // Subsequent fetch succeeds (returns default Project A audit logs)
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Save banner remains visible and TopBar is v121
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Status is unconfirmed and warning banner is shown
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+
+    // Existing audit records (AUD-INIT-001) must be preserved!
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/, 'Existing audit events must be preserved during refresh failure');
+
+    // Click retry button
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+
+    // Warning disappears, status becomes LEDGER SYNCHRONIZED, and new event is displayed
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    await warning.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const updatedTableText = await page.locator('table').innerText();
+    assert.match(updatedTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 16 (Case D): Audit Response Missing Committed Event
+await test('Scenario 16 (Case D): Audit response omitting the committed event leaves status unconfirmed with warning', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async () => {
+      // Returns 200 array but omitting AUD-SYNC-TEST-001
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: new Date().toISOString(),
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Status is unconfirmed and warning banner is shown
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 17 (Case E): Project Switching Isolation
+await test('Scenario 17 (Case E): Project switching during audit refresh isolates audit state and does not leak events into Project B', async () => {
+  let resolveAuditA!: () => void;
+  const auditAHoldPromise = new Promise<void>((r) => (resolveAuditA = r));
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Hold audit response for Project A
+    harness.holdAuditResponse(auditAHoldPromise);
+
+    // Save on Project A
+    await executeSaveWorkflow(page);
+
+    // Switch to Project B while Project A's audit fetch is holding
+    await page.evaluate(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('project', 'PRJ-FIXTURE-B');
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    // Wait for Project B to load
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Release Project A's audit response
+    resolveAuditA();
+    await page.waitForTimeout(300);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B must show its own audit events, NEVER Project A's AUD-SYNC-TEST-001!
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-002/, 'Project B must show its own audit events');
+    assert.doesNotMatch(tableText, /AUD-SYNC-TEST-001/, 'Project A audit event must NOT leak into Project B');
+    assert.match(await topBarProjectBtn.innerText(), /Fixture B/);
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 18 (Case F): Out-of-Order Audit Responses
+await test('Scenario 18 (Case F): Consecutive saves handle out-of-order audit responses preserving the newer audit state', async () => {
+  let saveCount = 0;
+  let postSaveAuditCount = 0;
+  let resolveAudit1!: () => void;
+  const audit1HoldPromise = new Promise<void>((r) => (resolveAudit1 = r));
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      saveCount++;
+      const nextVer = 120 + saveCount;
+      const eventId = `AUD-CONSEC-${nextVer}`;
+      const nowIso = new Date().toISOString();
+      const newHash = '5'.repeat(60) + String(nextVer).padStart(4, '0');
+
+      harness.getProjectAAuditLogs().push({
+        id: eventId,
+        actor: 'Lead Architect',
+        timestamp: nowIso,
+        action: 'DOCUMENT_UPDATED',
+        target: 'DOC-CTRL-002',
+        stateHash: newHash,
+        details: {
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: newHash,
+          stateVersion: nextVer,
+        },
+      });
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: newHash,
+          stateVersion: nextVer,
+          auditEventId: eventId,
+          timestamp: nowIso,
+        },
+      };
+    },
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) {
+        return null;
+      }
+      postSaveAuditCount++;
+      if (postSaveAuditCount === 1) {
+        // Save 1's audit fetch is delayed
+        await audit1HoldPromise;
+        // When released, returns list containing only Save 1
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-CONSEC-121',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '5'.repeat(64),
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save 1 (v121) - audit response held
+    await executeSaveWorkflow(page, 'Save 1');
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Save 2 (v122) - audit response resolves immediately
+    await page.locator('[data-testid="btn-edit-document"]').waitFor();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('Save 2 edit content');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Save 2');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+
+    // Wait for v122
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v122'));
+    assert.match(await topBarProjectBtn.innerText(), /v122/);
+
+    // Now release the delayed Save 1 audit response
+    resolveAudit1();
+    await page.waitForTimeout(300);
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Verify AUD-CONSEC-122 is present in the table (never overwritten by delayed Save 1 response!)
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-CONSEC-122/, 'Newer audit state must be preserved over delayed earlier response');
+    assert.match(tableText, /AUD-CONSEC-121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 19 (Cases I & J): Negative Outcomes & No Duplication / Synthesis
+await test('Scenario 19 (Cases I & J): Failed saves do not trigger false audit sync and ledger contains zero duplicated or synthetic records', async () => {
+  let auditTriggered = false;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async () => ({
+      status: 409,
+      body: { error: 'DOCUMENT_STALE: Base SHA mismatch.' },
+    }),
+    auditResponseOverride: async (_projId, callCount) => {
+      if (callCount > 1) {
+        auditTriggered = true;
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+
+    // Stale error banner is shown
+    await page.locator('[data-testid="canonical-refresh-error"]').waitFor();
+
+    // Navigate to Evidence & Audit
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Verify audit status is CURRENT (no pending sync failed or unconfirmed)
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    assert.equal(auditTriggered, false, 'Failed save must not trigger audit sync');
+
+    // Verify table has exactly 1 event (AUD-INIT-001) with zero duplicates
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/);
+    assert.doesNotMatch(tableText, /DOCUMENT_UPDATED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 20 (Test A): Exact Audit Identity - Isolated Invalid Fixtures
+await test('Scenario 20 (Test A): Audit response with mismatched fields (wrong target, duplicate IDs) is rejected and leaves ledger UNCONFIRMED', async () => {
+  let auditAttempt = 0;
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) return null;
+      auditAttempt++;
+      if (auditAttempt === 1) {
+        // Fixture 1: Wrong target
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-SYNC-TEST-001',
+              actor: 'Lead Architect',
+              timestamp: '2026-10-12T10:00:00.000Z',
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-WRONG-TARGET',
+              stateHash: 'valid-chain-hash',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '0'.repeat(64),
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      } else if (auditAttempt === 2) {
+        // Fixture 2: Duplicate event ID
+        const validItem = {
+          id: 'AUD-SYNC-TEST-001',
+          actor: 'Lead Architect',
+          timestamp: '2026-10-12T10:00:00.000Z',
+          action: 'DOCUMENT_UPDATED',
+          target: 'DOC-CTRL-002',
+          stateHash: 'valid-chain-hash',
+          details: {
+            path: 'docs/00_control/PROJECT_STATE.md',
+            previousSha256: '0'.repeat(64),
+            newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+            stateVersion: 121,
+          },
+        };
+        return {
+          status: 200,
+          body: [validItem, { ...validItem }],
+        };
+      }
+      // Authoritative valid item
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Fixture 1 rejected -> LEDGER UNCONFIRMED
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/, 'Mismatched target must produce UNCONFIRMED');
+
+    // Retry -> Fixture 2 (duplicate event ID) rejected -> LEDGER UNCONFIRMED
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForTimeout(300);
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/, 'Duplicate event ID must produce UNCONFIRMED');
+
+    // Retry -> Authoritative valid item -> LEDGER SYNCHRONIZED
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 21 (Blocker 2): Genuine Project-List Integration Request & Staleness Rejection
+await test('Scenario 21 (Blocker 2): Genuine project-list request rejects stale metadata and accepts fresh metadata without navigating away (Tests A-E)', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 2: Confirm at least one initial GET /api/projects occurred
+    const initialListFetches = harness.getProjectListFetchCount();
+    assert.ok(initialListFetches >= 1, `At least one initial GET /api/projects request must have occurred (was: ${initialListFetches})`);
+
+    // Step 3 & 4: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace via sidebar
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /Active project/);
+
+    // -------------------------------------------------------------
+    // Test A: Stale project list (v120) rejected via real request
+    // -------------------------------------------------------------
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        description: 'STALE OUTDATED DESCRIPTION',
+        stateVersion: 120, // Stale!
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    const countBeforeRefresh = harness.getProjectListFetchCount();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+
+    // Verify request count increments through an actual GET /api/projects call
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    const countAfterRefresh = harness.getProjectListFetchCount();
+    assert.ok(
+      countAfterRefresh > countBeforeRefresh,
+      `No additional GET /api/projects request occurred: count before was ${countBeforeRefresh}, count after was ${countAfterRefresh}`
+    );
+
+    // Stale metadata rejected: Project card retains confirmed v121 and legitimate metadata
+    assert.match(await cardA.innerText(), /121/, 'Project card must preserve confirmed stateVersion 121');
+    assert.doesNotMatch(await cardA.innerText(), /STALE OUTDATED NAME/, 'Project card must NOT adopt stale name');
+    assert.doesNotMatch(await cardA.innerText(), /STALE OUTDATED DESCRIPTION/, 'Project card must NOT adopt stale description');
+    assert.match(await cardA.innerText(), /Active project/, 'Active project must remain intact');
+
+    // TopBar preserves confirmed v121 and active project identity
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121');
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), /STALE OUTDATED NAME/, 'TopBar must NOT adopt stale project name');
+
+    // User remains in Projects workspace (no reset or redirect)
+    assert.ok(await page.locator('[aria-label="Projects workspace"]').isVisible(), 'Must remain in Projects workspace');
+
+    // -------------------------------------------------------------
+    // Test B: Fresh project list (v121) accepted via real request
+    // -------------------------------------------------------------
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'FRESH CONFIRMED NAME',
+        description: 'FRESH CONFIRMED DESCRIPTION',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    const countBeforeFresh = harness.getProjectListFetchCount();
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('FRESH CONFIRMED NAME'));
+
+    const countAfterFresh = harness.getProjectListFetchCount();
+    assert.ok(countAfterFresh > countBeforeFresh, 'Fresh refresh must issue actual GET /api/projects');
+
+    // Fresh metadata accepted and displayed on card
+    assert.match(await cardA.innerText(), /FRESH CONFIRMED NAME/, 'Card must display fresh accepted name');
+    assert.match(await cardA.innerText(), /FRESH CONFIRMED DESCRIPTION/, 'Card must display fresh accepted description');
+    assert.match(await cardA.innerText(), /121/, 'Card must display confirmed stateVersion 121');
+    assert.match(await cardA.innerText(), /Active project/, 'Active project must remain intact');
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar must preserve confirmed v121');
+
+    // -------------------------------------------------------------
+    // Test C: Delayed / deferred response handling & loading state
+    // -------------------------------------------------------------
+    let resolveHold!: () => void;
+    const holdPromise = new Promise<void>((r) => (resolveHold = r));
+    harness.holdProjectListResponse(holdPromise);
+
+    await refreshBtn.click();
+    // Verify loading indicator and disabled button while request is in flight
+    assert.strictEqual(await refreshBtn.isDisabled(), true, 'Refresh button must be disabled while fetch is in-flight');
+    const spinIcon = refreshBtn.locator('svg.animate-spin');
+    assert.ok((await spinIcon.count()) > 0, 'Spin animation must be active during in-flight fetch');
+
+    // Release in-flight response
+    resolveHold();
+    harness.holdProjectListResponse(null);
+
+    // Wait for button to re-enable
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.strictEqual(await refreshBtn.isDisabled(), false, 'Refresh button must re-enable once resolved');
+
+    // -------------------------------------------------------------
+    // Test D: HTTP 500 error & recovery via retry button
+    // -------------------------------------------------------------
+    harness.setProjectListResponseOverride(async () => ({
+      status: 500,
+      body: { error: 'Failed to fetch project list (simulated HTTP 500)' },
+    }));
+
+    await refreshBtn.click();
+    const listErrorAlert = page.locator('div[role="alert"]').filter({ hasText: 'Cannot load the project list' });
+    await listErrorAlert.waitFor();
+    assert.match(await listErrorAlert.innerText(), /Cannot load the project list/);
+
+    const retryBtn = listErrorAlert.getByRole('button', { name: 'Retry' });
+    assert.ok((await retryBtn.count()) > 0, 'Retry button must exist in error alert');
+
+    // Clear override and click retry
+    harness.setProjectListResponseOverride(null);
+    await retryBtn.click();
+    await listErrorAlert.waitFor({ state: 'detached' });
+
+    // Card remains intact and active
+    assert.match(await cardA.innerText(), /Active project/);
+    assert.ok(await page.locator('[aria-label="Projects workspace"]').isVisible());
+
+    // -------------------------------------------------------------
+    // Test E: Cross-project isolation & no side effects
+    // -------------------------------------------------------------
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'FRESH CONFIRMED NAME',
+        description: 'FRESH CONFIRMED DESCRIPTION',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Isolated Update',
+        description: 'Updated Project B metadata',
+        stateVersion: 51,
+      },
+    ]);
+
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Isolated Update'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /Fixture B Isolated Update/);
+    assert.match(await cardB.innerText(), /51/);
+    assert.doesNotMatch(await cardB.innerText(), /Active project/, 'Project B must not become active');
+
+    // Project A is still active and untouched
+    assert.match(await cardA.innerText(), /Active project/);
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+  } finally {
+    harness.holdProjectListResponse(null);
+    harness.setProjectListResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 22 (Test C): Same-Project Re-selection Preserves Unconfirmed Audit State
+await test('Scenario 22 (Test C): Re-selecting active project through TopBar preserves unconfirmed audit status when project snapshot omits audit event', async () => {
+  let resolveAudit!: () => void;
+  const auditHoldPromise = new Promise<void>((r) => (resolveAudit = r));
+  let postSaveAuditCalls = 0;
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    auditResponseOverride: async (_projId, _callCount, saveCallsCount) => {
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // First post-save call is performAuditRefresh() -> hold it
+        await auditHoldPromise;
+        return null;
+      }
+      if (postSaveAuditCalls === 2) {
+        // Second post-save call is fetchProjectData() from project re-selection -> return snapshot omitting the committed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // Save document (advances to v121, performAuditRefresh holding)
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Re-select the same project through TopBar selector
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
+
+    // Wait for project snapshot reload to complete
+    await page.waitForTimeout(400);
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Crucial check: audit status must NOT be prematurely reset to CURRENT!
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await statusBadge.waitFor();
+    const badgeTextAfter = await statusBadge.innerText();
+    assert.ok(
+      badgeTextAfter.includes('SYNCHRONIZING') || badgeTextAfter.includes('UNCONFIRMED'),
+      `Status must remain unconfirmed after same-project re-selection (was: "${badgeTextAfter}")`
+    );
+
+    // Now release the authoritative audit response
+    resolveAudit();
+
+    // Status transitions to LEDGER SYNCHRONIZED
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 23 (Test D): A -> B -> A Navigation & Pending State Preservation
+await test('Scenario 23 (Test D): Navigation from Project A -> B -> A preserves Project A pending audit state without cross-project leakage and recovers upon valid refresh', async () => {
+  let resolveAuditA!: () => void;
+  const auditAHoldPromise = new Promise<void>((r) => (resolveAuditA = r));
+  let postSaveAuditCallsA = 0;
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId === 'PRJ-FIXTURE-B') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCallsA++;
+      if (postSaveAuditCallsA === 1) {
+        // Project A post-save refresh is held
+        await auditAHoldPromise;
+        return null;
+      }
+      if (postSaveAuditCallsA === 2) {
+        // Project A reload snapshot omits the committed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Save in Project A
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Switch to Project B via TopBar dropdown
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+
+    // Verify Project B is active
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B shows its own audit events, NEVER Project A's event
+    const bTableText = await page.locator('table').innerText();
+    assert.match(bTableText, /AUD-INIT-002/);
+    assert.doesNotMatch(bTableText, /AUD-SYNC-TEST-001/);
+
+    // Switch back to Project A via TopBar dropdown
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Verify Project A is active and shows v121
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Evidence & Audit in Project A
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project A is NOT prematurely marked synchronized while audit response is held!
+    const aStatusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await aStatusBadge.waitFor();
+    const aStatusText = await aStatusBadge.innerText();
+    assert.ok(
+      aStatusText.includes('SYNCHRONIZING') || aStatusText.includes('UNCONFIRMED'),
+      `Project A must not be prematurely marked synchronized upon returning (was: "${aStatusText}")`
+    );
+
+    // Release Project A audit response
+    resolveAuditA();
+
+    // Status transitions to LEDGER SYNCHRONIZED
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await aStatusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const aTableText = await page.locator('table').innerText();
+    assert.match(aTableText, /AUD-SYNC-TEST-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 24 (Test A - Blocker 1): Previously Confirmed Event Is Retained Across Later Project Refreshes
+await test('Scenario 24 (Test A - Blocker 1): Previously Confirmed Event Is Retained Across Later Project Refreshes', async () => {
+  let postSaveAuditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-FRESHNESS-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // Initial post-save authoritative audit refresh returns the confirmed event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-FRESHNESS-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (postSaveAuditCalls === 2) {
+        // Second call is from later project-data refresh snapshot -> returns audit array omitting AUD-FRESHNESS-001!
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: new Date().toISOString(),
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // Step 2 & 3: Perform successful save returning AUD-FRESHNESS-001 at v121
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    // Navigate to Evidence & Audit tab
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Step 5: Confirm application displays LEDGER SYNCHRONIZED and contains AUD-FRESHNESS-001
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    let tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-FRESHNESS-001/);
+
+    // Step 6: Trigger a later project-data refresh through the existing TopBar project selector
+    const baselineFetches = harness.getProjectAFetchCount();
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    const activeProjectOption = page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]');
+    await activeProjectOption.click();
+
+    // Verify a genuine project-data request occurred
+    await page.waitForTimeout(400);
+    assert.ok(harness.getProjectAFetchCount() > baselineFetches, 'Must issue a genuine project-data request');
+
+    // Step 7 & 8: Incomplete audit snapshot arrived omitting AUD-FRESHNESS-001.
+    // Core Invariant: The application must NOT accept the incomplete audit array as synchronized.
+    // It must reject the audit portion, preserve AUD-FRESHNESS-001, and report LEDGER UNCONFIRMED.
+    const badgeTextAfter = await statusBadge.innerText();
+    assert.doesNotMatch(badgeTextAfter, /SYNCHRONIZED/, 'Application must NOT report LEDGER SYNCHRONIZED when snapshot omits confirmed save event');
+    assert.match(badgeTextAfter, /UNCONFIRMED/, 'Status must become LEDGER UNCONFIRMED');
+    tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-FRESHNESS-001/, 'Previously confirmed event must NOT be erased from displayed ledger');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed Event Rejected & Recovery to Synchronized State
+await test('Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed Event Rejected & Recovery to Synchronized State', async () => {
+  let auditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-ALT-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      auditCalls++;
+      if (auditCalls === 1) {
+        // Initial post-save authoritative audit refresh returns authentic event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-ALT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (auditCalls === 2) {
+        // Second call: project-data snapshot with ALTERED newSha256 digest
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-ALT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: 'tampered-sha256-digest-that-does-not-match-saved-ack',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      // Third call: user clicks retry -> authoritative audit endpoint returns authentic records
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+          {
+            id: 'AUD-ALT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'DOCUMENT_UPDATED',
+            target: 'DOC-CTRL-002',
+            stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+            details: {
+              path: 'docs/00_control/PROJECT_STATE.md',
+              previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+              newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+              stateVersion: 121,
+            },
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Trigger later project refresh returning tampered/altered event
+    const baselineFetches = harness.getProjectAFetchCount();
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForTimeout(400);
+    assert.ok(harness.getProjectAFetchCount() > baselineFetches);
+
+    // Test B: Altered previously confirmed event rejected -> LEDGER UNCONFIRMED
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    const warning = page.locator('[data-testid="audit-sync-warning"]');
+    await warning.waitFor();
+
+    // Test C: Recovery to synchronized state upon subsequent valid authoritative audit response
+    await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    await warning.waitFor({ state: 'detached' });
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-ALT-001/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 26 (Tests D & E - Blocker 1): Multiple Confirmed Saves Watermark & Unverified Save Coexistence
+await test('Scenario 26 (Tests D & E - Blocker 1): Multiple Confirmed Saves Watermark & Unverified Save Coexistence', async () => {
+  let saveCount = 0;
+  let auditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+  const sha1 = '1'.repeat(60) + '0121';
+  const sha2 = '2'.repeat(60) + '0122';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      saveCount++;
+      const nextVer = 120 + saveCount;
+      const sha = nextVer === 121 ? sha1 : sha2;
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: sha,
+        stateVersion: nextVer,
+        auditEventId: `AUD-MULTI-00${saveCount}`,
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      auditCalls++;
+      if (saveCount === 1) {
+        // After Save 1: returns Save 1
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-MULTI-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: sha1,
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: sha1,
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      if (saveCount === 2) {
+        if (auditCalls === 2) {
+          // Post-save 2 refresh: returns both Save 1 and Save 2
+          return {
+            status: 200,
+            body: [
+              {
+                id: 'AUD-INIT-001',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'PROJECT_INITIALIZED',
+                target: 'PRJ-DOCMONSTAKRAKIN',
+                stateHash: 'init-state-hash',
+              },
+              {
+                id: 'AUD-MULTI-001',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'DOCUMENT_UPDATED',
+                target: 'DOC-CTRL-002',
+                stateHash: sha1,
+                details: {
+                  path: 'docs/00_control/PROJECT_STATE.md',
+                  previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                  newSha256: sha1,
+                  stateVersion: 121,
+                },
+              },
+              {
+                id: 'AUD-MULTI-002',
+                actor: 'Lead Architect',
+                timestamp: fixedIso,
+                action: 'DOCUMENT_UPDATED',
+                target: 'DOC-CTRL-002',
+                stateHash: sha2,
+                details: {
+                  path: 'docs/00_control/PROJECT_STATE.md',
+                  previousSha256: sha1,
+                  newSha256: sha2,
+                  stateVersion: 122,
+                },
+              },
+            ],
+          };
+        }
+        // auditCalls >= 3: snapshot omitting Save 1, containing only Save 2
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-MULTI-002',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: sha2,
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: sha1,
+                newSha256: sha2,
+                stateVersion: 122,
+              },
+            },
+          ],
+        };
+      }
+      return null;
+    },
+  });
+
+  try {
+    const { page } = harness;
+
+    // 1. Save A at v121
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // 2. Save B at v122
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+    await page.locator('[data-testid="doc-item-DOC-CTRL-002"]').click();
+    await page.locator('[data-testid="btn-edit-document"]').waitFor();
+    await page.locator('[data-testid="btn-edit-document"]').click();
+    await page.locator('[data-testid="draft-editor-textarea"]').fill('# Project State\n\nSave 2 content\n');
+    await page.locator('[data-testid="btn-preview-diff"]').click();
+    await page.locator('[data-testid="btn-validate"]').click();
+    await page.locator('[data-testid="btn-proceed-to-save"]').click();
+    await page.locator('[data-testid="modal-save-reason"]').fill('Second save');
+    await page.locator('[data-testid="modal-confirm-checkbox"]').check();
+    await page.locator('[data-testid="btn-confirm-save"]').click();
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // 3. Trigger project refresh returning snapshot containing B but omitting A
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForTimeout(400);
+
+    // Test D: Both A and B must remain required freshness evidence; omitting A is rejected!
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    let tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-MULTI-001/, 'Save A must remain preserved in displayed ledger');
+    assert.match(tableText, /AUD-MULTI-002/, 'Save B must remain preserved in displayed ledger');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 27 (Test F - Blocker 1): Navigation (A -> B -> A) Preserves Confirmed Audit Watermark
+await test('Scenario 27 (Test F - Blocker 1): Navigation (A -> B -> A) Preserves Confirmed Audit Watermark', async () => {
+  let postSaveAuditCalls = 0;
+  const fixedIso = '2026-10-12T12:00:00.000Z';
+
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    projectBVersion: 50,
+    saveResponseOverride: async (body) => {
+      const resp: DocumentSaveResponse = {
+        success: true,
+        documentId: 'DOC-CTRL-002',
+        path: 'docs/00_control/PROJECT_STATE.md',
+        previousSha256: body.baseSha256,
+        newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+        stateVersion: 121,
+        auditEventId: 'AUD-NAV-001',
+        timestamp: fixedIso,
+      };
+      return { status: 200, body: resp };
+    },
+    auditResponseOverride: async (projId, _callCount, saveCallsCount) => {
+      if (projId !== 'PRJ-DOCMONSTAKRAKIN') return null;
+      if (saveCallsCount === 0) return null;
+      postSaveAuditCalls++;
+      if (postSaveAuditCalls === 1) {
+        // Initial post-save refresh in Project A: returns verified event
+        return {
+          status: 200,
+          body: [
+            {
+              id: 'AUD-INIT-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'PROJECT_INITIALIZED',
+              target: 'PRJ-DOCMONSTAKRAKIN',
+              stateHash: 'init-state-hash',
+            },
+            {
+              id: 'AUD-NAV-001',
+              actor: 'Lead Architect',
+              timestamp: fixedIso,
+              action: 'DOCUMENT_UPDATED',
+              target: 'DOC-CTRL-002',
+              stateHash: '2222222222222222222222222222222222222222222222222222222222222222',
+              details: {
+                path: 'docs/00_control/PROJECT_STATE.md',
+                previousSha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+                stateVersion: 121,
+              },
+            },
+          ],
+        };
+      }
+      // When navigating back to Project A, snapshot omits AUD-NAV-001!
+      return {
+        status: 200,
+        body: [
+          {
+            id: 'AUD-INIT-001',
+            actor: 'Lead Architect',
+            timestamp: fixedIso,
+            action: 'PROJECT_INITIALIZED',
+            target: 'PRJ-DOCMONSTAKRAKIN',
+            stateHash: 'init-state-hash',
+          },
+        ],
+      };
+    },
+  });
+
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // 1. Confirm event AUD-NAV-001 in Project A
+    await executeSaveWorkflow(page);
+    await page.locator('[data-testid="save-success-banner"]').waitFor();
+
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+    assert.match(await page.locator('table').innerText(), /AUD-NAV-001/);
+
+    // 2. Switch to Project B
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+    assert.match(await topBarProjectBtn.innerText(), /v50/);
+
+    // Navigate to Evidence & Audit in Project B
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // Project B table must show its own events and NOT AUD-NAV-001
+    const bTableText = await page.locator('table').innerText();
+    assert.match(bTableText, /AUD-INIT-002/);
+    assert.doesNotMatch(bTableText, /AUD-NAV-001/);
+
+    // 3. Switch back to Project A
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+
+    // Navigate to Evidence & Audit in Project A
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    // 4. Project A snapshot arrived omitting AUD-NAV-001 -> rejected!
+    await page.waitForTimeout(400);
+    assert.match(await statusBadge.innerText(), /LEDGER UNCONFIRMED/);
+    const aTableText = await page.locator('table').innerText();
+    assert.match(aTableText, /AUD-NAV-001/, 'AUD-NAV-001 watermark preserved in Project A across navigation');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Saves Loads Cleanly
+await test('Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Saves Loads Cleanly', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+  });
+
+  try {
+    const { page } = harness;
+    // Navigate directly to Evidence & Audit tab without any saves
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    await page.getByRole('button', { name: /Append-Only Audit/ }).click();
+
+    const statusBadge = page.locator('[data-testid="audit-sync-status-badge"]');
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
+    assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
+
+    // Ordinary initial audit event is displayed
+    const tableText = await page.locator('table').innerText();
+    assert.match(tableText, /AUD-INIT-001/);
+
+    // No warning banner or retry button exists
+    assert.equal(await page.locator('[data-testid="audit-sync-warning"]').count(), 0);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 29 (RED Test A - Blocker 3): Premature Warning Reset
+await test('Scenario 29 (RED Test A - Blocker 3): Same-project selection does not clear unresolved snapshot warning while refresh is in-flight', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Trigger project fetch returning stale snapshot v120
+    let resolveStaleFetch!: () => void;
+    const staleHold = new Promise<void>((r) => (resolveStaleFetch = r));
+    harness.holdProjectAResponse(staleHold);
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    resolveStaleFetch();
+    harness.holdProjectAResponse(null);
+
+    // Stale snapshot warning appears
+    const staleWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await staleWarning.waitFor({ timeout: 4000 });
+    assert.match(await staleWarning.innerText(), /Project state snapshot is older than the confirmed version/);
+
+    // Step 3: Re-select Project A while holding subsequent response
+    let resolvePendingFetch!: () => void;
+    const pendingHold = new Promise<void>((r) => (resolvePendingFetch = r));
+    harness.holdProjectAResponse(pendingHold);
+
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Give UI a moment to process the selection click
+    await page.waitForTimeout(200);
+
+    // Expected: Warning remains visible while the refresh is pending
+    // Current defect: handleSelectProject() wipes setStaleSnapshotWarning('') immediately!
+    assert.ok(
+      await staleWarning.isVisible(),
+      'Stale snapshot warning must remain visible while re-selection refresh is in-flight'
+    );
+
+    resolvePendingFetch();
+    harness.holdProjectAResponse(null);
+  } finally {
+    harness.holdProjectAResponse(null);
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 30 (RED Test B - Blocker 3): Wrong Retry Endpoint
+await test('Scenario 30 (RED Test B - Blocker 3): Project-list warning retries GET /api/projects instead of individual-project endpoint', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121 (establishes confirmed version 121)
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Mock project list returning stale entries without safe cache
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+
+    // Refresh projects to establish stale list warning
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Check project-list warning is visible
+    const warning = page.locator('[data-testid="stale-project-list-warning"]');
+    await warning.waitFor({ timeout: 4000 });
+
+    const listFetchesBefore = harness.getProjectListFetchCount();
+    const projectAFetchesBefore = harness.getProjectAFetchCount();
+
+    // Click retry inside warning
+    const retryBtn = warning.locator('[data-testid="btn-retry-project-list"]');
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    const listFetchesAfter = harness.getProjectListFetchCount();
+    const projectAFetchesAfter = harness.getProjectAFetchCount();
+
+    // Expected: Retrying a project-list warning must issue GET /api/projects
+    assert.ok(
+      listFetchesAfter > listFetchesBefore,
+      `Project list retry must issue GET /api/projects (was ${listFetchesBefore}, now ${listFetchesAfter})`
+    );
+    assert.equal(
+      projectAFetchesAfter,
+      projectAFetchesBefore,
+      'Project list retry must NOT request individual project resources'
+    );
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 31 (RED Test C - Blocker 3): Stale List Hidden by Safe Cache
+await test('Scenario 31 (RED Test C - Blocker 3): Stale project-list warning appears even when safe cached metadata is preserved', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121 (establishes confirmed version 121 and safe cache)
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Step 3: Mock project-list returning stale v120 (older than confirmed 121)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+
+    // Step 4: Refresh project list
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Step 5: Safe cache keeps v121 on the card
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /121/);
+
+    // Step 6: Expected: UI must still report that its latest project-list response was stale!
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(
+      await listWarning.isVisible(),
+      'Stale project list warning must be visible even when safe cached metadata is displayed'
+    );
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 32 (Tests D & J - Blocker 3): Project switching and workspace navigation preserves unresolved snapshot warning
+await test('Scenario 32 (Tests D & J - Blocker 3): Project switching and workspace navigation preserves unresolved snapshot warning', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Step 2: Make Project A snapshot stale (v120) and trigger reload
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    // Trigger fetch for Project A
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    // Verify Project A snapshot warning is visible
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible());
+
+    // Step 3: Switch to Project B
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('Fixture B'));
+
+    // Project B is fresh, so snapshot warning is NOT visible
+    assert.ok(!(await snapshotWarning.isVisible()));
+
+    // Step 4: Switch back to Project A
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('docmonstakrakin'));
+
+    // Project A unresolved warning is preserved and visible!
+    assert.ok(await snapshotWarning.isVisible(), 'Unresolved Project A warning must be preserved when navigating back');
+
+    // Step 5: Navigate between workspaces (e.g. Evidence & Audit, Risks)
+    await page.getByRole('button', { name: 'Evidence & Audit' }).click();
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must persist across workspace tab navigation');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 33 (Tests E, F, G - Blocker 3): Simultaneous list and snapshot warnings with independent recovery
+await test('Scenario 33 (Tests E, F, G - Blocker 3): Simultaneous list and snapshot warnings with independent recovery', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Step 2: Trigger snapshot staleness on Project A
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+
+    // Step 3: Trigger project list staleness
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    await listWarning.waitFor({ timeout: 4000 });
+
+    // Both warnings visible simultaneously (Test E)
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must be visible');
+    assert.ok(await listWarning.isVisible(), 'Project list warning must be visible simultaneously');
+
+    // Step 4: Recover project list by returning fresh list (v121) and clicking list retry (Test F)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    ]);
+    const listRetryBtn = listWarning.locator('[data-testid="btn-retry-project-list"]');
+    await listRetryBtn.click();
+    await page.waitForTimeout(300);
+
+    // List warning clears, snapshot warning remains visible
+    assert.ok(!(await listWarning.isVisible()), 'Project list warning must clear after fresh list response');
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must remain visible when only list was recovered');
+
+    // Step 5: Recover snapshot by returning fresh snapshot (v121) and clicking snapshot retry (Test G)
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    }));
+    const snapshotRetryBtn = snapshotWarning.locator('[data-testid="btn-retry-project-fetch"]');
+    await snapshotRetryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Snapshot warning clears
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear after fresh snapshot response');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 34 (Test I - Blocker 3): Failed retry preserves warning and allows repeated retry attempts
+await test('Scenario 34 (Test I - Blocker 3): Failed retry preserves warning and allows repeated retry attempts', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save to version 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Step 2: Trigger snapshot staleness on Project A
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120, // Stale!
+      },
+    }));
+
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-DOCMONSTAKRAKIN"]').click();
+
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible());
+
+    // Step 3: First retry fails with remaining stale response
+    const retryBtn = snapshotWarning.locator('[data-testid="btn-retry-project-fetch"]');
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Warning remains visible after failed retry
+    assert.ok(await snapshotWarning.isVisible(), 'Warning must remain visible after failed retry');
+
+    // Step 4: Second retry succeeds with fresh v121
+    harness.setProjectAResponseOverride(async () => ({
+      status: 200,
+      body: {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 121, // Fresh!
+      },
+    }));
+
+    await retryBtn.click();
+    await page.waitForTimeout(300);
+
+    // Warning clears
+    assert.ok(!(await snapshotWarning.isVisible()), 'Warning must clear after successful second retry');
+  } finally {
+    harness.setProjectAResponseOverride(null);
+    await harness.close();
+  }
+});
+
+// Scenario 35 (Test H - Blocker 3): Unavailable project list without safe cache displays explicit alert and recovers via retry
+await test('Scenario 35 (Test H - Blocker 3): Unavailable project list without safe cache displays explicit alert and recovers via retry', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Step 1: Save confirms v121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // Step 2: Establish a state where Project A has NO safe cache in acceptedProjectsRef
+    // Return only Project B, dropping Project A from accepted projects cache
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B'));
+
+    // Step 3: Now server returns ONLY Project A at stale v120 (with no safe cache for Project A)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Docmonstakrakin Stale',
+        stateVersion: 120, // Stale! Confirmed is 121
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Step 4: Verify explicit unavailable state
+    const unavailableAlert = page.locator('[role="alert"]').filter({ hasText: 'Project Data Unavailable' });
+    await unavailableAlert.waitFor({ timeout: 4000 });
+    assert.ok(await unavailableAlert.isVisible(), 'Project Data Unavailable alert must be visible');
+
+    const retryUnavailableBtn = page.locator('[data-testid="btn-retry-unavailable-project-list"]');
+    await retryUnavailableBtn.waitFor({ timeout: 4000 });
+    assert.ok(await retryUnavailableBtn.isVisible(), 'btn-retry-unavailable-project-list must be visible');
+    assert.strictEqual(await retryUnavailableBtn.isDisabled(), false, 'Retry button is not disabled when idle');
+
+    // Must NOT claim zero projects or no projects yet
+    const emptyHeading = page.getByRole('heading', { name: 'No projects yet' });
+    assert.ok(!(await emptyHeading.isVisible()), 'Must not show "No projects yet"');
+    const zeroProjectsText = page.getByText('Zero Projects Registered');
+    assert.ok(!(await zeroProjectsText.isVisible()), 'Must not show "Zero Projects Registered"');
+
+    // Step 5: Authoritative fresh project list arrives (v121)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Docmonstakrakin Fresh',
+        stateVersion: 121,
+      },
+    ]);
+
+    // Click retry on the unavailable alert
+    await retryUnavailableBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Step 6: Unavailable alert cleared, project card restored
+    assert.ok(!(await unavailableAlert.isVisible()), 'Project Data Unavailable alert must clear after fresh retry');
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    await cardA.waitFor({ timeout: 4000 });
+    assert.match(await cardA.innerText(), /Docmonstakrakin Fresh/);
+    assert.match(await cardA.innerText(), /121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 35b (Blocker 3): Genuinely empty project database shows empty state instead of unavailable alert
+await test('Scenario 35b (Blocker 3): Genuinely empty project database shows empty state instead of unavailable alert', async () => {
+  const harness = await createHarness({ initialStateVersion: 120, initialProjects: [] });
+  try {
+    const { page } = harness;
+    // On fresh initial load with 0 projects, global empty screen is displayed
+    const zeroProjectsText = page.getByText('Zero Projects Registered');
+    await zeroProjectsText.waitFor({ timeout: 4000 });
+    assert.ok(await zeroProjectsText.isVisible(), 'Must display Zero Projects Registered for genuinely empty database');
+
+    const unavailableAlert = page.locator('[role="alert"]').filter({ hasText: 'Project Data Unavailable' });
+    assert.ok(!(await unavailableAlert.isVisible()), 'Must NOT display Project Data Unavailable for genuinely empty database');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 36 (RED Scenario A - Blocker 3): Stale project A disappears from response but warning persists
+await test('Scenario 36 (RED Scenario A - Blocker 3): Stale project A disappears from response but warning persists', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Initial state: Save confirms v121 and establishes safe cached v121 Project A object
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // First list response: Return Project A at v120 (stale), Project B at v50
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        stateVersion: 120, // Stale!
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    const countBeforeFirst = harness.getProjectListFetchCount();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const countAfterFirst = harness.getProjectListFetchCount();
+    assert.ok(countAfterFirst > countBeforeFirst, 'First refresh must issue genuine GET /api/projects');
+
+    // Safe cached v121 preserved on card, stale warning visible
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /121/);
+    assert.doesNotMatch(await cardA.innerText(), /STALE OUTDATED NAME/);
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    await listWarning.waitFor({ timeout: 4000 });
+    assert.ok(await listWarning.isVisible(), 'Stale project list warning must be visible after first response');
+
+    // Second list response: Return ONLY Project B at v50. Project A is omitted/absent!
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+
+    const countBeforeSecond = harness.getProjectListFetchCount();
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const countAfterSecond = harness.getProjectListFetchCount();
+    assert.ok(countAfterSecond > countBeforeSecond, 'Second refresh must issue genuine GET /api/projects');
+
+    // Required assertion: Project A's unresolved freshness issue still exists! Warning must remain visible!
+    assert.ok(
+      await listWarning.isVisible(),
+      'Stale project list warning must remain visible when unresolved project is omitted from subsequent response'
+    );
+
+    // Active project must not be automatically switched merely to eliminate the warning
+    assert.match(await topBarProjectBtn.innerText(), /docmonstakrakin/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 37 (RED Scenario B - Blocker 3): Empty list response does not prove deletion and retains warning
+await test('Scenario 37 (RED Scenario B - Blocker 3): Empty list response does not prove deletion and retains warning', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Initial state: Save confirms v121 and establishes safe cached v121 Project A object
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Trigger staleness with v120 Project A
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE OUTDATED NAME',
+        stateVersion: 120, // Stale!
+      },
+    ]);
+
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    await listWarning.waitFor({ timeout: 4000 });
+    assert.ok(await listWarning.isVisible());
+
+    // Subsequent response returns empty array []
+    harness.setProjectsList([]);
+
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Required assertions:
+    // 1. Stale warning remains visible
+    assert.ok(
+      await listWarning.isVisible(),
+      'Stale project list warning must remain visible after empty response when unresolved staleness exists'
+    );
+
+    // 2. The UI does not claim zero projects are registered
+    const zeroProjectsText = page.getByText('Zero Projects Registered');
+    assert.ok(!(await zeroProjectsText.isVisible()), 'Must not claim zero projects registered when unresolved staleness exists');
+    const noProjectsYetHeading = page.getByRole('heading', { name: 'No projects yet' });
+    assert.ok(!(await noProjectsYetHeading.isVisible()), 'Must not claim no projects yet when unresolved staleness exists');
+
+    // 3. Active project is not silently reset merely because the latest list is empty
+    assert.match(await topBarProjectBtn.innerText(), /docmonstakrakin/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 38 (Blocker 3): Multiple stale projects retain warning until all confirmed watermarks are satisfied
+// Scenario 38 (Blocker 3 v1.1): Two genuine stale floors (A 121, B 51), partial recovery (A recovers, warning remains for B), full recovery (both fresh -> warning clears)
+await test('Scenario 38 (Blocker 3): Multiple stale projects retain warning until all confirmed watermarks are satisfied', async () => {
+  const harness = await createHarness({ initialStateVersion: 120, projectBVersion: 50 });
+  try {
+    const { page } = harness;
+
+    // Step 1: Save confirms Project A at 121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    // Step 2: Establish Project B's floor at 51 via real list acceptance (NO save on B)
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Docmonstakrakin v121',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Accepted v51',
+        description: 'Accepted metadata at v51',
+        stateVersion: 51,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Accepted v51'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /51/);
+    assert.match(await cardB.innerText(), /Fixture B Accepted v51/);
+
+    // Step 3: Now server returns BOTH projects as stale: A at v120 (< 121) and B at v50 (< 51)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE A v120',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'STALE B v50',
+        description: 'Stale metadata at v50',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    await listWarning.waitFor({ timeout: 4000 });
+    assert.ok(await listWarning.isVisible(), 'Warning must be visible when A and B are both stale');
+
+    // Both cards must retain their previously accepted safe metadata (A 121, B 51)
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+    assert.match(await cardA.innerText(), /121/);
+    assert.doesNotMatch(await cardA.innerText(), /STALE A v120/);
+    assert.match(await cardB.innerText(), /51/, 'Card B must retain accepted version 51');
+    assert.doesNotMatch(await cardB.innerText(), /STALE B v50/, 'Card B must NOT adopt stale name');
+
+    // Step 4: Partial recovery: Project A recovers to fresh v121, but Project B remains at stale v50
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Fresh A v121',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'STALE B v50',
+        description: 'Stale metadata at v50',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fresh A v121'));
+
+    // Project A shows fresh metadata
+    assert.match(await cardA.innerText(), /Fresh A v121/);
+    // Project B still retains safe accepted metadata
+    assert.match(await cardB.innerText(), /51/);
+    assert.doesNotMatch(await cardB.innerText(), /STALE B v50/);
+
+    // Crucial check: Warning MUST persist because Project B is still unresolved!
+    assert.ok(await listWarning.isVisible(), 'Warning must persist while Project B remains unresolved');
+
+    // Step 5: Full recovery: Project B now provides fresh v51
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Fresh A v121',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fresh B v51',
+        description: 'Fresh metadata at v51',
+        stateVersion: 51,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fresh B v51'));
+
+    // Warning clears only after both A and B are resolved
+    assert.ok(!(await listWarning.isVisible()), 'Warning must clear when all projects reach confirmed versions');
+    assert.match(await cardB.innerText(), /Fresh B v51/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 39 (Blocker 3): Re-appearance of omitted project preserves warning if still stale, and clears when fresh
+await test('Scenario 39 (Blocker 3): Re-appearance of omitted project preserves warning if still stale, and clears when fresh', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // Save confirms v121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // 1. Project A is stale v120
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE A',
+        stateVersion: 120,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(await listWarning.isVisible());
+
+    // 2. Project A is omitted from response (returns only Project B)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.ok(await listWarning.isVisible(), 'Warning persists while Project A is omitted');
+
+    // 3. Project A reappears still stale (v120)
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE A AGAIN',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.ok(await listWarning.isVisible(), 'Warning persists when Project A reappears still stale');
+
+    // 4. Project A reappears with fresh v121
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'FRESH A',
+        stateVersion: 121,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B',
+        stateVersion: 50,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.ok(!(await listWarning.isVisible()), 'Warning clears when reappearing Project A is fresh');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 40 (Blocker 3): Retry controls have unique identities and are disabled while requests are in flight
+await test('Scenario 40 (Blocker 3): Retry controls have unique identities and are disabled while requests are in flight', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // Save confirms v121
+    await executeSaveWorkflow(page);
+    await page.waitForFunction(() => document.querySelector('header button')?.textContent?.includes('v121'));
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // Trigger stale project list warning
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'STALE A',
+        stateVersion: 120,
+      },
+    ]);
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    const listWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(await listWarning.isVisible());
+
+    // Check unique selector btn-retry-project-list
+    const bannerRetryBtn = listWarning.locator('[data-testid="btn-retry-project-list"]');
+    assert.ok(await bannerRetryBtn.isVisible());
+
+    // Hold request to test in-flight disabled state
+    let resolveHold!: () => void;
+    const holdPromise = new Promise<void>((r) => (resolveHold = r));
+    harness.holdProjectListResponse(holdPromise);
+
+    await bannerRetryBtn.click();
+
+    // Verify both retry button and refresh button are disabled during in-flight fetch
+    assert.strictEqual(await bannerRetryBtn.isDisabled(), true, 'Banner retry button must be disabled while in flight');
+    assert.strictEqual(await refreshBtn.isDisabled(), true, 'Projects refresh button must be disabled while in flight');
+    assert.match(await bannerRetryBtn.innerText(), /Refreshing…/);
+
+    // Release hold
+    resolveHold();
+    harness.holdProjectListResponse(null);
+
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-retry-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+    assert.strictEqual(await bannerRetryBtn.isDisabled(), false, 'Banner retry button re-enables when request completes');
+  } finally {
+    harness.holdProjectListResponse(null);
+    await harness.close();
+  }
+});
+
+// Scenario 41 (MONO-14): Malformed list stateVersion is rejected without mutating accepted state; valid v0 is supported
+await test('Scenario 41 (MONO-14): Malformed list stateVersion is rejected without mutating accepted state; valid v0 is supported', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // 1. Malformed stateVersion (-1) in list response
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'MALFORMED VERSION',
+        stateVersion: -1,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForSelector('[role="alert"]');
+    const alert = page.locator('[role="alert"]').filter({ hasText: 'The server returned an invalid project list.' });
+    assert.ok(await alert.isVisible(), 'Must show recoverable error for invalid stateVersion');
+
+    // Safe metadata preserved
+    assert.match(await cardA.innerText(), /120/, 'Card must preserve previously accepted version 120');
+    assert.doesNotMatch(await cardA.innerText(), /MALFORMED VERSION/);
+
+    // 2. Valid version 0 accepted for new project
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-ZERO-001',
+        name: 'Zero Project',
+        stateVersion: 0,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Zero Project'));
+    const cardZero = page.locator('article').filter({ hasText: 'PRJ-ZERO-001' });
+    assert.match(await cardZero.innerText(), /Zero Project/);
+    assert.match(await cardZero.innerText(), /0/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 42 (MONO-15): List-accepted B v51 rejects subsequent snapshot B v50 as a whole with project warning
+await test('Scenario 42 (MONO-15): List-accepted B v51 rejects subsequent snapshot B v50 as a whole with project warning', async () => {
+  const harness = await createHarness({ initialStateVersion: 120, projectBVersion: 50 });
+  try {
+    const { page } = harness;
+
+    // Accept B at v51 in list
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-FIXTURE-B',
+        name: 'Fixture B Accepted v51',
+        description: 'Accepted list metadata v51',
+        stateVersion: 51,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fixture B Accepted v51'));
+
+    const cardB = page.locator('article').filter({ hasText: 'PRJ-FIXTURE-B' });
+    assert.match(await cardB.innerText(), /51/);
+    assert.match(await cardB.innerText(), /Fixture B Accepted v51/);
+
+    // Set B snapshot to return stale v50
+    harness.setProjectBData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-FIXTURE-B',
+      name: 'Stale Snapshot v50',
+      description: 'Stale snapshot description',
+      stateVersion: 50,
+    });
+
+    // Switch to Project B via TopBar dropdown
+    const dropdownBtn = page.locator('[data-testid="project-selector-dropdown-trigger"]');
+    await dropdownBtn.click();
+    await page.locator('[data-testid="project-option-PRJ-FIXTURE-B"]').click();
+
+    // Stale snapshot warning appears
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ timeout: 4000 });
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must appear when snapshot is below accepted list floor');
+
+    // Stale snapshot data must NOT be accepted as canonical current project
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), /Stale Snapshot v50/);
+
+    // Now Project B snapshot recovers to v51
+    harness.setProjectBData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-FIXTURE-B',
+      name: 'Fresh B Snapshot v51',
+      description: 'Fresh snapshot description',
+      stateVersion: 51,
+    });
+
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => {
+      const banner = document.querySelector('[data-testid="stale-snapshot-warning"]');
+      return !banner;
+    });
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on recovery');
+    assert.match(await topBarProjectBtn.innerText(), /Fresh B Snapshot v51/);
+    assert.match(await topBarProjectBtn.innerText(), /v51/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 43 (MONO-09): Late list response cannot overwrite a newer accepted version
+await test('Scenario 43 (MONO-09): Late list response cannot overwrite a newer accepted version', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const cardA = page.locator('article').filter({ hasText: 'PRJ-DOCMONSTAKRAKIN' });
+
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    // First response advances to v121
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Slow Response v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Slow Response v121'));
+    assert.match(await cardA.innerText(), /121/);
+
+    // Second response advances to v122
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Fast Response v122',
+        stateVersion: 122,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Fast Response v122'));
+    assert.match(await cardA.innerText(), /122/);
+
+    // Stale lower version v121 arrives; rejected, v122 survives
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Late Response v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="btn-refresh-project-list"]') as HTMLButtonElement | null;
+      return btn && !btn.disabled;
+    });
+
+    // Card A preserves v122 and Fast Response name; Late Response v121 is rejected
+    assert.match(await cardA.innerText(), /122/, 'Must preserve newer v122');
+    assert.match(await cardA.innerText(), /Fast Response v122/);
+    assert.doesNotMatch(await cardA.innerText(), /Late Response v121/);
+  } finally {
+    harness.holdProjectListResponse(null);
+    await harness.close();
+  }
+});
+
+// Scenario 44 (MONO-17): List floor advance disables canonical readiness on stale mounted snapshot
+await test('Scenario 44 (MONO-17): List floor advance disables canonical readiness on stale mounted snapshot', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+
+    // Initial state: mounted at v120, ready
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible(), 'Export package button visible when projectReady is true');
+
+    // List advances A to v121
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('docmonstakrakin List v121'));
+
+    // TopBar displays safe list metadata v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/, 'TopBar shows safe list version');
+    assert.match(await topBarProjectBtn.innerText(), /docmonstakrakin List v121/);
+
+    // Canonical readiness becomes FALSE: export package button becomes hidden/inert
+    assert.ok(!(await packageBtn.isVisible()), 'Export package button must be hidden when projectReady is false');
+
+    // Snapshot stale warning appears (project-scoped, not global list warning)
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Project-scoped snapshot warning must appear');
+    const globalListWarning = page.locator('[data-testid="stale-project-list-warning"]');
+    assert.ok(!(await globalListWarning.isVisible()), 'Global list warning must not appear for valid list');
+
+    // Stale snapshot retry with v120 keeps non-ready state
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Stale Snapshot v120',
+      stateVersion: 120,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForTimeout(300);
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning remains when snapshot retry is stale v120');
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot is stale');
+
+    // Fresh snapshot retry with v121 recovers readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'Readiness restored on v121 snapshot recovery');
+    assert.match(await topBarProjectBtn.innerText(), /Fresh Snapshot v121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejected with zero false save or version effects
+await test('Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejected with zero false save or version effects', async () => {
+  const harness = await createHarness({
+    initialStateVersion: 120,
+    saveResponseOverride: async (body) => {
+      return {
+        status: 200,
+        body: {
+          success: true,
+          documentId: 'DOC-CTRL-002',
+          path: 'docs/00_control/PROJECT_STATE.md',
+          previousSha256: body.baseSha256,
+          newSha256: '2222222222222222222222222222222222222222222222222222222222222222',
+          stateVersion: Number.MAX_SAFE_INTEGER + 1, // Unsafe integer!
+          auditEventId: 'AUD-UNSAFE-001',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    },
+  });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    const initialAuditCalls = harness.getAuditFetchCount();
+    // Execute save workflow with unsafe save response override
+    await executeSaveWorkflow(page, 'Test unsafe save rejection');
+
+    // Wait for the corresponding save-validation error to become visible
+    const errorAlert = page.locator('[data-testid="save-error-banner"]');
+    await errorAlert.waitFor({ timeout: 5000 });
+    assert.match(await errorAlert.innerText(), /Invalid controlled document save response/);
+
+    // Confirm that success banner is NOT displayed
+    const successBanner = page.locator('[data-testid="save-success-banner"]');
+    assert.ok(!(await successBanner.isVisible()), 'Save success banner must not be shown for unsafe stateVersion');
+
+    // TopBar must remain v120 (not updated to unsafe integer)
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    assert.doesNotMatch(await topBarProjectBtn.innerText(), new RegExp(String(Number.MAX_SAFE_INTEGER + 1)));
+
+    // Dismiss save modal
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.locator('[data-testid="doc-save-modal"]').waitFor({ state: 'hidden' });
+
+    // Assert subsequent normal project-list and canonical-snapshot responses are not blocked by an unsafe floor
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'Valid List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[data-testid="btn-refresh-project-list"]').click();
+    await page.waitForFunction(() => document.body.textContent?.includes('Valid List v121'));
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 46 (MONO-13): Genuine Project Wizard creation establishes floor, protects against downgrade, and handles invalid responses
+await test('Scenario 46 (MONO-13): Genuine Project Wizard creation establishes floor, protects against downgrade, and handles invalid responses', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // 1. Positive creation through 6-step ProjectWizard
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    const nameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await nameInput.fill('Project C Synthetic');
+
+    // Step 1 -> 2
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 2 -> 3
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 3 -> 4
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 4 -> 5
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // Step 5 -> 6
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    // Step 6: Launch
+    const launchBtn = page.getByRole('button', { name: 'Launch Project Control Plane' });
+    await launchBtn.click();
+
+    // Verify POST was called exactly once with the draft
+    await page.waitForFunction(() => !document.querySelector('[aria-label="Close project creation drawer"]'));
+    assert.equal(harness.getPostProjectsCalls().length, 1);
+    assert.equal(harness.getPostProjectsCalls()[0].name, 'Project C Synthetic');
+
+    // Verify selected project is Project C at v1
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /Project C Synthetic/);
+    assert.match(await topBarProjectBtn.innerText(), /v1/);
+
+    // List downgrade rejection: list returns Project C at v0
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin',
+        stateVersion: 120,
+      },
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-CREATED-001',
+        name: 'Stale C v0',
+        stateVersion: 0, // Stale!
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForTimeout(300);
+
+    const cardC = page.locator('article').filter({ hasText: 'PRJ-CREATED-001' });
+    assert.match(await cardC.innerText(), /1/, 'Card C must preserve accepted floor v1');
+    assert.doesNotMatch(await cardC.innerText(), /Stale C v0/);
+
+    // Negative creation test: wizard response with invalid stateVersion (-1)
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    harness.setPostProjectResponseOverride(async () => {
+      return {
+        status: 200,
+        body: {
+          id: 'PRJ-INVALID-001',
+          name: 'Invalid Project',
+          stateVersion: -1, // Invalid!
+        },
+      };
+    });
+
+    const invalidNameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await invalidNameInput.fill('Project Invalid Draft');
+
+    // Navigate to step 6
+    for (let i = 0; i < 5; i++) {
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
+    await page.getByRole('button', { name: 'Launch Project Control Plane' }).click();
+
+    // Verify wizard error shown and draft preserved
+    const alert = page.locator('[role="alert"]').filter({ hasText: 'Project creation failed' });
+    await alert.waitFor({ timeout: 4000 });
+    assert.ok(await alert.isVisible(), 'Error alert must be visible on invalid creation response');
+
+    // Assert complete negative creation properties:
+    // 1. Synthetic POST was issued
+    assert.equal(harness.getPostProjectsCalls().length, 2, 'Synthetic POST must have been issued');
+    // 2. Draft remains available (confirmed via review step summary)
+    const summaryName = page.locator('span.font-bold.text-slate-900').filter({ hasText: 'Project Invalid Draft' });
+    assert.ok(await summaryName.isVisible(), 'Draft name must remain intact on review step');
+    // 3. Active-project selection remains unchanged
+    assert.match(await topBarProjectBtn.innerText(), /Project C Synthetic/, 'Active project selection must not change');
+    // 4. Invalid project does not enter accepted project list / cards
+    assert.equal(await page.locator('article').filter({ hasText: 'PRJ-INVALID-001' }).count(), 0, 'Invalid project must not enter accepted cards');
+    // 5. No unintended GET triggered for rejected identity
+    assert.equal(harness.getFetchCountFor('/api/projects/PRJ-INVALID-001'), 0, 'No GET request must be triggered for rejected identity');
+
+    // Drawer is still open and draft is retained
+    assert.ok(await page.locator('[aria-label="Close project creation drawer"]').isVisible());
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 47 (RED-01): Controlled document save acknowledgment must not certify full canonical project snapshot
+await test('Scenario 47 (RED-01): Controlled document save acknowledgment must not certify full canonical project snapshot', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    const packageBtn = page.locator('#topbar-package-btn');
+
+    // Starting fixture: Active Project A mounted at v120, ready
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+    assert.ok(await packageBtn.isVisible(), 'Export package button visible when snapshot is certified and ready');
+
+    // Execute save workflow to advance document to v121
+    await executeSaveWorkflow(page, 'Save to v121 without full snapshot refresh');
+
+    // 1. Save-success banner displays confirmed v121
+    const saveBanner = page.locator('[data-testid="save-success-banner"]');
+    await saveBanner.waitFor();
+    assert.match(await saveBanner.innerText(), /121/);
+
+    // 2. TopBar reflects confirmed version v121
+    assert.match(await topBarProjectBtn.innerText(), /v121/);
+
+    // 3. ControlledDocsView remains mounted with existing editor context
+    assert.ok(await page.locator('[data-testid="controlled-docs-workspace"]').isVisible());
+
+    // 4 & 5. Canonical mutation readiness MUST BE FALSE until a complete authoritative v121 snapshot is accepted!
+    assert.ok(!(await packageBtn.isVisible()), 'Export package button must be hidden while full canonical snapshot is uncertified');
+
+    // 6. Snapshot stale warning appears with retry affordance targeting GET /api/projects/:id
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Project-scoped snapshot warning must appear');
+
+    // Stale v120 snapshot retry cannot restore readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Stale Snapshot v120',
+      stateVersion: 120,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForTimeout(300);
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning remains when snapshot retry is stale v120');
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot is stale');
+
+    // 7. Valid v121 complete snapshot restores readiness
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'Readiness restored on v121 complete snapshot recovery');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Helper: TypeScript AST Source-Contract Verifier for Canonical Snapshot Certification
+interface CertificationContractResult {
+  verifiedFile: string;
+  totalMutationsInFile: number;
+  authorizedMutation: string;
+  fetchFunctionFound: boolean;
+  committedFunctionFound: boolean;
+  createFunctionFound: boolean;
+}
+
+function verifyCanonicalSnapshotCertificationSourceContract(
+  sourceCode: string,
+  fileName = 'src/App.tsx'
+): CertificationContractResult {
+  const sf = ts.createSourceFile(fileName, sourceCode, ts.ScriptTarget.Latest, true);
+
+  function findFunctionNode(name: string): ts.Node | null {
+    let target: ts.Node | null = null;
+    function walk(node: ts.Node) {
+      if (ts.isVariableDeclaration(node) && node.name.getText(sf) === name) {
+        target = node;
+        return;
+      }
+      if (ts.isFunctionDeclaration(node) && node.name && node.name.getText(sf) === name) {
+        target = node;
+        return;
+      }
+      ts.forEachChild(node, walk);
+    }
+    walk(sf);
+    return target;
+  }
+
+  const committedNode = findFunctionNode('handleControlledDocumentCommitted');
+  const createNode = findFunctionNode('handleCreateProject');
+  const fetchNode = findFunctionNode('fetchProjectData');
+
+  if (!committedNode) {
+    throw new Error(`Structural contract failure: handleControlledDocumentCommitted declaration not found in ${fileName}`);
+  }
+  if (!createNode) {
+    throw new Error(`Structural contract failure: handleCreateProject declaration not found in ${fileName}`);
+  }
+  if (!fetchNode) {
+    throw new Error(`Structural contract failure: fetchProjectData declaration not found in ${fileName}`);
+  }
+
+  function findCertificationMutations(rootNode: ts.Node): Array<{ text: string; line: number }> {
+    const mutations: Array<{ text: string; line: number }> = [];
+    function walk(node: ts.Node) {
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+      ) {
+        const leftText = node.left.getText(sf);
+        if (leftText.includes('acceptedCanonicalSnapshotVersionsRef')) {
+          const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+          mutations.push({ text: node.getText(sf), line: line + 1 });
+        }
+      }
+      ts.forEachChild(node, walk);
+    }
+    walk(rootNode);
+    return mutations;
+  }
+
+  // 1. handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef.current
+  const committedMutations = findCertificationMutations(committedNode);
+  assert.equal(
+    committedMutations.length,
+    0,
+    `Contract violation: handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef.current (found: ${committedMutations.map((m) => m.text).join('; ')})`
+  );
+
+  // 2. handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef.current
+  const createMutations = findCertificationMutations(createNode);
+  assert.equal(
+    createMutations.length,
+    0,
+    `Contract violation: handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef.current (found: ${createMutations.map((m) => m.text).join('; ')})`
+  );
+
+  // 3. fetchProjectData must contain exactly 1 authorized certification update
+  const fetchMutations = findCertificationMutations(fetchNode);
+  assert.equal(
+    fetchMutations.length,
+    1,
+    `Contract violation: fetchProjectData must contain exactly 1 authorized certification write (found: ${fetchMutations.length})`
+  );
+  assert.match(
+    fetchMutations[0].text,
+    /acceptedCanonicalSnapshotVersionsRef\.current\[.*\]\s*=\s*incomingVersion/,
+    'fetchProjectData certification write must assign incomingVersion'
+  );
+
+  // 4. File-wide scan: exactly 1 mutation exists in the entire file (no unrelated handler mutates it)
+  const allMutations = findCertificationMutations(sf);
+  assert.equal(
+    allMutations.length,
+    1,
+    `Contract violation: Entire file must contain exactly 1 mutation of acceptedCanonicalSnapshotVersionsRef.current across all handlers (found: ${allMutations.length})`
+  );
+
+  // 5. In fetchProjectData, rejected snapshot path returns early before certification update
+  const fetchText = fetchNode.getText(sf);
+  const rejectGuardIndex = fetchText.indexOf('if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor)');
+  const certAssignIndex = fetchText.indexOf('acceptedCanonicalSnapshotVersionsRef.current');
+  assert.ok(rejectGuardIndex !== -1, 'fetchProjectData must contain snapshot validity and floor check');
+  assert.ok(certAssignIndex !== -1, 'fetchProjectData must contain certification assignment');
+  assert.ok(rejectGuardIndex < certAssignIndex, 'Snapshot rejection check must precede certification write');
+  const guardBlock = fetchText.slice(rejectGuardIndex, certAssignIndex);
+  assert.ok(guardBlock.includes('return;'), 'Snapshot rejection branch must return early before certification write');
+
+  return {
+    verifiedFile: fileName,
+    totalMutationsInFile: allMutations.length,
+    authorizedMutation: fetchMutations[0].text,
+    fetchFunctionFound: true,
+    committedFunctionFound: true,
+    createFunctionFound: true,
+  };
+}
+
+function runCertificationNegativeControls() {
+  // Negative Control A: Historical premature assignment in handleControlledDocumentCommitted (9b37dd02 pattern)
+  const fixtureCommittedLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[projectId] = Math.max(0, nextVersion);
+      };
+      const handleCreateProject = () => {};
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureCommittedLeak, 'fixtureCommittedLeak.tsx'),
+    /handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control B: Premature assignment in handleCreateProject
+  const fixtureCreateLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[created.id] = created.stateVersion;
+      };
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureCreateLeak, 'fixtureCreateLeak.tsx'),
+    /handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control C: Unrelated handler mutation
+  const fixtureUnrelatedLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {};
+      const handleSomeOtherEvent = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[someId] = 999;
+      };
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureUnrelatedLeak, 'fixtureUnrelatedLeak.tsx'),
+    /Entire file must contain exactly 1 mutation of acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control D: Rejected snapshot does not return before certification write
+  const fixtureMissingEarlyReturn = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {};
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) {
+          console.warn('stale snapshot');
+        }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureMissingEarlyReturn, 'fixtureMissingEarlyReturn.tsx'),
+    /Snapshot rejection branch must return early/
+  );
+}
+
+// Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot
+await test('Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot', async () => {
+  // Part 1: Structural TypeScript AST Source Contract Verification
+  const appSourcePath = path.join(root, 'src', 'App.tsx');
+  const appSourceCode = fs.readFileSync(appSourcePath, 'utf8');
+  const contractResult = verifyCanonicalSnapshotCertificationSourceContract(appSourceCode, 'src/App.tsx');
+  assert.equal(contractResult.totalMutationsInFile, 1);
+  assert.match(contractResult.authorizedMutation, /acceptedCanonicalSnapshotVersionsRef\.current\[data\.project\.id\]\s*=\s*incomingVersion/);
+
+  // Part 2: Discriminating Negative Control Verification (proves detection rejects premature write patterns)
+  runCertificationNegativeControls();
+
+  // Part 3: Browser End-to-End Execution
+  let resolveProjectC!: () => void;
+  const projectCHoldPromise = new Promise<void>((r) => (resolveProjectC = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    // Hold complete project-snapshot GET for Project C
+    harness.holdProjectCResponse(projectCHoldPromise);
+
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible());
+
+    // Create Project C through ProjectWizard
+    await page.locator('#topbar-new-project-btn').click();
+    await page.locator('[aria-label="Close project creation drawer"]').waitFor();
+
+    const nameInput = page.locator('input[placeholder*="Nexus Identity Broker"]');
+    await nameInput.fill('Project C Deferred Snapshot');
+
+    for (let i = 0; i < 5; i++) {
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
+    await page.getByRole('button', { name: 'Launch Project Control Plane' }).click();
+
+    await page.waitForFunction(() => !document.querySelector('[aria-label="Close project creation drawer"]'));
+
+    // Project C is inserted and selected
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    assert.match(await topBarProjectBtn.innerText(), /Project C Deferred Snapshot/);
+    assert.match(await topBarProjectBtn.innerText(), /v1/);
+
+    // Complete snapshot GET is pending: Canonical readiness MUST BE FALSE!
+    assert.ok(!(await packageBtn.isVisible()), 'Canonical readiness must be false while complete snapshot is pending');
+
+    // Deliver stale snapshot v0: must be rejected
+    harness.setProjectCData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-CREATED-001',
+      name: 'Project C Stale v0',
+      stateVersion: 0,
+    });
+    resolveProjectC();
+    await page.waitForTimeout(300);
+
+    assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot v0 is rejected');
+
+    // Now retry/refresh with valid v1 snapshot
+    harness.setProjectCData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-CREATED-001',
+      name: 'Project C Certified v1',
+      stateVersion: 1,
+    });
+    const retryBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    if (await retryBtn.isVisible()) {
+      await retryBtn.click();
+    } else {
+      await page.getByRole('button', { name: 'Select project' }).click();
+      await page.getByRole('button', { name: /Project C Deferred Snapshot/ }).click();
+    }
+    await page.waitForFunction(() => document.querySelector('#topbar-package-btn') !== null);
+    assert.ok(await packageBtn.isVisible(), 'Readiness enabled after complete v1 snapshot is accepted');
+  } finally {
+    harness.holdProjectCResponse(null);
+    if (resolveProjectC) resolveProjectC();
+    await harness.close();
+  }
+});
+
+// Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale
+await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale', async () => {
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+    page.on('pageerror', (err) => console.error('[SCENARIO 49 PAGE ERROR]:', err.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') console.error('[SCENARIO 49 CONSOLE ERROR]:', msg.text());
+    });
+
+    // Ensure initial project mount at v120 is complete
+    const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
+    await topBarProjectBtn.waitFor();
+    assert.match(await topBarProjectBtn.innerText(), /v120/);
+
+    // Navigate to Reports & Export -> Dynamic Projections -> RELEASE document
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.locator('[data-testid="controlled-docs-workspace"]').waitFor();
+
+    // Switch to Dynamic Projections tab
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.locator('#panel-dynamic-projections').waitFor();
+
+    // Click RELEASE tab
+    const relTabBtn = page.getByRole('button', { name: /Release Gates & DoD/ });
+    await relTabBtn.waitFor();
+    await relTabBtn.click();
+
+    // Wait for release gate panel to render
+    await page.waitForFunction(() => document.body.textContent?.includes('Governance Protocol') || document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'), { timeout: 4000 });
+
+    // Release sign-off entry button is visible and enabled initially while snapshot is fresh
+    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
+    await signoffBtn.waitFor();
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is fresh');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is fresh');
+
+    // Advance list floor to v121 while snapshot is v120
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    await refreshBtn.click();
+    await page.waitForFunction(() => document.body.textContent?.includes('docmonstakrakin List v121'));
+
+    // Navigate back to Reports & Export -> Dynamic Projections -> RELEASE
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.getByRole('button', { name: /Release Gates & DoD/ }).click();
+
+    // Assert: Read-only projections remain viewable
+    assert.ok(await page.getByText(/Governance Protocol: SEC-CTRL-020/).isVisible(), 'Read-only projections remain viewable');
+
+    // Stale snapshot warning remains accessible
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must remain visible');
+
+    // Execute v0.1 DoD Sign-Off MUST BE disabled or unavailable!
+    assert.ok(
+      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
+      'Execute v0.1 DoD Sign-Off must be disabled or unavailable while canonical snapshot is stale'
+    );
+
+    // No signoff POST must have occurred
+    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
+  } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale
+await test('Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale', async () => {
+  let resolveListHold: (() => void) | null = null;
+  const listHoldPromise = new Promise<void>((r) => (resolveListHold = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // 1. Initial state: Project A initial snapshot v120, ready.
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible(), 'TopBar package button must be visible initially (snapshot v120 ready)');
+
+    // 2. Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // 3. Set projects list to v121 and hold with harness.holdProjectListResponse
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    harness.holdProjectListResponse(listHoldPromise);
+
+    // 4. Click refresh button in Projects workspace; confirm request in flight (btn.disabled)
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    assert.strictEqual(await refreshBtn.isDisabled(), true, 'Refresh button must be disabled while fetch is in-flight');
+
+    // 5. Without releasing hold, navigate to Reports & Export -> Dynamic Projections -> Release Gates & DoD
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.locator('#panel-dynamic-projections').waitFor();
+
+    const relTabBtn = page.getByRole('button', { name: /Release Gates & DoD/ });
+    await relTabBtn.waitFor();
+    await relTabBtn.click();
+
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'),
+      { timeout: 4000 }
+    );
+
+    // 6. Confirm snapshot v120 is ready; click "Execute v0.1 DoD Sign-Off"; verify modal visible and submit button enabled
+    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
+    await signoffBtn.waitFor();
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is ready');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is ready');
+
+    await signoffBtn.click();
+
+    // Verify modal is open
+    const modalHeading = page.getByRole('heading', { name: 'Execute v0.1 Definition-of-Done Sign-Off' });
+    await modalHeading.waitFor({ state: 'visible' });
+
+    // Fill actor so submit button would otherwise be valid
+    const actorInput = page.locator('input[placeholder*="Security Lead"]');
+    await actorInput.fill('Security Lead (Gio)');
+    const modalSubmitBtn = page.getByRole('button', { name: 'Authorize & Seal v0.1 Release' });
+    assert.ok(await modalSubmitBtn.isEnabled(), 'Modal submit button must be enabled with actor provided and canonical data ready');
+
+    // 7. Release list hold: resolveListHold(); harness.holdProjectListResponse(null);
+    if (resolveListHold) {
+      (resolveListHold as () => void)();
+      resolveListHold = null;
+    }
+    harness.holdProjectListResponse(null);
+
+    // 8. List response completes; project-scoped stale warning appears.
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ state: 'visible' });
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must appear after list floor advances to v121');
+
+    // 9. Modal automatically closes via useEffect in DocumentsView.tsx
+    await modalHeading.waitFor({ state: 'hidden' });
+    assert.ok(!(await modalHeading.isVisible()), 'Modal must automatically close when canonical readiness is lost');
+
+    // 10. "Execute v0.1 DoD Sign-Off" entry button becomes disabled/hidden
+    assert.ok(
+      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
+      'Execute v0.1 DoD Sign-Off entry button must be disabled or hidden while canonical snapshot is stale'
+    );
+
+    // 11. Exactly 0 sign-off POST requests issued
+    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
+
+    // 12. Deliver authoritative snapshot v121; click snapshot retry button; stale warning clears, readiness restores, entry button re-enabled
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'TopBar package button restored on v121 complete snapshot recovery');
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible after recovery');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be re-enabled after recovery');
+    assert.equal(harness.getSignoffCalls().length, 0, 'Signoff POST calls must remain 0');
+  } finally {
+    harness.holdProjectListResponse(null);
+    if (resolveListHold) {
+      (resolveListHold as () => void)();
+    }
+    await harness.close();
+  }
+});
+
+await browser.close();
+await vite.close();
+
+console.log('============================================================');
+console.log(`TOTAL TESTS: ${passed + failed}`);
+console.log(`PASSED: ${passed}`);
+console.log(`FAILED: ${failed}`);
+console.log('============================================================');
+
+if (failed > 0) {
+  process.exit(1);
+}
