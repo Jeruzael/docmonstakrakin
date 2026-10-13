@@ -14,6 +14,7 @@ import {
 } from '../server/workTracking/canonicalLifecycle.ts';
 import { validateDmk196ClosureReceipt } from './verifyDmk196Closure.ts';
 import { validateDmk196PostMergeReceipt } from './verifyDmk196PostMergeCandidate.ts';
+import { validateDmk197ClosureComplete } from './verifyDmk197Closure.ts';
 
 export interface AuditCandidateItem {
   id: string;
@@ -171,6 +172,7 @@ export interface VerifyOptions {
   customDmk196ClosureReceipt?: any;
   customDmk196PostMergeReceipt?: any;
   customDmk197ClosureReceipt?: any;
+  customDmk197Attestation?: any;
   forceMode?: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
   simulateStatusOverrides?: Record<string, string>;
   simulateCanonicalItemOverrides?: Record<string, any>;
@@ -584,13 +586,28 @@ export function verifyDmk208StatusAudit(
             } else if (dmk197Receipt === null) {
               throw new Error(`DMK-197 is in VERIFICATION_PENDING but closure receipt is missing`);
             }
-            if (
-              dmk197Receipt.workItemId !== 'DMK-197' ||
-              dmk197Receipt.toStatus !== 'VERIFICATION_PENDING' ||
-              dmk197Receipt.decision !== 'APPROVE' ||
-              dmk197Receipt.applied !== true
-            ) {
-              throw new Error('DMK-197 closure receipt validation failed for VERIFICATION_PENDING transition');
+
+            let dmk197Attestation = options?.customDmk197Attestation;
+            if (dmk197Attestation === undefined) {
+              const aPath = path.join(workspaceRoot, 'docs', '07_verification', 'dmk-197-post-merge-governance-attestation.json');
+              if (fs.existsSync(aPath)) {
+                try {
+                  dmk197Attestation = JSON.parse(fs.readFileSync(aPath, 'utf8'));
+                } catch (e: any) {
+                  throw new Error(`DMK-197 post-merge governance attestation JSON parse failed: ${e.message}`);
+                }
+              } else {
+                throw new Error(`DMK-197 is in VERIFICATION_PENDING but post-merge governance attestation is missing at ${aPath}`);
+              }
+            } else if (dmk197Attestation === null) {
+              throw new Error(`DMK-197 is in VERIFICATION_PENDING but post-merge governance attestation is missing`);
+            }
+
+            if (dmk197Receipt && dmk197Attestation) {
+              const val = validateDmk197ClosureComplete(dmk197Receipt, dmk197Attestation, { workspaceRoot });
+              if (!val.valid) {
+                throw new Error(`DMK-197 verification failed: ${val.errors.join('; ')}`);
+              }
             }
           } else {
             throw new Error(`TRANSITION item DMK-197 status mismatch: expected ${item.candidateStatus} or authorized VERIFICATION_PENDING, got ${canonicalItem.status}`);

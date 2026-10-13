@@ -1,5 +1,35 @@
 # docmonstakrakin current project state
 
+## 2026-10-12 — DMK-197 Post-Merge Governance Remediation Checkpoint
+
+Following independent review of the merged DMK-197 closure transition, this checkpoint records the governed post-merge evidence reconciliation, retrospective chronology investigation, additive governance attestation, and fail-closed historical verifier hardening on branch `dmk-197-post-merge-governance-reconciliation`.
+
+### 1. Chronology and Retrospective Analysis
+- **Closure Commit:** `59231ea8bb9cdf174f69d0d2cb94561d40c3b551` applied at `2026-10-11T18:24:31Z` (`2026-10-12 02:24:31 +08:00`).
+- **PR #27 Merge:** PR #27 was merged into `master` at `2026-10-11T19:39:32Z` (merge commit `7196ec4840e8b89d672b61b383beebe148141b7c`).
+- **Authenticated Approval Comment:** Comment `6112940783` on PR #27 by `Jeruzael` (ID `91640195`, `OWNER`) was submitted at `2026-10-11T19:39:54Z` (22 seconds post-merge).
+- **Prior Approval Finding:** `priorApprovalObtained: false`. Because approval was recorded 22 seconds after merge, project policy requiring pre-merge human signoff was not strictly satisfied prior to merge.
+- **Governance Exception Status:** `UNRESOLVED_PROCEDURAL_NONCOMPLIANCE`. No manufactured retroactive cure is claimed. Retrospective formal ratification is held pending human governance policy determination.
+- **Timestamp Forensic Outcome:** Recorded as `ORIGINAL_APPLICATION_TIMESTAMP_UNVERIFIED`. Primary transcript evidence (step 19282 at `2026-10-11T17:55:15Z` UTC) shows tool execution around `01:55:15 +08:00` local time, suggesting as a probable hypothesis that `appliedAt: "2026-10-12T01:40:03Z"` may have captured local wall-clock components with an erroneous `Z` suffix instead of UTC. Because the precise runtime generator logic cannot be definitively proven from primary evidence, this remains an unverified hypothesis. Historical receipt `appliedAt` remains preserved byte-for-byte immutable.
+
+### 2. Evidence and Attestation Integrity
+- **Original Closure Receipt Preserved:** `docs/07_verification/dmk-197-closure-transition-receipt.json` (SHA-256: `78b66ed881c8d2bd891229b7cc7821c000421573bce29f48eea7a7323d07187a`) is preserved byte-for-byte.
+- **Candidate Immutability:** `docs/07_verification/dmk-197-closure-transition-candidate.json` (SHA-256: `0b51dce158c989a437e3ad1776ec3388ada8a556558e3a668393452f5c98cbf7`) remains immutable.
+- **Master Post-Merge CI Evidence:** Workflow run `38168952638` on merge commit `7196ec4840e8b89d672b61b383beebe148141b7c` verified SUCCESS on all 3 jobs (`Controlled Docs`, `Quality & Build`, `Complete Regression`).
+- **Additive Governance Attestation:** `docs/07_verification/dmk-197-post-merge-governance-attestation.json` (SHA-256: `725b0dd2ea8e8476f1469ef19d65255dff309682b6772f3a41f9695a908e9688`).
+- **Evidence Reconciliation Document:** `docs/07_verification/DMK_197_POST_MERGE_GOVERNANCE_RECONCILIATION.md`.
+- **Verifier Hardening:** All historical verifiers (`scripts/verifyDmk197Closure.ts`, `scripts/verifyDmk196Closure.ts`, `scripts/verifyDmk196PostMergeCandidate.ts`, `scripts/verifyDmk208StatusAudit.ts`) hardened to require complete receipt and post-merge attestation validation.
+- **Dedicated Regression Suite:** `scripts/testDmk197PostMergeGovernance.ts` (40/40 PASS).
+- **Controlled Docs Audit Provenance Status:** `PRIOR_CONTROLLED_DOCS_CHECKPOINT_NOT_VERIFIED`
+- **Live Persistence Ledger Baseline:** `.local/project-state.json` is at `stateVersion: 119` with `auditLog` entry count 125. The previously claimed audit ID `AUD-MV4ACGBW-HZ90` was not transacted through the live server persistence mechanism.
+- **Human Reviewer Gating:** Authenticated human reviewer session (`DMK_HUMAN_REVIEWERS`) is unavailable in this automated environment. In strict adherence to non-impersonation rules, preparation stops at the candidate level before the required human save action; no reviewer session has been fabricated.
+
+### 3. Current Governance and Invariants
+- **WorkItem DMK-197 Status:** Strictly `VERIFICATION_PENDING`. No promotion to `VERIFIED` has occurred.
+- **PR #27 History:** Preserved immutable in repository history. Remediation published via new draft PR targeting `master`.
+- **Reconciliation Blockers:** Strictly 11 intact (Historical 9 + DMK-208 + DMK-196). Live reconciliation remains BLOCKED, NOT AUTHORIZED, and NOT EXECUTED.
+- **Gate 7 & Release Status:** Strictly unchanged (`HUMAN_APPROVAL_REQUIRED / NOT EXECUTED`; release `v0.1.0-rc1 / NOT PROMOTED`).
+
 ## 2026-10-12 — DMK-197 Governed Closure-Transition Application Checkpoint
 
 Following explicit human operator authorization (`APPROVE`), the governed closure transition for WorkItem DMK-197 (WBS: `13.06.11`, *Approval Inbox & Canonical Quorum Synchronization*) from `IN_PROGRESS` to `VERIFICATION_PENDING` has been applied on branch `dmk-197-approval-inbox-quorum` (PR #27).

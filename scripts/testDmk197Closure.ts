@@ -479,9 +479,11 @@ try {
     fs.mkdirSync(cDir, { recursive: true });
     fs.writeFileSync(path.join(cDir, 'MASTER_WBS.yaml'), postApplyWbsYaml);
     fs.writeFileSync(path.join(vDir, 'dmk-197-closure-transition-candidate.json'), fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-candidate.json')));
-    fs.writeFileSync(path.join(vDir, 'dmk-197-closure-transition-receipt.json'), JSON.stringify(rawReceipt, null, 2));
+    fs.writeFileSync(path.join(vDir, 'dmk-197-closure-transition-receipt.json'), fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json')));
+    fs.writeFileSync(path.join(vDir, 'dmk-197-post-merge-governance-attestation.json'), fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-post-merge-governance-attestation.json')));
     fs.writeFileSync(path.join(vDir, 'DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md'), 'ev');
     fs.writeFileSync(path.join(vDir, 'DMK_197_CLOSURE_TRANSITION_REVIEW.md'), 'ev');
+    fs.writeFileSync(path.join(vDir, 'DMK_197_POST_MERGE_GOVERNANCE_RECONCILIATION.md'), 'ev');
 
     const res = verifyDmk197Closure({ workspaceRoot: tempDir });
     assert.equal(res.valid, true, `Expected post-apply fixture to pass, got: ${res.errors.join('; ')}`);
