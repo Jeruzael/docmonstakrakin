@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
+import ts from 'typescript';
 import { chromium, type Page, type Route } from 'playwright';
 import { createServer } from 'vite';
 import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
@@ -3810,8 +3812,222 @@ await test('Scenario 47 (RED-01): Controlled document save acknowledgment must n
   }
 });
 
+// Helper: TypeScript AST Source-Contract Verifier for Canonical Snapshot Certification
+interface CertificationContractResult {
+  verifiedFile: string;
+  totalMutationsInFile: number;
+  authorizedMutation: string;
+  fetchFunctionFound: boolean;
+  committedFunctionFound: boolean;
+  createFunctionFound: boolean;
+}
+
+function verifyCanonicalSnapshotCertificationSourceContract(
+  sourceCode: string,
+  fileName = 'src/App.tsx'
+): CertificationContractResult {
+  const sf = ts.createSourceFile(fileName, sourceCode, ts.ScriptTarget.Latest, true);
+
+  function findFunctionNode(name: string): ts.Node | null {
+    let target: ts.Node | null = null;
+    function walk(node: ts.Node) {
+      if (ts.isVariableDeclaration(node) && node.name.getText(sf) === name) {
+        target = node;
+        return;
+      }
+      if (ts.isFunctionDeclaration(node) && node.name && node.name.getText(sf) === name) {
+        target = node;
+        return;
+      }
+      ts.forEachChild(node, walk);
+    }
+    walk(sf);
+    return target;
+  }
+
+  const committedNode = findFunctionNode('handleControlledDocumentCommitted');
+  const createNode = findFunctionNode('handleCreateProject');
+  const fetchNode = findFunctionNode('fetchProjectData');
+
+  if (!committedNode) {
+    throw new Error(`Structural contract failure: handleControlledDocumentCommitted declaration not found in ${fileName}`);
+  }
+  if (!createNode) {
+    throw new Error(`Structural contract failure: handleCreateProject declaration not found in ${fileName}`);
+  }
+  if (!fetchNode) {
+    throw new Error(`Structural contract failure: fetchProjectData declaration not found in ${fileName}`);
+  }
+
+  function findCertificationMutations(rootNode: ts.Node): Array<{ text: string; line: number }> {
+    const mutations: Array<{ text: string; line: number }> = [];
+    function walk(node: ts.Node) {
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+      ) {
+        const leftText = node.left.getText(sf);
+        if (leftText.includes('acceptedCanonicalSnapshotVersionsRef')) {
+          const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+          mutations.push({ text: node.getText(sf), line: line + 1 });
+        }
+      }
+      ts.forEachChild(node, walk);
+    }
+    walk(rootNode);
+    return mutations;
+  }
+
+  // 1. handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef.current
+  const committedMutations = findCertificationMutations(committedNode);
+  assert.equal(
+    committedMutations.length,
+    0,
+    `Contract violation: handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef.current (found: ${committedMutations.map((m) => m.text).join('; ')})`
+  );
+
+  // 2. handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef.current
+  const createMutations = findCertificationMutations(createNode);
+  assert.equal(
+    createMutations.length,
+    0,
+    `Contract violation: handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef.current (found: ${createMutations.map((m) => m.text).join('; ')})`
+  );
+
+  // 3. fetchProjectData must contain exactly 1 authorized certification update
+  const fetchMutations = findCertificationMutations(fetchNode);
+  assert.equal(
+    fetchMutations.length,
+    1,
+    `Contract violation: fetchProjectData must contain exactly 1 authorized certification write (found: ${fetchMutations.length})`
+  );
+  assert.match(
+    fetchMutations[0].text,
+    /acceptedCanonicalSnapshotVersionsRef\.current\[.*\]\s*=\s*incomingVersion/,
+    'fetchProjectData certification write must assign incomingVersion'
+  );
+
+  // 4. File-wide scan: exactly 1 mutation exists in the entire file (no unrelated handler mutates it)
+  const allMutations = findCertificationMutations(sf);
+  assert.equal(
+    allMutations.length,
+    1,
+    `Contract violation: Entire file must contain exactly 1 mutation of acceptedCanonicalSnapshotVersionsRef.current across all handlers (found: ${allMutations.length})`
+  );
+
+  // 5. In fetchProjectData, rejected snapshot path returns early before certification update
+  const fetchText = fetchNode.getText(sf);
+  const rejectGuardIndex = fetchText.indexOf('if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor)');
+  const certAssignIndex = fetchText.indexOf('acceptedCanonicalSnapshotVersionsRef.current');
+  assert.ok(rejectGuardIndex !== -1, 'fetchProjectData must contain snapshot validity and floor check');
+  assert.ok(certAssignIndex !== -1, 'fetchProjectData must contain certification assignment');
+  assert.ok(rejectGuardIndex < certAssignIndex, 'Snapshot rejection check must precede certification write');
+  const guardBlock = fetchText.slice(rejectGuardIndex, certAssignIndex);
+  assert.ok(guardBlock.includes('return;'), 'Snapshot rejection branch must return early before certification write');
+
+  return {
+    verifiedFile: fileName,
+    totalMutationsInFile: allMutations.length,
+    authorizedMutation: fetchMutations[0].text,
+    fetchFunctionFound: true,
+    committedFunctionFound: true,
+    createFunctionFound: true,
+  };
+}
+
+function runCertificationNegativeControls() {
+  // Negative Control A: Historical premature assignment in handleControlledDocumentCommitted (9b37dd02 pattern)
+  const fixtureCommittedLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[projectId] = Math.max(0, nextVersion);
+      };
+      const handleCreateProject = () => {};
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureCommittedLeak, 'fixtureCommittedLeak.tsx'),
+    /handleControlledDocumentCommitted must NOT mutate acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control B: Premature assignment in handleCreateProject
+  const fixtureCreateLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[created.id] = created.stateVersion;
+      };
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureCreateLeak, 'fixtureCreateLeak.tsx'),
+    /handleCreateProject must NOT mutate acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control C: Unrelated handler mutation
+  const fixtureUnrelatedLeak = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {};
+      const handleSomeOtherEvent = () => {
+        acceptedCanonicalSnapshotVersionsRef.current[someId] = 999;
+      };
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) { return; }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureUnrelatedLeak, 'fixtureUnrelatedLeak.tsx'),
+    /Entire file must contain exactly 1 mutation of acceptedCanonicalSnapshotVersionsRef/
+  );
+
+  // Negative Control D: Rejected snapshot does not return before certification write
+  const fixtureMissingEarlyReturn = `
+    export function App() {
+      const acceptedCanonicalSnapshotVersionsRef = useRef({});
+      const handleControlledDocumentCommitted = () => {};
+      const handleCreateProject = () => {};
+      const fetchProjectData = () => {
+        if (!isValidStateVersion(incomingVersion) || incomingVersion < effectiveFloor) {
+          console.warn('stale snapshot');
+        }
+        acceptedCanonicalSnapshotVersionsRef.current[data.project.id] = incomingVersion;
+      };
+    }
+  `;
+  assert.throws(
+    () => verifyCanonicalSnapshotCertificationSourceContract(fixtureMissingEarlyReturn, 'fixtureMissingEarlyReturn.tsx'),
+    /Snapshot rejection branch must return early/
+  );
+}
+
 // Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot
 await test('Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot', async () => {
+  // Part 1: Structural TypeScript AST Source Contract Verification
+  const appSourcePath = path.join(root, 'src', 'App.tsx');
+  const appSourceCode = fs.readFileSync(appSourcePath, 'utf8');
+  const contractResult = verifyCanonicalSnapshotCertificationSourceContract(appSourceCode, 'src/App.tsx');
+  assert.equal(contractResult.totalMutationsInFile, 1);
+  assert.match(contractResult.authorizedMutation, /acceptedCanonicalSnapshotVersionsRef\.current\[data\.project\.id\]\s*=\s*incomingVersion/);
+
+  // Part 2: Discriminating Negative Control Verification (proves detection rejects premature write patterns)
+  runCertificationNegativeControls();
+
+  // Part 3: Browser End-to-End Execution
   let resolveProjectC!: () => void;
   const projectCHoldPromise = new Promise<void>((r) => (resolveProjectC = r));
 
@@ -3954,6 +4170,121 @@ await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical
     // No signoff POST must have occurred
     assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
   } finally {
+    await harness.close();
+  }
+});
+
+// Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale
+await test('Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale', async () => {
+  let resolveListHold: (() => void) | null = null;
+  const listHoldPromise = new Promise<void>((r) => (resolveListHold = r));
+
+  const harness = await createHarness({ initialStateVersion: 120 });
+  try {
+    const { page } = harness;
+
+    // 1. Initial state: Project A initial snapshot v120, ready.
+    const packageBtn = page.locator('#topbar-package-btn');
+    assert.ok(await packageBtn.isVisible(), 'TopBar package button must be visible initially (snapshot v120 ready)');
+
+    // 2. Navigate to Projects workspace
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await page.locator('[aria-label="Projects workspace"]').waitFor();
+
+    // 3. Set projects list to v121 and hold with harness.holdProjectListResponse
+    harness.setProjectsList([
+      {
+        ...structuredClone(INITIAL_PROJECTS[0]),
+        id: 'PRJ-DOCMONSTAKRAKIN',
+        name: 'docmonstakrakin List v121',
+        stateVersion: 121,
+      },
+    ]);
+    harness.holdProjectListResponse(listHoldPromise);
+
+    // 4. Click refresh button in Projects workspace; confirm request in flight (btn.disabled)
+    const refreshBtn = page.locator('[data-testid="btn-refresh-project-list"]');
+    await refreshBtn.click();
+    assert.strictEqual(await refreshBtn.isDisabled(), true, 'Refresh button must be disabled while fetch is in-flight');
+
+    // 5. Without releasing hold, navigate to Reports & Export -> Dynamic Projections -> Release Gates & DoD
+    await page.getByRole('button', { name: 'Reports & Export' }).click();
+    await page.getByRole('tab', { name: /Dynamic Projections/ }).click();
+    await page.locator('#panel-dynamic-projections').waitFor();
+
+    const relTabBtn = page.getByRole('button', { name: /Release Gates & DoD/ });
+    await relTabBtn.waitFor();
+    await relTabBtn.click();
+
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'),
+      { timeout: 4000 }
+    );
+
+    // 6. Confirm snapshot v120 is ready; click "Execute v0.1 DoD Sign-Off"; verify modal visible and submit button enabled
+    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
+    await signoffBtn.waitFor();
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is ready');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is ready');
+
+    await signoffBtn.click();
+
+    // Verify modal is open
+    const modalHeading = page.getByRole('heading', { name: 'Execute v0.1 Definition-of-Done Sign-Off' });
+    await modalHeading.waitFor({ state: 'visible' });
+
+    // Fill actor so submit button would otherwise be valid
+    const actorInput = page.locator('input[placeholder*="Security Lead"]');
+    await actorInput.fill('Security Lead (Gio)');
+    const modalSubmitBtn = page.getByRole('button', { name: 'Authorize & Seal v0.1 Release' });
+    assert.ok(await modalSubmitBtn.isEnabled(), 'Modal submit button must be enabled with actor provided and canonical data ready');
+
+    // 7. Release list hold: resolveListHold(); harness.holdProjectListResponse(null);
+    if (resolveListHold) {
+      (resolveListHold as () => void)();
+      resolveListHold = null;
+    }
+    harness.holdProjectListResponse(null);
+
+    // 8. List response completes; project-scoped stale warning appears.
+    const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
+    await snapshotWarning.waitFor({ state: 'visible' });
+    assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must appear after list floor advances to v121');
+
+    // 9. Modal automatically closes via useEffect in DocumentsView.tsx
+    await modalHeading.waitFor({ state: 'hidden' });
+    assert.ok(!(await modalHeading.isVisible()), 'Modal must automatically close when canonical readiness is lost');
+
+    // 10. "Execute v0.1 DoD Sign-Off" entry button becomes disabled/hidden
+    assert.ok(
+      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
+      'Execute v0.1 DoD Sign-Off entry button must be disabled or hidden while canonical snapshot is stale'
+    );
+
+    // 11. Exactly 0 sign-off POST requests issued
+    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
+
+    // 12. Deliver authoritative snapshot v121; click snapshot retry button; stale warning clears, readiness restores, entry button re-enabled
+    harness.setProjectAData({
+      ...structuredClone(INITIAL_PROJECTS[0]),
+      id: 'PRJ-DOCMONSTAKRAKIN',
+      name: 'Fresh Snapshot v121',
+      stateVersion: 121,
+    });
+    const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
+    await retrySnapshotBtn.click();
+    await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
+
+    assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
+    assert.ok(await packageBtn.isVisible(), 'TopBar package button restored on v121 complete snapshot recovery');
+    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible after recovery');
+    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be re-enabled after recovery');
+    assert.equal(harness.getSignoffCalls().length, 0, 'Signoff POST calls must remain 0');
+  } finally {
+    harness.holdProjectListResponse(null);
+    if (resolveListHold) {
+      (resolveListHold as () => void)();
+    }
     await harness.close();
   }
 });
