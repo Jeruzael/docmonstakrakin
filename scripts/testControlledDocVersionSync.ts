@@ -1064,6 +1064,7 @@ await test('Scenario 15 (Case C): Audit refresh failure displays recoverable war
     await page.locator('[data-testid="btn-retry-audit-sync"]').click();
 
     // Warning disappears, status becomes LEDGER SYNCHRONIZED, and new event is displayed
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
     await warning.waitFor({ state: 'detached' });
     assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
     const updatedTableText = await page.locator('table').innerText();
@@ -2029,6 +2030,7 @@ await test('Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed 
 
     // Test C: Recovery to synchronized state upon subsequent valid authoritative audit response
     await page.locator('[data-testid="btn-retry-audit-sync"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="audit-sync-status-badge"]')?.textContent?.includes('SYNCHRONIZED'));
     await warning.waitFor({ state: 'detached' });
     assert.match(await statusBadge.innerText(), /LEDGER SYNCHRONIZED/);
     const tableText = await page.locator('table').innerText();
