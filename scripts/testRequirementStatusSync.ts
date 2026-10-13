@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import type { Requirement, RequirementStatus } from '../src/types.js';
+import { generateUniqueRequirementId } from '../server/requirementId.ts';
 
 console.log('================================================================');
 console.log('   REQUIREMENT CANONICAL STATE SYNCHRONIZATION REGRESSION TEST');
@@ -75,6 +76,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      id: 'REQ-SYNC-FIXTURE-001',
       title: 'Audit Trail Signature Verification',
       statement: 'System must cryptographically verify signatures on audit chain entries.',
       category: 'SECURITY',
@@ -204,6 +206,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      id: 'REQ-SYNC-FIXTURE-002',
       title: 'TLS 1.3 Strict Cipher Negotiation',
       statement: 'Only TLS 1.3 cipher suites shall be allowed for ingress connections.',
       category: 'SECURITY',
@@ -303,6 +306,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      id: 'REQ-SYNC-FIXTURE-003',
       title: 'Mutual TLS Authentication',
       statement: 'Service-to-service communication must enforce mTLS.',
       category: 'SECURITY',
@@ -454,8 +458,283 @@ try {
   assert.equal(req3RestartCanonical?.status, 'VERIFIED', 'Persisted status must remain VERIFIED after restart');
   pass('Test L: Server restart persists incremented stateVersion, status, and audit entry');
 
+  // =========================================================================
+  // Test M — Auto-generated requirement IDs are valid UUID format, unique, and correctly linked
+  // =========================================================================
+  const createGen1Res = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Auto-Generated Requirement Alpha',
+      statement: 'Generated requirement statement alpha.',
+      category: 'SECURITY',
+      priority: 'HIGH',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(createGen1Res.status, 201, 'Generated requirement 1 creation must succeed');
+  const genReq1: Requirement = await createGen1Res.json();
+  assert.match(
+    genReq1.id,
+    /^REQ-GEN-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    'Generated ID must have REQ-GEN- prefix followed by a valid UUID'
+  );
+
+  const createGen2Res = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Auto-Generated Requirement Beta',
+      statement: 'Generated requirement statement beta.',
+      category: 'FUNCTIONAL',
+      priority: 'MEDIUM',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(createGen2Res.status, 201, 'Generated requirement 2 creation must succeed');
+  const genReq2: Requirement = await createGen2Res.json();
+  assert.match(
+    genReq2.id,
+    /^REQ-GEN-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    'Second generated ID must have REQ-GEN- prefix followed by a valid UUID'
+  );
+  assert.notEqual(genReq1.id, genReq2.id, 'Generated IDs must be unique');
+
+  // Verify status update with generated ID correctly targets genReq2 and records previousStatus PROPOSED
+  const updateGen2Res = await fetch(`${base}/api/projects/${projectId}/requirements/${genReq2.id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'UNDER_REVIEW', justification: 'Advancing generated requirement 2' }),
+  });
+  assert.equal(updateGen2Res.status, 200, 'Status update for generated requirement must succeed');
+  const updateGen2Data = await updateGen2Res.json();
+  assert.equal(updateGen2Data.requirement.id, genReq2.id);
+  assert.equal(updateGen2Data.requirement.status, 'UNDER_REVIEW');
+
+  const auditsGen2 = await getProjectAuditLogs(projectId);
+  const latestAuditGen2 = auditsGen2[0];
+  assert.equal(latestAuditGen2.action, 'REQUIREMENT_STATUS_CHANGED');
+  assert.equal(latestAuditGen2.target, genReq2.id);
+  assert.equal(latestAuditGen2.details?.previousStatus, 'PROPOSED');
+  assert.equal(latestAuditGen2.details?.newStatus, 'UNDER_REVIEW');
+  pass('Test M: Auto-generated requirement IDs are valid UUID format, unique, and correctly linked across status updates');
+
+  // =========================================================================
+  // Test N — ID generator retries on candidate collision and fails closed when limit exhausted
+  // =========================================================================
+  const existingSet = [{ id: 'REQ-COLLISION-CANDIDATE-01' }];
+  let generatorCalls = 0;
+  const mockRetryGenerator = () => {
+    generatorCalls++;
+    if (generatorCalls === 1) {
+      return 'REQ-COLLISION-CANDIDATE-01'; // duplicate
+    }
+    return 'REQ-COLLISION-CANDIDATE-02'; // fresh
+  };
+
+  const retryId = generateUniqueRequirementId(existingSet, mockRetryGenerator, 5);
+  assert.equal(retryId, 'REQ-COLLISION-CANDIDATE-02', 'Generator must return second non-colliding candidate');
+  assert.equal(generatorCalls, 2, 'Generator must have retried exactly once after collision');
+
+  // Fail-closed test: candidate always collides
+  assert.throws(
+    () => generateUniqueRequirementId(existingSet, () => 'REQ-COLLISION-CANDIDATE-01', 3),
+    /Failed to generate unique requirement ID within retry limit/,
+    'Generator must fail closed by throwing error when retry limit is exhausted'
+  );
+  pass('Test N: ID generator retries on candidate collision and fails closed when limit exhausted');
+
+  // =========================================================================
+  // Test O — Two distinct caller-supplied IDs are both accepted
+  // =========================================================================
+  const suppliedAlphaId = 'REQ-SUPPLIED-ALPHA-001';
+  const suppliedBetaId = 'REQ-SUPPLIED-BETA-002';
+
+  const createAlphaRes = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: suppliedAlphaId,
+      title: 'Supplied Requirement Alpha',
+      statement: 'Explicit ID requirement alpha.',
+      category: 'SECURITY',
+      priority: 'HIGH',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(createAlphaRes.status, 201, 'First supplied ID must return 201');
+  const alphaReq: Requirement = await createAlphaRes.json();
+  assert.equal(alphaReq.id, suppliedAlphaId);
+
+  const createBetaRes = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: suppliedBetaId,
+      title: 'Supplied Requirement Beta',
+      statement: 'Explicit ID requirement beta.',
+      category: 'FUNCTIONAL',
+      priority: 'MEDIUM',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(createBetaRes.status, 201, 'Second supplied ID must return 201');
+  const betaReq: Requirement = await createBetaRes.json();
+  assert.equal(betaReq.id, suppliedBetaId);
+
+  pass('Test O: Two distinct caller-supplied IDs are both accepted');
+
+  // =========================================================================
+  // Test P — Duplicate caller-supplied ID is rejected with HTTP 409 without mutation
+  // =========================================================================
+  const vBeforeP = await getProjectStateVersion(projectId);
+  const auditsBeforeP = await getProjectAuditLogs(projectId);
+  const aBeforeP = auditsBeforeP.length;
+
+  const duplicateCreationRes = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: suppliedAlphaId,
+      title: 'Duplicate Attempt Alpha',
+      statement: 'Should be rejected as duplicate ID.',
+      category: 'SECURITY',
+      priority: 'LOW',
+      status: 'PROPOSED',
+    }),
+  });
+  assert.equal(duplicateCreationRes.status, 409, 'Duplicate requirement ID must be rejected with HTTP 409 Conflict');
+  const duplicateErrData = await duplicateCreationRes.json();
+  assert.match(duplicateErrData.error, /already exists in project/i);
+
+  const vAfterP = await getProjectStateVersion(projectId);
+  const auditsAfterP = await getProjectAuditLogs(projectId);
+  assert.equal(vAfterP, vBeforeP, 'stateVersion must not advance on rejected duplicate creation');
+  assert.equal(auditsAfterP.length, aBeforeP, 'Audit count must not advance on rejected duplicate creation');
+
+  const listAfterPRes = await fetch(`${base}/api/projects/${projectId}/requirements`);
+  const listAfterP: Requirement[] = await listAfterPRes.json();
+  const alphaMatches = listAfterP.filter((r) => r.id === suppliedAlphaId);
+  assert.equal(alphaMatches.length, 1, 'Only original requirement with this ID must exist');
+  assert.equal(alphaMatches[0].title, 'Supplied Requirement Alpha', 'Existing requirement title must be unchanged');
+  pass('Test P: Duplicate caller-supplied ID is rejected with HTTP 409 without stateVersion or audit advance');
+
+  // =========================================================================
+  // Test Q — Blank and invalid caller-supplied IDs are rejected with HTTP 400 without mutation
+  // =========================================================================
+  const vBeforeQ = await getProjectStateVersion(projectId);
+  const auditsBeforeQ = await getProjectAuditLogs(projectId);
+  const aBeforeQ = auditsBeforeQ.length;
+
+  for (const invalidId of ['', '   ', 12345, null]) {
+    const invalidRes = await fetch(`${base}/api/projects/${projectId}/requirements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: invalidId,
+        title: 'Invalid ID Attempt',
+        statement: 'Should be rejected due to invalid ID format.',
+        category: 'SECURITY',
+        priority: 'MEDIUM',
+        status: 'PROPOSED',
+      }),
+    });
+    assert.equal(invalidRes.status, 400, `Supplied ID ${JSON.stringify(invalidId)} must return HTTP 400`);
+    const errData = await invalidRes.json();
+    assert.match(errData.error, /must be a non-empty string/i);
+  }
+
+  const vAfterQ = await getProjectStateVersion(projectId);
+  const auditsAfterQ = await getProjectAuditLogs(projectId);
+  assert.equal(vAfterQ, vBeforeQ, 'stateVersion must remain unchanged after invalid ID attempts');
+  assert.equal(auditsAfterQ.length, aBeforeQ, 'Audit count must remain unchanged after invalid ID attempts');
+  pass('Test Q: Blank or invalid caller-supplied IDs are rejected with HTTP 400 without state mutation');
+
+  // =========================================================================
+  // Test R — Ambiguous existing ID protection on status update fails closed
+  // =========================================================================
+  // Inject duplicate requirements into persisted project state snapshot
+  await stopServer();
+
+  const snapshotPath = path.join(dir, '.local', 'project-state.json');
+  assert.ok(fs.existsSync(snapshotPath), 'Project state snapshot must exist on disk');
+  const snapshotData = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+
+  const ambiguousId = 'REQ-AMBIGUOUS-DUPLICATE-001';
+  const ambiguousReq1: Requirement = {
+    id: ambiguousId,
+    title: 'Ambiguous Requirement Instance 1',
+    statement: 'First ambiguous duplicate requirement.',
+    category: 'SECURITY',
+    status: 'DEFERRED',
+    priority: 'HIGH',
+    source: { type: 'stakeholder', id: 'MANUAL_ENTRY' },
+    riskLinks: [],
+    threatLinks: [],
+    standardLinks: [],
+    workItems: [],
+    tests: [],
+    evidence: [],
+    acceptanceCriteria: [],
+    updatedAt: new Date().toISOString(),
+  };
+  const ambiguousReq2: Requirement = {
+    id: ambiguousId,
+    title: 'Ambiguous Requirement Instance 2',
+    statement: 'Second ambiguous duplicate requirement.',
+    category: 'SECURITY',
+    status: 'PROPOSED',
+    priority: 'HIGH',
+    source: { type: 'stakeholder', id: 'MANUAL_ENTRY' },
+    riskLinks: [],
+    threatLinks: [],
+    standardLinks: [],
+    workItems: [],
+    tests: [],
+    evidence: [],
+    acceptanceCriteria: [],
+    updatedAt: new Date().toISOString(),
+  };
+
+  snapshotData.state.requirements[projectId] = [
+    ...(snapshotData.state.requirements[projectId] || []),
+    ambiguousReq1,
+    ambiguousReq2,
+  ];
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshotData, null, 2));
+
+  await startServer();
+
+  const vBeforeR = await getProjectStateVersion(projectId);
+  const auditsBeforeR = await getProjectAuditLogs(projectId);
+  const aBeforeR = auditsBeforeR.length;
+
+  // Attempting to update status for ambiguousId must fail-closed with 409
+  const ambiguousUpdateRes = await fetch(`${base}/api/projects/${projectId}/requirements/${ambiguousId}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'UNDER_REVIEW', justification: 'Attempting ambiguous update' }),
+  });
+  assert.equal(ambiguousUpdateRes.status, 409, 'Status update on ambiguous duplicate requirement ID must return HTTP 409');
+  const ambiguousErr = await ambiguousUpdateRes.json();
+  assert.match(ambiguousErr.error, /Ambiguous requirement ID: multiple requirements found/i);
+
+  const vAfterR = await getProjectStateVersion(projectId);
+  const auditsAfterR = await getProjectAuditLogs(projectId);
+  assert.equal(vAfterR, vBeforeR, 'stateVersion must not advance on ambiguous requirement status update');
+  assert.equal(auditsAfterR.length, aBeforeR, 'Audit count must not advance on ambiguous requirement status update');
+
+  // Verify neither ambiguous requirement was mutated
+  const listAfterRRes = await fetch(`${base}/api/projects/${projectId}/requirements`);
+  const listAfterR: Requirement[] = await listAfterRRes.json();
+  const ambiguousMatches = listAfterR.filter((r) => r.id === ambiguousId);
+  assert.equal(ambiguousMatches.length, 2);
+  assert.equal(ambiguousMatches[0].status, 'DEFERRED', 'First duplicate must remain DEFERRED');
+  assert.equal(ambiguousMatches[1].status, 'PROPOSED', 'Second duplicate must remain PROPOSED');
+  pass('Test R: Ambiguous existing ID protection on status update fails closed with HTTP 409 without mutation');
+
   console.log('\n================================================================');
-  console.log(`TOTAL TESTS: 12 | PASSED: ${passedCount} | FAILED: 0`);
+  console.log(`TOTAL TESTS: 18 | PASSED: ${passedCount} | FAILED: 0`);
   console.log('================================================================');
 } finally {
   await stopServer();
