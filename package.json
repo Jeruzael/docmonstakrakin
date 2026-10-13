@@ -48,6 +48,7 @@
     "test:dmk-197-closure-candidate": "tsx scripts/testDmk197ClosureCandidate.ts",
     "verify:dmk-197-closure": "tsx scripts/verifyDmk197Closure.ts",
     "test:dmk-197-closure": "tsx scripts/testDmk197Closure.ts",
+    "test:dmk-197-governance": "tsx scripts/testDmk197PostMergeGovernance.ts",
     "ci:prepare": "tsx scripts/prepareCiRuntime.ts",
     "ci:quality": "npm run wbs:check && npm run lint && npm run build",
     "ci:controlled-docs": "npm run ci:prepare && npm run test:controlled-docs",
