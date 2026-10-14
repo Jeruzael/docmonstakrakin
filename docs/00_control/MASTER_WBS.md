@@ -484,7 +484,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Status:** `PROPOSED`
 - **Requirements:** `REQ-OPS-001`, `REQ-SEC-001` | **Architecture:** `CMP-01`, `CMP-02` | **Controls:** `SEC-CTRL-011`, `SEC-CTRL-020`
 - **Description:** Classify all API routes and protect privileged endpoints; default local service to loopback unless secure network mode is explicitly configured.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Bind the local server to 127.0.0.1 by default; wider network exposure requires an explicit secure deployment configuration."
   - "Deny unauthenticated and unauthorized access to privileged secrets, Git operations, exports, administration, and project mutations."
   - "Inventory every registered API route with action/resource policy and pass negative authorization regression tests."
@@ -496,7 +496,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Status:** `PROPOSED`
 - **Requirements:** `REQ-GOV-001`, `REQ-GOV-002` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Formalize local-first identity, authorization, human governance separation, threat boundaries and approval policy contracts without silently ratifying preliminary quorum rules.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Specify a unified local-first identity/authorization design with distinct human and AI agent principal types."
   - "Keep technically VERIFIED separate from independent human governance approval; protected operations require required authorized human approvals."
   - "Document local bootstrap/recovery, role configuration, approval receipts, threat model and explicit unresolved policy decisions."
@@ -509,7 +509,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Dependencies:** `DMK-209`, `DMK-210`
 - **Requirements:** `REQ-SEC-014`, `REQ-SEC-019` | **Architecture:** `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-017`, `SEC-CTRL-019`
 - **Description:** Create persistent local accounts and revocable authenticated sessions with safe credential storage and controlled migration from the current reviewer roster.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Persist distinct human principal IDs with hardened password verifiers; never store raw credentials or sessions in repository files."
   - "Enforce secure session expiry, rotation, revocation, CSRF defenses, and reauthentication for sensitive operations."
   - "Provide a recoverable bootstrap and reviewer migration with fail-closed malformed configuration and negative authentication tests."
@@ -522,7 +522,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Dependencies:** `DMK-210`, `DMK-211`
 - **Requirements:** `REQ-GOV-REVIEWER-001`, `REQ-GOV-QUORUM-001` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Provide built-in and custom roles with server-registered capabilities, configurable explicit restrictions, scoped grants and non-bypassable governance invariants.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Allow authorized administrators to configure custom role metadata, capabilities, restrictions, principal type, resource scopes and revision/audit history."
   - "Enforce deny-by-default and explicit-deny precedence with server-side authorization on every protected operation."
   - "Reject self-escalation, unauthorized role delegation, agent human-signoff, bypassed separation of duties and cross-project authorization."
@@ -535,7 +535,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Dependencies:** `DMK-212`
 - **Requirements:** `REQ-COLLAB-002` | **Architecture:** `CMP-03`, `CMP-04`, `CMP-07` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Bind agents to non-human identities, bounded permissions, expiring delegated authority and tamper-evident audit, with human governance actions nondelegable.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Agent authority must be independently scoped and cannot exceed the delegator's authorized permissions."
   - "Delegations must support expiration, revocation, explicit project/resource scopes and attributable audit events."
   - "Reject agent impersonation, forged human sign-off, stale delegations and cross-project execution; defer peer federation to a separate ratified decision."
@@ -548,7 +548,7 @@ Current GitHub configuration does not permit required branch protection for this
 - **Dependencies:** `DMK-209`, `DMK-211`, `DMK-212`, `DMK-213`
 - **Requirements:** `REQ-REL-001`, `REQ-OPS-001` | **Architecture:** `CMP-01`, `CMP-02`, `CMP-04` | **Controls:** `SEC-CTRL-013`, `SEC-CTRL-020`
 - **Description:** Perform read-only review and governed integration verification of authentication, custom roles, delegation, migration and historical verifier continuity.
-- **Acceptance Criteria:
+- **Acceptance Criteria:**
   - "Verify migration and recovery without exposing secrets or weakening existing reviewer, approval, or historical evidence controls."
   - "Prove that unauthorized actions, forged receipts, stale permissions and agent self-approval fail closed across all integrated workflows."
   - "Pass Quality & Build, Controlled Docs, Complete Regression and independent human security/architecture review before release authorization."
