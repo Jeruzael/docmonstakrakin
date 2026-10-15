@@ -284,8 +284,16 @@ export function verifyTrustedWbsRegistrationV2(input: {
       continue;
     }
     const key = policy.humanKeys.find(k =>
-      k.principalId === signature.principalId && k.keyId === signature.keyId &&
-      k.role === signature.role && k.kind === 'HUMAN' && !k.revoked);
+      Boolean(
+        k &&
+        typeof k === 'object' &&
+        k.kind === 'HUMAN' &&
+        k.principalId === signature.principalId &&
+        k.keyId === signature.keyId &&
+        k.role === signature.role &&
+        !k.revoked
+      )
+    );
     const fingerprint = fingerprintByKey.get(signature.keyId);
     if (!key || !fingerprint || seenKeyFingerprints.has(fingerprint)) {
       deny('Signer key untrusted, revoked or already used');

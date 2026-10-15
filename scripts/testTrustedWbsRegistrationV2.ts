@@ -103,4 +103,57 @@ check('Invalid policy key validity rejected',()=>{
   const invalid={...policy,humanKeys:[{...policy.humanKeys[0],validNotAfter:'bad'},policy.humanKeys[1]]};
   assert.equal(verify({policy:invalid,context:{...context,pinnedPolicySha256:policyDigestV2(invalid)}}).valid,false);
 });
+check('Null record in human-keys roster rejected without exception',()=>{
+  const nullRoster: TrustedPolicyV2 = { ...policy, humanKeys: [null as any] };
+  const res = verify({ policy: nullRoster, context: { ...context, pinnedPolicySha256: policyDigestV2(nullRoster) } });
+  assert.equal(res.valid, false);
+  assert.equal(res.mode, 'REJECTED');
+  assert.ok(res.errors.includes('Invalid human signer enrollment record'));
+});
+check('Malformed non-object record type in human-keys roster rejected',()=>{
+  const malformedRoster: TrustedPolicyV2 = { ...policy, humanKeys: ['malformed-record' as any] };
+  const res = verify({ policy: malformedRoster, context: { ...context, pinnedPolicySha256: policyDigestV2(malformedRoster) } });
+  assert.equal(res.valid, false);
+  assert.equal(res.mode, 'REJECTED');
+  assert.ok(res.errors.includes('Invalid human signer enrollment record'));
+});
+check('Incomplete object record type in human-keys roster rejected',()=>{
+  const malformedObj: TrustedPolicyV2 = { ...policy, humanKeys: [{ principalId: 'HUMAN-A' } as any] };
+  const res = verify({ policy: malformedObj, context: { ...context, pinnedPolicySha256: policyDigestV2(malformedObj) } });
+  assert.equal(res.valid, false);
+  assert.equal(res.mode, 'REJECTED');
+  assert.ok(res.errors.includes('Invalid human signer enrollment record'));
+});
+check('Mixed valid and invalid roster rejects even if required signatures match valid keys',()=>{
+  const mixedRoster: TrustedPolicyV2 = {
+    ...policy,
+    humanKeys: [null as any, policy.humanKeys[0], policy.humanKeys[1]]
+  };
+  const res = verify({ policy: mixedRoster, context: { ...context, pinnedPolicySha256: policyDigestV2(mixedRoster) } });
+  assert.equal(res.valid, false);
+  assert.equal(res.mode, 'REJECTED');
+  assert.ok(res.errors.includes('Invalid human signer enrollment record'));
+});
+check('Mixed valid and malformed object roster rejects',()=>{
+  const mixedRoster: TrustedPolicyV2 = {
+    ...policy,
+    humanKeys: [{ invalid: true } as any, policy.humanKeys[0], policy.humanKeys[1]]
+  };
+  const res = verify({ policy: mixedRoster, context: { ...context, pinnedPolicySha256: policyDigestV2(mixedRoster) } });
+  assert.equal(res.valid, false);
+  assert.equal(res.mode, 'REJECTED');
+  assert.ok(res.errors.includes('Invalid human signer enrollment record'));
+});
+check('Malformed signature claims with null entry rejected',()=>{
+  const badSignatures = verify({ receipt: { ...receipt, signatures: [null as any, receipt.signatures[1]] } });
+  assert.equal(badSignatures.valid, false);
+  assert.equal(badSignatures.mode, 'REJECTED');
+  assert.ok(badSignatures.errors.includes('Invalid human signature claim'));
+});
+check('Malformed intent with empty approvedItems rejected',()=>{
+  const emptyItems = verify({ receipt: { ...receipt, intent: { ...intent, approvedItems: [] } } });
+  assert.equal(emptyItems.valid, false);
+  assert.equal(emptyItems.mode, 'REJECTED');
+  assert.ok(emptyItems.errors.includes('Invalid v2 registration intent'));
+});
 console.log('TOTAL: '+n+'/'+n+' checks passed');

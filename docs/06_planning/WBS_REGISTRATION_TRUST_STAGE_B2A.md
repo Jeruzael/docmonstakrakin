@@ -12,20 +12,36 @@ This Stage B2a candidate adds `scripts/verifyTrustedWbsRegistrationV2.ts`, a new
 
 Importantly, a `valid: true / EVIDENCE_VERIFIED` result is **not** authority to apply the WBS: every result returns `mayApply: false`.
 
-## Mandatory independent trust provisioning (not implemented or fabricated)
+## Mandatory external production requirements (not completed Stage B2a capabilities)
 
-The `TrustedVerificationContextV2` fields **must** come from separately trusted channels, not the PR or the receipt being verified:
+The `TrustedVerificationContextV2` fields represent **external operational prerequisites** that must be supplied by an authenticated, protected production environment in Stage B2b. They are **not** capabilities provided by the Stage B2a pure verification library:
 
-1. `pinnedPolicySha256`: previously ratified and independently protected policy digest; do not accept a SHA stored only alongside modifiable policy/WBS changes.
-2. `expectedGit`: independently retrieved Git-provider provenance and reviewed candidate tree. No approval may create its own trusted Git context.
-3. `nowIso`: trusted clock.
-4. `consumedReceiptIds`: integrity-protected authoritative consumption ledger.
+1. **Independent Policy Anchoring (`pinnedPolicySha256`):** The policy digest must be pinned out-of-band in protected repository settings, deployment environment secrets, or protected branch configuration. It must NEVER be accepted from the pull request, unauthenticated workflow dispatch inputs, or the signed receipt itself.
+2. **Authentic Git Provenance (`expectedGit`):** Repository identity, PR number, base commit SHA, reviewed head commit SHA, and reviewed head tree SHA must be extracted directly from authenticated GitHub Actions runner event contexts (`github.event.pull_request.*`), never from user-supplied parameters.
+3. **Out-of-Band Human Key Enrollment:** Cryptographic public-key uniqueness is necessary but insufficient to prove independent human signers. Physical human identities, employment standing, and role authorization must be authenticated out-of-band before keys are ratified in policy.
+4. **Authoritative NTP Clock (`nowIso`):** System timestamps must be obtained from an authenticated, NTP-synchronized GitHub runner clock, never from client-controlled environment variables or receipt claims.
+5. **Atomic Receipt Consumption Ledger (`consumedReceiptIds`):** Pure in-memory verification does not consume receipts. Stage B2b must supply an authoritative, append-only ledger transaction engine.
 
-**These remain interfaces, not production trust-store implementations.** Passing self-generated synthetic test policy keys is evidence of algorithm behavior, **not** human verification or authentic approvals. Public-key uniqueness is necessary but not sufficient for proof of independent human principals.
+## Replay prevention, CAS ledger consumption, and concurrent registration design
 
-## Replay-safe commit binding without self-reference
+The Stage B2a verifier evaluates receipt validity against a static snapshot of `consumedReceiptIds`, returning `mayApply: false`. To eliminate replay vulnerabilities in production, Stage B2b must implement the following transaction model:
 
-The v2 signed intent binds a stable reviewed Git base/head/tree and exact WBS hashes **before** receipts are appended. The receipt-containing merge commit cannot itself be part of that signature without circular reference. Stage B2b must separately attest, using independently trusted Git provenance, that the resulting merge points to the exact reviewed candidate and original receipt. Timestamp validation alone does not prevent repeated use within validity; the ledger must perform atomic consume/idempotent registration under separate authorized change control.
+1. **Atomic Compare-And-Swap (CAS) Receipt Consumption:**
+   When an authorized workflow applies a verified registration, it must execute a CAS operation against an append-only ledger file (`docs/00_control/consumed_wbs_receipts.json`):
+   - Assert `receiptId` is not present in the current ledger.
+   - Append the new `receiptId`, registration timestamp, and commit metadata.
+   - Commit both the updated ledger and the updated `MASTER_WBS.yaml` in the exact same atomic Git commit or transactional push.
+   - If a race or duplicate is detected, the CAS fails and the registration aborts fail-closed.
+
+2. **Concurrent-Registration Conflict Handling:**
+   Every signed registration intent explicitly binds `preWbsSha256` (the exact SHA-256 digest of `MASTER_WBS.yaml` before changes) and `postWbsSha256` (the exact SHA-256 digest after changes):
+   - If two pull requests attempt concurrent registration, both will reference the same `preWbsSha256`.
+   - The first PR to merge updates `MASTER_WBS.yaml` on `master`, altering the canonical `preWbsSha256` digest.
+   - When the second PR attempts verification or merge, its signed `preWbsSha256` will no longer match the current `master` baseline bytes, triggering an immediate `PRE_WBS_STATE_MISMATCH` rejection.
+   - The second PR must rebase, re-review the code diff, and obtain fresh dual-signature approvals against the updated baseline. This guarantees strict sequential serialization and eliminates race conditions.
+
+3. **Independent Post-Application Verification:**
+   After merge, an automated CI post-application hook must independently read the newly committed `MASTER_WBS.yaml` from disk, compute its SHA-256 digest, and assert that it matches `intent.postWbsSha256` byte-for-byte. This attests that the applied canonical state is identical to the reviewed candidate without merge skew or unreviewed file mutations.
 
 ## Remaining Stage B2b gates
 
