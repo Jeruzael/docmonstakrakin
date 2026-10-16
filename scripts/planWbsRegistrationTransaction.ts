@@ -250,6 +250,7 @@ export function validateAndNormalizeSignedReceiptV2(receipt: unknown): SignedRec
 
   if (typeof rawGit.repository !== 'string' ||
       !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(rawGit.repository) ||
+      typeof rawGit.pullRequestNumber !== 'number' ||
       !Number.isSafeInteger(rawGit.pullRequestNumber) || rawGit.pullRequestNumber <= 0 ||
       typeof rawGit.baseCommitSha !== 'string' || !GIT_SHA.test(rawGit.baseCommitSha) ||
       typeof rawGit.reviewedHeadCommitSha !== 'string' || !GIT_SHA.test(rawGit.reviewedHeadCommitSha) ||
