@@ -119,7 +119,7 @@ function testDefensive(name: string, fn: () => void) {
   try {
     fn();
     defensivePassed++;
-    console.log(`[PASS DEFENSIVE] ${name}`);
+    console.log(`[PASS] DEFENSIVE INVARIANT: ${name}`);
   } catch (err: any) {
     console.error(`[FAIL DEFENSIVE] ${name}:`, err.message);
     throw err;
@@ -130,7 +130,7 @@ function testLimitation(name: string, fn: () => void) {
   try {
     fn();
     limitationsDemonstrated++;
-    console.log(`[CONFIRMED LIMITATION] ${name}`);
+    console.log(`[PASS] KNOWN LIMITATION REPRODUCED (NOT FIXED): ${name}`);
   } catch (err: any) {
     console.error(`[FAIL LIMITATION DEMO] ${name}:`, err.message);
     throw err;
@@ -501,6 +501,10 @@ testLimitation('B2A-LIMIT-04: Caller-manipulated clock permits validation of exp
   });
   assert.equal(result.valid, true);
 });
+
+// Fail CI if a characterization case is accidentally dropped or its count drifts.
+assert.equal(defensivePassed, 14, 'Expected 14 defensive invariant checks');
+assert.equal(limitationsDemonstrated, 4, 'Expected 4 unresolved security limitation demonstrations');
 
 console.log(`\n=== STAGE B2A ADVERSARIAL RESULTS ===`);
 console.log(`Defensive Invariant Tests Passed: ${defensivePassed}/14`);
