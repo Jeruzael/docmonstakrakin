@@ -17,9 +17,11 @@ This independent security assessment evaluates GitHub PR #39, which introduces c
 The assessment investigated whether PR #39 successfully resolves the findings identified in the PR #38 security review without introducing new vulnerabilities, bypasses, or unauthorized mutation authority.
 
 ### High-Level Summary of Findings & Limitations
-- **27 Defensive Checks:** Confirmed passing fail-closed across all schema, prototype, hashing, and chain-continuity vectors.
-- **5 Security Findings (A04, A05, A10, A11, B08):** Evaluated in detail below. Findings A04, A05, A10, and A11 are classified as `ACCEPTABLE_BOUNDED_RISK` for read-only Stage B2b1 preflight; Finding B08 is classified as `DEFERRED_PRODUCTION_BLOCKER` for the Stage B2b2 write engine. None are merge-blocking for PR #39.
-- **5 Known Limitations (A13, B07, B09, C07, D01):** Analyzed and confirmed to represent authentic trust boundaries of a read-only planning preflight, remaining mandatory blockers for production execution.
+- **28 Defensive Checks (Post-B08 Remediation; 27 Pre-Fix):** Confirmed passing fail-closed across all schema, prototype, hashing, chain-continuity, and ledger WBS state-cycle vectors.
+- **5 Initial Security Findings (A04, A05, A10, A11, B08) — 1 Remediated (B08), 4 Remaining Bounded Risks:**
+  - **Finding B08 (`FIXED_AND_VERIFIED`):** Pre-fix `parseLedger()` checked only adjacent `preWbsSha256 === cursor && postWbsSha256 !== cursor`, allowing a multi-step cycle (`Genesis -> State X -> Genesis`) to pass ledger parsing and allowing a subsequent additive registration from `Genesis -> W1` to preview `VALID` (preserved in [`pr39_adversarial.log`](pr39_adversarial.log)). Remediated in `parseLedger()` by tracking `seenWbsStates` initialized with `HISTORICAL_WBS_SHA256` and rejecting any repeated WBS state hash fail-closed (`"Receipt ledger chain contains a WBS state cycle or repeated WBS digest"`), verified in [`pr39_adversarial.post_b08_fix.log`](pr39_adversarial.post_b08_fix.log) and `scripts/testPlanWbsRegistrationTransaction.ts` (26/26 checks).
+  - **Findings A04, A05, A10, and A11 (`ACCEPTABLE_BOUNDED_RISK`):** In-memory JavaScript representation nuances that either fail closed on second-pass canonical re-validation (A04, A05) or have zero effect on canonical digest computation (A10, A11).
+- **5 Known Production Limitations (A13, B07, B09, C07, D01 — Remain Open):** Analyzed and confirmed to represent authentic trust boundaries of a read-only planning preflight, remaining mandatory `DEFERRED_PRODUCTION_BLOCKER` items for Stage B2b2 / production execution.
 - **Unconditional Read-Only Guarantee:** `mayApply: false` remains hardcoded, unconditional, and verified across all test runs.
 
 ---
@@ -142,27 +144,43 @@ Every test scenario in this evaluation was verified to start from a **valid base
 
 ---
 
-### Finding 5: SEC-FINDING-B08 — Historical WBS State Cycles Permitted in Ledger Parsing
+### Finding 5: SEC-FINDING-B08 — Historical WBS State Cycles in Ledger Parsing (Remediated in PR #39)
 
 - **Finding ID:** `SEC-FINDING-B08`
-- **Severity:** Medium (Design Characteristic / Semantic Guard)
-- **Exact File & Lines:** [`scripts/planWbsRegistrationTransaction.ts#L430-L452`](../../scripts/planWbsRegistrationTransaction.ts#L430-L452)
-- **Attack Conditions & Required Privileges:** An adversary with write access to the ledger file crafts a ledger where entry 1 transitions `Genesis -> State_B`, and entry 2 transitions `State_B -> Genesis` (cyclic transition).
-- **Does Attack Actually Succeed?** **STRUCTURAL ACCEPTANCE; SEMANTIC EXECUTION BLOCKED**.
-  In `parseLedger()`, the chain continuity check verifies that `entry[i].preWbsSha256 === entry[i-1].postWbsSha256`. It does *not* check whether `postWbsSha256` appeared earlier in the ledger. Thus, `parseLedger()` structurally accepts a cyclic ledger where WBS reverts to a prior state.
-  *However*, for any *new* registration transaction to succeed on top of this cyclic ledger, the candidate must pass `verifyTrustedWbsRegistrationV2`, which invokes `validateWbsRegistration`. DOCMONSTAKRAKIN WBS semantics are strictly additive (`operation: 'ADD_WBS_ITEMS'`), meaning items can only be appended, never removed. A state transition reverting to an earlier hash represents item deletion, which is rejected by `validateWbsRegistration`. Therefore, while `parseLedger` does not enforce acyclicity, the registration engine prevents cyclic state transitions from executing.
-- **Complete Reproducible Test Case:**
+- **Severity:** Medium (Pre-Fix Defect; Remediated in `parseLedger()`)
+- **Exact File & Lines:** [`scripts/planWbsRegistrationTransaction.ts#L414-L443`](../../scripts/planWbsRegistrationTransaction.ts#L414-L443)
+- **Pre-Fix Behavior (`9a7b52f` / `f1ab7f5`):**
+  In the pre-fix implementation, `parseLedger()` checked only pairwise adjacency (`entry.preWbsSha256 === cursor && entry.postWbsSha256 !== cursor`) without tracking previously visited WBS state hashes across the ledger chain. When a ledger was constructed with `Genesis -> State X -> Genesis` (`entries: [forgedEntry, back]`), `parseLedger()` accepted the cyclic chain returning to `HISTORICAL_WBS_SHA256`, and a subsequent valid additive registration from `Genesis -> W1` previewed `VALID` (`mode: 'PREVIEW_VALID'`), because downstream `verifyTrustedWbsRegistrationV2` validates only the immediate `beforeBytes -> afterBytes` delta (`Genesis -> W1`) and does not inspect prior ledger entries. This pre-fix behavior is preserved in the historical execution log [`pr39_adversarial.log`](pr39_adversarial.log) (lines 49–50).
+- **Remediation Applied:**
+  Modified `parseLedger()` in [`scripts/planWbsRegistrationTransaction.ts`](../../scripts/planWbsRegistrationTransaction.ts) to initialize `const seenWbsStates = new Set<string>([HISTORICAL_WBS_SHA256])` and reject any ledger entry whose `postWbsSha256` repeats `HISTORICAL_WBS_SHA256` or any prior `postWbsSha256` with the explicit error:
+  `"Receipt ledger chain contains a WBS state cycle or repeated WBS digest"`.
+- **Complete Reproducible Test Case (Post-Correction):**
   ```typescript
-  // A ledger crafted with Genesis -> State_X -> Genesis passes parseLedger().
-  // However, attempting to register an operation that deletes items fails validateWbsRegistration.
+  const back = {
+    ...forgedEntry,
+    receiptId: 'FORGED-HISTORY-0002',
+    preWbsSha256: digest(Wforged),
+    postWbsSha256: HISTORICAL_WBS_SHA256,
+  };
+  const Lc = serializeWbsReceiptLedger({
+    ...makeHistoricalWbsReceiptLedger(),
+    entries: [forgedEntry, back],
+  });
+  const r = previewWbsRegistrationTransaction({
+    ...base1(),
+    ledgerBytes: Lc,
+    expectedCurrentLedgerSha256: digest(Lc),
+    trustedContext: ctx(git1, ['FORGED-HISTORY-0001', 'FORGED-HISTORY-0002']),
+  });
+  assert.equal(r.valid, false);
+  assert.equal(r.mode, 'REJECTED');
+  assert.equal(r.mayApply, false);
+  assert.ok(r.errors.some(e => e.includes('Receipt ledger chain contains a WBS state cycle or repeated WBS digest')));
   ```
-- **Expected vs Observed Result:**
-  - *Expected:* Ideally, an additive-only ledger would structurally forbid cyclic `postWbsSha256` entries.
-  - *Observed:* `parseLedger` checks linear adjacency only; acyclicity is enforced semantically by the WBS registration validator.
-- **Stage B2b1 vs Unimplemented Integration:** Stage B2b1 `parseLedger()`.
-- **Recommended Remediation:** In `parseLedger()`, track a `Set<string>` of seen `postWbsSha256` digests and reject any entry whose `postWbsSha256` matches `genesisWbsSha256` or any previously seen `postWbsSha256`.
-- **Merge-Blocking Status:** `NOT_MERGE_BLOCKING` for read-only Stage B2b1 preflight; `DEFERRED_PRODUCTION_BLOCKER` for Stage B2b2 transactional execution engine.
-- **Classification:** `DEFERRED_PRODUCTION_BLOCKER`.
+- **Expected vs Observed Result (Post-Correction):**
+  - *Expected:* Fail-closed rejection (`REJECTED`, `valid: false`, `mayApply: false`) with explicit cycle error while preserving valid consecutive additive chains (`Genesis -> W1 -> W2`).
+  - *Observed:* Rejected fail-closed with `["Receipt ledger invalid: Receipt ledger chain contains a WBS state cycle or repeated WBS digest"]` in both `scripts/testPlanWbsRegistrationTransaction.ts` (check 26/26) and [`pr39_adversarial.post_b08_fix.log`](pr39_adversarial.post_b08_fix.log) (lines 49–50); valid consecutive additive registrations continue to succeed (check 23/26 and scenario C01).
+- **Classification:** `FIXED_AND_VERIFIED`.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Repository:** `Jeruzael/docmonstakrakin`  
 **Target Pull Request:** PR #39 (`fix/pr38-postmerge-preflight-canonicalization-20261016`)  
-**Evaluated HEAD Commit:** `e6108cbfda34e3262cdc5aa72868f79c507a1551` (previously `9a7b52fac6d0df4c9e5536c07cfd831641ff7ec7`)  
+**Pre-B08-Fix HEAD Commits:** `9a7b52fac6d0df4c9e5536c07cfd831641ff7ec7`, `e6108cbfda34e3262cdc5aa72868f79c507a1551`, `f1ab7f50ca7489b8cd3857d3dc5dbeabe827f331`  
 **Master Baseline:** `dfa1e170c5aae6e12824e7d75fcab53baa38fe17` (ordinary two-parent merge commit)  
 **Assessment Date:** 2026-10-17  
 **Execution Environment:** Isolated Detached Worktree (`docmonstakrakin-pr39-review`)  
@@ -19,27 +19,37 @@
 | **GitHub Actions CI** (Run 38955672647 on `e6108cb`) | Quality & Build | 1 | 1 | 0 | 0 | 0 | **PASS** |
 | **GitHub Actions CI** (Run 38955672647 on `e6108cb`) | Controlled Docs | 1 | 1 | 0 | 0 | 0 | **PASS** |
 | **GitHub Actions CI** (Run 38955672647 on `e6108cb`) | Complete Regression | 62 | 62 (1,440 assertions) | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `npm run ci:quality` | 1 | 1 | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `npm run ci:controlled-docs` | 1 | 1 | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `npm run ci:regression` | 62 | 62 (1,440 assertions) | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `testPlanWbsRegistrationTransaction` | 1 | 25 assertions | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `testTrustedWbsRegistrationV2` | 1 | 22 assertions | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `testStageB2aAdversarial` | 1 | 18 assertions | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | `testGate3Adversarial` | 1 | 27 assertions + 4 empirical | 0 | 0 | 0 | **PASS** |
-| **Local Review Worktree** | Historical Verifiers (196, 197, 208) | 4 | 4 suites | 0 | 0 | 0 | **PASS** |
-| **External Adversarial Suite** (`pr39_adversarial.ts`) | Sections A, B, C, D | 37 scenarios | 37 (27 Defenses, 5 Findings, 5 Limits) | 0 | 0 | 0 | **PASS** |
+| **GitHub Actions CI** (Run 38958583696 on `f1ab7f5`) | Quality & Build | 1 | 1 | 0 | 0 | 0 | **PASS** |
+| **GitHub Actions CI** (Run 38958583696 on `f1ab7f5`) | Controlled Docs | 1 | 1 | 0 | 0 | 0 | **PASS** |
+| **GitHub Actions CI** (Run 38958583696 on `f1ab7f5`) | Complete Regression | 62 | 62 (1,440 assertions) | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `npm run ci:quality` | 1 | 1 | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `npm run ci:controlled-docs` | 1 | 1 | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `npm run ci:regression` | 63 | 63 (1,469 assertions) | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `testPlanWbsRegistrationTransaction` | 1 | 26 assertions | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `testTrustedWbsRegistrationV2` | 1 | 22 assertions | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `testStageB2aAdversarial` | 1 | 18 assertions | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | `testGate3Adversarial` | 1 | 27 assertions + 4 empirical | 0 | 0 | 0 | **PASS** |
+| **Local Review Worktree (Post-B08 Remediation)** | Historical Verifiers (196, 197, 208) | 4 | 4 suites | 0 | 0 | 0 | **PASS** |
+| **Adversarial Suite — Historical Pre-Fix** ([`pr39_adversarial.log`](pr39_adversarial.log)) | Sections A, B, C, D | 37 scenarios | 37 (27 Defenses, 5 Findings, 5 Limits) | 0 | 0 | 0 | **PASS** |
+| **Adversarial Suite — Post-B08 Remediation** ([`pr39_adversarial.post_b08_fix.log`](pr39_adversarial.post_b08_fix.log) & `testStageB2b1Adversarial.ts`) | Sections A, B, C, D | 37 scenarios | 37 (28 Defenses, 4 Findings, 5 Limits) | 0 | 0 | 0 | **PASS** |
 
 ---
 
-## 2. Full Adversarial Test Matrix (37 Scenarios)
+## 2. Full Adversarial Test Matrix (37 Scenarios — Post-B08 Remediation)
 
+**Historical Pre-Fix Tally ([`pr39_adversarial.log`](pr39_adversarial.log)):**
 ```json
-{"DEFENSE PASS": 27, "FINDING": 5, "LIMITATION CONFIRMED": 5, "UNEXPECTED": 0}
+{"DEFENSE PASS": 27, "FINDING": 5, "LIMITATION CONFIRMED": 5, "unexpected": 0}
+```
+
+**Post-B08-Correction Tally ([`pr39_adversarial.post_b08_fix.log`](pr39_adversarial.post_b08_fix.log)):**
+```json
+{"DEFENSE PASS": 28, "FINDING": 4, "LIMITATION CONFIRMED": 5, "unexpected": 0}
 ```
 
 | ID | Category | Scenario Description | Expected Outcome | Observed Result & Evidence | Status | Classification |
 |---|---|---|---|---|---|---|
-| **A01** | Hashing | Baseline synthetic receipt against genesis | Valid preview, `mayApply: false` | `proposedLedgerSha256: 423f1a0f...` | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
+| **A01** | Hashing | Baseline synthetic receipt against genesis | Valid preview, `mayApply: false` | `proposedLedgerSha256: 51bc4d51...` | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A02** | Hashing | TOCTOU getter flipping `receiptId` from string to number | Reject fail-closed | Caught during re-validation (`"Signed receipt schema or canonical serialization invalid: Signed receipt intent has invalid field values"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A03** | Hashing | TOCTOU getter flipping `signatureBase64` to alternate bytes | Reject fail-closed | Caught during canonical 64-byte re-encoding check (`"Signature base64 is not canonical 64-byte encoding"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A04** | Hashing | Array hole + named property in `signatures` | First-pass length check bypassed; caught downstream | Bypasses `keys.length === length`; caught by downstream canonical re-validation (`"Signed receipt signatures must be a non-empty array"`) | **FINDING** | `ACCEPTABLE_BOUNDED_RISK` |
@@ -47,7 +57,7 @@
 | **A06** | Hashing | Hostile Proxy with throwing `ownKeys` trap | Contained in preflight; no uncaught exception | Caught fail-closed (`"Signed receipt schema or canonical serialization invalid: hostile ownKeys"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A07** | Hashing | Deeply nested (20,000) object inside `approvedItems` | V8 call stack contained; structured reject | Contained (`"Signed receipt schema or canonical serialization invalid: Maximum call stack size exceeded"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A08** | Hashing | Symbol-keyed property on `intent` | Reject unexpected keys | Caught fail-closed (`"Signed receipt intent contains missing or unexpected properties"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
-| **A09** | Hashing | Null-prototype receipt object | Hashed identically to plain object | Byte-identical digest: `283e0f9932001b41c7a8e9d446847194bd1d3b3317a102a36db6c4d53fb958a9` | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
+| **A09** | Hashing | Null-prototype receipt object | Hashed identically to plain object | Byte-identical digest: `ea9c1959c351a86b9feef443908116de3300ac6b0db836ec565c2f1b0ac2888b` | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **A10** | Hashing | Non-enumerable extra property on `intent` | Omitted by `Object.keys` | Ignored during normalization; dropped from canonical payload | **FINDING** | `ACCEPTABLE_BOUNDED_RISK` |
 | **A11** | Hashing | Numeric `-0` vs `+0` canonicalization; Unicode NFC vs NFD | Deterministic behavior | `-0 === +0` normalized identically; NFC/NFD produce distinct UTF-8 bytes | **FINDING** | `ACCEPTABLE_BOUNDED_RISK` |
 | **A12** | Hashing | Duplicate signature entry (same principal/role twice) | Quorum verification fails | Rejected (`"Human principal or approver role reused; Missing authentic signature for required role"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
@@ -62,9 +72,9 @@
 | **B05** | Ledger | Type confusion (fractional PR number, uppercase hex) | Reject invalid entry types | Rejected (`"Receipt ledger chain contains invalid, duplicate or disconnected entry"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **B06** | Ledger | Oversized ledger (>2 MiB) | Reject before parsing | Rejected (`"Receipt ledger exceeds supported preflight limit"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **B07** | Ledger | Forged historical entry in ledger (valid chain hashes) | Structural check passes; signature not checked | Previews `valid: true`; confirms Stage B2b1 structural-only ledger validation | **LIMITATION CONFIRMED** | `DEFERRED_PRODUCTION_BLOCKER` |
-| **B08** | Ledger | Cyclic WBS state transition (`G -> X -> G`) | Structural chain continuity accepts cycle | Chain hashes continuous; preflight accepts cycle; blocked downstream by additive validator | **FINDING** | `DEFERRED_PRODUCTION_BLOCKER` |
+| **B08** | Ledger | Cyclic WBS state transition (`Genesis -> X -> Genesis`) | Reject repeated WBS state hash fail-closed | Pre-fix (`pr39_adversarial.log`): accepted cycle and previewed `VALID` (`FINDING`). Post-fix (`pr39_adversarial.post_b08_fix.log`): rejected by `parseLedger` (`"Receipt ledger invalid: Receipt ledger chain contains a WBS state cycle or repeated WBS digest"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **B09** | Ledger | Stale snapshot replay (consumed receipt with old ledger) | Previews valid if caller supplies matching old state | Preflight freshness relies on caller's `expectedCurrent*` inputs | **LIMITATION CONFIRMED** | `DEFERRED_PRODUCTION_BLOCKER` |
-| **C01** | Multi-Reg | Sequential registrations (`G -> W1 -> W2`) | Valid sequential chaining | Step 2 proposed ledger correctly contains chained entries (`5b994593...`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
+| **C01** | Multi-Reg | Sequential registrations (`G -> W1 -> W2`) | Valid sequential chaining | Step 2 proposed ledger correctly contains chained entries (`bf798e7b...`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **C02** | Multi-Reg | Out-of-order registration (`R2` executed against Genesis) | Reject byte mismatch | Rejected (`"Before or after WBS bytes differ from signed intent; WBS digest does not match..."`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **C03** | Multi-Reg | Reversed ledger entry order | Reject chain disconnect | Rejected (`"Receipt ledger chain contains invalid, duplicate or disconnected entry"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **C04** | Multi-Reg | Consumed snapshot with unknown receipt ID | Reject snapshot conflict | Rejected (`"Trusted receipt-consumption snapshot conflicts with canonical ledger"`) | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
@@ -75,21 +85,24 @@
 | **D01** | Boundaries | Self-attested `trustedContext` with attacker keys/policy | Valid preview, `mayApply: false` | Preflight verifies logic against context; does not grant authority | **LIMITATION CONFIRMED** | `DEFERRED_PRODUCTION_BLOCKER` |
 | **D02** | Boundaries | Static code scan for I/O and write APIs | Zero write/network APIs | `node:fs`, `node:child_process`, `fetch` absent; `mayApply: true` absent | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 | **D03** | Boundaries | Invariant check across all executions | `mayApply` strictly `false` | All 41 results evaluated with `mayApply === false` | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
-| **D04** | Boundaries | Protected file hash verification before/after harness | Zero file modifications | 111 protected files and `.local/project-state.json` byte-identical | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
+| **D04** | Boundaries | Protected file hash verification before/after harness | Zero file modifications | 115 protected files and `.local/project-state.json` byte-identical | **DEFENSE PASS** | `FIXED_AND_VERIFIED` |
 
 ---
 
-## 3. Reproduction Command & Execution Instructions
+## 3. Reproduction Command & CI Integration
 
-To execute the independent adversarial test suite in any fresh worktree:
+To execute the independent adversarial test suite in any fresh worktree or via the CI regression runner:
 
 ```bash
-# From repository root:
+# Standalone execution from repository root:
 npx tsx docs/07_verification/pr39_adversarial.ts
+
+# Required CI regression runner entrypoint (discovered by scripts/runCompleteRegression.ts):
+npx tsx scripts/testStageB2b1Adversarial.ts
 ```
 
-The test runner executes all 37 scenarios and outputs JSON tally:
+The test runner executes all 37 scenarios, logs `[PASS] [DEFENSE PASS]` only for the 28 defensive checks (keeping `[FINDING]` and `[LIMITATION CONFIRMED]` clearly distinguished), asserts the exact expected counts, and outputs:
 ```json
-{"DEFENSE PASS": 27, "FINDING": 5, "LIMITATION CONFIRMED": 5, "unexpected": 0}
+{"DEFENSE PASS": 28, "FINDING": 4, "LIMITATION CONFIRMED": 5, "unexpected": 0}
 ```
-Exits with returncode `0`.
+Exits with returncode `0` (or `1` on any unexpected outcome).

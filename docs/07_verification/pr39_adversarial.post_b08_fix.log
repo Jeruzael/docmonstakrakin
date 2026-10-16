@@ -1,0 +1,79 @@
+=== PR #39 INDEPENDENT ADVERSARIAL HARNESS ===
+execution root: .
+[PASS] [DEFENSE PASS] A01: Baseline synthetic receipt previews valid with mayApply:false
+      evidence: 69b6421f40e4e8f81f9872a2f28c897a90bb1cf27fe0b5b4e174eabe6902b6af
+[PASS] [DEFENSE PASS] A02: TOCTOU getter: receiptId valid on early reads, flips to number later -> REJECTED by re-validation
+      evidence: {"reads":3,"errors":["Signed receipt schema or canonical serialization invalid: Signed receipt intent has invalid field values"]}
+[PASS] [DEFENSE PASS] A03: TOCTOU getter on signatureBase64 (valid -> different valid-format bytes) -> REJECTED
+      evidence: {"reads":4,"errors":["Signed receipt schema or canonical serialization invalid: Signature base64 is not canonical 64-byte encoding"]}
+[FINDING] A04: Array hole + extra named property passes FIRST-PASS length guard in validateAndNormalizeSignedReceiptV2 (caught only by second validation)
+      evidence: {"firstPassThrew":false,"firstPassMsg":"","normalizedSignatureLength":3,"normalizedHasHole":true,"previewErrors":["Signed receipt schema or canonical serialization invalid: Signed receipt signatures must be a non-empty array"]}
+[FINDING] A05: Same hole + extra-property bypass for approvedItems first-pass guard (caught downstream)
+      evidence: {"firstPassThrew":false,"msg":"","errors":["Signed receipt schema or canonical serialization invalid: Signed receipt approvedItems must be a non-empty array"]}
+[PASS] [DEFENSE PASS] A06: Proxy with throwing ownKeys trap -> REJECTED, no exception escapes
+      evidence: ["Signed receipt schema or canonical serialization invalid: hostile ownKeys"]
+[PASS] [DEFENSE PASS] A07: Deeply nested (20,000) value inside approvedItems -> REJECTED (stack overflow contained)
+      evidence: ["Signed receipt schema or canonical serialization invalid: Maximum call stack size exceeded"]
+[PASS] [DEFENSE PASS] A08: Symbol-keyed property on intent -> REJECTED
+      evidence: ["Signed receipt schema or canonical serialization invalid: Signed receipt intent contains missing or unexpected properties"]
+[PASS] [DEFENSE PASS] A09: Null-prototype but data-equivalent receipt hashes identically to plain receipt
+      evidence: 9d0d3241d55b952283246cfa0d479df9352b5f078da794b560ea5b30553829e5
+[FINDING] A10: Non-enumerable extra property on intent is silently ignored (not rejected, not hashed)
+      evidence: accepted; digest identical (property invisible to Object.keys)
+[FINDING] A11: Numeric -0 and 0 canonicalize identically; NFC vs NFD strings hash differently (informational)
+      evidence: {"negZeroEqualsZero":true,"nfcEqualsNfd":false}
+[PASS] [DEFENSE PASS] A12: Duplicate signature entry (same signer twice) -> REJECTED
+      evidence: ["V2 registration evidence rejected: Human principal or approver role reused; Missing authentic signature for required role: Lead Architect"]
+[LIMITATION CONFIRMED] A13: Duplicate keys in receipt JSON TEXT are invisible: preflight only sees the parsed object (last-wins)
+      evidence: ambiguous receipt bytes accepted after JSON.parse; first-wins parsers would read SHADOW-VALUE-0000001
+[PASS] [DEFENSE PASS] A14: BigInt inside caller policy -> REJECTED without exception
+      evidence: ["V2 registration evidence rejected: Policy contains invalid JSON evidence"]
+[PASS] [DEFENSE PASS] A15: Unsupported prototype (class instance) receipt -> REJECTED
+      evidence: ["Signed receipt schema or canonical serialization invalid: Signed receipt must be a plain object with exact keys [intent, signatures]"]
+[PASS] [DEFENSE PASS] A16: Array subclass for signatures -> REJECTED
+      evidence: ["Signed receipt schema or canonical serialization invalid: Signed receipt signatures must be a non-empty array"]
+[PASS] [DEFENSE PASS] B01: Pretty-printed (2-space) ledger with duplicate key -> REJECTED by byte-exact reserialization
+      evidence: ["Receipt ledger invalid: Receipt ledger must match exact canonical serialization"]
+[PASS] [DEFENSE PASS] B02: UTF-8 BOM / CRLF variants of a valid ledger -> REJECTED
+      evidence: [["Receipt ledger invalid: Unexpected token '﻿', \"﻿{\n  \"sche\"... is not valid JSON"],["Receipt ledger invalid: Receipt ledger must match exact canonical serialization"]]
+[PASS] [DEFENSE PASS] B03: __proto__ key in ledger JSON -> REJECTED and no prototype pollution
+      evidence: ["Receipt ledger invalid: Receipt ledger header contains unexpected or missing properties"]
+[PASS] [DEFENSE PASS] B04: Non-historical genesis digest -> REJECTED
+      evidence: ["Receipt ledger invalid: Receipt ledger header or historical genesis digest is invalid"]
+[PASS] [DEFENSE PASS] B05: Ledger entry type confusion (fractional PR number / uppercase hex) -> REJECTED
+      evidence: [["Receipt ledger invalid: Receipt ledger chain contains invalid, duplicate or disconnected entry"],["Receipt ledger invalid: Receipt ledger chain contains invalid, duplicate or disconnected entry"]]
+[PASS] [DEFENSE PASS] B06: Oversized ledger (>2 MiB) -> REJECTED before parse
+      evidence: ["Receipt ledger invalid: Receipt ledger exceeds supported preflight limit"]
+[LIMITATION CONFIRMED] B07: Forged historical entry (random digests, no signatures, unsigned DMK-999) accepted structurally; next signed registration previews VALID on top of it
+      evidence: PREVIEW_VALID; forged entry never cryptographically verified
+[PASS] [DEFENSE PASS] B08: Ledger cycle back to a prior WBS state (Genesis -> X -> Genesis) -> REJECTED
+      evidence: ["Receipt ledger invalid: Receipt ledger chain contains a WBS state cycle or repeated WBS digest"]
+[LIMITATION CONFIRMED] B09: Stale-snapshot replay: consumed receipt R1 previews VALID again when caller supplies stale WBS + genesis ledger + matching expected hashes
+      evidence: R1 replays; freshness depends solely on independently sourced expectedCurrent* + consumedReceiptIds
+[PASS] [DEFENSE PASS] C01: Two sequential synthetic registrations G->W1->W2 succeed with exact chained ledger
+      evidence: {"proposedLedgerSha256":"28fa50287680661eed51ebe1e61a16ec32f5f776c1312c2ee7dcc3fc68465d3a"}
+[PASS] [DEFENSE PASS] C02: Reordered application (R2 on genesis) -> REJECTED with byte-mismatch reason
+      evidence: ["V2 registration evidence rejected: Before or after WBS bytes differ from signed intent; WBS digest does not match manifest exact before/after bytes; Added item count differs from manifest; Unexpected or altered newly registered item: DMK-209"]
+[PASS] [DEFENSE PASS] C03: Reversed ledger entry order -> REJECTED disconnected
+      evidence: ["Receipt ledger invalid: Receipt ledger chain contains invalid, duplicate or disconnected entry"]
+[PASS] [DEFENSE PASS] C04: Consumed snapshot with extra unknown ID -> REJECTED
+      evidence: ["Trusted receipt-consumption snapshot conflicts with canonical ledger"]
+[PASS] [DEFENSE PASS] C05: Altered step-2 afterBytes -> REJECTED
+      evidence: ["V2 registration evidence rejected: Before or after WBS bytes differ from signed intent; WBS digest does not match manifest exact before/after bytes"]
+[PASS] [DEFENSE PASS] C06: Re-presenting R1 at step-2 state -> REJECTED as consumed AND byte mismatch
+      evidence: ["Registration receipt was already consumed","V2 registration evidence rejected: Before or after WBS bytes differ from signed intent; Receipt consumption ledger missing or this receipt was already consumed; WBS digest does not match manifest exact before/after bytes; Added item count differs from manifest"]
+[LIMITATION CONFIRMED] C07: Two different valid receipts against the same state BOTH preview VALID with conflicting proposed ledgers (no atomic CAS)
+      evidence: {"a":"28fa50287680661eed51ebe1e61a16ec32f5f776c1312c2ee7dcc3fc68465d3a","b":"6698d5c48f1d193226078ec4d526268042c9af3999136e4089900f9f77e04f6b"}
+[PASS] [DEFENSE PASS] C08: Preflight is deterministic and does not mutate caller inputs
+      evidence: stable
+[LIMITATION CONFIRMED] D01: Self-attested trustedContext: attacker-generated keys + self-pinned policy digest -> PREVIEW_VALID (context is not proof of authority)
+      evidence: PREVIEW_VALID with attacker policy; mayApply false
+[PASS] [DEFENSE PASS] D02: Static: preflight module imports no fs/child_process/network and contains no write APIs
+      evidence: {"imports":["node:crypto","./verifyForwardWbsEvidence.ts"],"mayApplyTrueLiterals":0}
+[PASS] [DEFENSE PASS] D03: Every preflight result produced in this harness has mayApply === false
+      evidence: {"results":41,"valid":16}
+[PASS] [DEFENSE PASS] D04: Protected files (docs/00_control, docs/07_verification, bootstrap, .local/project-state.json) unchanged by harness
+      evidence: {"filesHashed":115,"localState":"85f42cf5949722092bc576edce9c1d392673fb30ceca82d13c004b96f73d0bb3"}
+
+=== SUMMARY ===
+{"DEFENSE PASS":28,"FINDING":4,"LIMITATION CONFIRMED":5,"unexpected":0}

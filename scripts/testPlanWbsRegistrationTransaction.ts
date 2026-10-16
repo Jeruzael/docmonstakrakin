@@ -457,4 +457,63 @@ check('Multi-registration sequence rejects stale WBS, stale ledger, and stale co
  assert.equal(staleConsumedContextResult.valid,false);
  assert.ok(staleConsumedContextResult.errors.includes('Trusted receipt-consumption snapshot conflicts with canonical ledger'));
 });
+check('Ledger chain rejects repeated WBS state hashes including Genesis -> State X -> Genesis cycle',()=>{
+ const stateXSha=digest(after);
+ const cyclicLedgerBytes=serializeWbsReceiptLedger({
+  ...genesis,
+  entries:[
+   {
+    receiptId:'WBS-CYCLE-TEST-0001',
+    preWbsSha256:HISTORICAL_WBS_SHA256,
+    postWbsSha256:stateXSha,
+    policySha256:policyDigestV2(policy),
+    signedIntentSha256:'a'.repeat(64),
+    signedReceiptSha256:'b'.repeat(64),
+    reviewedHeadCommitSha:'c'.repeat(40),
+    reviewedHeadTreeSha:'d'.repeat(40),
+    pullRequestNumber:34,
+   },
+   {
+    receiptId:'WBS-CYCLE-TEST-0002',
+    preWbsSha256:stateXSha,
+    postWbsSha256:HISTORICAL_WBS_SHA256,
+    policySha256:policyDigestV2(policy),
+    signedIntentSha256:'e'.repeat(64),
+    signedReceiptSha256:'f'.repeat(64),
+    reviewedHeadCommitSha:'a'.repeat(40),
+    reviewedHeadTreeSha:'b'.repeat(40),
+    pullRequestNumber:35,
+   },
+  ],
+ });
+ const cyclicResult=preview({
+  ledgerBytes:cyclicLedgerBytes,
+  expectedCurrentLedgerSha256:digest(cyclicLedgerBytes),
+  trustedContext:{
+   ...context,
+   consumedReceiptIds:['WBS-CYCLE-TEST-0001','WBS-CYCLE-TEST-0002'],
+  },
+ });
+ assert.equal(cyclicResult.valid,false);
+ assert.equal(cyclicResult.mode,'REJECTED');
+ assert.equal(cyclicResult.mayApply,false);
+ assert.ok(cyclicResult.errors.some(e=>e.includes('Receipt ledger chain contains a WBS state cycle or repeated WBS digest')));
+
+ const validStep1=preview();
+ assert.equal(validStep1.valid,true);
+ const validStep2=previewWbsRegistrationTransaction({
+  beforeBytes:after,
+  afterBytes:after2,
+  ledgerBytes:validStep1.proposedLedgerBytes!,
+  expectedCurrentWbsSha256:validStep1.proposedWbsSha256!,
+  expectedCurrentLedgerSha256:validStep1.proposedLedgerSha256!,
+  receipt:receipt2,
+  policy,
+  trustedContext:context2,
+ });
+ assert.equal(validStep2.valid,true);
+ assert.equal(validStep2.mode,'PREVIEW_VALID');
+ assert.equal(validStep2.mayApply,false);
+});
 console.log('TOTAL: '+passes+'/'+passes+' checks passed');
+

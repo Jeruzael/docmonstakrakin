@@ -411,6 +411,7 @@ function parseLedger(bytes: Buffer): WbsReceiptLedgerV1 {
   }
   if (data.entries.length > 5000) throw new Error('Receipt ledger entry count exceeds supported limit');
   const seen = new Set<string>();
+  const seenWbsStates = new Set<string>([HISTORICAL_WBS_SHA256]);
   let cursor = HISTORICAL_WBS_SHA256;
   const normalizedEntries: WbsReceiptLedgerEntryV1[] = [];
   for (const entry of data.entries) {
@@ -426,7 +427,6 @@ function parseLedger(bytes: Buffer): WbsReceiptLedgerV1 {
     if (typeof entry.receiptId !== 'string' || !RECEIPT_ID.test(entry.receiptId) ||
         seen.has(entry.receiptId) || entry.preWbsSha256 !== cursor ||
         typeof entry.postWbsSha256 !== 'string' || !SHA256.test(entry.postWbsSha256) ||
-        entry.postWbsSha256 === cursor ||
         typeof entry.policySha256 !== 'string' || !SHA256.test(entry.policySha256) ||
         typeof entry.signedIntentSha256 !== 'string' || !SHA256.test(entry.signedIntentSha256) ||
         typeof entry.signedReceiptSha256 !== 'string' || !SHA256.test(entry.signedReceiptSha256) ||
@@ -436,7 +436,11 @@ function parseLedger(bytes: Buffer): WbsReceiptLedgerV1 {
         !Number.isSafeInteger(entry.pullRequestNumber) || entry.pullRequestNumber <= 0) {
       throw new Error('Receipt ledger chain contains invalid, duplicate or disconnected entry');
     }
+    if (seenWbsStates.has(entry.postWbsSha256)) {
+      throw new Error('Receipt ledger chain contains a WBS state cycle or repeated WBS digest');
+    }
     seen.add(entry.receiptId);
+    seenWbsStates.add(entry.postWbsSha256);
     cursor = entry.postWbsSha256;
     normalizedEntries.push({
       receiptId: entry.receiptId,

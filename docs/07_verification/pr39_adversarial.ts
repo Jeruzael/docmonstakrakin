@@ -112,7 +112,8 @@ async function main() {
   let failures = 0; const tally: Record<string, number> = {};
   function rec(tag: string, id: string, msg: string, evidence?: unknown) {
     tally[tag] = (tally[tag] || 0) + 1;
-    console.log(`[${tag}] ${id}: ${msg}` + (evidence !== undefined ? `\n      evidence: ${typeof evidence === 'string' ? evidence : JSON.stringify(evidence)}` : ''));
+    const prefix = tag === 'DEFENSE PASS' ? `[PASS] [${tag}]` : tag === 'UNEXPECTED' ? `[FAIL] [${tag}]` : `[${tag}]`;
+    console.log(`${prefix} ${id}: ${msg}` + (evidence !== undefined ? `\n      evidence: ${typeof evidence === 'string' ? evidence : JSON.stringify(evidence)}` : ''));
   }
   function scenario(id: string, tag: 'DEFENSE PASS' | 'LIMITATION CONFIRMED' | 'FINDING', msg: string, fn: () => unknown) {
     try { const ev = fn(); rec(tag, id, msg, ev); }
@@ -264,12 +265,11 @@ async function main() {
     assert.equal(r.valid, true); assert.equal(r.mayApply, false);
     return 'PREVIEW_VALID; forged entry never cryptographically verified';
   });
-  scenario('B08', 'FINDING', 'Ledger permits a cycle back to a prior WBS state (A->B->A), contradicting additive-only registration', () => {
+  scenario('B08', 'DEFENSE PASS', 'Ledger cycle back to a prior WBS state (Genesis -> X -> Genesis) -> REJECTED', () => {
     const back = { ...forgedEntry, receiptId: 'FORGED-HISTORY-0002', preWbsSha256: digest(Wforged), postWbsSha256: HISTORICAL_WBS_SHA256 };
     const Lc = serializeWbsReceiptLedger({ ...makeHistoricalWbsReceiptLedger(), entries: [forgedEntry, back] });
     const r = run({ ...base1(), ledgerBytes: Lc, expectedCurrentLedgerSha256: digest(Lc), trustedContext: ctx(git1, ['FORGED-HISTORY-0001', 'FORGED-HISTORY-0002']) });
-    assert.equal(r.valid, true);
-    return 'cyclic chain G->X->G accepted and new registration from G previews VALID';
+    return rejectedWith(r, 'WBS state cycle or repeated WBS digest');
   });
   scenario('B09', 'LIMITATION CONFIRMED', 'Stale-snapshot replay: consumed receipt R1 previews VALID again when caller supplies stale WBS + genesis ledger + matching expected hashes', () => {
     const s1 = run(base1()); assert.equal(s1.valid, true);
@@ -353,7 +353,11 @@ async function main() {
 
   console.log('\n=== SUMMARY ===');
   console.log(JSON.stringify({ ...tally, unexpected: failures }));
-  process.exit(failures ? 1 : 0);
+  assert.equal(tally['DEFENSE PASS'], 28, 'Expected 28 defensive invariant checks');
+  assert.equal(tally['FINDING'], 4, 'Expected 4 bounded finding characterizations');
+  assert.equal(tally['LIMITATION CONFIRMED'], 5, 'Expected 5 confirmed production limitations');
+  assert.equal(failures, 0, 'Expected 0 unexpected outcomes');
+  process.exit(0);
 }
 
 main().catch(err => {
