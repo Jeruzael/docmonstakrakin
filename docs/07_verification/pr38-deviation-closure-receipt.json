@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "deviationId": "PR38-PREMATURE-MERGE-DEVIATION",
+  "decision": "APPROVE_CLOSURE",
+  "decisionAuthority": "Human Project Lead & Security Officer",
+  "actor": "Jeruzael",
+  "actorRole": "Project Lead & Security Officer",
+  "decisionSource": "Explicit human approval in governed review session following verified technical corrective action PR #39",
+  "candidateFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_REVIEW_CANDIDATE_20261017.md",
+  "decisionRecordFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_DECISION.md",
+  "originalDeviationRecord": "docs/07_verification/PR38_PREMATURE_MERGE_CORRECTIVE_ACTION.md",
+  "originalPrematureMergeSha": "dfa1e170c5aae6e12824e7d75fcab53baa38fe17",
+  "correctiveActionMergeSha": "ab8feea59454ee68f1b84f96af2b0205fbd4ca0d",
+  "candidateMergeSha": "4d2fdf27a9045f5f1b2cc018ddbfe8c4c3da41e5",
+  "evaluationCiRunId": 38983270065,
+  "postMergeCiRunId": 39065022815,
+  "masterCiConclusion": "success",
+  "residualRiskAccepted": {
+    "boundedFindings": ["A04", "A05", "A10", "A11"],
+    "productionBlockers": ["A13", "B07", "B09", "C07", "D01"]
+  },
+  "historicalChronologyPreserved": true,
+  "retroactiveMergeApprovalClaimed": false,
+  "canonicalWbsModified": false,
+  "historicalReceiptsModified": false,
+  "stageB2b2ProductionTrustBlocked": true,
+  "pr34Blocked": true,
+  "liveReconciliationBlocked": true,
+  "gate7Blocked": true,
+  "releaseBlocked": true,
+  "applied": true,
+  "appliedAt": "2026-10-18T06:23:16+08:00"
+}
