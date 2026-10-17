@@ -5,10 +5,14 @@
   "decisionAuthority": "Human Project Lead & Security Officer",
   "actor": "Jeruzael",
   "actorRole": "Project Lead & Security Officer",
-  "decisionSource": "Explicit authenticated human approval by Project Lead on PR #42 comment 6242917161 following verified technical corrective action PR #39",
+  "decisionSource": "Personally authored and posted human governance approval by Project Lead & Security Officer Jeruzael on PR #42 comment 6242948647 following verified technical corrective action PR #39",
   "decisionRecordedAt": "2026-10-18T06:23:16+08:00",
-  "approvalCommentId": 6242917161,
-  "approvalCommentUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161",
+  "approvalCommentId": 6242948647,
+  "approvalCommentUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242948647",
+  "approvalCommentCreatedAt": "2026-10-17T23:16:28Z",
+  "humanAuthorshipConfirmed": true,
+  "agentStatementCommentId": 6242917161,
+  "agentStatementCommentUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161",
   "candidateFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_REVIEW_CANDIDATE_20261017.md",
   "decisionRecordFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_DECISION.md",
   "originalDeviationRecord": "docs/07_verification/PR38_PREMATURE_MERGE_CORRECTIVE_ACTION.md",
@@ -19,8 +23,19 @@
   "postMergeCiRunId": 39065022815,
   "masterCiConclusion": "success",
   "residualRiskAccepted": {
-    "boundedFindings": ["A04", "A05", "A10", "A11"],
-    "productionBlockers": ["A13", "B07", "B09", "C07", "D01"]
+    "boundedFindings": [
+      "A04",
+      "A05",
+      "A10",
+      "A11"
+    ],
+    "productionBlockers": [
+      "A13",
+      "B07",
+      "B09",
+      "C07",
+      "D01"
+    ]
   },
   "productionSignerQuorumRatified": false,
   "historicalChronologyPreserved": true,

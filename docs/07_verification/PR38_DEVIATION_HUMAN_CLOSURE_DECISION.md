@@ -9,7 +9,8 @@
 **Original Deviation Record:** [PR38_PREMATURE_MERGE_CORRECTIVE_ACTION.md](PR38_PREMATURE_MERGE_CORRECTIVE_ACTION.md) (Preserved Unmodified)  
 **Transition Receipt File:** [pr38-deviation-closure-receipt.json](pr38-deviation-closure-receipt.json)  
 **Pull Request:** https://github.com/Jeruzael/docmonstakrakin/pull/42  
-**Authenticated Approval Comment:** https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161  
+**Authoritative Human Approval Comment:** https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242948647  
+**Agent Statement Reference (Informational Only):** https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161  
 
 ---
 
@@ -19,7 +20,9 @@ Pursuant to the Operator/Reviewer protocol defined in `PR38_DEVIATION_HUMAN_CLOS
 
 - **Human Decision:** **APPROVE_CLOSURE**
 - **Decision Authority:** Jeruzael (Project Lead & Security Officer)
-- **Decision Recorded Timestamp:** 2026-10-18T06:23:16+08:00 (UTC 2026-10-17T22:23:16Z)
+- **Local Operator Session Decision Timestamp:** 2026-10-18T06:23:16+08:00 (UTC 2026-10-17T22:23:16Z)
+- **Authoritative GitHub Comment Timestamp:** 2026-10-17T23:16:28Z (Local 2026-10-18T07:16:28+08:00)
+- **Human Authorship Confirmation:** Explicitly confirmed personal human authorship by `Jeruzael` (Project Lead & Security Officer). Directly posted through GitHub web interface.
 - **Scope:** Procedural deviation closure for the PR #38 premature merge on `master` (evaluated baseline: `4d2fdf27a9045f5f1b2cc018ddbfe8c4c3da41e5`), supported by verified corrective action PR #39 (CI Run `38983270065`, 63/63 test suites passed, 1,469 assertions verified).
 - **Publication / Application Status:** **TRANSITION_PUBLICATION_PENDING**. The decision is formally recorded in this branch (PR #42); the transition will become effective on `master` upon governed merge of PR #42. It is not claimed as already applied to `master` prior to merge.
 
@@ -40,10 +43,41 @@ Pursuant to the Operator/Reviewer protocol defined in `PR38_DEVIATION_HUMAN_CLOS
 
 ## 3. Approval Evidence & Authenticated Provenance
 
-- **Authenticated Source:** Direct Project Lead comment on GitHub PR #42: [Comment 6242917161](https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161)
-- **Actor:** `Jeruzael`
-- **Authenticated Timestamp:** 2026-10-17T23:13:46Z
-- **Local Review Confirmation:** Operator session explicit approval (`"I approve"`, 2026-10-18T06:23:16+08:00)
+### 3.1. Provenance Classification of GitHub Comments
+
+1. **Authoritative Human Approval Decision (Comment B):**
+   - **URL:** [Comment 6242948647](https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242948647)
+   - **Comment ID:** `6242948647`
+   - **GitHub Actor:** `Jeruzael`
+   - **Created At:** `2026-10-17T23:16:28Z`
+   - **Authorship Classification:** **Personally Authored Human Decision**
+   - **Provenance Verification:** Submitted personally by the human operator via GitHub interface. Explicit personal authorship confirmed directly by the operator.
+   - **Scope:** Narrowly scoped PR #38 premature-merge deviation closure authorization subject to five conditions and explicit production exclusions.
+
+2. **Agent-Posted Statement (Comment A — Informational Reference):**
+   - **URL:** [Comment 6242917161](https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161)
+   - **Comment ID:** `6242917161`
+   - **GitHub Actor:** `Jeruzael` (via automated local script execution using stored tool credentials)
+   - **Created At:** `2026-10-17T23:13:46Z`
+   - **Authorship Classification:** **Agent-Posted Statement (Excluded from Human Approval)**
+   - **Provenance Verification:** Execution logs confirm this comment was posted programmatically by the local AI coding assistant. It is preserved for audit transparency but is explicitly excluded from representing independently human-authored approval.
+
+3. **Local Operator Session Confirmation:**
+   - **Session Statement:** `"I approve."`
+   - **Local Timestamp:** `2026-10-18T06:23:16+08:00` (UTC `2026-10-17T22:23:16Z`)
+   - **Context:** Operator direct input following review of `PR38_DEVIATION_HUMAN_CLOSURE_REVIEW_CANDIDATE_20261017.md`.
+
+### 3.2. Receipt Provenance Schema Fields Documentation
+
+The following fields in `pr38-deviation-closure-receipt.json` explicitly document the approval provenance:
+
+- `approvalCommentId`: The numeric ID of the authoritative human decision comment on GitHub (`6242948647`).
+- `approvalCommentUrl`: The web URL to the authoritative human decision comment.
+- `approvalCommentCreatedAt`: The UTC ISO timestamp when the human comment was created on GitHub (`2026-10-17T23:16:28Z`).
+- `humanAuthorshipConfirmed`: Boolean flag confirming the comment was personally authored and published by the human operator (`true`).
+- `decisionRecordedAt`: The ISO timestamp of the initial local operator approval statement (`2026-10-18T06:23:16+08:00`).
+- `agentStatementCommentId`: The numeric ID of the prior agent-posted comment (`6242917161`), recorded for audit tracking and distinguished from human approval.
+- `agentStatementCommentUrl`: The web URL to the agent-posted comment.
 
 ---
 
