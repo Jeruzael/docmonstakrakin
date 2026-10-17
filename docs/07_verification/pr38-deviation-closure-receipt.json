@@ -5,7 +5,10 @@
   "decisionAuthority": "Human Project Lead & Security Officer",
   "actor": "Jeruzael",
   "actorRole": "Project Lead & Security Officer",
-  "decisionSource": "Explicit human approval in governed review session following verified technical corrective action PR #39",
+  "decisionSource": "Explicit authenticated human approval by Project Lead on PR #42 comment 6242917161 following verified technical corrective action PR #39",
+  "decisionRecordedAt": "2026-10-18T06:23:16+08:00",
+  "approvalCommentId": 6242917161,
+  "approvalCommentUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242917161",
   "candidateFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_REVIEW_CANDIDATE_20261017.md",
   "decisionRecordFile": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_DECISION.md",
   "originalDeviationRecord": "docs/07_verification/PR38_PREMATURE_MERGE_CORRECTIVE_ACTION.md",
@@ -19,6 +22,7 @@
     "boundedFindings": ["A04", "A05", "A10", "A11"],
     "productionBlockers": ["A13", "B07", "B09", "C07", "D01"]
   },
+  "productionSignerQuorumRatified": false,
   "historicalChronologyPreserved": true,
   "retroactiveMergeApprovalClaimed": false,
   "canonicalWbsModified": false,
@@ -28,6 +32,7 @@
   "liveReconciliationBlocked": true,
   "gate7Blocked": true,
   "releaseBlocked": true,
-  "applied": true,
-  "appliedAt": "2026-10-18T06:23:16+08:00"
+  "applied": false,
+  "appliedAt": null,
+  "applicationStatus": "TRANSITION_PUBLICATION_PENDING"
 }
