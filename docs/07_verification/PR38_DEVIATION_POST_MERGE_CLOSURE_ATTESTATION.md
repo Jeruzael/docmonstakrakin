@@ -10,18 +10,20 @@
 **Merge Signer:** GitHub Web-Flow GPG (`verified: true`, `reason: valid`)  
 **Post-Merge Master CI Run:** [Run 39084416265](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39084416265) (`completed` / `success`)  
 **Effective Publication Status:** **EFFECTIVE_PUBLICATION_CONFIRMED**  
-**Governance Review Disposition:** **TECHNICAL_VERIFIED / HUMAN_DECISION_PROVENANCE_CONFIRMED / POST_MERGE_REVIEW_REQUESTED**
+**Governance Review Disposition:** **TECHNICAL_VERIFIED / HUMAN_DECISION_PROVENANCE_CONFIRMED / POST_MERGE_REVIEW_PENDING_REQUEST**
+
+**Overall Disposition:** **PR42_CLOSURE_PUBLISHED / POST_MERGE_ATTESTATION_PENDING_REVIEW / STAGE_B2B2_PRODUCTION_BLOCKED**
 
 ---
 
 ## 1. Executive Summary & Attestation Scope
 
-This attestation provides an append-only formal record of the completion of the PR #38 premature merge procedural deviation closure on the canonical `master` branch.
+This attestation provides an append-only formal record of the publication of the PR #38 premature merge procedural deviation closure records on the canonical `master` branch. Publication does not establish fulfillment of the human decision's final-commit independent-review condition; the historical review discrepancy remains unresolved.
 
 In accordance with strict governance principles:
 1. **Truthful Chronology:** The pre-merge receipt [`pr38-deviation-closure-receipt.json`](pr38-deviation-closure-receipt.json) is preserved with its pre-merge fields (`applied: false`, `applicationStatus: "TRANSITION_PUBLICATION_PENDING"`). This attestation document and its companion file [`pr38-deviation-post-merge-closure-attestation.json`](pr38-deviation-post-merge-closure-attestation.json) attest to the effective publication on `master` at commit `0177be8ad9d7afa0184615bb407ed437fd762ee8`.
 2. **Human Approval Provenance:** The human approval is anchored exclusively in GitHub [Comment 6242948647](https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242948647), personally authored and submitted by Project Lead & Security Officer `Jeruzael`. Prior Comment `6242917161` is recorded as an automated agent statement and excluded from human approval representation.
-3. **Review Discrepancy Transparently Disclosed:** The pre-merge approval by `jianzhihuoxin` was recorded on commit `f2fbf2d0fd5af227f728abd97cba7f5d1134a0ec`. Subsequent commit `c504883e08cabe089bc19082d833d56b2f347c96` amended the approval provenance documentation. Because GitHub ruleset `Master Protection` did not mandate stale-review dismissal or last-push approval, GitHub permitted the merge without fresh review of `c504883`. An independent post-merge review is hereby formally requested.
+3. **Review Discrepancy Transparently Disclosed:** The pre-merge approval by `jianzhihuoxin` was recorded on commit `f2fbf2d0fd5af227f728abd97cba7f5d1134a0ec`. Subsequent commit `c504883e08cabe089bc19082d833d56b2f347c96` amended the approval provenance documentation. Because GitHub ruleset `Master Protection` did not mandate stale-review dismissal or last-push approval, GitHub permitted the merge without fresh review of `c504883`. An independent post-merge review request is prepared; submission remains **PENDING_REQUEST** in this pre-request candidate snapshot.
 4. **Hardening Recommendations:** Concrete configuration updates for repository ruleset `Master Protection` are proposed to enforce last-push approval for all future merges.
 
 ---
@@ -102,12 +104,12 @@ All historical receipts (`dmk-196-*.json`, `dmk-197-*.json`, `dmk-208-*.json`), 
 
 ### 5.2. Post-Merge Independent Review Request
 
-An independent human review is hereby formally requested from `jianzhihuoxin` (or other authorized project reviewer) covering:
+**Request status at candidate preparation:** **PENDING_REQUEST**. No independently attributable reviewer request has yet been submitted for this attestation candidate. After its attestation PR exists, submit an independent human review request to `jianzhihuoxin` (or another authorized project reviewer) explicitly covering:
 - Final merged commit `c504883e08cabe089bc19082d833d56b2f347c96`
 - Exact master merge commit `0177be8ad9d7afa0184615bb407ed437fd762ee8`
 - Provenance attribution and schema documentation
 
-This post-merge review will be recorded as a post-merge verification record upon submission and cannot retroactively be converted into a pre-merge approval.
+Record the actual request separately in the attestation PR timeline, including the requester, requested reviewer, submission timestamp, and attestation PR HEAD. The status above is the pre-request candidate snapshot, not a claim about subsequent PR events. Record any actual human review separately, with reviewer identity, reviewed commit, submission timestamp, verdict, and explicit inspection of both commits listed above. A submitted request is not a completed review. Any later review is post-merge evidence and cannot retroactively be converted into a pre-merge approval.
 
 ---
 

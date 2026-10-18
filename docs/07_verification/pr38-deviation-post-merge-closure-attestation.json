@@ -17,6 +17,7 @@
   "effectiveMasterParent2Sha": "c504883e08cabe089bc19082d833d56b2f347c96",
   "effectiveMergeTimestamp": "2026-10-18T00:53:03Z",
   "effectivePublicationStatus": "EFFECTIVE_PUBLICATION_CONFIRMED",
+  "overallDisposition": "PR42_CLOSURE_PUBLISHED / POST_MERGE_ATTESTATION_PENDING_REVIEW / STAGE_B2B2_PRODUCTION_BLOCKED",
   "humanApprovalProvenance": {
     "decision": "APPROVE_CLOSURE",
     "decisionAuthority": "Project Lead & Security Officer",
@@ -67,7 +68,12 @@
     "preMergeReviewSubmittedAt": "2026-10-17T23:19:34Z",
     "finalMergedFeatureHeadSha": "c504883e08cabe089bc19082d833d56b2f347c96",
     "discrepancyDescription": "Reviewer jianzhihuoxin approved commit f2fbf2d. Subsequent commit c504883 amended approval provenance to reference Comment 6242948647. Under repository ruleset 'Master Protection', dismiss_stale_reviews_on_push and require_last_push_approval were set to false, allowing GitHub to merge PR #42 without renewed review on commit c504883.",
-    "postMergeReviewStatus": "INDEPENDENT_POST_MERGE_REVIEW_REQUESTED"
+    "postMergeReviewStatus": "PENDING_REQUEST",
+    "reviewStatusScope": "PRE_REQUEST_CANDIDATE_SNAPSHOT",
+    "reviewRequestRecordLocation": "Subsequent independently attributable request is recorded separately in the attestation PR timeline with requester, reviewer, submission timestamp, and attestation PR HEAD.",
+    "actualPostMergeReviewStatus": "PENDING",
+    "actualPostMergeReviewRecordLocation": "Actual human review is recorded separately from the request with reviewer identity, reviewed commit, submission timestamp, verdict, and explicit inspection of final PR #42 feature HEAD and master merge commit. No retrospective pre-merge approval is claimed.",
+    "finalCommitIndependentReviewConditionSatisfied": false
   },
   "rulesetHardeningRecommendation": {
     "rulesetId": 25028032,
