@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "attestationType": "POST_MERGE_CLOSURE_ATTESTATION",
+  "projectId": "PRJ-DOCMONSTAKRAKIN",
+  "deviationId": "PR38-PREMATURE-MERGE-DEVIATION",
+  "targetEvent": "PR #38 Premature Merge Procedural Deviation Closure",
+  "pullRequestNumber": 42,
+  "pullRequestUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42",
+  "preMergeReceiptPath": "docs/07_verification/pr38-deviation-closure-receipt.json",
+  "preMergeReceiptSha256": "6950373542cd89d1934178ffe083d491c785f017d501ab4cc225089d8898c6c8",
+  "preMergeDecisionRecordPath": "docs/07_verification/PR38_DEVIATION_HUMAN_CLOSURE_DECISION.md",
+  "preMergeDecisionRecordSha256": "a1790fd213d2554584de0aa3068de702d32d7d2b1ed96d92d8fe7c25515bacdf",
+  "preMergeAppliedFieldState": false,
+  "preMergeApplicationStatus": "TRANSITION_PUBLICATION_PENDING",
+  "effectiveMasterCommitSha": "0177be8ad9d7afa0184615bb407ed437fd762ee8",
+  "effectiveMasterParent1Sha": "4d2fdf27a9045f5f1b2cc018ddbfe8c4c3da41e5",
+  "effectiveMasterParent2Sha": "c504883e08cabe089bc19082d833d56b2f347c96",
+  "effectiveMergeTimestamp": "2026-10-18T00:53:03Z",
+  "effectivePublicationStatus": "EFFECTIVE_PUBLICATION_CONFIRMED",
+  "humanApprovalProvenance": {
+    "decision": "APPROVE_CLOSURE",
+    "decisionAuthority": "Project Lead & Security Officer",
+    "actor": "Jeruzael",
+    "authoritativeCommentId": 6242948647,
+    "authoritativeCommentUrl": "https://github.com/Jeruzael/docmonstakrakin/pull/42#issuecomment-6242948647",
+    "authoritativeCommentCreatedAt": "2026-10-17T23:16:28Z",
+    "humanAuthorshipConfirmed": true,
+    "localDecisionRecordedAt": "2026-10-18T06:23:16+08:00",
+    "agentStatementCommentId": 6242917161,
+    "agentStatementClassification": "AGENT_POSTED_STATEMENT_EXCLUDED_FROM_HUMAN_APPROVAL"
+  },
+  "postMergeMasterCi": {
+    "runId": 39084416265,
+    "runUrl": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39084416265",
+    "conclusion": "success",
+    "jobs": {
+      "Controlled Docs": {
+        "status": "completed",
+        "conclusion": "success",
+        "jobId": 117547883152,
+        "jobUrl": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39084416265/job/117547883152"
+      },
+      "Complete Regression": {
+        "status": "completed",
+        "conclusion": "success",
+        "jobId": 117547883413,
+        "jobUrl": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39084416265/job/117547883413",
+        "suitesTotal": 63,
+        "suitesPassed": 63,
+        "suitesFailed": 0,
+        "assertionsPassed": 1469
+      },
+      "Quality & Build": {
+        "status": "completed",
+        "conclusion": "success",
+        "jobId": 117547883603,
+        "jobUrl": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39084416265/job/117547883603"
+      }
+    }
+  },
+  "reviewDiscrepancy": {
+    "discrepancyIdentified": true,
+    "preMergeReviewer": "jianzhihuoxin",
+    "preMergeReviewId": 5560591111,
+    "preMergeReviewState": "APPROVED",
+    "preMergeReviewedCommitSha": "f2fbf2d0fd5af227f728abd97cba7f5d1134a0ec",
+    "preMergeReviewSubmittedAt": "2026-10-17T23:19:34Z",
+    "finalMergedFeatureHeadSha": "c504883e08cabe089bc19082d833d56b2f347c96",
+    "discrepancyDescription": "Reviewer jianzhihuoxin approved commit f2fbf2d. Subsequent commit c504883 amended approval provenance to reference Comment 6242948647. Under repository ruleset 'Master Protection', dismiss_stale_reviews_on_push and require_last_push_approval were set to false, allowing GitHub to merge PR #42 without renewed review on commit c504883.",
+    "postMergeReviewStatus": "INDEPENDENT_POST_MERGE_REVIEW_REQUESTED"
+  },
+  "rulesetHardeningRecommendation": {
+    "rulesetId": 25028032,
+    "rulesetName": "Master Protection",
+    "proposedChanges": {
+      "dismiss_stale_reviews_on_push": true,
+      "require_last_push_approval": true
+    },
+    "status": "PROPOSED_PENDING_OPERATOR_AUTHORIZATION"
+  },
+  "governanceBoundariesPreserved": {
+    "productionSignerQuorumRatified": false,
+    "canonicalWbsModified": false,
+    "historicalReceiptsModified": false,
+    "stageB2b2ProductionTrustBlocked": true,
+    "pr34Blocked": true,
+    "liveReconciliationBlocked": true,
+    "gate7Blocked": true,
+    "releaseBlocked": true
+  }
+}
