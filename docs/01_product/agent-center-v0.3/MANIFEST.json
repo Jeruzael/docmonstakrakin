@@ -1,0 +1,37 @@
+{
+  "edition": "0.3",
+  "sourceEdition": "0.2",
+  "revisionReason": "Independent follow-up F02 idempotency, F04 ACL/existence, F05 local vs remote cancel; rollout formatting",
+  "files": [
+    {
+      "name": "01_PRODUCT_AND_ARCHITECTURE_SPEC.md",
+      "sha256": "57097c998807f2db36dd314d83cb62906341f0bb7ddb310dba748e050727a376",
+      "bytes": 52357
+    },
+    {
+      "name": "02_INFORMATION_ARCHITECTURE_AND_UX_FLOWS.md",
+      "sha256": "ca722862e043fc1525c3b204aafca3422ff9725b95619ef8c9cf65c0684581a0",
+      "bytes": 25643
+    },
+    {
+      "name": "03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+      "sha256": "c36e874da7ba7b65791ca396d22d202d0898dc9981a109db186a3ddcf033564e",
+      "bytes": 35591
+    },
+    {
+      "name": "04_TEXT_UI_SCREEN_MOCKUPS.md",
+      "sha256": "7202d65a6845e9cf0865be59f4ad58775b9c754bfedc6328b6b2d9e2a5184c58",
+      "bytes": 46066
+    },
+    {
+      "name": "05_SECURITY_REVIEW_RESOLUTION_MATRIX.md",
+      "sha256": "e000ec6f5b02a5b18a46cd4d01a517e128dd512484cc61bb8e6e7039ae62dfe3",
+      "bytes": 8322
+    },
+    {
+      "name": "README.md",
+      "sha256": "ee40c33373645362adc720a478b9f345b5b1158f2cd6d775d97a40eccb4ac729",
+      "bytes": 7777
+    }
+  ]
+}
