@@ -221,7 +221,17 @@ try {
   await test('B2 valid package imports, selects and persists; B5 invalid/conflict requests preserve snapshot',async()=>{
     const fixture=await startPackageFixture();const page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(8000);
     const requests:string[]=[];
-    await page.route('**/api/**',async route=>{const url=new URL(route.request().url());requests.push(route.request().method()+' '+url.pathname);const response=await route.fetch({url:fixture.base+url.pathname+url.search});await route.fulfill({response});});
+    // The browser uses one origin in production. This test bridges two separate
+    // ephemeral servers, so translate transport authority to the fixture origin.
+    // Production Host/Origin checks remain active; no authentication is bypassed.
+    await page.route('**/api/**',async route=>{
+      const url=new URL(route.request().url());
+      requests.push(route.request().method()+' '+url.pathname);
+      const headers:Record<string,string>={...route.request().headers(),host:new URL(fixture.base).host};
+      if(headers.origin)headers.origin=fixture.base;
+      const response=await route.fetch({url:fixture.base+url.pathname+url.search,headers});
+      await route.fulfill({response});
+    });
     try{await page.goto(base,{waitUntil:'domcontentloaded'});await page.getByText('Zero Projects Registered',{exact:true}).waitFor();
       const open=page.getByRole('button',{name:'Import package',exact:true});assert.equal(await open.count(),1,'import available before first project');await open.click();
       const upload=page.locator('#portable-package-modal input[type=file]');const before=fixture.bytes();

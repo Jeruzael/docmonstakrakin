@@ -5,8 +5,8 @@ import { validateText } from '../../src/data/generationValidation.js';
 import { installReviewerIdentity } from './identity.js';
 import { evaluateQuorum, REQUIRED_QUORUM_ROLES, validateStoredSignatures } from './quorum.js';
 
-export function registerSignoffRoutes(app: Express, store: any) {
-  const { requireHuman } = installReviewerIdentity(app);
+export function registerSignoffRoutes(app: Express, store: any, identityContext?:ReturnType<typeof installReviewerIdentity>) {
+  const { requireHuman } = identityContext ?? installReviewerIdentity(app);
   const roles = [...REQUIRED_QUORUM_ROLES];
   const mapping: Record<string, [string, string]> = {
     REQUIREMENT: ['requirements', 'REQUIREMENT_BASELINE'],

@@ -43,8 +43,8 @@ let count = 0;
 const passed = (name:string) => {count++; console.log(`PASS ${name}`);};
 try {
   await start();
-  const host = await api('/api/repo/status'); assert.equal(host.sourceControlMode,'AI_STUDIO_WORKSPACE'); assert.equal(host.branch,null); passed('project without own Git exposes no parent metadata');
-  await api('/api/repo/stage',{all:true},409); passed('repository mutation rejected without owned Git');
+  const host = await api('/api/repo/status',undefined,403); assert.equal(host.error,'AUTHORIZATION_UNAVAILABLE'); assert(!Object.hasOwn(host,'branch')); passed('repository containment denies reads without exposing parent metadata');
+  const stageDenial=await api('/api/repo/stage',{all:true},403); assert.equal(stageDenial.error,'AUTHORIZATION_UNAVAILABLE'); assert(!fs.existsSync(path.join(dir,'.git'))); passed('repository mutation denied before repository discovery or creation');
   const beforeProjects=(await api('/api/projects')).length;
   await api('/api/projects',{...cryptoDemonDraft,productBaseline:{coreFeatures:[{bad:true}]}},422);
   await api('/api/projects',{...cryptoDemonDraft,assuranceInputs:{pii:'false'}},422);
@@ -53,7 +53,7 @@ try {
   assert.equal(p.maturity,'GREENFIELD'); assert.equal(p.technicalBaseline.sourceControl.finalSelection,null); passed('maturity and target SCM isolation');
   const feats = await api(url+'/features'); assert.equal(feats.length,8); assert(feats.every((f:any)=>f.status==='PROPOSED' && f.source==='PRODUCT_BASELINE' && f.provenance)); passed('eight proposed PRODUCT_BASELINE features');
   const questions = await api(url+'/questions'); assert(!questions.some((q:any)=>['AI','AGENTIC_AI'].includes(q.domain) || q.id==='AUTH-Q-014')); passed('dynamic applicability');
-  assert.deepEqual(await api(url+'/agents'),{roles:[],runs:[]}); await api(url+'/agents/AGT-SEC-01/run',{},404);
+  assert.deepEqual(await api(url+'/agents'),{roles:[],runs:[],executionMode:'DEMONSTRATION_ONLY',liveExecutionAvailable:false}); await api(url+'/agents/AGT-SEC-01/run',{},403);
   const next = await api(url+'/next-action'); assert(questions.some((q:any)=>q.id===next.targetEntityId)); assert(!['PROD-Q-001','PROD-Q-003','DMK-165'].includes(next.targetEntityId)); passed('agent and next-action project isolation');
   const risk = (await api(url+'/risks'))[0]; assert.equal(risk.inherentLikelihood*risk.inherentImpact,risk.inherentScore); assert.equal(risk.residualScore,risk.inherentScore); assert.equal(risk.controls.length,0); passed('risk factors and unmitigated residual agree');
   const original = JSON.stringify({schema_version:'1.0',agent_role:'Architect',provider:'External fixture',model:'Test model',summary:'Ledger proposals',assumptions:['Mining difficulty remains an open decision'],proposed_changes:[
@@ -142,7 +142,7 @@ try {
   await api('/api/projects/package/import',{package:badEnvelope,overwrite:true},400);passed('validly resealed prototype-key package rejected');
   const b=await api('/api/projects',{...cryptoDemonDraft,name:'Isolated project B'},201);const bUrl=`/api/projects/${b.id}`;
   for(const key of ['requirements','adrs','components','evidence','approvals','threats','import-sessions','derivations'])assert.equal((await api(bUrl+'/'+key)).length,0,key);
-  assert.deepEqual(await api(bUrl+'/agents'),{roles:[],runs:[]});
+  assert.deepEqual(await api(bUrl+'/agents'),{roles:[],runs:[],executionMode:'DEMONSTRATION_ONLY',liveExecutionAvailable:false});
   assert((await api(bUrl+'/features')).every((f:any)=>f.provenance.projectId===b.id));
   assert((await api(bUrl+'/work-items')).every((w:any)=>w.id.includes(b.id)));
   assert.equal((await api(bUrl+'/risks')).length,1);

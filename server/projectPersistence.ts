@@ -172,7 +172,10 @@ export function installProjectPersistence(app: Express, store: any, workspaceRoo
   }
 
   app.use('/api/projects', (req, res, next) => {
-    if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) && !(req.method === 'GET' && req.path.endsWith('/package/export'))) {
+    // Express also dispatches HEAD, case aliases and a trailing slash to this
+    // audit-mutating GET handler. Every representation needs the transaction.
+    const auditedExport=['GET','HEAD'].includes(req.method)&&/\/package\/export\/?$/i.test(req.path);
+    if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) && !auditedExport) {
       return next();
     }
     const mode = classifyProjectRequestMode(req);
