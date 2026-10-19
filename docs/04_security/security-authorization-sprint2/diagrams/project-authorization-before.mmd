@@ -1,0 +1,9 @@
+flowchart LR
+  C[Untrusted local caller] --> I[Loopback Host Origin boundary]
+  I --> R[69 route classifications]
+  R -->|45 legacy registrations| P[Project persistence]
+  R -->|7 specialized registrations| H[Human reviewer gate]
+  H --> P
+  R -->|14 privileged registrations| D[Denied]
+  R -->|3 session registrations| S[In-memory reviewer sessions]
+  P --> X[Project state and controlled files]

@@ -1,0 +1,989 @@
+{
+  "baseline": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+  "counts": {
+    "LEGACY_LOCAL_UNSCOPED": 45,
+    "BLOCKED_SECRET_ADMIN": 7,
+    "SPECIALIZED_REVIEWER": 7,
+    "BLOCKED_REPOSITORY": 6,
+    "BLOCKED_AGENT_DISPATCH": 1,
+    "REVIEWER_SESSION": 3
+  },
+  "classification": "Source verified; capabilities and negative-test requirements proposed",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "server.ts",
+      "line": 179,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "health.public-minimal / workspace.inspect",
+      "effect": "Unscoped service/provider/project-count metadata",
+      "sensitive": "Provider type and project count",
+      "test": "Anonymous minimal health; hide provider/count under workspace.inspect"
+    },
+    {
+      "method": "GET",
+      "path": "/api/secrets/metadata",
+      "source": "server.ts",
+      "line": 194,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/secrets",
+      "source": "server.ts",
+      "line": 207,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/secrets/:key",
+      "source": "server.ts",
+      "line": 237,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/secrets/migrate",
+      "source": "server.ts",
+      "line": 264,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/secrets/rotate",
+      "source": "server.ts",
+      "line": 305,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/secrets/rotations",
+      "source": "server.ts",
+      "line": 343,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/status",
+      "source": "server.ts",
+      "line": 350,
+      "access": "BLOCKED_SECRET_ADMIN",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "secrets.admin (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "source": "server.ts",
+      "line": 364,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.list.filtered",
+      "effect": "Unscoped project enumeration",
+      "sensitive": "Workspace project metadata / creator attribution",
+      "test": "Filter by membership; reject body owner authority; creator grant atomicity"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id",
+      "source": "server.ts",
+      "line": 368,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "source": "server.ts",
+      "line": 376,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02",
+        "AZ-04"
+      ],
+      "capability": "project.create",
+      "effect": "Validated draft; generated ID; caller owner field; atomic snapshot/audit",
+      "sensitive": "Workspace project metadata / creator attribution",
+      "test": "Filter by membership; reject body owner authority; creator grant atomicity"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/questions",
+      "source": "server.ts",
+      "line": 504,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/answers",
+      "source": "server.ts",
+      "line": 512,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "discovery.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/discovery/coverage",
+      "source": "server.ts",
+      "line": 540,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/derivations",
+      "source": "server.ts",
+      "line": 547,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/features",
+      "source": "server.ts",
+      "line": 552,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/features",
+      "source": "server.ts",
+      "line": 556,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "features.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/requirements",
+      "source": "server.ts",
+      "line": 580,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/requirements",
+      "source": "server.ts",
+      "line": 584,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "requirements.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/requirements/:reqId/status",
+      "source": "server.ts",
+      "line": 634,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02",
+        "AZ-08"
+      ],
+      "capability": "requirements.transition",
+      "effect": "APPROVED blocked; other statuses not enumerated",
+      "sensitive": "Requirement state and linked governance",
+      "test": "Deny outsider; reject unknown states; immutable approved baseline"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/compiler/compile",
+      "source": "server.ts",
+      "line": 673,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "context.compile + source reads",
+      "effect": "Source-selected context; successful POST enters snapshot writer",
+      "sensitive": "Compiled project context, prompts and derived data",
+      "test": "Intersect every source ACL; nonmember and resource reference denial"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/risks",
+      "source": "server.ts",
+      "line": 707,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/threats",
+      "source": "server.ts",
+      "line": 712,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/standards",
+      "source": "server.ts",
+      "line": 717,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/wbs",
+      "source": "server.ts",
+      "line": 722,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "wbs.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/work-items/reconciliation",
+      "source": "server.ts",
+      "line": 746,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "workitems.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/work-items",
+      "source": "server.ts",
+      "line": 775,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "workitems.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/work-items",
+      "source": "server.ts",
+      "line": 779,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "workitems.update",
+      "effect": "Input/canonical ownership checks; terminal statuses require HUMAN; no general membership",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/evidence",
+      "source": "server.ts",
+      "line": 834,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "evidence.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/audit",
+      "source": "server.ts",
+      "line": 839,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "audit.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/audit/verify",
+      "source": "server.ts",
+      "line": 844,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "audit.verify",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/adrs",
+      "source": "server.ts",
+      "line": 851,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/adrs",
+      "source": "server.ts",
+      "line": 855,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02",
+        "AZ-04"
+      ],
+      "capability": "architecture.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/projects/:id/adrs/:adrId",
+      "source": "server.ts",
+      "line": 891,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "architecture.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/components",
+      "source": "server.ts",
+      "line": 928,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/components",
+      "source": "server.ts",
+      "line": 932,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02"
+      ],
+      "capability": "architecture.write",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/next-action",
+      "source": "server.ts",
+      "line": 966,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/overrides",
+      "source": "server.ts",
+      "line": 991,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02",
+        "AZ-04"
+      ],
+      "capability": "override.propose",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/export",
+      "source": "server.ts",
+      "line": 1024,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-03",
+        "AZ-04"
+      ],
+      "capability": "package.export",
+      "effect": "Bundle read",
+      "sensitive": "Full project bundle, provenance and imported history",
+      "test": "Workspace create vs exact existing target replace; all-source ACL export; forged seal/actor; zero denial effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/package/export",
+      "source": "server.ts",
+      "line": 1055,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-03",
+        "AZ-04"
+      ],
+      "capability": "package.export",
+      "effect": "Bundle read + persisted audit (GET/HEAD aliases)",
+      "sensitive": "Full project bundle, provenance and imported history",
+      "test": "Workspace create vs exact existing target replace; all-source ACL export; forged seal/actor; zero denial effects"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/package/verify",
+      "source": "server.ts",
+      "line": 1113,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-03"
+      ],
+      "capability": "package.verify",
+      "effect": "Envelope computation; 2xx snapshot write via middleware",
+      "sensitive": "Full project bundle, provenance and imported history",
+      "test": "Workspace create vs exact existing target replace; all-source ACL export; forged seal/actor; zero denial effects"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/package/import",
+      "source": "server.ts",
+      "line": 1135,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-03",
+        "AZ-04"
+      ],
+      "capability": "package.import.create / package.import.replace",
+      "effect": "Envelope checks; caller selects target and overwrite; statuses downgraded",
+      "sensitive": "Full project bundle, provenance and imported history",
+      "test": "Workspace create vs exact existing target replace; all-source ACL export; forged seal/actor; zero denial effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/release/gates",
+      "source": "server.ts",
+      "line": 1238,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "release.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/release/signoff",
+      "source": "server.ts",
+      "line": 1248,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "release.signoff",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/repo/status",
+      "source": "server.ts",
+      "line": 1279,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/repo/diff",
+      "source": "server.ts",
+      "line": 1417,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/repo/stage",
+      "source": "server.ts",
+      "line": 1439,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/repo/unstage",
+      "source": "server.ts",
+      "line": 1457,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/repo/commit",
+      "source": "server.ts",
+      "line": 1475,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/repo/branch",
+      "source": "server.ts",
+      "line": 1528,
+      "access": "BLOCKED_REPOSITORY",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "repository.read/write (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/agents",
+      "source": "server.ts",
+      "line": 1558,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "agents.demo.read",
+      "effect": "Demonstration metadata only; no membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/agents/:agentId/run",
+      "source": "server.ts",
+      "line": 1564,
+      "access": "BLOCKED_AGENT_DISPATCH",
+      "issues": [
+        "CONTROL-BLOCKED"
+      ],
+      "capability": "agent.dispatch (deferred)",
+      "effect": "Denied before parser/persistence",
+      "sensitive": "Secret metadata / repository data / dispatch",
+      "test": "Keep 403 for every method/alias and every principal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/governance/session",
+      "source": "server/proposals/identity.ts",
+      "line": 41,
+      "access": "REVIEWER_SESSION",
+      "issues": [
+        "AZ-07"
+      ],
+      "capability": "session.self",
+      "effect": "Own session; roster credentials on POST",
+      "sensitive": "Reviewer identity and session token",
+      "test": "Generic failures; rotation; logout/expiry/restart/revocation; bounded KDF"
+    },
+    {
+      "method": "POST",
+      "path": "/api/governance/session",
+      "source": "server/proposals/identity.ts",
+      "line": 42,
+      "access": "REVIEWER_SESSION",
+      "issues": [
+        "AZ-07"
+      ],
+      "capability": "session.self",
+      "effect": "Own session; roster credentials on POST",
+      "sensitive": "Reviewer identity and session token",
+      "test": "Generic failures; rotation; logout/expiry/restart/revocation; bounded KDF"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/governance/session",
+      "source": "server/proposals/identity.ts",
+      "line": 60,
+      "access": "REVIEWER_SESSION",
+      "issues": [
+        "AZ-07"
+      ],
+      "capability": "session.self",
+      "effect": "Own session; roster credentials on POST",
+      "sensitive": "Reviewer identity and session token",
+      "test": "Generic failures; rotation; logout/expiry/restart/revocation; bounded KDF"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/governance-policy",
+      "source": "server/proposals/signoff.ts",
+      "line": 51,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "project.read",
+      "effect": "Static quorum-role names; not project authority",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/approvals",
+      "source": "server/proposals/signoff.ts",
+      "line": 53,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "approvals.read",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/approvals",
+      "source": "server/proposals/signoff.ts",
+      "line": 184,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "approvals.request",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/approvals/:apvId/reissue",
+      "source": "server/proposals/signoff.ts",
+      "line": 325,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "approvals.reissue",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/approvals/:apvId/decide",
+      "source": "server/proposals/signoff.ts",
+      "line": 496,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "approvals.decide",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/import-sessions",
+      "source": "server/proposals/review.ts",
+      "line": 31,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "proposals.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/import-sessions/:sessionId",
+      "source": "server/proposals/review.ts",
+      "line": 32,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-01"
+      ],
+      "capability": "proposals.read",
+      "effect": "Project lookup/dictionary selection; no caller membership",
+      "sensitive": "Project artifacts, evidence, context or governance metadata",
+      "test": "Anonymous 401; nonmember concealed 404; nested resource bound to project; HEAD aliases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/import-sessions",
+      "source": "server/proposals/review.ts",
+      "line": 33,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-02",
+        "AZ-04"
+      ],
+      "capability": "proposals.submit",
+      "effect": "Input/domain guards; no authenticated writer membership; 2xx snapshot/audit",
+      "sensitive": "Project content, links, workflow state and audit",
+      "test": "Outsider/spoofed actor denied; all referenced IDs project-bound; same-project allowed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/import-sessions/:sessionId/changes/:index/review",
+      "source": "server/proposals/review.ts",
+      "line": 73,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05"
+      ],
+      "capability": "proposals.review",
+      "effect": "Qualified HUMAN before persistence; endpoint quorum/target/domain guards retained",
+      "sensitive": "Approvals, proposed changes or release evidence",
+      "test": "Same role outside project denied; HUMAN quorum retained; agent denied; no state effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/docs",
+      "source": "server/docs/controlledDocsRouter.ts",
+      "line": 63,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-06"
+      ],
+      "capability": "documents.list",
+      "effect": "Disk read; manifest/path/pin guards",
+      "sensitive": "Registered repository document paths/content/hashes",
+      "test": "Member/nonmember document access; file binding; aliases; byte-identical denial"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/:id/docs/:documentId",
+      "source": "server/docs/controlledDocsRouter.ts",
+      "line": 105,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-06"
+      ],
+      "capability": "documents.read",
+      "effect": "Disk read; manifest/path/pin guards",
+      "sensitive": "Registered repository document paths/content/hashes",
+      "test": "Member/nonmember document access; file binding; aliases; byte-identical denial"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/docs/:documentId/diff",
+      "source": "server/docs/controlledDocsRouter.ts",
+      "line": 159,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-06"
+      ],
+      "capability": "documents.diff",
+      "effect": "Read/diff/validation; exact canonical path bypasses snapshot writer",
+      "sensitive": "Registered repository document paths/content/hashes",
+      "test": "Member/nonmember document access; file binding; aliases; byte-identical denial"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/docs/:documentId/validate",
+      "source": "server/docs/controlledDocsRouter.ts",
+      "line": 235,
+      "access": "LEGACY_LOCAL_UNSCOPED",
+      "issues": [
+        "AZ-06"
+      ],
+      "capability": "documents.validate",
+      "effect": "Read/diff/validation; exact canonical path bypasses snapshot writer",
+      "sensitive": "Registered repository document paths/content/hashes",
+      "test": "Member/nonmember document access; file binding; aliases; byte-identical denial"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/:id/docs/:documentId/save",
+      "source": "server/docs/controlledDocsRouter.ts",
+      "line": 293,
+      "access": "SPECIALIZED_REVIEWER",
+      "issues": [
+        "AZ-05",
+        "AZ-06"
+      ],
+      "capability": "documents.save",
+      "effect": "Qualified HUMAN + controlled-edit transaction; no project membership",
+      "sensitive": "Registered repository document paths/content/hashes",
+      "test": "Member/nonmember document access; file binding; aliases; byte-identical denial"
+    }
+  ]
+}

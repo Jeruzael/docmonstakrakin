@@ -1,5 +1,17 @@
 # Current session handoff
 
+## 2026-10-19 — PR #46 closure and Security Authorization Sprint 2 proposal
+
+- Source control: GIT; verified master/merge `f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8`; new documentation branch `codex/pr46-closure-security-authorization-sprint2`. Exact signed documentation HEAD and draft PR are recorded on the new PR timeline.
+- PR #46 is merged. Actual reviewer `jianzhihuoxin` approved final feature HEAD `48c68ec46fa335504bb06c6a8d04a1e72dc7c78a` 44 seconds before merge. Post-merge workflow `39190812393` succeeded on that exact merge: all three jobs, 65/65 suites, 1,531 observed outputs, 51 perimeter and 11 Vite checks.
+- [Closure evidence](../07_verification/PR46_POST_MERGE_CLOSURE.md) and [structured checkpoint](../07_verification/pr46-post-merge-checkpoint.json) are additive. The earlier candidate checkpoint below is historical; its pending-review/merge status is superseded only for PR #46.
+- [Updated gap inventory and design portfolio](../04_security/security-authorization-sprint2/hardening.md): 69 actual registrations, eight ranked issue groups, three architecture options and six bounded proposed slices. The 15-case real-server characterization confirms current gaps and retained controls; no full authorization or vulnerability closure is claimed.
+- Recommended first implementation candidate: S2-A identity/session/default-deny primitives with an actual-server authentication pilot. It remains blocked on separate exact-scope authorization and ownership/dependency, transport, store/KDF and bootstrap decisions. Design review is not activation permission.
+- PR #34, canonical WBS, DMK-197/198/206/208 ownership, proposed DMK-209–214, Stage B2b2 trust/quorum, historical evidence, operator credentials/state, Gate 7 and release retain their authoritative states. No runtime reconciliation, enrollment, privileged endpoint re-enablement or live agent dispatch occurred.
+- Next action: human review of the draft closure/design PR; no automatic merge or next-sprint implementation. Use disposable fixtures for validation; never run `ci:prepare` against operator data. Local validation evidence is in the closure record and exact-HEAD CI belongs to the new PR timeline.
+
+Disposition: `MERGED_AND_POST_MERGE_CI_VERIFIED / SECURITY_PERIMETER_CONTAINMENT_PARTIAL / FULL_AUTHENTICATION_NOT_IMPLEMENTED / AGENT_CENTER_LIVE_EXECUTION_BLOCKED / GATE_7_NOT_EXECUTED / RELEASE_NOT_PROMOTED`.
+
 ## 2026-10-19 — Security Perimeter Sprint 1 containment candidate
 
 - Source-control mode: GIT; repository `Jeruzael/docmonstakrakin`; branch `codex/security-perimeter-sprint1`; verified master baseline `132b822979b7084302c7ad5efeb0da1c11607f09`.

@@ -1,0 +1,2 @@
+# Captured verification evidence retains its actual bytes and SHA-256 on every OS.
+evidence/* -text whitespace=cr-at-eol

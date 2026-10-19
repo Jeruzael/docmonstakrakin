@@ -1,0 +1,8 @@
+flowchart LR
+  C[Untrusted local caller] --> I[Loopback Host Origin and CSRF boundary]
+  I --> R[API frontend without storage authority]
+  R -->|Authenticated bounded RPC| B[Isolated authority and state broker]
+  A[Identity session and policy store] --> B
+  B -->|Current grant plus human gates| P[Coordinated commit]
+  B -->|Missing deny revoked or unavailable| D[Denied]
+  P --> X[Broker-owned project state and controlled files]

@@ -1,0 +1,9 @@
+flowchart LR
+  C[Untrusted local caller] --> I[Loopback Host Origin boundary]
+  I --> R[Explicit route guards]
+  A[Identity and policy store] --> R
+  R -->|Account scope and local field checks| P[Project persistence]
+  R -->|Human-only operations| H[Existing reviewer and quorum gates]
+  H --> P
+  R -->|Unsupported operations| D[Denied]
+  P --> X[Project state and controlled files]

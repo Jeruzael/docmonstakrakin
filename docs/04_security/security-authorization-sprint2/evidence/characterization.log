@@ -1,0 +1,36 @@
+CHARACTERIZATION ONLY: PASS means the stated current gap or retained control was reproduced; it does not mean general authorization exists.
+PASS Inventory independently matches all actual registered method/path pairs
+PASS GAP: anonymous caller enumerates workspace and reads chosen project
+PASS GAP: anonymous caller reads another selected project requirements
+PASS GAP: anonymous controlled-document listing and content read
+PASS GAP: anonymous document diff and validation reach actual read-only handlers
+PASS GAP: anonymous nonterminal WorkItem update persists in chosen project
+PASS GAP: anonymous ADR author is accepted as display and audit actor
+PASS GAP: requirement status endpoint accepts a non-enumerated status
+PASS GAP: anonymous package export persists a caller-claimed audit actor
+PASS GAP: anonymous resealed package overwrites existing selected project
+PASS CONTROL: forged actor and role do not authorize approval request
+PASS GAP: valid specialized reviewer reads chosen project approvals without membership
+PASS CONTROL: reviewer cookie cannot re-enable secrets Git or agent dispatch
+PASS GAP: revoked reviewer cookie stops governance but leaves ordinary reads anonymous
+PASS CONTROL: aliases preserve specialized denial and HEAD exposes legacy route
+{
+  "purpose": "Actual-server characterization, not security closure",
+  "baseline": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+  "passed": 15,
+  "failed": 0,
+  "classes": {
+    "LEGACY_LOCAL_UNSCOPED": 45,
+    "BLOCKED_SECRET_ADMIN": 7,
+    "SPECIALIZED_REVIEWER": 7,
+    "BLOCKED_REPOSITORY": 6,
+    "BLOCKED_AGENT_DISPATCH": 1,
+    "REVIEWER_SESSION": 3
+  },
+  "limitations": [
+    "Not all 69 routes were dynamically exercised; all registrations were source-inventoried.",
+    "No existing membership model exists to define real member A versus member B. Chosen-project access is demonstrated anonymously.",
+    "No operator credentials, release signoff or canonical WBS mutation used.",
+    "Thirty-minute expiry and future durable revocation designs were not activated or time-travel tested."
+  ]
+}

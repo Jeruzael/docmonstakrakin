@@ -1,0 +1,10 @@
+flowchart LR
+  C[Untrusted local caller] --> I[Loopback Host Origin and CSRF boundary]
+  I --> R[Registered route and resource resolver]
+  A[Identity session and policy store] --> Q[Central policy decision]
+  R --> Q
+  Q -->|Current explicit grant| H[Existing domain and human quorum gates]
+  Q -->|Missing deny revoked or unavailable| D[Denied]
+  H --> P[Coordinated authorization and persistence commit]
+  A -->|Revision check under common coordinator| P
+  P --> X[Project state and controlled files]

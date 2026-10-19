@@ -1,0 +1,167 @@
+/** Actual server.ts registrations, disposable state and synthetic reviewer identities. */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import net from 'node:net';
+import {spawn, execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
+import {scryptSync, createHash} from 'node:crypto';
+import {ProjectStore} from '../server/projectStore.ts';
+
+const root=process.cwd();
+const fixturePassword='disposable-reviewer-only';
+const salt='0123456789abcdef0123456789abcdef';
+const roster=JSON.stringify({'Fixture Human':{id:'human-a',kind:'HUMAN',roles:['Security Officer'],credentialVerifier:`${salt}:${scryptSync(fixturePassword,salt,32).toString('hex')}`}});
+let passed=0,failed=0;
+async function check(name:string,fn:()=>void|Promise<void>){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+(e instanceof Error?e.message:String(e)));}}
+const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+async function freePort(){const s=net.createServer();await new Promise<void>(r=>s.listen(0,'127.0.0.1',r));const port=(s.address() as net.AddressInfo).port;await new Promise<void>(r=>s.close(()=>r()));return port;}
+const hash=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
+function files(dir:string):Record<string,string>{return Object.fromEntries(fs.readdirSync(dir,{withFileTypes:true}).filter(e=>e.name!=='fixture-preload.mjs').flatMap(e=>{const file=path.join(dir,e.name);return e.isDirectory()?Object.entries(files(file)).map(([p,h])=>[e.name+'/'+p,h]):[[e.name,hash(fs.readFileSync(file))]];}));}
+
+async function fixture(overrides:NodeJS.ProcessEnv={},seed=true){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dmk-perimeter-'));
+  const port=await freePort();
+  if(seed){
+    const store=new ProjectStore();
+    store.projects.push({...structuredClone(store.projects[0]),id:'PRJ-OTHER',name:'Other synthetic project'});
+    store.projects.push({...structuredClone(store.projects[0]),id:'PRJ-DOCMONSTAKRAKIN',name:'Synthetic documentation project'});
+    store.requirements['PRJ-OTHER']=[{...structuredClone(store.requirements['PRJ-ATLAS-01'][0]),id:'REQ-B01',title:'Synthetic private B requirement',status:'PROPOSED'}];
+    store.workItems['PRJ-OTHER']=[{...structuredClone(store.workItems['PRJ-ATLAS-01'][0]),id:'WORK-B',status:'READY'}];
+    store.auditLogs['PRJ-OTHER']=[];
+    fs.mkdirSync(path.join(dir,'.local'));
+    fs.writeFileSync(path.join(dir,'.local/project-state.json'),JSON.stringify({schemaVersion:1,state:store}));
+    fs.mkdirSync(path.join(dir,'docs'));
+    fs.writeFileSync(path.join(dir,'docs/sentinel.md'),'unchanged fixture document');
+    fs.mkdirSync(path.join(dir,'bootstrap'));
+    fs.copyFileSync(path.join(root,'bootstrap/docmonstakrakin.self-bootstrap.json'),path.join(dir,'bootstrap/docmonstakrakin.self-bootstrap.json'));
+    fs.mkdirSync(path.join(dir,'docs/00_control'));
+    fs.writeFileSync(path.join(dir,'docs/00_control/PROJECT_STATE.md'),'# docmonstakrakin current project state\n\n## Governance\nDMK-201\nGate 7\nLive reconciliation\nRelease status\nSynthetic private fixture document.\n');
+    fs.writeFileSync(path.join(dir,'sentinel.txt'),'unchanged fixture repository');
+    execFileSync('git',['init','--quiet'],{cwd:dir,windowsHide:true});
+    fs.mkdirSync(path.join(dir,'.secrets'));
+    fs.writeFileSync(path.join(dir,'.secrets/sentinel'),'unchanged synthetic vault sentinel');
+  }
+  const secretModule=pathToFileURL(path.join(root,'server/secrets/secretStoreFactory.ts')).href;
+  // Test-only injection selects the existing fallback driver before actual app startup.
+  // No application authorization bypass or production test-mode flag is introduced.
+  const preload=`import http from 'node:http';\nimport {getSecretStore} from ${JSON.stringify(secretModule)};\ngetSecretStore({forceFallback:true,masterPassphrase:'disposable-perimeter-master'});\nconst listen=http.Server.prototype.listen;http.Server.prototype.listen=function(...args){this.once('listening',()=>console.log('FIXTURE_BOUND '+JSON.stringify(this.address())));return listen.apply(this,args);};\n`;
+  fs.writeFileSync(path.join(dir,'fixture-preload.mjs'),preload);
+  const before=files(dir);
+  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:roster,DOCMONSTAKRAKIN_MASTER_KEY:'disposable-perimeter-master'};
+  for(const k of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[k])env[k]=process.env[k];
+  Object.assign(env,overrides);
+  let output='';
+  const child=spawn(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,'--import',pathToFileURL(path.join(dir,'fixture-preload.mjs')).href,path.join(root,'server.ts')],{cwd:dir,windowsHide:true,env,stdio:'pipe'});
+  child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d);child.on('error',e=>output+=e.message);
+  const deadline=Date.now()+30000;
+  while(child.exitCode===null&&!output.includes('FIXTURE_BOUND ')&&Date.now()<deadline)await delay(30);
+  const binding=()=>{const match=output.match(/FIXTURE_BOUND (.+)/);return match?JSON.parse(match[1]):null;};
+  const request=(url:string,method='GET',headers:Record<string,string>={},body?:unknown)=>new Promise<{status:number;body:any;text:string;cookie:string}>((resolve,reject)=>{
+    const data=body===undefined?undefined:JSON.stringify(body);
+    const req=http.request({host:'127.0.0.1',port:binding()?.port??port,path:url,method,headers:{Host:`127.0.0.1:${binding()?.port??port}`,...(data?{'Content-Type':'application/json','Content-Length':Buffer.byteLength(data)}:{}),...headers}},res=>{let text='';res.on('data',d=>text+=d);res.on('end',()=>{let body:any;try{body=JSON.parse(text);}catch{body=text;}resolve({status:res.statusCode!,body,text,cookie:(res.headers['set-cookie']?.[0]??'').split(';')[0]});});});req.on('error',reject);req.end(data);
+  });
+  const close=async()=>{if(child.exitCode===null){const exited=new Promise<void>(r=>child.once('exit',()=>r()));child.kill();await exited;}
+    assert.equal(path.dirname(dir),os.tmpdir());assert(path.basename(dir).startsWith('dmk-perimeter-'));fs.rmSync(dir,{recursive:true,force:true});};
+  return {dir,child,port,before,request,binding,output:()=>output,close};
+}
+
+
+const {API_ROUTE_POLICIES}=await import('../server/security/apiRoutePolicy.ts');
+const {createPortablePackage}=await import('../server/package/portablePackage.ts');
+const classes:Record<string,number>={};
+for(const r of API_ROUTE_POLICIES)classes[r.access]=(classes[r.access]||0)+1;
+console.log('CHARACTERIZATION ONLY: PASS means the stated current gap or retained control was reproduced; it does not mean general authorization exists.');
+const app=await fixture();
+const snapshot=()=>JSON.parse(fs.readFileSync(path.join(app.dir,'.local/project-state.json'),'utf8')).state;
+try{
+  assert(app.binding());
+  await check('Inventory independently matches all actual registered method/path pairs',()=>{
+    const registered:string[]=[];
+    for(const file of ['server.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts'])
+      for(const m of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:app|router)\.(get|post|patch|delete|put)\(\s*['"]([^'"]+)['"]/g)){
+        const p=(file.includes('controlledDocsRouter')?'/api/projects':'')+m[2];if(p.startsWith('/api/'))registered.push(m[1].toUpperCase()+' '+p);
+      }
+    assert.equal(registered.length,69);
+    assert.deepEqual(registered.sort(),API_ROUTE_POLICIES.map(r=>r.method+' '+r.path).sort());
+    assert.deepEqual(classes,{LEGACY_LOCAL_UNSCOPED:45,BLOCKED_SECRET_ADMIN:7,SPECIALIZED_REVIEWER:7,BLOCKED_REPOSITORY:6,BLOCKED_AGENT_DISPATCH:1,REVIEWER_SESSION:3});
+  });
+  await check('GAP: anonymous caller enumerates workspace and reads chosen project',async()=>{
+    const list=await app.request('/api/projects');assert.equal(list.status,200);assert(list.body.some((p:any)=>p.id==='PRJ-OTHER'));
+    assert.equal((await app.request('/api/projects/PRJ-OTHER')).status,200);
+  });
+  await check('GAP: anonymous caller reads another selected project requirements',async()=>{
+    const r=await app.request('/api/projects/PRJ-OTHER/requirements');assert.equal(r.status,200);assert.equal(r.body[0].title,'Synthetic private B requirement');
+  });
+  await check('GAP: anonymous controlled-document listing and content read',async()=>{
+    assert.equal((await app.request('/api/projects/PRJ-DOCMONSTAKRAKIN/docs')).status,200);
+    const r=await app.request('/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002');assert.equal(r.status,200);assert.match(r.body.content,/Synthetic private fixture document/);
+  });
+  await check('GAP: anonymous document diff and validation reach actual read-only handlers',async()=>{
+    const before=files(app.dir);
+    for(const action of ['diff','validate']){
+      const r=await app.request('/api/projects/PRJ-DOCMONSTAKRAKIN/docs/DOC-CTRL-002/'+action,'POST',{}, {baseSha256:hash(fs.readFileSync(path.join(app.dir,'docs/00_control/PROJECT_STATE.md'))),candidateContent:'# docmonstakrakin current project state\n\n## Governance\nDMK-201\nGate 7\nLive reconciliation\nRelease status\nSynthetic proposed text.\n'});
+      assert.equal(r.status,200);
+    }
+    assert.deepEqual(files(app.dir),before);
+  });
+  await check('GAP: anonymous nonterminal WorkItem update persists in chosen project',async()=>{
+    const r=await app.request('/api/projects/PRJ-OTHER/work-items','POST',{}, {itemId:'WORK-B',status:'IN_PROGRESS'});
+    assert.equal(r.status,200);assert.equal(snapshot().workItems['PRJ-OTHER'][0].status,'IN_PROGRESS');
+  });
+  await check('GAP: anonymous ADR author is accepted as display and audit actor',async()=>{
+    const r=await app.request('/api/projects/PRJ-OTHER/adrs','POST',{}, {title:'Synthetic ADR',author:'Claimed Human Reviewer',context:'Synthetic context',decision:'Synthetic proposal'});
+    assert.equal(r.status,201);assert.equal(r.body.author,'Claimed Human Reviewer');
+    assert.equal(snapshot().auditLogs['PRJ-OTHER'][0].actor,'Claimed Human Reviewer');
+  });
+  await check('GAP: requirement status endpoint accepts a non-enumerated status',async()=>{
+    const r=await app.request('/api/projects/PRJ-OTHER/requirements/REQ-B01/status','POST',{}, {status:'SYNTHETIC_INVALID_STATUS'});
+    assert.equal(r.status,200);assert.equal(snapshot().requirements['PRJ-OTHER'][0].status,'SYNTHETIC_INVALID_STATUS');
+  });
+  await check('GAP: anonymous package export persists a caller-claimed audit actor',async()=>{
+    const r=await app.request('/api/projects/PRJ-OTHER/package/export?actor=Claimed%20Human%20Exporter');
+    assert.equal(r.status,200);assert.equal(snapshot().auditLogs['PRJ-OTHER'][0].actor,'Claimed Human Exporter');
+  });
+  await check('GAP: anonymous resealed package overwrites existing selected project',async()=>{
+    const exported=await app.request('/api/projects/PRJ-OTHER/package/export');
+    const k=exported.body.knowledge;
+    const pkg=createPortablePackage({...k,project:{...k.project,name:'Anonymous overwrite reproduced'},auditLogs:[...exported.body.auditLedger].reverse(),actor:'Claimed Importer'});
+    const r=await app.request('/api/projects/package/import','POST',{}, {package:pkg,overwrite:true,actor:'Claimed Importer'});
+    assert.equal(r.status,201);assert.equal(r.body.governanceStatus,'FRESH_LOCAL_SIGNOFF_REQUIRED');
+    assert.equal(snapshot().projects.find((p:any)=>p.id==='PRJ-OTHER').name,'Anonymous overwrite reproduced');
+    assert.equal(snapshot().approvals['PRJ-OTHER'].length,0);assert.equal(snapshot().requirements['PRJ-OTHER'][0].status,'PROPOSED');
+  });
+  await check('CONTROL: forged actor and role do not authorize approval request',async()=>{
+    const before=files(app.dir);
+    assert.equal((await app.request('/api/projects/PRJ-OTHER/approvals','POST',{'X-Role':'Security Officer'},{role:'Security Officer',reviewerName:'Claimed Human'})).status,401);
+    assert.deepEqual(files(app.dir),before);
+  });
+  let cookie='';
+  await check('GAP: valid specialized reviewer reads chosen project approvals without membership',async()=>{
+    const login=await app.request('/api/governance/session','POST',{}, {username:'Fixture Human',password:fixturePassword});assert.equal(login.status,200);cookie=login.cookie;
+    assert.equal((await app.request('/api/projects/PRJ-OTHER/approvals','GET',{Cookie:cookie})).status,200);
+  });
+  await check('CONTROL: reviewer cookie cannot re-enable secrets Git or agent dispatch',async()=>{
+    const before=files(app.dir);
+    for(const url of ['/api/secrets/metadata','/api/repo/status'])assert.equal((await app.request(url,'GET',{Cookie:cookie})).status,403);
+    assert.equal((await app.request('/api/projects/PRJ-OTHER/agents/A/run','POST',{Cookie:cookie},{actor:'Human'})).status,403);
+    assert.deepEqual(files(app.dir),before);
+  });
+  await check('GAP: revoked reviewer cookie stops governance but leaves ordinary reads anonymous',async()=>{
+    assert.equal((await app.request('/api/governance/session','DELETE',{Cookie:cookie})).status,200);
+    assert.equal((await app.request('/api/projects/PRJ-OTHER/approvals','GET',{Cookie:cookie})).status,401);
+    assert.equal((await app.request('/api/projects/PRJ-OTHER/requirements','GET',{Cookie:cookie})).status,200);
+  });
+  await check('CONTROL: aliases preserve specialized denial and HEAD exposes legacy route',async()=>{
+    const before=files(app.dir);
+    assert.equal((await app.request('/API/PROJECTS/PRJ-OTHER/APPROVALS/','HEAD')).status,401);
+    assert.equal((await app.request('/API/PROJECTS/PRJ-OTHER/REQUIREMENTS/','HEAD')).status,200);
+    assert.equal((await app.request('/api/projects/PRJ%2fOTHER/requirements')).status,400);
+    assert.deepEqual(files(app.dir),before);
+  });
+}finally{await app.close();}
+const result={purpose:'Actual-server characterization, not security closure',baseline:'f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8',passed,failed,classes,limitations:['Not all 69 routes were dynamically exercised; all registrations were source-inventoried.','No existing membership model exists to define real member A versus member B. Chosen-project access is demonstrated anonymously.','No operator credentials, release signoff or canonical WBS mutation used.','Thirty-minute expiry and future durable revocation designs were not activated or time-travel tested.']};
+fs.writeFileSync(process.env.DMK_SPRINT2_PROBE_RESULT_PATH!,JSON.stringify(result,null,2)+'\n');
+console.log(JSON.stringify(result,null,2));if(failed)process.exitCode=1;

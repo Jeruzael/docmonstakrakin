@@ -1,0 +1,20 @@
+{
+  "purpose": "Actual-server characterization, not security closure",
+  "baseline": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+  "passed": 15,
+  "failed": 0,
+  "classes": {
+    "LEGACY_LOCAL_UNSCOPED": 45,
+    "BLOCKED_SECRET_ADMIN": 7,
+    "SPECIALIZED_REVIEWER": 7,
+    "BLOCKED_REPOSITORY": 6,
+    "BLOCKED_AGENT_DISPATCH": 1,
+    "REVIEWER_SESSION": 3
+  },
+  "limitations": [
+    "Not all 69 routes were dynamically exercised; all registrations were source-inventoried.",
+    "No existing membership model exists to define real member A versus member B. Chosen-project access is demonstrated anonymously.",
+    "No operator credentials, release signoff or canonical WBS mutation used.",
+    "Thirty-minute expiry and future durable revocation designs were not activated or time-travel tested."
+  ]
+}
