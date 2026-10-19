@@ -1,0 +1,374 @@
+{
+  "recordType": "DISPOSABLE_PRIMITIVE_FEASIBILITY_NOT_S2A_ACCEPTANCE",
+  "generatedAt": "2026-10-19 05:08:46 UTC",
+  "method": {
+    "samplesPerArgonProfile": 20,
+    "sqliteReadSamples": 2000,
+    "sqliteWriteSamples": 80,
+    "sqliteRpcSamples": 100,
+    "platformsRunSequentially": true,
+    "hostLoadControlled": false,
+    "linuxImage": "node:22.21.1-bookworm",
+    "linuxImageDigest": "sha256:b84d52cd45bfe261096ccbf886955d431b8b9ed01b72eaef588e8886bda09e78",
+    "linuxSlimImageDigest": "sha256:25b3eb23a00590b7499f2a2ce939322727fcce1b15fdd69754fcd09536a3ae2c",
+    "sqliteDataFilesystem": "Windows temporary NTFS directory; Linux temporary Docker local volume (removed after execution); neither was an operator store",
+    "sampleQuantile": "sorted[floor(n*0.95)]; n20 means reported p95 is sample maximum",
+    "resourceScope": "Whole Node probe including startup, all three KDF profiles, SQLite worker and backup/TLS; not profile-isolated RSS",
+    "tlsTrust": "Synthetic self-signed certificate, explicit test-client CA only; no OS/browser trust installation",
+    "slimInstall": "FAILED: no Python for implicit native node-gyp build",
+    "buildImageInstall": "PASSED: disposable build-capable image; production packaging still needs provenance review"
+  },
+  "recommendation": {
+    "sqlite": {
+      "package": "better-sqlite3",
+      "version": "13.0.3",
+      "worker": true,
+      "journalMode": "WAL",
+      "synchronous": "FULL",
+      "foreignKeys": true,
+      "busyTimeoutMs": 100,
+      "autoFallback": false
+    },
+    "kdf": {
+      "package": "argon2",
+      "version": "0.45.1",
+      "algorithm": "argon2id",
+      "memoryKiB": 32768,
+      "iterations": 3,
+      "parallelism": 1,
+      "hashLengthBytes": 32,
+      "saltBytes": 16,
+      "activeLimit": 2,
+      "queueLimit": 4,
+      "autoFallback": false
+    },
+    "session": {
+      "tokenBytes": 32,
+      "digest": "SHA-256",
+      "idleMs": 600000,
+      "absoluteMs": 1800000,
+      "rotate": true,
+      "revokeOnRestartGenerationChange": true
+    },
+    "tls": {
+      "runtime": "Node22.21.1 node:https",
+      "minimum": "TLSv1.3",
+      "authority": "dedicated per-install .localhost hostname",
+      "systemTrustDecision": "PENDING_HUMAN_REVIEW",
+      "activationAuthorized": false
+    }
+  },
+  "platforms": {
+    "windows": {
+      "timestamp": "2026-10-19T05:03:56.109Z",
+      "platform": "win32",
+      "arch": "x64",
+      "node": "v22.21.1",
+      "abi": "127",
+      "openssl": "3.5.4",
+      "cpu": "AMD Ryzen 5 5600G with Radeon Graphics         ",
+      "logicalCpus": 12,
+      "availableParallelism": 12,
+      "containerLimits": null,
+      "packages": {
+        "betterSqlite3": "13.0.3",
+        "argon2": "0.45.1",
+        "sqlite": "3.53.4"
+      },
+      "sqlite": {
+        "read": {
+          "n": 2000,
+          "p50Ms": 0.004000000000019099,
+          "p95Ms": 0.006799999999998363,
+          "maxMs": 0.4884999999999877
+        },
+        "write": {
+          "n": 80,
+          "p50Ms": 2.741899999999987,
+          "p95Ms": 2.916499999999985,
+          "maxMs": 2.9717999999999734
+        },
+        "rpc": {
+          "n": 100,
+          "p50Ms": 0.05660000000000309,
+          "p95Ms": 0.1542999999999779,
+          "maxMs": 0.3009000000000128
+        },
+        "busyMs": 197.53779999999995
+      },
+      "argon2": [
+        {
+          "memoryKiB": 19456,
+          "iterations": 2,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 26.334499999999935,
+            "p95Ms": 31.151599999999917,
+            "maxMs": 31.151599999999917
+          }
+        },
+        {
+          "memoryKiB": 32768,
+          "iterations": 3,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 64.7666999999999,
+            "p95Ms": 68.40069999999992,
+            "maxMs": 68.40069999999992
+          }
+        },
+        {
+          "memoryKiB": 65536,
+          "iterations": 3,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 137.14679999999998,
+            "p95Ms": 149.91599999999926,
+            "maxMs": 149.91599999999926
+          }
+        }
+      ],
+      "boundedKdf": {
+        "activeLimit": 2,
+        "queueLimit": 4,
+        "submitted": 10,
+        "admitted": 6,
+        "rejected": 4,
+        "peakActive": 2,
+        "peakQueued": 4,
+        "totalLatency": {
+          "n": 6,
+          "p50Ms": 140.02099999999973,
+          "p95Ms": 216.83920000000035,
+          "maxMs": 216.83920000000035
+        }
+      },
+      "session": {
+        "sampledTokens": 10000,
+        "bytesPerToken": 32,
+        "idleMs": 600000,
+        "absoluteMs": 1800000
+      },
+      "tls": {
+        "protocol": "TLSv1.3",
+        "firstHandshakeAndRequestMs": 22.183399999999892,
+        "systemTrustChanged": false,
+        "browserEnforcementTested": false
+      },
+      "resources": {
+        "rssBaseBytes": 43671552,
+        "peakRssBytes": 129228800,
+        "deltaRssBytes": 85557248,
+        "eventLoopP95Ms": 18.628607,
+        "eventLoopMaxMs": 80.674815
+      },
+      "tests": [
+        "private synthetic Windows directory DACL set",
+        "SQLite rollback fails without commit",
+        "SQLite readonly fails without commit",
+        "SQLite corrupt fails without commit",
+        "SQLite busy fails without commit",
+        "uncommitted writer crash rolls back",
+        "database remains valid after crashed writer",
+        "Argon2 correct password 19456",
+        "Argon2 wrong password denied 19456",
+        "Argon2 correct password 32768",
+        "Argon2 wrong password denied 32768",
+        "Argon2 correct password 65536",
+        "Argon2 wrong password denied 65536",
+        "malformed Argon2 verifier fails closed",
+        "bounded KDF active2 queued4 overload4 rejected",
+        "10000 opaque token samples unique",
+        "digest-only session fixture lookup",
+        "idle expiry rejects",
+        "absolute expiry rejects",
+        "restart generation rejects",
+        "credential and policy revocations reject",
+        "logout/rotation removes prior session",
+        "raw token absent from database bytes",
+        "SQLite backup restore integrity",
+        "offline synthetic backup authenticated encryption roundtrip",
+        "offline recovery tampered backup rejected",
+        "offline ceremony exclusive lock rejects second writer",
+        "loopback HTTPS trusted fixture and secure host-only cookie",
+        "TLS1.3 negotiated",
+        "untrusted TLS leaf rejected",
+        "TLS hostname mismatch rejected",
+        "foreign HTTP Origin rejected",
+        "foreign HTTP Host rejected",
+        "unavailable authority path has no fallback store"
+      ],
+      "passed": 34,
+      "limitations": [
+        "Timing samples are small and host load is uncontrolled; not a load/production benchmark.",
+        "Session decision logic is a fixture, not actual server routes.",
+        "TLS uses per-request fixture trust; no production certificate, CA installation or browser trust activation.",
+        "No cross-store commit/revocation coordinator or operational bootstrap/recovery was implemented."
+      ],
+      "privateDirectoryProof": "Explicit operator-SID DACL in synthetic temporary directory; raw ACL retained in managed evidence",
+      "rawSourceSha256": "896d0189511cd02981803e21326df18ca1646023f6e6cf21e322be1d46d7cfac"
+    },
+    "linux": {
+      "timestamp": "2026-10-19T05:04:28.500Z",
+      "platform": "linux",
+      "arch": "x64",
+      "node": "v22.21.1",
+      "abi": "127",
+      "openssl": "3.5.4",
+      "cpu": "AMD Ryzen 5 5600G with Radeon Graphics",
+      "logicalCpus": 12,
+      "availableParallelism": 2,
+      "containerLimits": "2 CPUs,1GiB RAM,pids128,network disabled",
+      "packages": {
+        "betterSqlite3": "13.0.3",
+        "argon2": "0.45.1",
+        "sqlite": "3.53.4"
+      },
+      "sqlite": {
+        "read": {
+          "n": 2000,
+          "p50Ms": 0.0032190000000582586,
+          "p95Ms": 0.005450999999993655,
+          "maxMs": 0.07454599999994116
+        },
+        "write": {
+          "n": 80,
+          "p50Ms": 5.559463000000051,
+          "p95Ms": 6.037121999999954,
+          "maxMs": 6.308914000000186
+        },
+        "rpc": {
+          "n": 100,
+          "p50Ms": 0.11556999999993423,
+          "p95Ms": 0.2042229999999563,
+          "maxMs": 0.34618299999988267
+        },
+        "busyMs": 101.07320000000004
+      },
+      "argon2": [
+        {
+          "memoryKiB": 19456,
+          "iterations": 2,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 19.370499999999993,
+            "p95Ms": 40.81074699999999,
+            "maxMs": 40.81074699999999
+          }
+        },
+        {
+          "memoryKiB": 32768,
+          "iterations": 3,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 62.99864699999989,
+            "p95Ms": 72.08420299999989,
+            "maxMs": 72.08420299999989
+          }
+        },
+        {
+          "memoryKiB": 65536,
+          "iterations": 3,
+          "parallelism": 1,
+          "verify": {
+            "n": 20,
+            "p50Ms": 132.25315299999966,
+            "p95Ms": 154.52732500000002,
+            "maxMs": 154.52732500000002
+          }
+        }
+      ],
+      "boundedKdf": {
+        "activeLimit": 2,
+        "queueLimit": 4,
+        "submitted": 10,
+        "admitted": 6,
+        "rejected": 4,
+        "peakActive": 2,
+        "peakQueued": 4,
+        "totalLatency": {
+          "n": 6,
+          "p50Ms": 137.77633399999922,
+          "p95Ms": 214.6596099999997,
+          "maxMs": 214.6596099999997
+        }
+      },
+      "session": {
+        "sampledTokens": 10000,
+        "bytesPerToken": 32,
+        "idleMs": 600000,
+        "absoluteMs": 1800000
+      },
+      "tls": {
+        "protocol": "TLSv1.3",
+        "firstHandshakeAndRequestMs": 13.151256999999532,
+        "systemTrustChanged": false,
+        "browserEnforcementTested": false
+      },
+      "resources": {
+        "rssBaseBytes": 59736064,
+        "peakRssBytes": 225583104,
+        "deltaRssBytes": 165847040,
+        "eventLoopP95Ms": 10.641407,
+        "eventLoopMaxMs": 39.157759
+      },
+      "tests": [
+        "private synthetic Linux directory mode0700",
+        "SQLite rollback fails without commit",
+        "SQLite readonly fails without commit",
+        "SQLite corrupt fails without commit",
+        "SQLite busy fails without commit",
+        "uncommitted writer crash rolls back",
+        "database remains valid after crashed writer",
+        "Argon2 correct password 19456",
+        "Argon2 wrong password denied 19456",
+        "Argon2 correct password 32768",
+        "Argon2 wrong password denied 32768",
+        "Argon2 correct password 65536",
+        "Argon2 wrong password denied 65536",
+        "malformed Argon2 verifier fails closed",
+        "bounded KDF active2 queued4 overload4 rejected",
+        "10000 opaque token samples unique",
+        "digest-only session fixture lookup",
+        "idle expiry rejects",
+        "absolute expiry rejects",
+        "restart generation rejects",
+        "credential and policy revocations reject",
+        "logout/rotation removes prior session",
+        "raw token absent from database bytes",
+        "SQLite backup restore integrity",
+        "offline synthetic backup authenticated encryption roundtrip",
+        "offline recovery tampered backup rejected",
+        "offline ceremony exclusive lock rejects second writer",
+        "loopback HTTPS trusted fixture and secure host-only cookie",
+        "TLS1.3 negotiated",
+        "untrusted TLS leaf rejected",
+        "TLS hostname mismatch rejected",
+        "foreign HTTP Origin rejected",
+        "foreign HTTP Host rejected",
+        "unavailable authority path has no fallback store"
+      ],
+      "passed": 34,
+      "limitations": [
+        "Timing samples are small and host load is uncontrolled; not a load/production benchmark.",
+        "Session decision logic is a fixture, not actual server routes.",
+        "TLS uses per-request fixture trust; no production certificate, CA installation or browser trust activation.",
+        "No cross-store commit/revocation coordinator or operational bootstrap/recovery was implemented."
+      ],
+      "privateDirectoryProof": "uid1000 mode0700 in disposable local volume",
+      "rawSourceSha256": "6c29d8d54e8ddc465fd69b185b4d355d5dc21536d179c2ef1d5c604bc68e5222"
+    }
+  },
+  "remainingAcceptance": [
+    "Actual application identity/session/policy routes and revocation-to-commit coordination not implemented/tested",
+    "Browser trust and cookie/CSRF behavior under approved deployment not validated",
+    "Operational offline enrollment/recovery and OS-account boundary not executed",
+    "Supply-chain/native build reproducibility and upgrade compatibility require review",
+    "Small samples are not production capacity guarantees or integrated latency budgets"
+  ]
+}

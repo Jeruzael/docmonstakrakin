@@ -1,0 +1,1848 @@
+version: "1.0"
+project: "docmonstakrakin"
+baseline: "v0.1.0-rc1"
+baseline_description: "Technically Verified Release Candidate; Gate 7 Human Sign-off Pending"
+release_status: "TECHNICALLY_VERIFIED_RELEASE_CANDIDATE"
+gate_7_status: "HUMAN_APPROVAL_REQUIRED"
+last_updated: "2026-10-04"
+authoritative: true
+manual_qa_status: "NOT_READY_FOR_SIGNOFF"
+remediation_status: "READY_FOR_RETEST"
+
+status_definitions:
+  - PROPOSED: "Candidate work identified but not yet accepted into planned execution."
+  - BACKLOG: "Accepted/planned work that has not started."
+  - READY: "Accepted work whose required prerequisites are satisfied and which may begin."
+  - IN_PROGRESS: "Actual implementation has begun and acceptance criteria are not yet fully satisfied."
+  - IMPLEMENTED: "Implementation deliverables are complete; technical verification remains pending or underway."
+  - VERIFICATION_PENDING: "Implementation is complete and formal technical verification / evidence review is awaiting closure."
+  - VERIFIED: "Technical verification is complete and sufficient reproducible technical evidence demonstrates that applicable acceptance criteria are satisfied. (VERIFIED does NOT imply Human Governance Approved.)"
+
+phases:
+  - id: "PHASE-0"
+    name: "Foundation & Engineering Baseline"
+    wbs_prefix: "01"
+  - id: "PHASE-1"
+    name: "Canonical Project Model & Core Services"
+    wbs_prefix: "02"
+  - id: "PHASE-2"
+    name: "Requirements & Discovery Engine"
+    wbs_prefix: "03"
+  - id: "PHASE-3"
+    name: "A-SSDLC Lifecycle, Risk & Governance"
+    wbs_prefix: "04"
+  - id: "PHASE-4"
+    name: "Standards Registry & Control Mapping"
+    wbs_prefix: "05"
+  - id: "PHASE-5"
+    name: "Prompt Compiler & Structured Validation"
+    wbs_prefix: "06"
+  - id: "PHASE-6"
+    name: "AI Gateway (Codex & Gemini Adapters)"
+    wbs_prefix: "07"
+  - id: "PHASE-7"
+    name: "Work Management & Planning Projections"
+    wbs_prefix: "08"
+  - id: "PHASE-8"
+    name: "Repository, Git & Command Safety"
+    wbs_prefix: "09"
+  - id: "PHASE-9"
+    name: "Evidence, Audit & Traceability"
+    wbs_prefix: "10"
+  - id: "PHASE-10"
+    name: "Standards Update & Migration Engine"
+    wbs_prefix: "11"
+  - id: "PHASE-11"
+    name: "Dashboard & Guided Next Action"
+    wbs_prefix: "12"
+  - id: "PHASE-12"
+    name: "Forms, Export, Secrets & Release Hardening"
+    wbs_prefix: "13"
+
+items:
+  - id: "DMK-190"
+    wbs_path: "13.06.04"
+    parent_id: "EPIC-13"
+    title: "Explicit external proposal schema 1.1 and MODIFY target validation"
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-188"]
+    requirements: ["REQ-RC-190"]
+    architecture_links: ["CMP-01", "CMP-02", "CMP-04"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-017", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Prose validation, distinct proposal/target IDs, scoped manifests, typed targets, structured errors, v1.0 compatibility and immutable proposed amendments"
+    verification_method: "scripts/testProposalContract.ts; scripts/testCryptoDemonIntegration.ts; npm run lint; npm run build; npm run test"
+    evidence: ["EV-RC-190", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User proposal protocol specification"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest"
+  - id: "DMK-191"
+    wbs_path: "13.06.05"
+    parent_id: "EPIC-13"
+    title: "Gio CryptoDemon human browser retest"
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-187", "DMK-188", "DMK-189", "DMK-190", "DMK-199"]
+    requirements: ["REQ-RC-189", "REQ-RC-190"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Human repeats supplied CryptoDemon wizard, discovery, import/review and sign-off checks per the 10-step human browser retest in docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md; records new evidence without executing Gate 7"
+    verification_method: "docs/07_verification/CRYPTODEMON_REMEDIATION_REPORT.md human retest checklist"
+    evidence: []
+    owner: "Gio"
+
+  - id: "DMK-192"
+    wbs_path: "13.06.06"
+    parent_id: "EPIC-13"
+    title: "Trusted Self-Bootstrap Executor & Read-Only Dry-Run"
+    description: "Implement the actual trusted executor boundary and --dry-run behavior defined by SELF_BOOTSTRAP_V1."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: []
+    requirements: ["REQ-BOOT-001"]
+    architecture_links: ["CMP-BOOT-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Implement trusted bootstrap executor CLI / entrypoint with read-only --dry-run validation"
+    verification_method: "scripts/testSelfBootstrapContract.ts; scripts/testSelfBootstrapExecutor.ts; npm run test:bootstrap:manifest; npm run bootstrap:self -- --dry-run"
+    evidence:
+      - "docs/07_verification/SELF_BOOTSTRAP_DRY_RUN_REVIEW.md"
+      - "docs/07_verification/self-bootstrap-manifest-validation.json"
+    planned_by: "SELF_BOOTSTRAP_CONTRACT.md"
+    implemented_by: "AI Studio /applet"
+    verified_by: "npm run test:bootstrap:executor; npm run bootstrap:self -- --dry-run; Human operator Step 4 review sign-off"
+    human_approved_by: "Gio / authorized human operator (Step 4 review sign-off)"
+    verification_status: "VERIFIED"
+
+  - id: "DMK-193"
+    wbs_path: "13.06.07"
+    parent_id: "EPIC-13"
+    title: "Execute Trusted Self-Bootstrap & Verify Canonical State"
+    description: "After reviewed dry-run approval, execute bootstrap, restart/reload canonical state, verify PRJ-DOCMONSTAKRAKIN, and confirm unrelated projects remain unchanged."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "VERIFIED"
+    dependencies: ["DMK-192"]
+    requirements: ["REQ-BOOT-001"]
+    architecture_links: ["CMP-BOOT-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Execute trusted bootstrap and verify canonical project state"
+      - "Verify unrelated project state preservation, manifest entity mapping, and single genesis audit event"
+    verification_method: "scripts/verifySelfBootstrapExecution.ts; scripts/testSelfBootstrapExecutionVerifier.ts; npm run verify:bootstrap:execution; npm run test:bootstrap:execution-verifier"
+    evidence:
+      - "docs/07_verification/SELF_BOOTSTRAP_EXECUTION_REVIEW.md"
+      - "docs/07_verification/self-bootstrap-execution-verification.json"
+    planned_by: "SELF_BOOTSTRAP_CONTRACT.md"
+    implemented_by: "Human operator (trusted execution ceremony)"
+    verified_by: "npm run verify:bootstrap:execution; scripts/testSelfBootstrapExecutionVerifier.ts; Step 5B execution review"
+    human_approved_by: "Human operator (self-bootstrap execution ceremony and read-only verification)"
+    verification_status: "VERIFIED"
+
+  - id: "DMK-194"
+    wbs_path: "13.06.08"
+    parent_id: "EPIC-13"
+    title: "Projects Workspace & Reliable Project Switching"
+    description: "Multi-project workspace navigation, isolated project switching, and state isolation preventing cross-project contamination."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    dependencies: ["DMK-193"]
+    requirements: ["REQ-UX-PROJECTS-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-004"]
+    acceptance_criteria:
+      - "Projects workspace lists canonical projects, metadata/lifecycle, and the active project"
+      - "Projects workspace and TopBar share App selection; all scoped collections replace together"
+      - "Scoped selections and dialogs reset; latest selection wins over stale responses and refresh callbacks"
+      - "Loading and failures hide stale content and support retry or another selection"
+      - "Zero projects offers explicit creation; successful creation updates the list without reload"
+      - "A-to-B-to-A selection is read-only and preserves canonical state"
+    verification_method: "npm run test:projects-workspace; npm run test:projects-workspace:ui; lint/build; control-plane QA; bootstrap regression; Human operator UI review (PASS WITH NON-BLOCKING UX OBSERVATIONS)"
+    evidence:
+      - "docs/07_verification/DMK_194_PROJECTS_WORKSPACE_REVIEW.md"
+      - "scripts/testProjectsWorkspace.ts"
+      - "scripts/testProjectsWorkspaceUi.ts"
+    implemented_by: "Codex"
+    verified_by: "npm run test:projects-workspace; npm run test:projects-workspace:ui; Human operator UI review"
+    human_approved_by: "Human operator (DMK-194 Human UI Review: PASS WITH NON-BLOCKING UX OBSERVATIONS)"
+    verification_status: "VERIFIED (Human UI review: PASS WITH NON-BLOCKING UX OBSERVATIONS)"
+
+  - id: "DMK-195"
+    wbs_path: "13.06.09"
+    parent_id: "EPIC-13"
+    title: "Controlled Documentation Workspace"
+    description: "In-console viewing and verification of repository-controlled markdown/YAML documentation with live cryptographic hash checks and auditable edit workflows."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    dependencies: ["DMK-193"]
+    requirements: ["REQ-DOC-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Browse repository-controlled documentation within permitted docs/ boundaries"
+      - "Enforce strict read-only protection for non-editable reference documents"
+      - "Provide governed draft editing, unified diff preview, and structural validation"
+      - "Require authenticated human reviewer approval with mandatory change justification"
+      - "Ensure atomic file persistence, project state version increment, and chained audit logging"
+    verification_method: "Comprehensive controlled docs regression suite (npm run test:controlled-docs), UI tests, and human manual verification (PASS WITH NON-BLOCKING UX OBSERVATIONS)"
+    evidence:
+      - "docs/superpowers/specs/2026-09-27-dmk-195-controlled-documentation-workspace-design.md"
+      - "docs/superpowers/plans/2026-09-28-dmk-195-controlled-documentation-workspace-implementation.md"
+      - "docs/07_verification/DMK_195_AUTOMATED_VERIFICATION.md"
+      - "docs/07_verification/DMK_195_VERIFICATION_CHECKLIST.md"
+      - "scripts/testControlledDocs.ts"
+    implemented_by: "Codex"
+    verified_by: "PASS WITH NON-BLOCKING UX OBSERVATIONS"
+    human_approved_by: "Gio / authorized human operator"
+    verification_status: "VERIFIED (Human manual verification: PASS WITH NON-BLOCKING UX OBSERVATIONS; release gates evaluator known issue logged as DMK-202)"
+
+  - id: "DMK-196"
+    wbs_path: "13.06.10"
+    parent_id: "EPIC-13"
+    title: "Batch 2 — Formal Requirement Sign-Off UX"
+    description: "Interactive requirement sign-off requesting workflow routing through formal Approval Inbox."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    dependencies: ["DMK-194"]
+    requirements: ["REQ-GOV-SIGNOFF-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Remove direct Approve Requirement UX; replace with Request Sign-Off"
+    verification_method: "Sign-off request workflow test"
+    evidence:
+      - "docs/07_verification/DMK_196_FORMAL_REQUIREMENT_SIGNOFF_VERIFICATION.md"
+      - "docs/07_verification/dmk-196-closure-transition-receipt.json"
+      - "docs/07_verification/DMK_196_POST_MERGE_VERIFICATION.md"
+      - "docs/07_verification/dmk-196-post-merge-verification-candidate.json"
+      - "docs/07_verification/dmk-196-post-merge-verification-receipt.json"
+    verification_status: "VERIFIED"
+    verified_by: "PR #25 merged to master at 2eb763b936327629a809d05fc9f198f541ca0ab2; GitHub Actions master CI 37318919644 attempt 1 passed Quality & Build, Controlled Docs, and Complete Regression; DMK-196 post-merge verification receipt."
+
+  - id: "DMK-197"
+    wbs_path: "13.06.11"
+    parent_id: "EPIC-13"
+    title: "Batch 3 — Approval Inbox & Canonical Quorum Synchronization"
+    description: "Approval Inbox UI with distinct human dual-signoff quorum verification."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "VERIFICATION_PENDING"
+    dependencies: ["DMK-196"]
+    requirements: ["REQ-GOV-QUORUM-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Distinct Security Officer and Lead Architect human identities required for quorum"
+    verification_method: "Quorum verification test"
+    evidence:
+      - "docs/07_verification/DMK_197_APPROVAL_INBOX_QUORUM_VERIFICATION.md"
+      - "docs/07_verification/dmk-197-closure-transition-candidate.json"
+
+  - id: "DMK-198"
+    wbs_path: "13.06.12"
+    parent_id: "EPIC-13"
+    title: "Batch 4 — Reviewer Provisioning / Governance Setup Usability"
+    description: "Reviewer management and onboarding usability without exposing plaintext credentials. Note: Open candidate for a dedicated Authentication & Role Delegation work item. Final scope and permanent DMK ID remain unassigned pending design review; kept distinct from DMK-195."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "IN_PROGRESS"
+    dependencies: ["DMK-197"]
+    requirements: ["REQ-GOV-REVIEWER-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "No default reviewer credentials; fail closed when reviewer configuration is absent"
+    verification_method: "Reviewer provisioning helper test"
+    evidence: []
+
+  - id: "DMK-199"
+    wbs_path: "13.06.13"
+    parent_id: "EPIC-13"
+    title: "Batch 5 — Full Regression & Evidence Cleanup"
+    description: "Run full regression suite across all components, compile complete evidence, and clean up temporary artifacts."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-198"]
+    requirements: ["REQ-REL-001", "REQ-RC-189", "REQ-RC-190"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Full automated regression passes cleanly across all test suites"
+    verification_method: "Full automated regression run"
+    evidence: []
+  - id: "DMK-201"
+    wbs_path: "13.06.14"
+    parent_id: "EPIC-13"
+    title: "Canonical Runtime/WBS State Reconciliation & WorkItem Mutation Integrity"
+    description: "Own only Batch A's bounded WBS/runtime projection, explicit status mapping, retained-evidence validation, read-only dry-run, stale-state/TOCTOU guards, atomic/idempotent apply and audit, separate post-bootstrap verifier, and rejected WorkItem update integrity. Excludes DMK-194 feature implementation, DMK-195, DMK-196/197, Batches B/C/D/E and Gate 7."
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFICATION_PENDING"
+    dependencies: ["DMK-192", "DMK-193"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-002", "REQ-BOOT-001"]
+    architecture_links: ["CMP-01", "CMP-02", "CMP-04", "CMP-BOOT-01"]
+    security_controls: ["SEC-CTRL-004", "SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Preserve repository WBS authority separately from operational ProjectStore state; never regenerate the full WBS from the smaller runtime subset."
+      - "Maintain the explicit 13-item WBS/runtime mapping; historical apply changes only DMK-192, DMK-193 and DMK-194, with older drift observe-only and DMK-195+ untouched."
+      - "Validate retained DMK-192/193 evidence before proposing VERIFIED; map DMK-194 VERIFICATION_PENDING to runtime VERIFICATION and fail closed on unmapped states."
+      - "Produce a mutation-free exact proposal bound to current snapshot digest/stateVersion, approved WBS inputs, mutation set, actor, fixed reviewed timestamps, audit event, plan digest and candidate digest."
+      - "Require explicit authorization of the exact live candidate; reject changed state, inputs or candidate; atomically persist changes plus audit under exclusive writer protection with idempotent retries."
+      - "Verify evolved state through the separate post-bootstrap verifier while preserving historical bootstrap artifacts and strict pristine verification, unrelated projects/items, approvals, requirements, ADRs and Gate 7."
+      - "Rejected WorkItem updates report errors and retain canonical UI/server/persisted values; successful updates persist, audit, refresh canonical values and survive restart."
+      - "Retain disposable test evidence and an exact human-reviewable mutation inventory; report complete-regression failures and prohibited Git fixtures honestly without weakening expectations."
+      - "Keep historical apply and human acceptance pending until separately authorized and verified with new evidence; never imply DMK-194 acceptance, bootstrap re-execution or release approval."
+    verification_method: "Read-only candidate/evidence/inventory checks; npm run test:reconciliation; npm run test:projects-workspace:ui; npm run test:projects-workspace; npm test; npm run lint; npm run build; npm run wbs:check; standalone bootstrap suites; separate post-bootstrap reconciliation verifier. Run state/evidence-writing suites only in disposable copies and retain the no-Git restriction."
+    evidence:
+      - "docs/00_control/BATCH_A_RECONCILIATION_IMPLEMENTATION.md"
+      - "docs/07_verification/BATCH_A_RECONCILIATION_REVIEW.md"
+      - "docs/07_verification/batch-a-reconciliation-dry-run.json"
+      - "docs/07_verification/batch-a-reconciliation-verification.json"
+      - "docs/07_verification/STAGE_A5_RECONCILIATION_HUMAN_REVIEW.md"
+      - "docs/07_verification/stage-a5-reconciliation-review-validation.json"
+      - "scripts/testCanonicalReconciliation.ts"
+      - "scripts/testWorkItemUpdates.ts"
+      - "scripts/testProjectsWorkspaceUi.ts"
+    planned_by: "User Batch A v2 and Stage A/A.5/A.6 instructions; Codex scoped implementation and ownership proposal"
+    implemented_by: "Codex — Stage A mechanism and WorkItem integrity fix; historical live reconciliation not applied"
+    verified_by: "Stage A disposable automated tests and Stage A.5 read-only exact-candidate comparison; complete regression remains FAIL 26/28 with two pre-existing evidence-order failures; no independent-human verification claimed"
+    human_approved_by: "Gio — explicit WBS ownership application approval in this task, 2026-09-24; status remains VERIFICATION_PENDING. Live reconciliation, DMK-194 completion, Batch B, DMK-195+ work, Gate 7 and release approval are not authorized."
+
+  - id: "DMK-202"
+    wbs_path: "13.06.15"
+    parent_id: "EPIC-13"
+    title: "Dynamic Release Gate Evaluator Remediation"
+    description: "Remediate dynamic release gate evaluation rules and baseline evaluation logic so Gates 1-5 truthfully evaluate against current project artifacts. Required before Gate 7 can evaluate truthfully; not a blocker for DMK-195 PR merge."
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-195"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Dynamic release gate evaluator accurately evaluates Gate 1 through Gate 5 status without spurious failures"
+      - "Truthful evaluation must be verified prior to Gate 7 human sign-off"
+      - "Remediation is decoupled from and does not block DMK-195 merge"
+    verification_method: "Release gate evaluation regression tests"
+    evidence: []
+    planned_by: "Recorded during DMK-195 final human verification closeout"
+
+  - id: "DMK-203"
+    wbs_path: "13.06.16"
+    parent_id: "EPIC-13"
+    title: "GitHub Actions CI Baseline"
+    description: "Automated GitHub Actions continuous integration baseline executing quality checks, controlled-document regression, and complete regression on Linux runners from a fresh checkout with zero developer-local runtime state or production credentials."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-195"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "GitHub Actions runs automatically on pull requests targeting master"
+      - "Workflow is configured to run on pushes/merges to master"
+      - "workflow_dispatch is available"
+      - "CI succeeds from a fresh checkout without developer-local runtime state"
+      - "CI requires no real reviewer credentials, machine tokens, .env secrets, production credentials, or external AI credentials"
+      - "WBS synchronization, TypeScript/lint, production build, controlled-document regression, and complete regression are visible"
+      - "Playwright Chromium tests execute successfully on Linux"
+      - "CI cannot silently mutate controlled repository evidence"
+      - "Runtime artifacts remain untracked and gitignored"
+      - "Gate 7 remains human-controlled and outside CI authority"
+    verification_method: "Fresh-checkout CI execution; GitHub Actions PR execution on Linux; Quality & Build, Controlled Docs, and Complete Regression checks; repository cleanliness verification; and successful automatic CI execution on master after merge."
+    verification_status: "VERIFIED — fresh-checkout, PR CI, and post-merge master push CI passed; master branch protection enforcement remains separately deferred to DMK-204."
+    verified_by: "GitHub Actions CI + human review of post-merge master run"
+    human_approved_by: "Gio / authorized human operator"
+    evidence:
+      - "PR #18 CI verification run: 36995339603 (Quality & Build, Controlled Docs, Complete Regression all PASS)"
+      - "Post-merge master push CI verification run: 37002353193 on commit 46130f66e1f425edb410e22c3f1fd69724fc0186 (Quality & Build, Controlled Docs, Complete Regression all PASS)"
+    planned_by: "Recorded during CI baseline planning; updated during DMK-203/DMK-204 governance reconciliation; verified on master merge"
+
+  - id: "DMK-204"
+    wbs_path: "13.06.17"
+    parent_id: "EPIC-13"
+    title: "Master Branch Protection & Required CI Enforcement"
+    description: "Enforce master-branch governance through GitHub branch protection or repository rulesets so changes require pull requests and the mandatory Quality & Build, Controlled Docs, and Complete Regression CI checks must pass before merge. Currently deferred because the repository is private under a GitHub plan that does not expose required branch-protection / ruleset capability.\n\nPLATFORM CONSTRAINT:\nCurrent GitHub configuration does not permit required branch protection for this private repository. Activation requires one of: a GitHub plan supporting protection/rulesets for this repository, an organizational policy/environment that exposes equivalent controls, or another explicitly approved repository-governance mechanism. Do NOT make the repository public merely to satisfy this WorkItem. Do NOT upgrade any subscription automatically."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-203"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Changes to master require a pull request"
+      - "Required CI checks are configured: Quality & Build, Controlled Docs, Complete Regression"
+      - "Required checks must pass before merge"
+      - "Pending required checks block merge"
+      - "Failed required checks block merge"
+      - "Branch must be current with protected baseline before merge where supported"
+      - "Force pushes are blocked"
+      - "Branch deletion is blocked"
+      - "Protection configuration is verified through GitHub's actual policy state"
+      - "No bypass path is silently introduced"
+      - "Gate 7 remains independent from repository CI enforcement"
+    verification_method: "GitHub ruleset / branch protection inspection; intentionally failing disposable PR test; intentionally pending-check test; and successful-check merge eligibility test upon resolving platform constraint."
+    evidence: []
+    planned_by: "Recorded during DMK-203 governance reconciliation and platform enforcement split"
+
+  - id: "DMK-205"
+    wbs_path: "13.06.18"
+    parent_id: "EPIC-13"
+    title: "Canonical WBS → Runtime WorkItem Synchronization"
+    description: "Establish a governed one-way synchronization and reconciliation mechanism from the canonical repository WBS into PRJ-DOCMONSTAKRAKIN operational runtime WorkItems, expose canonical WBS data dynamically in Work Management, detect WBS/runtime drift, and eliminate hard-coded self-project WBS views without allowing runtime state to overwrite repository WBS authority."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFICATION_PENDING"
+    dependencies: ["DMK-203"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-002"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "MASTER_WBS.yaml remains repository authority"
+      - "Runtime WorkItems remain an operational projection"
+      - "PRJ-DOCMONSTAKRAKIN WBS/runtime drift can be detected read-only"
+      - "Missing canonical WorkItems are detected"
+      - "Status drift is detected"
+      - "Canonical metadata drift is detected"
+      - "Runtime-only WorkItems are reported but NEVER silently deleted"
+      - "Synchronization requires an exact reviewed plan"
+      - "Synchronization requires explicit human authorization"
+      - "Synchronization is atomic and idempotent"
+      - "Synchronization creates exactly one audit event and exactly one project stateVersion increment per non-empty batch"
+      - "Stale runtime state rejects apply"
+      - "Changed WBS input rejects apply"
+      - "Unknown WBS statuses/types fail closed"
+      - "Runtime-only execution fields are preserved"
+      - "Work Management WBS tab is dynamically driven from canonical WBS data"
+      - "Hard-coded WBS task arrays are removed"
+      - "After approved synchronization, new canonical tasks such as DMK-203, DMK-204 and DMK-205 appear in Work Management"
+      - "Canonical-managed self-project status changes cannot silently drift away from WBS authority"
+      - "Other projects retain existing runtime-only behavior"
+      - "Gate 7 and release state remain untouched"
+    verification_method: "Comprehensive unit, reconciliation, drift-detection, and UI regression test suites; dry-run plan generation and validation."
+    evidence: []
+    planned_by: "Recorded during DMK-205 self-tracking planning"
+
+  - id: "DMK-206"
+    wbs_path: "13.06.19"
+    parent_id: "EPIC-13"
+    title: "Verification Evidence Submission & Independent Human Sign-Off Workflow"
+    description: "Provide governed WorkItem verification sessions in which testers submit immutable evidence bundles tied to exact implementation revisions and independent authorized human reviewers inspect, approve, reject, or require remediation without permitting implementers, agents, or evidence submitters to self-ratify."
+    type: "GOVERNANCE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-197", "DMK-198", "DMK-208"]
+    requirements: ["REQ-DATA-001", "REQ-SEC-020"]
+    architecture_links: ["CMP-01", "CMP-02"]
+    security_controls: ["SEC-CTRL-020", "SEC-CTRL-022"]
+    acceptance_criteria:
+      - "Tester can create a verification session for a WorkItem"
+      - "Verification binds exact WorkItem ID"
+      - "Verification binds exact commit/build revision"
+      - "Test environment and execution context are recorded"
+      - "Acceptance criteria are evaluated individually"
+      - "Automated test evidence is attachable"
+      - "Manual evidence is attachable"
+      - "Screenshots/logs/test reports can be represented safely"
+      - "Evidence bytes or references have cryptographic digest/provenance"
+      - "Submitted evidence bundle becomes immutable"
+      - "Submitter cannot approve own evidence"
+      - "Agents cannot satisfy human approval requirements"
+      - "Reviewer identity comes from authenticated human reviewer session"
+      - "Review decisions bind the exact evidence-bundle digest"
+      - "Reviewer may APPROVE"
+      - "Reviewer may REJECT"
+      - "Reviewer may REQUIRE_REMEDIATION"
+      - "Rejection/remediation requires justification"
+      - "New evidence after submission creates a new revision/session"
+      - "Required quorum is deterministic from risk/type"
+      - "Distinct required roles require distinct human identities"
+      - "Approval creates chained audit evidence"
+      - "Technical verification and human governance remain separate"
+      - "Human approval does not directly edit MASTER_WBS"
+      - "Approved evidence may produce a governed canonical transition proposal"
+      - "Gate 7 remains independent"
+    verification_method: "Verification session unit and integration tests, submitter/reviewer separation-of-duties tests, tamper-evidence verification, audit ledger chain validation, and UI workflow testing."
+    evidence: []
+    planned_by: "Recorded during post-DMK-205 governance program planning"
+
+  - id: "DMK-207"
+    wbs_path: "13.06.20"
+    parent_id: "EPIC-13"
+    title: "Deterministic Project Health & Progress Projection"
+    description: "Replace stale persisted/bootstrap project-health percentages with deterministic release-scoped projections derived from canonical WorkItem lifecycle, technical verification, human governance, security assurance, evidence, blockers, audit integrity, CI state, and trustworthy release-gate inputs."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "BACKLOG"
+    dependencies: ["DMK-206", "DMK-208"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-002"]
+    architecture_links: ["CMP-01", "CMP-02"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Bootstrap placeholder values are not presented as computed truth"
+      - "Project progress and project health are separate concepts"
+      - "Calculations are deterministic"
+      - "Calculations expose their inputs"
+      - "Calculations expose their version/formula"
+      - "Current-release scope is explicit"
+      - "Future v0.2 work does not reduce v0.1 progress"
+      - "Implementation derives from canonical WorkItem lifecycle"
+      - "Technical Verification is separate"
+      - "Human Governance is a first-class progress dimension"
+      - "Security Assurance uses real security evidence/control state"
+      - "Release Readiness uses trustworthy release-gate inputs only"
+      - "Release Readiness is UNAVAILABLE while DMK-202 prevents trustworthy evaluation"
+      - "Unknown data renders UNKNOWN / UNAVAILABLE rather than false 0%"
+      - "'On track' is not hard-coded"
+      - "'Compliant' is not hard-coded"
+      - "Overall health classification explains its reasons"
+      - "Invalid audit integrity degrades health"
+      - "Failed required CI degrades health"
+      - "Critical unresolved governance may degrade health"
+      - "Other projects remain compatible"
+    verification_method: "Deterministic projection unit tests, release-scope boundary tests, health degradation tests, UI dashboard assertion tests, and cross-project isolation tests."
+    evidence: []
+    planned_by: "Recorded during post-DMK-205 governance program planning"
+
+  - id: "DMK-208"
+    wbs_path: "13.06.21"
+    parent_id: "EPIC-13"
+    title: "Canonical WorkItem Lifecycle & Status Audit"
+    description: "Formalize truthful canonical WorkItem lifecycle semantics, introduce canonical IN_PROGRESS support, audit current EPIC-13 statuses against actual repository evidence, and produce human-reviewed canonical transition candidates without directly mutating runtime WorkItems."
+    type: "GOVERNANCE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-205"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-002"]
+    architecture_links: ["CMP-01", "CMP-02"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Canonical lifecycle semantics are formally documented"
+      - "IN_PROGRESS is supported in canonical WBS"
+      - "Runtime mapping supports IN_PROGRESS → IN_PROGRESS"
+      - "PROPOSED, BACKLOG, READY, IN_PROGRESS, IMPLEMENTED, VERIFICATION_PENDING and VERIFIED each have unambiguous meanings"
+      - "Partial implementation can be represented without falsely calling work BACKLOG"
+      - "IMPLEMENTED is distinct from technical verification"
+      - "VERIFIED means technical verification only"
+      - "VERIFIED does not imply human governance approval"
+      - "Current EPIC-13 statuses are audited against repository evidence"
+      - "Candidate status transitions are documented before WBS mutation"
+      - "No transition is inferred solely from filenames or code presence"
+      - "Human review approves the exact transition set"
+      - "Runtime board state is not manually edited"
+      - "Runtime projection remains governed by reconciliation"
+      - "Historical evidence is not fabricated"
+      - "Gate 7 remains untouched"
+      - "Release state remains untouched"
+    verification_method: "Canonical lifecycle mapping tests, WBS audit review, status transition candidate review, WBS render/check, full regression and human review."
+    evidence:
+      - "docs/07_verification/DMK_208_CANONICAL_STATUS_AUDIT.md"
+      - "docs/07_verification/dmk-208-status-audit-candidate.json"
+      - "docs/07_verification/dmk-208-status-audit-approval-receipt.json"
+      - "docs/07_verification/dmk-208-closure-transition-receipt.json"
+      - "docs/07_verification/dmk-208-post-merge-verification-receipt.json"
+    planned_by: "Explicit human authorization to begin DMK-208 implementation under PLAN-GOV-2026-001."
+    verification_status: "VERIFIED"
+    verified_by: "PR #23 merged to master at 9c29280ea6888f9282b1f0a98c01a3c617f32eaf; GitHub Actions master CI 37207533296 attempt 1 passed Quality & Build, Controlled Docs, and Complete Regression; DMK-208 post-merge verification receipt."
+
+  - id: "DMK-187"
+    wbs_path: "13.06.01"
+    parent_id: "EPIC-13"
+    title: "CryptoDemon project initialization and derivation remediation"
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-186"]
+    requirements: ["REQ-RC-187"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-004", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "User QA specification A-J: isolated inputs, 8 proposed features, honest discovery and validated derivation"
+    verification_method: "scripts/testCryptoDemon.ts and HTTP regression"
+    evidence: ["EV-RC-187", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
+  - id: "DMK-188"
+    wbs_path: "13.06.02"
+    parent_id: "EPIC-13"
+    title: "External AI review sessions and explicit human sign-off remediation"
+    type: "BUG"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-120"]
+    requirements: ["REQ-RC-188"]
+    architecture_links: ["CMP-01", "CMP-02", "CMP-04"]
+    security_controls: ["SEC-CTRL-013", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "User QA specification K-Q: durable staging, per-change review, provenance, proposed artifacts, distinct human quorum"
+    verification_method: "scripts/testCryptoDemonIntegration.ts"
+    evidence: ["EV-RC-188", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
+  - id: "DMK-189"
+    wbs_path: "13.06.03"
+    parent_id: "EPIC-13"
+    title: "CryptoDemon task context and release regression verification"
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    dependencies: ["DMK-187", "DMK-188"]
+    requirements: ["REQ-RC-189"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "User QA specification R-U: linked implementation context, complete automated battery and honest pending human retest"
+    verification_method: "npm test, complete server battery, lint, build, wbs:check"
+    evidence: ["EV-RC-189", "docs/07_verification/rc-regression/results.json"]
+    planned_by: "User specification; Codex execution plan"
+    implemented_by: "Codex /root"
+    verified_by: "Automated regression; independent /root/rc_review_final source review"
+    human_approved_by: "PENDING - Gio manual retest; no release authority granted"
+  # ==========================================
+  # EPIC-01: Foundation & Engineering Baseline
+  # ==========================================
+  - id: "DMK-001"
+    wbs_path: "01.01.01"
+    parent_id: "EPIC-01"
+    title: "Create monorepo and root project conventions"
+    description: "Establish project folder layout, Vite/Express server configurations, and TypeScript configs."
+    type: "FEATURE"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "IMPLEMENTED"
+    dependencies: []
+    requirements: ["REQ-OPS-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: ["SEC-CTRL-001"]
+    acceptance_criteria:
+      - "Project tree matches approved structure"
+      - "TypeScript strict compilation succeeds"
+    verification_method: "tsc --noEmit && npm run build"
+
+  - id: "DMK-002"
+    wbs_path: "01.01.02"
+    parent_id: "EPIC-01"
+    title: "Scaffold Express backend application service"
+    description: "Node/Express backend serving REST APIs on port 3000 with Vite middleware."
+    type: "FEATURE"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-001"]
+    requirements: ["REQ-OPS-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-002"]
+    acceptance_criteria:
+      - "Server listens on 0.0.0.0:3000"
+      - "API endpoints return JSON responses"
+    verification_method: "Health endpoint check"
+
+  - id: "DMK-003"
+    wbs_path: "01.01.03"
+    parent_id: "EPIC-01"
+    title: "Scaffold React TypeScript frontend application"
+    description: "Vite React 19 SPA with Tailwind CSS design tokens and responsive shell."
+    type: "FEATURE"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-001"]
+    requirements: ["REQ-UX-001"]
+    architecture_links: ["CMP-01"]
+    security_controls: []
+    acceptance_criteria:
+      - "React shell renders without console errors"
+      - "Theme tokens adhere to calm enterprise design spec"
+    verification_method: "Browser rendering inspection"
+
+  - id: "DMK-004"
+    wbs_path: "01.01.04"
+    parent_id: "EPIC-01"
+    title: "Configure persistent data schema and in-memory store"
+    description: "Establish initial domain data structures in initialData.ts with deterministic ID schemas."
+    type: "FEATURE"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "HIGH"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-002"]
+    requirements: ["REQ-DATA-001"]
+    architecture_links: ["CMP-04"]
+    security_controls: ["SEC-CTRL-010"]
+    acceptance_criteria:
+      - "Canonical schemas cover projects, questions, requirements, risks, work items, and evidence"
+    verification_method: "TypeScript type check and data schema validation"
+
+  - id: "DMK-005"
+    wbs_path: "01.01.05"
+    parent_id: "EPIC-01"
+    title: "Establish automated test harness"
+    description: "Configure unit and integration testing framework."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "READY"
+    dependencies: ["DMK-002", "DMK-003"]
+    requirements: ["REQ-TEST-001"]
+    architecture_links: ["CMP-01", "CMP-02"]
+    security_controls: ["SEC-CTRL-004"]
+    acceptance_criteria:
+      - "Vitest/Jest harness configured with npm test script"
+    verification_method: "npm test command execution"
+
+  - id: "DMK-007"
+    wbs_path: "01.02.01"
+    parent_id: "EPIC-01"
+    title: "Implement typed configuration and environment handling"
+    description: "Implement typed configuration schemas, process.env validation, and environment isolation."
+    type: "SECURITY"
+    phase: "PHASE-0"
+    epic: "EPIC-01"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-157"]
+    dependencies: ["DMK-002"]
+    requirements: ["REQ-OPS-001", "REQ-SEC-014"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-017"]
+    acceptance_criteria:
+      - "Configuration is strongly typed"
+      - "Missing required environment variables fail fast"
+      - "Zero plaintext secrets leakage"
+    verification_method: "SecretStore configuration bootstrap tests & environment validation"
+
+  # ==========================================
+  # EPIC-02: Canonical Project Core
+  # ==========================================
+  - id: "DMK-010"
+    wbs_path: "02.01.01"
+    parent_id: "EPIC-02"
+    title: "Define Project aggregate and canonical project schema"
+    description: "Unified TypeScript Project interface in src/types.ts with profiles, intent, and health metrics."
+    type: "FEATURE"
+    phase: "PHASE-1"
+    epic: "EPIC-02"
+    priority: "P0"
+    risk: "HIGH"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-004"]
+    requirements: ["REQ-DATA-001"]
+    architecture_links: ["CMP-04"]
+    security_controls: []
+    acceptance_criteria:
+      - "Complete Project schema covering all required lifecycle metadata"
+    verification_method: "Type-check verification"
+
+  - id: "DMK-017"
+    wbs_path: "02.01.02"
+    parent_id: "EPIC-02"
+    title: "Build project creation wizard UI with multi-step flow"
+    description: "Interactive modal in ProjectWizard.tsx supporting name, profiles, delivery method, and sensitivity."
+    type: "FEATURE"
+    phase: "PHASE-1"
+    epic: "EPIC-02"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-010"]
+    requirements: ["REQ-UX-002"]
+    architecture_links: ["CMP-01"]
+    security_controls: []
+    acceptance_criteria:
+      - "Multi-step modal captures profile flags and initializes project aggregate"
+    verification_method: "UI creation flow inspection"
+
+  # ==========================================
+  # EPIC-03: Requirements & Discovery Engine
+  # ==========================================
+  - id: "DMK-020"
+    wbs_path: "03.01.01"
+    parent_id: "EPIC-03"
+    title: "Define Question, QuestionGroup, condition, and response schemas"
+    description: "Conditional question graph model with importance levels and blocker classification."
+    type: "FEATURE"
+    phase: "PHASE-2"
+    epic: "EPIC-03"
+    priority: "P0"
+    risk: "HIGH"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-010"]
+    requirements: ["REQ-REQ-001"]
+    architecture_links: ["CMP-04"]
+    security_controls: []
+    acceptance_criteria:
+      - "Question schemas include required_when conditional logic and standards links"
+    verification_method: "Graph evaluation test"
+
+  - id: "DMK-027"
+    wbs_path: "03.01.02"
+    parent_id: "EPIC-03"
+    title: "Build adaptive questionnaire UI with 70/30 split layout"
+    description: "QuestionnaireView.tsx displaying question prompts, context side-panel, and blocker tags."
+    type: "FEATURE"
+    phase: "PHASE-2"
+    epic: "EPIC-03"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-020"]
+    requirements: ["REQ-UX-003"]
+    architecture_links: ["CMP-01"]
+    security_controls: []
+    acceptance_criteria:
+      - "70% question form, 30% contextual guidance panel"
+      - "Answering questions updates project readiness score dynamically"
+    verification_method: "Interactive questionnaire testing"
+
+  - id: "DMK-186"
+    wbs_path: "03.01.03"
+    parent_id: "EPIC-03"
+    title: "Implement Adaptive Question Navigation & Dynamic Branch Evaluation Engine"
+    description: "Build dynamic condition-based question skipping, profile-aware filtering, and branch navigation for discovery interviews."
+    type: "FEATURE"
+    phase: "PHASE-2"
+    epic: "EPIC-03"
+    priority: "P0"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    dependencies: ["DMK-020", "DMK-027"]
+    requirements: ["REQ-REQ-001"]
+    architecture_links: ["CMP-01", "CMP-04"]
+    security_controls: ["SEC-CTRL-004"]
+    acceptance_criteria:
+      - "Questions skip deterministically when dynamic conditions evaluate to false"
+      - "Branch navigation updates current question pointer without invalid state transitions"
+      - "Derived requirements reflect active answers only with honest provenance"
+    verification_method: "Automated discovery test suite (scripts/testDiscoveryRemediation.ts) (EV-186)"
+    evidence: ["EV-186"]
+
+  # ==========================================
+  # EPIC-04: A-SSDLC Lifecycle & Risk
+  # ==========================================
+  - id: "DMK-033"
+    wbs_path: "04.01.01"
+    parent_id: "EPIC-04"
+    title: "Define A-SSDLC phase and lifecycle-state models"
+    description: "15 discrete lifecycle phases with machine-readable entry and exit criteria."
+    type: "FEATURE"
+    phase: "PHASE-3"
+    epic: "EPIC-04"
+    priority: "P0"
+    risk: "HIGH"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-010"]
+    requirements: ["REQ-GOV-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-005"]
+    acceptance_criteria:
+      - "Phase transitions validate blocker questions and risk thresholds"
+    verification_method: "State machine policy tests"
+
+  - id: "DMK-038"
+    wbs_path: "04.01.02"
+    parent_id: "EPIC-04"
+    title: "Implement mandatory risk-floor policy rules"
+    description: "Non-negotiable risk minimums imposed on projects handling PII, financial data, or autonomous agents."
+    type: "SECURITY"
+    phase: "PHASE-3"
+    epic: "EPIC-04"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-033"]
+    requirements: ["REQ-SEC-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-006"]
+    acceptance_criteria:
+      - "Autonomous agent + production access forces CRITICAL risk floor"
+    verification_method: "Risk engine scoring test"
+
+  - id: "DMK-041"
+    wbs_path: "04.01.03"
+    parent_id: "EPIC-04"
+    title: "Implement override and risk-acceptance workflow with reason and expiry"
+    description: "OverrideModal.tsx allowing authorized users to temporarily bypass gates with auditable justification."
+    type: "GOVERNANCE"
+    phase: "PHASE-3"
+    epic: "EPIC-04"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-033"]
+    requirements: ["REQ-GOV-002"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-007"]
+    acceptance_criteria:
+      - "Overrides record actor, expiration timestamp, and acknowledged risks"
+      - "Override appends event to audit ledger"
+    verification_method: "Override creation test"
+
+  # ==========================================
+  # EPIC-07: AI Gateway (Codex & Gemini)
+  # ==========================================
+  - id: "DMK-079"
+    wbs_path: "07.01.01"
+    parent_id: "EPIC-07"
+    title: "Implement Gemini provider adapter via Google Gen AI SDK"
+    description: "Server-side integration in server.ts utilizing @google/genai with structured JSON schema output."
+    type: "FEATURE"
+    phase: "PHASE-6"
+    epic: "EPIC-07"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-002"]
+    requirements: ["REQ-AI-001"]
+    architecture_links: ["CMP-05"]
+    security_controls: ["SEC-CTRL-014"]
+    acceptance_criteria:
+      - "Server-only API key handling"
+      - "Schema-constrained structured output generation"
+    verification_method: "Inference API test"
+
+  - id: "DMK-081"
+    wbs_path: "07.03.01"
+    parent_id: "EPIC-07"
+    title: "Implement independent second-agent review orchestration"
+    description: "Secondary model evaluation pipeline cross-checking proposals against security rules without scratchpad leakage."
+    type: "FEATURE"
+    phase: "PHASE-6"
+    epic: "EPIC-07"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-079"]
+    requirements: ["REQ-AI-007", "REQ-SEC-019"]
+    architecture_links: ["CMP-05"]
+    security_controls: ["SEC-CTRL-015"]
+    acceptance_criteria:
+      - "Secondary reviewer invoked independently"
+      - "Dedicated critique card rendered in AgentCenterView.tsx"
+    verification_method: "Dual-agent test run EV-106"
+
+  # ==========================================
+  # EPIC-08: Work Management & Planning Views
+  # ==========================================
+  - id: "DMK-085"
+    wbs_path: "08.01.01"
+    parent_id: "EPIC-08"
+    title: "Define canonical WorkItem schema and parent-child hierarchy"
+    description: "Single unified WorkItem model in src/types.ts powering Kanban, WBS, Product Backlog, and Sprints."
+    type: "FEATURE"
+    phase: "PHASE-7"
+    epic: "EPIC-08"
+    priority: "P0"
+    risk: "HIGH"
+    status: "IMPLEMENTED"
+    dependencies: ["DMK-010"]
+    requirements: ["REQ-WORK-001"]
+    architecture_links: ["CMP-04"]
+    security_controls: []
+    acceptance_criteria:
+      - "Unified WorkItem model with priority, risk, requirements, tests, evidence links"
+    verification_method: "Type check and view consistency check"
+
+  # ==========================================
+  # EPIC-09: Repository, Git & Command Safety
+  # ==========================================
+  - id: "DMK-105"
+    wbs_path: "09.01.01"
+    parent_id: "EPIC-09"
+    title: "Implement controlled branch creation and branch-policy checks"
+    description: "Inspect local git status, log, and diff; enforce controlled branch naming and policy checks without unapproved subcommands."
+    type: "FEATURE"
+    phase: "PHASE-8"
+    epic: "EPIC-09"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-103", "EV-159"]
+    dependencies: ["DMK-002"]
+    requirements: ["REQ-OPS-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-011", "SEC-CTRL-012"]
+    acceptance_criteria:
+      - "Inspect local git status, log, and diff"
+      - "Reject invalid branch names, metacharacters, and flag injection"
+    verification_method: "Git command sandbox & security regression suite (EV-103, EV-159)"
+
+  - id: "DMK-110"
+    wbs_path: "09.02.01"
+    parent_id: "EPIC-09"
+    title: "Implement controlled local command runner with resource constraints"
+    description: "Controlled command runner with path boundary enforcement, command confirmation prompt, and shell injection defense."
+    type: "SECURITY"
+    phase: "PHASE-8"
+    epic: "EPIC-09"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "VERIFIED"
+    evidence: ["EV-103", "EV-159"]
+    dependencies: ["DMK-105"]
+    requirements: ["REQ-OPS-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-011", "SEC-CTRL-012", "SEC-CTRL-013"]
+    acceptance_criteria:
+      - "Command execution confirms before running"
+      - "Disallows shell chaining, redirection, and traversal escapes"
+    verification_method: "Security regression suite & server security integration tests (EV-159)"
+
+  # ==========================================
+  # EPIC-10: Evidence, Audit & Traceability
+  # ==========================================
+  - id: "DMK-114"
+    wbs_path: "10.01.01"
+    parent_id: "EPIC-10"
+    title: "Define Evidence model, evidence types, producers, hashes, and work links"
+    description: "Define Evidence model, SHA-256 cryptographic verification, evidence attachment, and status transition guards."
+    type: "FEATURE"
+    phase: "PHASE-9"
+    epic: "EPIC-10"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-101", "EV-156"]
+    dependencies: ["DMK-010"]
+    requirements: ["REQ-DATA-001", "REQ-DATA-004"]
+    architecture_links: ["CMP-04"]
+    security_controls: ["SEC-CTRL-010", "SEC-CTRL-018"]
+    acceptance_criteria:
+      - "Evidence model captures SHA-256 hash, timestamps, producers, and work links"
+      - "Tasks cannot transition to VERIFIED without attached evidence"
+    verification_method: "Data model validation & package verification tests (EV-101, EV-156)"
+
+  - id: "DMK-120"
+    wbs_path: "10.02.01"
+    parent_id: "EPIC-10"
+    title: "Extend audit ledger for human decisions, approvals, and overrides"
+    description: "Append-only SHA-256 hash-chained cryptographic audit ledger recording decisions, overrides, and release events."
+    type: "SECURITY"
+    phase: "PHASE-9"
+    epic: "EPIC-10"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-159"]
+    dependencies: ["DMK-114"]
+    requirements: ["REQ-OPS-001", "REQ-SEC-014"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-019", "SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Every audit record contains cryptographic hash linked to previous record"
+      - "Tamper detection identifies altered or deleted events"
+    verification_method: "Cryptographic hash chain verification & tamper test suite (EV-159)"
+
+  # ==========================================
+  # EPIC-11: Standards Update & Migration Engine
+  # ==========================================
+  - id: "DMK-126"
+    wbs_path: "11.01.01"
+    parent_id: "EPIC-11"
+    title: "Implement standards update checker against configured trusted sources"
+    description: "Standards update checker, candidate version parsing, and semantic diff preview modal."
+    type: "FEATURE"
+    phase: "PHASE-10"
+    epic: "EPIC-11"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-104"]
+    dependencies: ["DMK-041"]
+    requirements: ["REQ-DATA-001"]
+    architecture_links: ["CMP-04"]
+    security_controls: ["SEC-CTRL-010"]
+    acceptance_criteria:
+      - "Check for standards updates and preview semantic diff (added/modified/deprecated)"
+    verification_method: "Standards update checker & diff modal tests (EV-104)"
+
+  # ==========================================
+  # EPIC-13: Forms, Export, Secrets & Release Hardening
+  # ==========================================
+  - id: "DMK-150"
+    wbs_path: "13.01.01"
+    parent_id: "EPIC-13"
+    title: "Define Google Forms export mapping from internal question types"
+    description: "Mapping internal question schemas to Google Forms JSON structure."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "PROPOSED"
+    dependencies: ["DMK-020"]
+    requirements: ["REQ-EXT-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: []
+    acceptance_criteria:
+      - "Specification mapping question options to Google Forms payload"
+    verification_method: "Schema mapping unit test"
+
+  - id: "DMK-156"
+    wbs_path: "13.02.03"
+    parent_id: "EPIC-13"
+    title: "Implement portable .docmonstakrakin project package"
+    description: "Single-file bundle containing full project state, standards locks, and audit chains."
+    type: "FEATURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "HIGH"
+    status: "VERIFIED"
+    evidence: ["EV-156"]
+    dependencies: ["DMK-010", "DMK-114"]
+    requirements: ["REQ-DATA-004"]
+    architecture_links: ["CMP-04"]
+    security_controls: ["SEC-CTRL-018"]
+    acceptance_criteria:
+      - "Export/import roundtrip produces identical SHA-256 state hash"
+    verification_method: "Deterministic state hash serialization & server integration test suite passed (16/16)"
+
+  - id: "DMK-157"
+    wbs_path: "13.03.01"
+    parent_id: "EPIC-13"
+    title: "SecretStore Capability & OS Credential Abstraction"
+    description: "Pluggable driver interface for OS keychain, Windows Credential Manager, and Linux libsecret with fallback."
+    type: "SECURITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "VERIFIED"
+    evidence: "EV-157"
+    verification: "Comprehensive SecretStore driver & redaction suite verified (41/41)"
+    dependencies: ["DMK-007"]
+    requirements: ["REQ-SEC-014"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-017"]
+    acceptance_criteria:
+      - "Pluggable SecretStore interface"
+      - "Zero plaintext secrets in .env or logs"
+    verification_method: "Secret storage test"
+    children:
+      - id: "DMK-157.1"
+        wbs_path: "13.03.01.01"
+        title: "Define SecretStore domain contract and metadata model in TypeScript"
+        status: "VERIFIED"
+        priority: "P0"
+        risk: "HIGH"
+        evidence: "EV-157-1"
+        verification: "TypeScript strict compilation and tsc --noEmit passed"
+      - id: "DMK-157.2"
+        wbs_path: "13.03.01.02"
+        title: "Implement encrypted local file fallback driver with AES-256-GCM"
+        status: "VERIFIED"
+        priority: "P0"
+        risk: "HIGH"
+        evidence: "EV-157-2"
+        verification: "Authenticated AES-256-GCM roundtrip & tamper detection test suite passed (9/9)"
+      - id: "DMK-157.3"
+        wbs_path: "13.03.01.03"
+        title: "Implement OS native keychain adapter interface"
+        status: "VERIFIED"
+        priority: "P1"
+        risk: "HIGH"
+        evidence: "EV-157-3"
+        verification: "Platform capability detection & encrypted fallback delegation test suite passed (9/9)"
+      - id: "DMK-157.4"
+        wbs_path: "13.03.01.04"
+        title: "Integrate SecretStore driver factory and environment resolution"
+        status: "VERIFIED"
+        priority: "P0"
+        risk: "HIGH"
+        evidence: "EV-157-4"
+        verification: "Unified factory singleton, auto-import, and server REST routes verified (12/12)"
+      - id: "DMK-157.5"
+        wbs_path: "13.03.01.05"
+        title: "Add secret redaction filters to server logging and audit pipelines"
+        status: "VERIFIED"
+        priority: "P0"
+        risk: "CRITICAL"
+        evidence: "EV-157-5"
+        verification: "Audit event & console output sanitization tests passed (11/11)"
+
+  - id: "DMK-158"
+    wbs_path: "13.03.02"
+    parent_id: "EPIC-13"
+    title: "OS Credential Migration & Key Rotation Ceremony"
+    description: "Automated migration script to transition legacy environment variables into SecretStore with audit verification."
+    type: "SECURITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P2"
+    risk: "MEDIUM"
+    status: "VERIFIED"
+    dependencies: ["DMK-157"]
+    requirements: ["REQ-SEC-014"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-017"]
+    evidence: "EV-158"
+    acceptance_criteria:
+      - "Zero plaintext secrets remaining in .env"
+      - "Cryptographic proof of migration recorded in audit ledger"
+    verification_method: "Credential migration dry-run and server integration test suite passed (11/11)"
+
+  - id: "DMK-159"
+    wbs_path: "13.04.01"
+    parent_id: "EPIC-13"
+    title: "Security Regression Test Suite"
+    description: "Automated regression tests covering path boundaries, command sandboxing, and audit immutability."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "VERIFIED"
+    evidence: ["EV-159"]
+    dependencies: ["DMK-157", "DMK-110"]
+    requirements: ["REQ-TEST-002"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-004", "SEC-CTRL-011", "SEC-CTRL-012", "SEC-CTRL-013"]
+    acceptance_criteria:
+      - "Passes path traversal attack suite"
+      - "Passes command injection attack suite"
+      - "Passes cryptographic audit hash chain verification suite"
+    verification_method: "Security test suite execution"
+
+  - id: "DMK-165"
+    wbs_path: "13.05.01"
+    parent_id: "EPIC-13"
+    title: "v0.1 Definition-of-Done Review & Release Gate"
+    description: "Formal sign-off of all 25 core capabilities from Master Plan §68 before v0.1 release tagging."
+    type: "RELEASE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "VERIFIED"
+    dependencies: ["DMK-159", "DMK-156"]
+    requirements: ["REQ-REL-001"]
+    architecture_links: ["CMP-01", "CMP-02"]
+    security_controls: ["SEC-CTRL-020"]
+    acceptance_criteria:
+      - "100% of 25 MVP capabilities verified with evidence"
+      - "Release sign-off recorded in audit ledger"
+    verification_method: "Release gate checklist audit"
+    evidence: "EV-165"
+
+  # ==========================================
+  # MILESTONE v0.2: PLANNING WORK ITEMS (PROPOSED)
+  # ==========================================
+
+  # ==========================================
+  # EPIC-14: Multi-Agent Collaboration & Peer Trust
+  # ==========================================
+  - id: "DMK-166"
+    wbs_path: "14.01.01"
+    parent_id: "EPIC-14"
+    title: "Multi-Peer Ed25519 Identity Model & Keyring"
+    description: "Decentralized cryptographic peer identity generation, storage in OS Keychain, and team.json public keyring management."
+    type: "FEATURE"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-165"]
+    requirements: ["REQ-COLLAB-001"]
+    architecture_links: ["CMP-07"]
+    security_controls: ["SEC-CTRL-021"]
+    acceptance_criteria:
+      - "Generates Ed25519 keypair and securely commits public key to project team ledger"
+    verification_method: "Peer signature verification test"
+
+  - id: "DMK-167"
+    wbs_path: "14.01.02"
+    parent_id: "EPIC-14"
+    title: "Scoped Agent Delegation Token & Capability Matrix"
+    description: "Human-signed delegation certificates granting autonomous sub-agents time-limited, role-scoped capabilities."
+    type: "SECURITY"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-166"]
+    requirements: ["REQ-COLLAB-002"]
+    architecture_links: ["CMP-07"]
+    security_controls: ["SEC-CTRL-024"]
+    acceptance_criteria:
+      - "Autonomous agents operate with signed delegations"
+      - "Agent keys strictly rejected for Gate 7 and human-required transitions (SEC-CTRL-020)"
+    verification_method: "Delegation verification test"
+
+  - id: "DMK-168"
+    wbs_path: "14.01.03"
+    parent_id: "EPIC-14"
+    title: "Peer Role Authorization & Team Membership Ledger"
+    description: "Role-based authorization checks (OWNER, SECURITY_LEAD, ARCHITECT, DEVELOPER) for mutations and approvals."
+    type: "GOVERNANCE"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-166"]
+    requirements: ["REQ-COLLAB-001"]
+    architecture_links: ["CMP-07"]
+    security_controls: ["SEC-CTRL-022", "SEC-CTRL-023"]
+    acceptance_criteria:
+      - "Quorum signatures required for membership modifications"
+    verification_method: "Role authorization test"
+
+  - id: "DMK-169"
+    wbs_path: "14.02.01"
+    parent_id: "EPIC-14"
+    title: "Multi-Agent Sub-Task Assignment & Handshake Protocol"
+    description: "Protocol for dispatching work packages to independent sub-agents with signed input envelopes and sandboxed output receipts."
+    type: "FEATURE"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-167"]
+    requirements: ["REQ-COLLAB-002"]
+    architecture_links: ["CMP-05", "CMP-07"]
+    security_controls: ["SEC-CTRL-024"]
+    acceptance_criteria:
+      - "Task assignments carry verifiable human dispatcher signatures"
+    verification_method: "Agent handshake simulation test"
+
+  - id: "DMK-170"
+    wbs_path: "14.02.02"
+    parent_id: "EPIC-14"
+    title: "Dual-Agent Asymmetric Verification Gateway"
+    description: "Asymmetric cross-agent review ensuring independent secondary agent evaluation across disparate model families."
+    type: "QUALITY"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-081", "DMK-169"]
+    requirements: ["REQ-AI-007"]
+    architecture_links: ["CMP-05"]
+    security_controls: ["SEC-CTRL-015"]
+    acceptance_criteria:
+      - "Cross-verification prevents collusion between primary generator and reviewer"
+    verification_method: "Asymmetric review integration test"
+
+  - id: "DMK-171"
+    wbs_path: "14.03.01"
+    parent_id: "EPIC-14"
+    title: "Shared Artifact Prompt Injection Sanitization Filter"
+    description: "Contextual isolation and untrusted payload tagging for requirements and workitem descriptions received from peer nodes."
+    type: "SECURITY"
+    phase: "PHASE-13"
+    epic: "EPIC-14"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-166"]
+    requirements: ["REQ-SEC-033"]
+    architecture_links: ["CMP-05"]
+    security_controls: ["SEC-CTRL-033"]
+    acceptance_criteria:
+      - "Strips adversarial prompts from peer work items prior to agent compilation"
+    verification_method: "Prompt injection evasion suite"
+
+  # ==========================================
+  # EPIC-15: Encrypted Sync Gateway & Transport Abstraction
+  # ==========================================
+  - id: "DMK-172"
+    wbs_path: "15.01.01"
+    parent_id: "EPIC-15"
+    title: "End-to-End Zero-Knowledge Encrypted Envelope Protocol"
+    description: "X25519-ChaCha20-Poly1305 encryption wrapper ensuring zero-knowledge relay transport."
+    type: "SECURITY"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-165"]
+    requirements: ["REQ-SYNC-001", "REQ-SEC-021"]
+    architecture_links: ["CMP-06"]
+    security_controls: ["SEC-CTRL-029"]
+    acceptance_criteria:
+      - "Relay server sees only opaque ciphertext payloads"
+    verification_method: "Ciphertext inspection test"
+
+  - id: "DMK-173"
+    wbs_path: "15.01.02"
+    parent_id: "EPIC-15"
+    title: "Offline Mutation Outbox & Monotonic Vector Clock Generator"
+    description: "Local queue buffering offline state deltas with strictly monotonic vector clocks for causal ordering."
+    type: "FEATURE"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P0"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-172"]
+    requirements: ["REQ-SYNC-002"]
+    architecture_links: ["CMP-06"]
+    security_controls: ["SEC-CTRL-030"]
+    acceptance_criteria:
+      - "Full offline mutation queueing with replay upon reconnection"
+    verification_method: "Offline partition test"
+
+  - id: "DMK-174"
+    wbs_path: "15.02.01"
+    parent_id: "EPIC-15"
+    title: "Deterministic 3-Way Semantic Merge Engine"
+    description: "Field-level 3-way merge algorithm resolving non-conflicting concurrent edits on SSDLC artifacts."
+    type: "FEATURE"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P0"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-173"]
+    requirements: ["REQ-REL-002"]
+    architecture_links: ["CMP-06"]
+    security_controls: ["SEC-CTRL-026"]
+    acceptance_criteria:
+      - "Merges non-overlapping edits automatically; flags conflicting edits"
+    verification_method: "3-way merge unit test suite"
+
+  - id: "DMK-175"
+    wbs_path: "15.02.02"
+    parent_id: "EPIC-15"
+    title: "Merkle Directed Acyclic Graph (DAG) Multi-Writer Audit Ledger"
+    description: "Reconciliation engine transforming linear audit chains into a multi-parent Merkle DAG supporting concurrent peer writers."
+    type: "SECURITY"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-120", "DMK-173"]
+    requirements: ["REQ-DATA-005"]
+    architecture_links: ["CMP-04", "CMP-06"]
+    security_controls: ["SEC-CTRL-040"]
+    acceptance_criteria:
+      - "Cryptographic DAG reconciliation with zero broken parent hashes"
+    verification_method: "Multi-writer DAG simulation test"
+
+  - id: "DMK-176"
+    wbs_path: "15.03.01"
+    parent_id: "EPIC-15"
+    title: "WebSocket & HTTPS Encrypted Delta Sync Transport Adapter"
+    description: "Network transport driver managing persistent WebSocket connection with HTTPS fallback for delta propagation."
+    type: "FEATURE"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-172"]
+    requirements: ["REQ-SYNC-001"]
+    architecture_links: ["CMP-06"]
+    security_controls: ["SEC-CTRL-029"]
+    acceptance_criteria:
+      - "Automatic reconnection with exponential backoff"
+    verification_method: "Network resiliency test"
+
+  - id: "DMK-177"
+    wbs_path: "15.03.02"
+    parent_id: "EPIC-15"
+    title: "Blind Sync Relay Container Reference Implementation"
+    description: "Standalone, zero-knowledge Docker microservice acting as an encrypted blob router for self-hosted deployments."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P2"
+    risk: "MEDIUM"
+    status: "PROPOSED"
+    dependencies: ["DMK-176"]
+    requirements: ["REQ-SYNC-001"]
+    architecture_links: ["CMP-06"]
+    security_controls: ["SEC-CTRL-029"]
+    acceptance_criteria:
+      - "Relay operates with zero access to plaintext encryption keys"
+    verification_method: "Relay container test"
+
+  - id: "DMK-178"
+    wbs_path: "15.04.01"
+    parent_id: "EPIC-15"
+    title: "Interactive Conflict Resolution UI & Work Item Forking"
+    description: "Visual diff and side-by-side reconciliation interface for conflicting concurrent requirement modifications."
+    type: "FEATURE"
+    phase: "PHASE-14"
+    epic: "EPIC-15"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "PROPOSED"
+    dependencies: ["DMK-174"]
+    requirements: ["REQ-REC-001"]
+    architecture_links: ["CMP-01", "CMP-06"]
+    security_controls: ["SEC-CTRL-026"]
+    acceptance_criteria:
+      - "User can inspect conflicting field values and choose resolution"
+    verification_method: "Conflict resolution UI test"
+
+  # ==========================================
+  # EPIC-16: Post-MVP Integrations & Extensibility
+  # ==========================================
+  - id: "DMK-179"
+    wbs_path: "16.01.01"
+    parent_id: "EPIC-16"
+    title: "External Git Remote Bidirectional Tracking Bridge"
+    description: "Integration layer mapping git commits and branches to canonical WorkItem transitions."
+    type: "FEATURE"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "PROPOSED"
+    dependencies: ["DMK-105"]
+    requirements: ["REQ-INT-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-011"]
+    acceptance_criteria:
+      - "Detects git commits matching task IDs and updates status"
+    verification_method: "Git tracking bridge test"
+
+  - id: "DMK-180"
+    wbs_path: "16.01.02"
+    parent_id: "EPIC-16"
+    title: "GitHub Issues & Jira Project WorkItem Projection Adapter"
+    description: "External issue tracker synchronization service reflecting WorkItems to remote task backlogs."
+    type: "FEATURE"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P2"
+    risk: "LOW"
+    status: "PROPOSED"
+    dependencies: ["DMK-085"]
+    requirements: ["REQ-INT-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-017"]
+    acceptance_criteria:
+      - "Exports WorkItems to external tracker payloads"
+    verification_method: "Issue tracker mock test"
+
+  - id: "DMK-181"
+    wbs_path: "16.02.01"
+    parent_id: "EPIC-16"
+    title: "Google Forms Dynamic Sync & Ingestion Webhook"
+    description: "Ingestion service transforming Google Forms survey responses into validated Question answers."
+    type: "FEATURE"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P2"
+    risk: "LOW"
+    status: "PROPOSED"
+    dependencies: ["DMK-150"]
+    requirements: ["REQ-INT-001"]
+    architecture_links: ["CMP-02"]
+    security_controls: ["SEC-CTRL-017"]
+    acceptance_criteria:
+      - "Parses external form responses into typed question answer records"
+    verification_method: "Webhook parser test"
+
+  - id: "DMK-182"
+    wbs_path: "16.03.01"
+    parent_id: "EPIC-16"
+    title: "Pinned Standards Remote Mirror & Automatic Signature Verification"
+    description: "Automated verification of remote standards mirrors against trusted upstream cryptographic root hashes."
+    type: "SECURITY"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P1"
+    risk: "MEDIUM"
+    status: "PROPOSED"
+    dependencies: ["DMK-126"]
+    requirements: ["REQ-SEC-016"]
+    architecture_links: ["CMP-03"]
+    security_controls: ["SEC-CTRL-016"]
+    acceptance_criteria:
+      - "Verifies standards mirror signatures before ingestion"
+    verification_method: "Standards signature verification test"
+
+  - id: "DMK-183"
+    wbs_path: "16.04.01"
+    parent_id: "EPIC-16"
+    title: "Multi-Project Tenant Isolation & Cross-Project Boundary Firewall"
+    description: "Hardened tenant firewall guaranteeing that sync keys, caches, and memory do not bleed across distinct projects."
+    type: "SECURITY"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-017", "DMK-172"]
+    requirements: ["REQ-SEC-032"]
+    architecture_links: ["CMP-04"]
+    security_controls: ["SEC-CTRL-032"]
+    acceptance_criteria:
+      - "Strict isolation between project cryptographic envelopes"
+    verification_method: "Cross-tenant bleed test"
+
+  - id: "DMK-184"
+    wbs_path: "16.04.02"
+    parent_id: "EPIC-16"
+    title: "Peer Eviction & Forward-Secrecy Key Rotation Protocol"
+    description: "Ceremony for removing compromised peers, ratcheting shared symmetric project keys, and re-encrypting pending outbox deltas."
+    type: "SECURITY"
+    phase: "PHASE-15"
+    epic: "EPIC-16"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-166", "DMK-172"]
+    requirements: ["REQ-SEC-022"]
+    architecture_links: ["CMP-07"]
+    security_controls: ["SEC-CTRL-036"]
+    acceptance_criteria:
+      - "Evicted peer cannot decrypt future sync deltas"
+    verification_method: "Peer eviction simulation test"
+
+  # ==========================================
+  # EPIC-17: v0.2 Governance, Verification & Milestone Closure
+  # ==========================================
+  - id: "DMK-185"
+    wbs_path: "17.01.01"
+    parent_id: "EPIC-17"
+    title: "v0.2 Definition-of-Done Multi-Node Verification & Release Gate"
+    description: "End-to-end multi-node synchronization, offline partition, peer authentication, and security audit verification for v0.2 release."
+    type: "RELEASE"
+    phase: "PHASE-16"
+    epic: "EPIC-17"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-170", "DMK-175", "DMK-178", "DMK-183", "DMK-184"]
+    requirements: ["REQ-REL-002"]
+    architecture_links: ["CMP-01", "CMP-06", "CMP-07"]
+    security_controls: ["SEC-CTRL-020", "SEC-CTRL-040"]
+    acceptance_criteria:
+      - "Multi-node synchronization passes with 0 data loss"
+      - "Formal Gate 7 human sign-off ceremony executed"
+    verification_method: "Multi-node release gate evaluation"
+
+
+  # BEGIN AUTH-WBS-REGISTRATION-2026-10-15
+  - id: "DMK-209"
+    wbs_path: "13.06.22"
+    parent_id: "EPIC-13"
+    title: "Local API Security Perimeter and Route Authorization"
+    description: "Classify all API routes and protect privileged endpoints; default local service to loopback unless secure network mode is explicitly configured."
+    type: "SECURITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P0"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-210","DMK-211","DMK-212"]
+    requirements: ["REQ-OPS-001","REQ-SEC-001"]
+    architecture_links: ["CMP-01","CMP-02"]
+    security_controls: ["SEC-CTRL-011","SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Bind the local server to 127.0.0.1 by default; wider network exposure requires an explicit secure deployment configuration."
+      - "Deny unauthenticated and unauthorized access to privileged secrets, Git operations, exports, administration, and project mutations."
+      - "Inventory every registered API route with action/resource policy and pass negative authorization regression tests."
+    verification_method: "API route policy inventory, network binding tests, privilege-escalation tests, Quality & Build, Controlled Docs and Complete Regression"
+    evidence: []
+
+  - id: "DMK-210"
+    wbs_path: "13.06.23"
+    parent_id: "EPIC-13"
+    title: "Local Identity, Authorization and Governance Policy Architecture"
+    description: "Formalize local-first identity, authorization, human governance separation, threat boundaries and approval policy contracts without silently ratifying preliminary quorum rules."
+    type: "GOVERNANCE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: []
+    requirements: ["REQ-GOV-001","REQ-GOV-002"]
+    architecture_links: ["CMP-01","CMP-02","CMP-04"]
+    security_controls: ["SEC-CTRL-013","SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Specify a unified local-first identity/authorization design with distinct human and AI agent principal types."
+      - "Keep technically VERIFIED separate from independent human governance approval; protected operations require required authorized human approvals."
+      - "Document local bootstrap/recovery, role configuration, approval receipts, threat model and explicit unresolved policy decisions."
+    verification_method: "Human architecture review, threat-model tests, decision/requirement traceability and controlled-doc verification"
+    evidence: []
+
+  - id: "DMK-211"
+    wbs_path: "13.06.24"
+    parent_id: "EPIC-13"
+    title: "Persistent Local Human Authentication and Session Security"
+    description: "Create persistent local accounts and revocable authenticated sessions with safe credential storage and controlled migration from the current reviewer roster."
+    type: "INFRASTRUCTURE"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-210"]
+    requirements: ["REQ-SEC-014","REQ-SEC-019"]
+    architecture_links: ["CMP-02","CMP-04"]
+    security_controls: ["SEC-CTRL-017","SEC-CTRL-019"]
+    acceptance_criteria:
+      - "Persist distinct human principal IDs with hardened password verifiers; never store raw credentials or sessions in repository files."
+      - "Enforce secure session expiry, rotation, revocation, CSRF defenses, and reauthentication for sensitive operations."
+      - "Provide a recoverable bootstrap and reviewer migration with fail-closed malformed configuration and negative authentication tests."
+    verification_method: "Credential lifecycle, session revocation/restart, authentication boundary and migration security regression"
+    evidence: []
+
+  - id: "DMK-212"
+    wbs_path: "13.06.25"
+    parent_id: "EPIC-13"
+    title: "Configurable Project-Scoped RBAC and Custom Role Restrictions"
+    description: "Provide built-in and custom roles with server-registered capabilities, configurable explicit restrictions, scoped grants and non-bypassable governance invariants."
+    type: "SECURITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-210","DMK-211"]
+    requirements: ["REQ-GOV-REVIEWER-001","REQ-GOV-QUORUM-001"]
+    architecture_links: ["CMP-01","CMP-02","CMP-04"]
+    security_controls: ["SEC-CTRL-013","SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Allow authorized administrators to configure custom role metadata, capabilities, restrictions, principal type, resource scopes and revision/audit history."
+      - "Enforce deny-by-default and explicit-deny precedence with server-side authorization on every protected operation."
+      - "Reject self-escalation, unauthorized role delegation, agent human-signoff, bypassed separation of duties and cross-project authorization."
+    verification_method: "Custom-role contract, privilege escalation and project isolation tests; independent security review"
+    evidence: []
+
+  - id: "DMK-213"
+    wbs_path: "13.06.26"
+    parent_id: "EPIC-13"
+    title: "Distinct AI Agent Identity and Scoped Delegation"
+    description: "Bind agents to non-human identities, bounded permissions, expiring delegated authority and tamper-evident audit, with human governance actions nondelegable."
+    type: "SECURITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "CRITICAL"
+    status: "PROPOSED"
+    dependencies: ["DMK-212"]
+    requirements: ["REQ-COLLAB-002"]
+    architecture_links: ["CMP-03","CMP-04","CMP-07"]
+    security_controls: ["SEC-CTRL-013","SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Agent authority must be independently scoped and cannot exceed the delegator's authorized permissions."
+      - "Delegations must support expiration, revocation, explicit project/resource scopes and attributable audit events."
+      - "Reject agent impersonation, forged human sign-off, stale delegations and cross-project execution; defer peer federation to a separate ratified decision."
+    verification_method: "Agent-delegation adversarial tests, scope/expiry/revocation integration tests and security review"
+    evidence: []
+
+  - id: "DMK-214"
+    wbs_path: "13.06.27"
+    parent_id: "EPIC-13"
+    title: "Authentication Migration and Cross-Workstream Security Verification"
+    description: "Perform read-only review and governed integration verification of authentication, custom roles, delegation, migration and historical verifier continuity."
+    type: "QUALITY"
+    phase: "PHASE-12"
+    epic: "EPIC-13"
+    priority: "P1"
+    risk: "HIGH"
+    status: "PROPOSED"
+    dependencies: ["DMK-209","DMK-211","DMK-212","DMK-213"]
+    requirements: ["REQ-REL-001","REQ-OPS-001"]
+    architecture_links: ["CMP-01","CMP-02","CMP-04"]
+    security_controls: ["SEC-CTRL-013","SEC-CTRL-020"]
+    acceptance_criteria:
+      - "Verify migration and recovery without exposing secrets or weakening existing reviewer, approval, or historical evidence controls."
+      - "Prove that unauthorized actions, forged receipts, stale permissions and agent self-approval fail closed across all integrated workflows."
+      - "Pass Quality & Build, Controlled Docs, Complete Regression and independent human security/architecture review before release authorization."
+    verification_method: "Full security/regression suites, controlled-document verification, reproducible evidence and independent human review"
+    evidence: []
+  # END AUTH-WBS-REGISTRATION-2026-10-15

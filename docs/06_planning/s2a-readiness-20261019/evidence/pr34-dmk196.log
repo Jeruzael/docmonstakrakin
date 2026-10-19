@@ -1,0 +1,7 @@
+
+> docmonstakrakin@0.0.0 verify:dmk-196-closure
+> tsx scripts/verifyDmk196Closure.ts
+
+--- Verifying DMK-196 Closure Transition ---
+✗ [FAIL] DMK-196 closure verification errors:
+  - WBS digest mismatch: post-merge receipt postApplyCanonicalWbsSha256="c4bf5011d5d234b1e16b2ab4f0a3d07b1ab0a34a77b7e97b6463adbcea290087", actual="e166f4679a71e8cec45ec5e0c5dc60f0b12c8ade0ada4696339662e258132273"

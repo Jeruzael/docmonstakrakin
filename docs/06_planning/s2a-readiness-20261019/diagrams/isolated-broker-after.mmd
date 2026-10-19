@@ -1,0 +1,8 @@
+flowchart LR
+  C[Untrusted local caller] --> L[Loopback TLS and CSRF boundary]
+  L --> F[Restricted frontend process]
+  F --> I[Authenticated bounded RPC]
+  I --> B[Broker under separate OS identity]
+  A[Private authority store] --> B
+  B --> H[Domain and human quorum plus revision commit]
+  H --> P[Broker-owned project snapshot and files]

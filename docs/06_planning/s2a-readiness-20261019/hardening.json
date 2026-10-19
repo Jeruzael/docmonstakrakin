@@ -1,0 +1,442 @@
+{
+  "schemaVersion": "1.0",
+  "sourceEvidence": {
+    "kind": "mixed_source_and_disposable_experiments",
+    "label": "PR48 approval/CI, PR34 historical compatibility and Windows/Linux primitive probes",
+    "collectionSha256": "f6cbd1ac346ad152f136d297a79c0bbcf6347cc81bc3000895447056cefe202b",
+    "artifactCount": 20,
+    "sourceDrift": "none",
+    "targetRevision": "bf5d617fa5bb76323714cc21cc20270acd826616"
+  },
+  "assessment": {
+    "outcome": "opportunities_identified",
+    "summary": "Option2 remains selected; exact compatible primitive candidates measured, but application implementation, merge, WBS application and activation remain human-gated."
+  },
+  "constraints": {
+    "profile": "balanced",
+    "changeHorizons": [
+      "bounded_S2A_code_candidate",
+      "separate_later_route_cutovers"
+    ],
+    "nonNegotiables": [
+      "No merges without separate authorization",
+      "No canonical WBS/trust/history changes",
+      "No operator identities, grants, migration or TLS activation",
+      "Keep14privileged routes/agents/Gate7/release blocked"
+    ],
+    "assumptions": [
+      "Numeric budgets are proposals; small exploratory measurements do not establish production SLOs"
+    ]
+  },
+  "opportunities": [
+    {
+      "opportunityId": "s2a-foundations",
+      "title": "Measured foundations for selected central authorization",
+      "summary": "Private store, bounded KDF and digest-only sessions with explicit trust/recovery and revision boundary.",
+      "diagnosis": "Legacy operations have no general principal/resource authorization and persistence has no coordinated policy revision boundary.",
+      "evidence": [
+        {
+          "evidenceId": "review-e33",
+          "label": "Exact PR48 human review and CI",
+          "claimType": "observed",
+          "sourceKind": "experiment",
+          "path": "github-readiness-snapshot.json",
+          "claim": "Exact PR48 human review and CI"
+        },
+        {
+          "evidenceId": "primitive-compat",
+          "label": "Windows/Linux primitive feasibility",
+          "claimType": "observed",
+          "sourceKind": "experiment",
+          "path": "measurements.json",
+          "claim": "Windows/Linux primitive feasibility"
+        },
+        {
+          "evidenceId": "canonical-preview",
+          "label": "Unapplied registration preview and historical failures",
+          "claimType": "observed",
+          "sourceKind": "experiment",
+          "path": "registration-proposal.json",
+          "claim": "Unapplied registration preview and historical failures"
+        },
+        {
+          "evidenceId": "legacy-access",
+          "label": "69-route partial perimeter and unscoped operations",
+          "claimType": "inferred",
+          "sourceKind": "source",
+          "path": "server/security/apiRoutePolicy.ts at bf5d617",
+          "claim": "69-route partial perimeter and unscoped operations"
+        }
+      ],
+      "desiredInvariants": [
+        "Default deny on unknown/revoked/unavailable authority",
+        "Current canonical resource and policy revision before access/commit",
+        "Preserve nondelegable human quorum and immutable history"
+      ],
+      "proposalPath": "proposals/s2a-foundations.md",
+      "options": [
+        {
+          "optionId": "local-guards",
+          "displayNumber": 1,
+          "title": "Route-local guards",
+          "kind": "baseline",
+          "summary": "Per-route omission/alias/revision drift remains a source-backed risk.",
+          "diagramPaths": {
+            "before": "diagrams/before.mmd",
+            "after": "diagrams/local-guards-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "review-e33",
+              "label": "Exact PR48 human review and CI",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "primitive-compat",
+              "label": "Windows/Linux primitive feasibility",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "canonical-preview",
+              "label": "Unapplied registration preview and historical failures",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "legacy-access",
+              "label": "69-route partial perimeter and unscoped operations",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Per-route omission/alias/revision drift remains a source-backed risk.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "performance",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "No whole-design measurement; repeated authority lookups must be benchmarked.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "memory",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Principal/session/grant caches are unmeasured.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Each writer must implement failure and recheck behavior consistently.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "operability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Simpler process deployment with repeated route-review ownership.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "migration",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Coherent route-family migration and safe disabled rollback required.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            }
+          ],
+          "residualRisks": [
+            "No authorization cutover implemented by this package",
+            "Operational trust/bootstrap/recovery and WBS gates remain"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server/security",
+              "server/projectPersistence.ts",
+              "server.ts"
+            ],
+            "workPackages": [
+              "Explicitly authorized store/KDF/session/decision primitives",
+              "Disabled synthetic pilot and offline ceremony tests",
+              "Later separately authorized resource cutovers"
+            ],
+            "acceptanceCriteria": [
+              "Exact approved scope",
+              "Named measured budgets",
+              "Actual negative/positive tests and exact-head CI",
+              "Independent human review"
+            ],
+            "migrationNotes": [
+              "No automatic enrollment/grants/credential migration"
+            ],
+            "rollback": "Disable failed operation/pilot, revoke sessions and recover reviewed state offline; never restore anonymous access or weaker verification."
+          }
+        },
+        {
+          "optionId": "central-policy",
+          "displayNumber": 2,
+          "title": "Central principal/action/resource policy with resource enforcement",
+          "kind": "structural",
+          "summary": "Shared default-deny decisions require actual resource/commit enforcement; primitives alone protect no legacy route.",
+          "diagramPaths": {
+            "before": "diagrams/before.mmd",
+            "after": "diagrams/central-policy-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "review-e33",
+              "label": "Exact PR48 human review and CI",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "primitive-compat",
+              "label": "Windows/Linux primitive feasibility",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "canonical-preview",
+              "label": "Unapplied registration preview and historical failures",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "legacy-access",
+              "label": "69-route partial perimeter and unscoped operations",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "Shared default-deny decisions require actual resource/commit enforcement; primitives alone protect no legacy route.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "performance",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "measured",
+              "assessment": "Measured SQL/worker/KDF feasibility in measurements.json; actual route latency unknown.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "memory",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "measured",
+              "assessment": "Measured whole-probe peak RSS123/215MiB; actual application/profile delta unknown.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "measured",
+              "assessment": "Primitive rollback/corrupt/read-only/busy/crash/store-path failures tested; full coordinator recovery pending.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "operability",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "Private directory, native build provenance, queue/backups and recovery add owned operations.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "migration",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "No automatic owner/reviewer/credential migration; individual family cutovers remain future gates.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            }
+          ],
+          "residualRisks": [
+            "No authorization cutover implemented by this package",
+            "Operational trust/bootstrap/recovery and WBS gates remain"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server/security",
+              "server/projectPersistence.ts",
+              "server.ts"
+            ],
+            "workPackages": [
+              "Explicitly authorized store/KDF/session/decision primitives",
+              "Disabled synthetic pilot and offline ceremony tests",
+              "Later separately authorized resource cutovers"
+            ],
+            "acceptanceCriteria": [
+              "Exact approved scope",
+              "Named measured budgets",
+              "Actual negative/positive tests and exact-head CI",
+              "Independent human review"
+            ],
+            "migrationNotes": [
+              "No automatic enrollment/grants/credential migration"
+            ],
+            "rollback": "Disable failed operation/pilot, revoke sessions and recover reviewed state offline; never restore anonymous access or weaker verification."
+          }
+        },
+        {
+          "optionId": "isolated-broker",
+          "displayNumber": 3,
+          "title": "Separate OS authority broker",
+          "kind": "isolation",
+          "summary": "A stronger boundary requires broker-owned data and a separate OS identity.",
+          "diagramPaths": {
+            "before": "diagrams/before.mmd",
+            "after": "diagrams/isolated-broker-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "review-e33",
+              "label": "Exact PR48 human review and CI",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "primitive-compat",
+              "label": "Windows/Linux primitive feasibility",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "canonical-preview",
+              "label": "Unapplied registration preview and historical failures",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            },
+            {
+              "evidenceId": "legacy-access",
+              "label": "69-route partial perimeter and unscoped operations",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Proposed design effect only; AZ08 and current containment remain necessary. Measured primitive feasibility is not application authorization closure."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "A stronger boundary requires broker-owned data and a separate OS identity.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "performance",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "RPC/process cost unmeasured.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "memory",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Additional process and duplicate caches unmeasured.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "IPC/supervisor/recovery adds failure paths.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "operability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Separate identity/service installation and trust require explicit deployment.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            },
+            {
+              "dimension": "migration",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Ownership transfer and separate authority protocol complicate cutover and rollback.",
+              "validationPlan": "Actual-entrypoint and failure/recovery tests with named hardware/load and thresholds in proposals/s2a-foundations.md before acceptance."
+            }
+          ],
+          "residualRisks": [
+            "No authorization cutover implemented by this package",
+            "Operational trust/bootstrap/recovery and WBS gates remain"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server/security",
+              "server/projectPersistence.ts",
+              "server.ts"
+            ],
+            "workPackages": [
+              "Explicitly authorized store/KDF/session/decision primitives",
+              "Disabled synthetic pilot and offline ceremony tests",
+              "Later separately authorized resource cutovers"
+            ],
+            "acceptanceCriteria": [
+              "Exact approved scope",
+              "Named measured budgets",
+              "Actual negative/positive tests and exact-head CI",
+              "Independent human review"
+            ],
+            "migrationNotes": [
+              "No automatic enrollment/grants/credential migration"
+            ],
+            "rollback": "Disable failed operation/pilot, revoke sessions and recover reviewed state offline; never restore anonymous access or weaker verification."
+          }
+        }
+      ],
+      "recommendedOptionId": "central-policy",
+      "recommendation": "Retain operator-selected Option2; review exact measured stack and bounded implementation scope before separate authorization."
+    }
+  ],
+  "openQuestions": [
+    "Operator PR48 merge authorization",
+    "WBS dependency/forward-evidence implementation or bounded exception approval",
+    "Private store/native build, browser trust/transport and offline recovery decisions",
+    "Actual integrated scope, benchmark budgets and independent reviewer"
+  ],
+  "implementationAuthorized": false,
+  "activationAuthorized": false
+}

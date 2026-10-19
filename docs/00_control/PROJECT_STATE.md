@@ -1,5 +1,19 @@
 # docmonstakrakin current project state
 
+## 2026-10-19 — S2-A historical portfolio published for review; no implementation authority
+
+Verified publication base is master `cfca39902d6fd4bc0d4c5bdaf351b0522c780466`, the actual human merge of PR #48. Its exact-merge CI passed all three jobs, 66 suites and 1,636 reported outputs. [PR #49](https://github.com/Jeruzael/docmonstakrakin/pull/49) records closure at signed HEAD `fa7929627fd412dd4e0fe1503927f5217ddb1c0e`; it was marked ready and Jeruzael requested jianzhihuoxin at `2026-10-19T06:11:48Z`. Request and actual approval remain separate evidence.
+
+The [current-master readiness entry point](../06_planning/s2a-readiness-publication-20261019/README.md) reconciles the old baseline without rewriting evidence. All 29 original portfolio files from local signed `1f8a3674f76445c4a1a6bb1c460e140442ece15b` are preserved, and all 20 historical evidence inputs now have inspectable repository copies. Windows/Linux 34-check primitive results and measured SQLite/Argon2id costs are feasibility evidence, not application authorization acceptance.
+
+The proposed PR #34 strategy preserves immutable closure receipts and separates historical validity from authorized current-state continuity. Proposed DMK-209 depends on 210/211/212; DMK-210 has no dependencies; DMK-211 depends on 210. Other proposed dependencies and all acceptance/status definitions remain as documented. Canonical WBS and PR #34 are not applied or changed. No preparatory exception is granted.
+
+Option 2 remains selected; exact store/KDF/session/transport/bootstrap/recovery, acceptance/rollback and prerequisite decisions require human authorization. Source-map-js dependency remediation is a separate review candidate; this documentation branch changes no application dependencies. General route authorization is incomplete, the ordinary status route remains unauthenticated, 14 privileged registrations stay denied, live agents disabled, Gate 7 unexecuted and release unpromoted.
+
+Next human gate: independent review of the separate documentation and dependency candidates, followed by an exact S2-A scope/prerequisite decision if desired. No automatic merge, enrollment, credential migration, certificate installation, grants, authentication activation or WBS apply. Earlier entries below retain their original historical meanings.
+
+Disposition: `S2A_PORTFOLIO_PUBLISHED_FOR_REVIEW / WBS_PROPOSAL_UNAPPLIED / EXCEPTION_NOT_GRANTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-19 — PR #47 closure, AZ-08 candidate and selected authorization direction
 
 Verified master is `bf5d617fa5bb76323714cc21cc20270acd826616`: PR #47 was merged by `Jeruzael` after `jianzhihuoxin` approved exact final HEAD `0694072d05af2dcf284dc3d48b85f71515a994e5`. [Closure evidence](../07_verification/PR47_POST_MERGE_CLOSURE.md) records the approval/merge chronology, exact parents, all three successful post-merge CI jobs and the protection-settings visibility limit. The earlier checkpoints below remain historical and unchanged.

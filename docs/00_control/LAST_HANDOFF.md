@@ -1,5 +1,17 @@
 # Current session handoff
 
+## 2026-10-19 — Independent review handoffs and preserved S2-A portfolio
+
+- Source control: GIT; documentation publication branch `codex/s2a-readiness-review`, verified master base `cfca39902d6fd4bc0d4c5bdaf351b0522c780466`. PR #48 is already human-merged and exact-merge CI verified; no merge performed by this session.
+- PR #49 retains signed HEAD `fa7929627fd412dd4e0fe1503927f5217ddb1c0e`, all three CI jobs successful and nine documentation/evidence paths. Its captured evidence digests and prior summary bytes match; no live secret exposure identified in the scoped publication check. Marked ready; Jeruzael requested jianzhihuoxin at `06:11:48Z` (event `33615525178`). A request does not establish actual human approval.
+- [Readiness publication reconciliation](../06_planning/s2a-readiness-publication-20261019/README.md) is the current entry point. Original branch `codex/az08-readiness-s2a-governance` stays at `1f8a3674f76445c4a1a6bb1c460e140442ece15b`; 29 source portfolio files and all 20 historical inputs are available without altered timestamps/results. Original pending-merge PR #48 statements describe the old capture only.
+- The exact proposed dependency strategy is DMK-209 → dependencies 210/211/212; DMK-210 → none; DMK-211 → 210. Preserve historical verifier receipts/counts/digests and require separately authorized forward evidence. PR #34, canonical WBS, statuses and existing human quorum remain unchanged. The bounded exception remains unsigned/ungranted.
+- Existing Windows/Linux probes each passed 34 synthetic primitive checks; standalone worker SQLite/Argon2id, sessions, TLS and recovery evidence does not prove application authorization or operational readiness. Untested assumptions and transport/custody alternatives are explicit in the review entry point. No S2-A implementation or activation.
+- Source-map-js lock correction and its actual installed/audit/regression evidence are a separate PR candidate, not part of this documentation diff. No broad upgrade or current-master remediation is implied by a proposal.
+- Next: independently review each exact candidate/CI, then separately decide the canonical prerequisite/verifier strategy or bounded exception and exact S2-A implementation fields. Keep 14 privileged routes denied, live agents disabled, Gate 7 unexecuted and release unpromoted. No automatic merge or operator-state preparation.
+
+Disposition: `S2A_PORTFOLIO_PUBLISHED_FOR_REVIEW / WBS_PROPOSAL_UNAPPLIED / EXCEPTION_NOT_GRANTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-19 — PR #47 verified; AZ-08 publication and S2-A decision gate
 
 - Source control: GIT, clean verified master baseline `bf5d617fa5bb76323714cc21cc20270acd826616`; tactical branch `codex/security-az08-requirement-lifecycle`. Final signed HEAD/new PR/remote CI/review-request actor and timestamp belong to the publication timeline, separate from actual human review.

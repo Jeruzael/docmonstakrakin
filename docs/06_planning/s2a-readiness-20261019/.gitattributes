@@ -1,0 +1,5 @@
+# Retain exact captured evidence bytes and SHA-256 across Windows/Linux.
+evidence/* -text whitespace=cr-at-eol
+governance/* -text whitespace=cr-at-eol
+# Command logs retain original trailing spaces and final blank lines as evidence.
+evidence/*.log -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

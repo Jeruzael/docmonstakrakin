@@ -1,0 +1,42 @@
+{
+  "recordType": "UNSIGNED_PREPARATORY_EXCEPTION_PROPOSAL_NOT_AUTHORIZATION",
+  "id": "S2A-PREP-20261019-v1",
+  "decision": "PENDING_EXPLICIT_HUMAN_AUTHORIZATION",
+  "preferredPath": "Reviewed dependency revision and historical/forward verifier integration before registration; exception is alternative only",
+  "unmetPrerequisites": [
+    "DMK-209–214 absent from canonical master",
+    "DMK-210 not canonically accepted as completed",
+    "DMK-211 original proposed prerequisite DMK-209 is not fully satisfied",
+    "Operational trust, enrollment, transport and recovery are not activated"
+  ],
+  "possibleScopeAfterApproval": "One bounded S2-A code/test PR for private-store/KDF/session/default-deny primitives and disabled synthetic pilot only; no operational activation",
+  "requiredBaseline": "Actual PR48 merge SHA with all post-merge CI jobs successful, freshly verified before implementation",
+  "dependencies": {
+    "sqlite": "better-sqlite3@13.0.3",
+    "argon2": "argon2@0.45.1",
+    "node": "22.21.1 Windows/Linux measured; current CI Node22 compatibility recheck required"
+  },
+  "bounds": {
+    "maxImplementationPullRequests": 1,
+    "expires": "Earlier of final human decision on that PR or 14 days after explicit exception authorization",
+    "stores": "Disposable synthetic fixtures during implementation/verification; no operator enrollment/migration/grants",
+    "privilegedRegistrationsRemainDisabled": 14
+  },
+  "forbidden": [
+    "Canonical WBS mutation/registration/status promotion",
+    "Operator identities, credentials, grants or reviewer migration",
+    "Production HTTPS/certificate trust activation",
+    "Existing project-route authorization cutover",
+    "Agent live execution, Gate 7 or release promotion",
+    "Automatic merge or unrestricted subsequent implementation"
+  ],
+  "authorizationRequirements": [
+    "Competent existing human governance authority must explicitly approve exact exception scope and expiry; no new role/quorum is invented",
+    "Approve selected dependency/profile/transport/bootstrap/recovery and acceptance/rollback choices",
+    "Separate actual implementation PR human security review and merge decision"
+  ],
+  "receipt": null,
+  "signatures": [],
+  "mayApply": false,
+  "s2aImplementationAuthorized": false
+}

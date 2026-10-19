@@ -1,0 +1,187 @@
+PASS private synthetic Windows directory DACL set
+PASS SQLite rollback fails without commit
+PASS SQLite readonly fails without commit
+PASS SQLite corrupt fails without commit
+PASS SQLite busy fails without commit
+PASS uncommitted writer crash rolls back
+PASS database remains valid after crashed writer
+PASS Argon2 correct password 19456
+PASS Argon2 wrong password denied 19456
+PASS Argon2 correct password 32768
+PASS Argon2 wrong password denied 32768
+PASS Argon2 correct password 65536
+PASS Argon2 wrong password denied 65536
+PASS malformed Argon2 verifier fails closed
+PASS bounded KDF active2 queued4 overload4 rejected
+PASS 10000 opaque token samples unique
+PASS digest-only session fixture lookup
+PASS idle expiry rejects
+PASS absolute expiry rejects
+PASS restart generation rejects
+PASS credential and policy revocations reject
+PASS logout/rotation removes prior session
+PASS raw token absent from database bytes
+PASS SQLite backup restore integrity
+PASS offline synthetic backup authenticated encryption roundtrip
+PASS offline recovery tampered backup rejected
+PASS offline ceremony exclusive lock rejects second writer
+PASS loopback HTTPS trusted fixture and secure host-only cookie
+PASS TLS1.3 negotiated
+PASS untrusted TLS leaf rejected
+PASS TLS hostname mismatch rejected
+PASS foreign HTTP Origin rejected
+PASS foreign HTTP Host rejected
+PASS unavailable authority path has no fallback store
+{
+  "timestamp": "2026-10-19T05:03:56.109Z",
+  "scope": "primitive feasibility experiment, not S2-A application implementation or acceptance",
+  "platform": "win32",
+  "arch": "x64",
+  "node": "v22.21.1",
+  "abi": "127",
+  "openssl": "3.5.4",
+  "cpu": "AMD Ryzen 5 5600G with Radeon Graphics         ",
+  "logicalCpus": 12,
+  "availableParallelism": 12,
+  "containerLimits": null,
+  "packages": {
+    "betterSqlite3": "13.0.3",
+    "argon2": "0.45.1",
+    "sqlite": "3.53.4"
+  },
+  "filesystemParent": "C:\\Users\\HomePC\\AppData\\Local\\Temp",
+  "acl": "C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-s2a-primitive-sbf0i1 JERUZAEL\\Gio:(OI)(CI)(F)\n\nSuccessfully processed 1 files; Failed processing 0 files\r\n",
+  "sqlite": {
+    "read": {
+      "n": 2000,
+      "p50Ms": 0.004000000000019099,
+      "p95Ms": 0.006799999999998363,
+      "maxMs": 0.4884999999999877
+    },
+    "write": {
+      "n": 80,
+      "p50Ms": 2.741899999999987,
+      "p95Ms": 2.916499999999985,
+      "maxMs": 2.9717999999999734
+    },
+    "rpc": {
+      "n": 100,
+      "p50Ms": 0.05660000000000309,
+      "p95Ms": 0.1542999999999779,
+      "maxMs": 0.3009000000000128
+    },
+    "busyMs": 197.53779999999995
+  },
+  "argon2": [
+    {
+      "memoryKiB": 19456,
+      "iterations": 2,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 26.334499999999935,
+        "p95Ms": 31.151599999999917,
+        "maxMs": 31.151599999999917
+      }
+    },
+    {
+      "memoryKiB": 32768,
+      "iterations": 3,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 64.7666999999999,
+        "p95Ms": 68.40069999999992,
+        "maxMs": 68.40069999999992
+      }
+    },
+    {
+      "memoryKiB": 65536,
+      "iterations": 3,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 137.14679999999998,
+        "p95Ms": 149.91599999999926,
+        "maxMs": 149.91599999999926
+      }
+    }
+  ],
+  "boundedKdf": {
+    "activeLimit": 2,
+    "queueLimit": 4,
+    "submitted": 10,
+    "admitted": 6,
+    "rejected": 4,
+    "peakActive": 2,
+    "peakQueued": 4,
+    "totalLatency": {
+      "n": 6,
+      "p50Ms": 140.02099999999973,
+      "p95Ms": 216.83920000000035,
+      "maxMs": 216.83920000000035
+    }
+  },
+  "session": {
+    "sampledTokens": 10000,
+    "bytesPerToken": 32,
+    "idleMs": 600000,
+    "absoluteMs": 1800000
+  },
+  "tls": {
+    "protocol": "TLSv1.3",
+    "firstHandshakeAndRequestMs": 22.183399999999892,
+    "systemTrustChanged": false,
+    "browserEnforcementTested": false
+  },
+  "resources": {
+    "rssBaseBytes": 43671552,
+    "peakRssBytes": 129228800,
+    "deltaRssBytes": 85557248,
+    "eventLoopP95Ms": 18.628607,
+    "eventLoopMaxMs": 80.674815
+  },
+  "tests": [
+    "private synthetic Windows directory DACL set",
+    "SQLite rollback fails without commit",
+    "SQLite readonly fails without commit",
+    "SQLite corrupt fails without commit",
+    "SQLite busy fails without commit",
+    "uncommitted writer crash rolls back",
+    "database remains valid after crashed writer",
+    "Argon2 correct password 19456",
+    "Argon2 wrong password denied 19456",
+    "Argon2 correct password 32768",
+    "Argon2 wrong password denied 32768",
+    "Argon2 correct password 65536",
+    "Argon2 wrong password denied 65536",
+    "malformed Argon2 verifier fails closed",
+    "bounded KDF active2 queued4 overload4 rejected",
+    "10000 opaque token samples unique",
+    "digest-only session fixture lookup",
+    "idle expiry rejects",
+    "absolute expiry rejects",
+    "restart generation rejects",
+    "credential and policy revocations reject",
+    "logout/rotation removes prior session",
+    "raw token absent from database bytes",
+    "SQLite backup restore integrity",
+    "offline synthetic backup authenticated encryption roundtrip",
+    "offline recovery tampered backup rejected",
+    "offline ceremony exclusive lock rejects second writer",
+    "loopback HTTPS trusted fixture and secure host-only cookie",
+    "TLS1.3 negotiated",
+    "untrusted TLS leaf rejected",
+    "TLS hostname mismatch rejected",
+    "foreign HTTP Origin rejected",
+    "foreign HTTP Host rejected",
+    "unavailable authority path has no fallback store"
+  ],
+  "passed": 34,
+  "limitations": [
+    "Timing samples are small and host load is uncontrolled; not a load/production benchmark.",
+    "Session decision logic is a fixture, not actual server routes.",
+    "TLS uses per-request fixture trust; no production certificate, CA installation or browser trust activation.",
+    "No cross-store commit/revocation coordinator or operational bootstrap/recovery was implemented."
+  ]
+}

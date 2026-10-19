@@ -1,0 +1,9 @@
+
+> docmonstakrakin@0.0.0 verify:dmk-208-status-audit
+> tsx scripts/verifyDmk208StatusAudit.ts
+
+✗ [FAIL] DMK-208 Status Audit Candidate Verification Failed:
+  Scoped item count in MASTER_WBS.yaml (33) != expected (27)
+
+33 !== 27
+

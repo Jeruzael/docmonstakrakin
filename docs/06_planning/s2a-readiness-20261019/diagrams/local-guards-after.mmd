@@ -1,0 +1,6 @@
+flowchart LR
+  C[Untrusted local caller] --> L[Loopback TLS and CSRF boundary]
+  L --> G[Per-route principal and resource guards]
+  A[Private authority store] --> G
+  G --> R[Per-route revision recheck and domain quorum]
+  R --> P[Project snapshot and files]
