@@ -1,0 +1,85 @@
+
+> docmonstakrakin@0.0.0 test:complete
+> tsx scripts/runCompleteRegression.ts
+
+PASSED scripts/runAutomatedQa.ts: 11 passed, 0 failed, 0 skipped
+PASSED scripts/testAccountProvisioning.ts: 6 passed, 0 failed, 0 skipped
+PASSED scripts/testAuditValidation.ts: 0 passed, 0 failed, 0 skipped
+PASSED scripts/testCanonicalLifecycle.ts: 16 passed, 0 failed, 0 skipped
+PASSED scripts/testCanonicalReconciliation.ts: 17 passed, 0 failed, 0 skipped
+FAILED scripts/testControlledDocVersionSync.ts: 49 passed, 1 failed, 0 skipped
+PASSED scripts/testControlledDocs.ts: 87 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsApi.ts: 36 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsClient.ts: 27 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsPersistence.ts: 34 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsRecovery.ts: 69 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsRegistry.ts: 22 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsTransaction.ts: 40 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsValidator.ts: 35 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsViewComponent.ts: 28 passed, 0 failed, 0 skipped
+PASSED scripts/testControlledDocsWorkspaceTabs.ts: 14 passed, 0 failed, 0 skipped
+PASSED scripts/testCryptoDemon.ts: 14 passed, 0 failed, 0 skipped
+PASSED scripts/testCryptoDemonIntegration.ts: 48 passed, 0 failed, 0 skipped
+PASSED scripts/testDiscoveryRemediation.ts: 36 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk196Closure.ts: 18 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk196PostMergeCandidate.ts: 38 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197ApprovalInboxUi.ts: 25 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197Closure.ts: 26 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197ClosureCandidate.ts: 20 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197Persistence.ts: 3 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197PostMergeGovernance.ts: 40 passed, 0 failed, 0 skipped
+PASSED scripts/testDmk197Quorum.ts: 86 passed, 0 failed, 0 skipped
+PASSED scripts/testEnvironmentFixtures.ts: 17 passed, 0 failed, 0 skipped
+PASSED scripts/testForwardWbsEvidence.ts: 9 passed, 0 failed, 0 skipped
+PASSED scripts/testGate3Adversarial.ts: 27 passed, 0 failed, 0 skipped
+PASSED scripts/testPlanWbsRegistrationTransaction.ts: 26 passed, 0 failed, 0 skipped
+PASSED scripts/testProjectListReconciliation.ts: 0 passed, 0 failed, 0 skipped
+PASSED scripts/testProjectPersistenceClassifier.ts: 16 passed, 0 failed, 0 skipped
+PASSED scripts/testProjectsWorkspace.ts: 14 passed, 0 failed, 0 skipped
+PASSED scripts/testProjectsWorkspaceUi.ts: 14 passed, 0 failed, 0 skipped
+PASSED scripts/testProposalContract.ts: 12 passed, 0 failed, 0 skipped
+PASSED scripts/testRequirementLifecycle.ts: 105 passed, 0 failed, 0 skipped
+PASSED scripts/testRequirementSignoff.ts: 15 passed, 0 failed, 0 skipped
+PASSED scripts/testRequirementStatusSync.ts: 18 passed, 0 failed, 0 skipped
+PASSED scripts/testSecurityPerimeter.ts: 51 passed, 0 failed, 0 skipped
+PASSED scripts/testSelfBootstrapContract.ts: 19 passed, 0 failed, 0 skipped
+PASSED scripts/testSelfBootstrapExecutionVerifier.ts: 20 passed, 0 failed, 0 skipped
+PASSED scripts/testSelfBootstrapExecutor.ts: 16 passed, 0 failed, 0 skipped
+PASSED scripts/testSelfWorkItemReconciliation.ts: 90 passed, 0 failed, 0 skipped
+PASSED scripts/testSourceMapDependency.ts: 36 passed, 0 failed, 0 skipped
+PASSED scripts/testStageB2aAdversarial.ts: 18 passed, 0 failed, 0 skipped
+PASSED scripts/testStageB2b1Adversarial.ts: 28 passed, 0 failed, 0 skipped
+PASSED scripts/testStatusAuditReceipt.ts: 56 passed, 0 failed, 0 skipped
+PASSED scripts/testTechnicalBaseline.ts: 10 passed, 0 failed, 0 skipped
+PASSED scripts/testTrustedWbsRegistrationV2.ts: 22 passed, 0 failed, 0 skipped
+PASSED scripts/testVitePerimeter.ts: 11 passed, 0 failed, 0 skipped
+PASSED scripts/testWbsRegistration.ts: 11 passed, 0 failed, 0 skipped
+PASSED scripts/testWorkItemUpdates.ts: 9 passed, 0 failed, 0 skipped
+PASSED server/package/testPackageServerIntegration.ts: 7 passed, 0 failed, 0 skipped
+PASSED server/package/testPortablePackage.ts: 9 passed, 0 failed, 0 skipped
+PASSED server/release/testReleaseGate.ts: 30 passed, 0 failed, 0 skipped
+PASSED server/release/testReleaseServerIntegration.ts: 5 passed, 0 failed, 0 skipped
+PASSED server/secrets/testAuditRedactionIntegration.ts: 5 passed, 0 failed, 0 skipped
+PASSED server/secrets/testCredentialMigration.ts: 6 passed, 0 failed, 0 skipped
+PASSED server/secrets/testMigrationServerIntegration.ts: 5 passed, 0 failed, 0 skipped
+PASSED server/secrets/testOsKeychainStore.ts: 8 passed, 0 failed, 0 skipped
+PASSED server/secrets/testRedactionFilter.ts: 12 passed, 0 failed, 0 skipped
+PASSED server/secrets/testSecretStore.ts: 16 passed, 0 failed, 0 skipped
+PASSED server/secrets/testSecretStoreFactory.ts: 6 passed, 0 failed, 0 skipped
+PASSED server/secrets/testServerIntegration.ts: 6 passed, 0 failed, 0 skipped
+PASSED server/security/testSecurityRegression.ts: 34 passed, 0 failed, 0 skipped
+PASSED server/security/testServerSecurityIntegration.ts: 7 passed, 0 failed, 0 skipped
+{
+  "suites": {
+    "total": 67,
+    "passed": 66,
+    "failed": 1,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 1672,
+    "passed": 1671,
+    "failed": 1,
+    "skipped": 0
+  }
+}

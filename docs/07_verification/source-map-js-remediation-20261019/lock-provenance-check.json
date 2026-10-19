@@ -1,0 +1,15 @@
+{
+  "onlyChangedNpmPackage": "source-map-js",
+  "from": "1.2.1",
+  "to": "1.2.2",
+  "bunOnlySameTupleChanged": true,
+  "bunFrozenBytesUnchanged": true,
+  "npmInstalled": "1.2.2",
+  "bunInstalled": "1.2.2",
+  "packageJsonUnchanged": true,
+  "auditBeforeHigh": 1,
+  "auditAfterTotal": 0,
+  "historicalTrackedFilesUnchanged": true,
+  "node": "v22.21.1",
+  "platform": "win32"
+}

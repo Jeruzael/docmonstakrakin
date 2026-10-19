@@ -1,0 +1,8 @@
+docmonstakrakin@0.0.0 C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r3-source-map-fix
+├─┬ @tailwindcss/vite@4.3.3
+│ └─┬ @tailwindcss/node@4.3.3
+│   └── source-map-js@1.2.2
+└─┬ autoprefixer@10.6.1
+  └─┬ postcss@8.5.28
+    └── source-map-js@1.2.2 deduped
+
