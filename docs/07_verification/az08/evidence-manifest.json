@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "recordType": "tactical_security_candidate_evidence_not_authorization_receipt",
+  "baseMaster": "bf5d617fa5bb76323714cc21cc20270acd826616",
+  "policyVersion": 1,
+  "actualRoute": "POST /api/projects/:id/requirements/:reqId/status",
+  "files": [
+    {
+      "path": "baseline-reproduction.log",
+      "sha256": "a250a0e989ec8126b7286236bb77264ab2747af66b864a4ac43d7892104a690f",
+      "meaning": "First unknown-status rejection assertion failed on baseline: actual200 persisted invalid status, expected422."
+    },
+    {
+      "path": "candidate-focused.log",
+      "sha256": "d88ebd230c153f6abf44d6fefdebd320ddc29cd258d5ec4b456a14f8c972aff8",
+      "meaning": "105 actual-server cases pass, including full36-pair matrix, malformed/alias/version/no-write/restart cases."
+    }
+  ],
+  "completeRegression": {
+    "timestamp": "2026-10-19T04:23:25.018Z",
+    "suites": 66,
+    "observedCheckOutputs": 1636,
+    "failed": 0,
+    "skipped": 0,
+    "resultsSha256": "d233122caabb279ebc0ab4442019208ac557219fb2d954721f5e96b10a3c1d2f",
+    "managedArtifact": "artifacts/az08/candidate-complete-results.json",
+    "logSha256": "ef4c1b0afa9d93071342cd0fd95299732a95ce2e0e9d6d8a23855bebe1d0846e"
+  },
+  "logs": {
+    "az08-lint": {
+      "sha256": "80ed5468c9258a99a74efb4ad1b8514afe99af3990752b933cae3097b64e7e81",
+      "managedArtifact": "artifacts/az08/az08-lint.log"
+    },
+    "az08-reqsync": {
+      "sha256": "a8bc365fa850d15e2ebe30dd5fdb438f83d97d2c577d5fe71c62a8ba3ae1340f",
+      "managedArtifact": "artifacts/az08/az08-reqsync.log"
+    },
+    "az08-wbs-check": {
+      "sha256": "dd45da50f3e1b876f1d3ef8c871f5adf075c4439729771cc5dc98c78197ea423",
+      "managedArtifact": "artifacts/az08/az08-wbs-check.log"
+    },
+    "az08-build": {
+      "sha256": "68ae4d5d2b33a0631d85aab5344429b9891853f79ed24e34467bfa97784924d3",
+      "managedArtifact": "artifacts/az08/az08-build.log"
+    },
+    "az08-test-controlled-docs": {
+      "sha256": "7627a601c1ab8ecf7682e4a568595d1b827c355bb3462525e74b449a22c663eb",
+      "managedArtifact": "artifacts/az08/az08-test-controlled-docs.log"
+    },
+    "az08-security": {
+      "sha256": "f1a36dc160d05187ee27b7a243470be550a021f8153d3cf6b6e1468954bf08ac",
+      "managedArtifact": "artifacts/az08/az08-security.log"
+    },
+    "pr34-verify-dmk-208-status-audit": {
+      "sha256": "2c851931d9b046927dd14aecd6b4ee9f16fb427dcaab290d99f16cb77ea13f98",
+      "managedArtifact": "artifacts/az08/pr34-verify-dmk-208-status-audit.log"
+    },
+    "pr34-verify-dmk-197-closure": {
+      "sha256": "63541ab5df5d8d54a9d13cd0d91ccf2f702c40e30f48d51f3d8e68b984fe5399",
+      "managedArtifact": "artifacts/az08/pr34-verify-dmk-197-closure.log"
+    },
+    "pr34-verify-dmk-196-closure": {
+      "sha256": "21b119fe3124e675a07f9421eb3014fa13c2f7196978edd7735e9b2982ac26bf",
+      "managedArtifact": "artifacts/az08/pr34-verify-dmk-196-closure.log"
+    }
+  },
+  "humanReview": {
+    "status": "PENDING_REQUEST_AT_DOCUMENT_FREEZE",
+    "publicationEvidence": "Exact signed HEAD, PR number, review-request actor/time and CI are recorded on the new PR timeline, separate from actual human review."
+  },
+  "protectedStates": {
+    "canonicalWbs": "UNCHANGED",
+    "operatorState": "NOT_TARGETED",
+    "privilegedRegistrations": 14,
+    "liveAgentExecution": "BLOCKED",
+    "s2aImplementation": "NOT_AUTHORIZED",
+    "gate7": "NOT_EXECUTED",
+    "release": "NOT_PROMOTED"
+  }
+}

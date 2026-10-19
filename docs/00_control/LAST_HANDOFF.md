@@ -1,5 +1,18 @@
 # Current session handoff
 
+## 2026-10-19 — PR #47 verified; AZ-08 publication and S2-A decision gate
+
+- Source control: GIT, clean verified master baseline `bf5d617fa5bb76323714cc21cc20270acd826616`; tactical branch `codex/security-az08-requirement-lifecycle`. Final signed HEAD/new PR/remote CI/review-request actor and timestamp belong to the publication timeline, separate from actual human review.
+- [PR #47 closure](../07_verification/PR47_POST_MERGE_CLOSURE.md): independently verified actual exact-HEAD approval, existing human merge, all three exact-merge CI jobs, 65/65 suites and 1,531 outputs. The agent performed no merge. Master is protected; detailed protection configuration could not be read through the integration (403), so no historical-policy compliance claim is invented.
+- [AZ-08 candidate and risk/negative evidence](../07_verification/AZ08_REQUIREMENT_LIFECYCLE_CANDIDATE.md): real server route, strict six-value domain, V1 transition matrix, optional expectedStateVersion, unchanged rejection state/audit/disk, retained APPROVED human-quorum path and VERIFIED compatibility. Same-state/reset-to-PROPOSED rejection is new tactical policy for human review. Ordinary valid operations remain unscoped; this is not authentication.
+- Verification: focused 105/105, existing requirement synchronization 18/18, complete 66/66 suites and 1,636 outputs, build/typecheck/WBS pass; controlled-document 40/40 + 29/29 + 11/11 and security integration 7/7 pass. One independent fresh read-only candidate review found no concrete bypass/regression. No operator data was targeted; tests used synthetic disposable state.
+- [PR #34 assessment](../06_planning/SECURITY_SPRINT2_GOVERNANCE_DECISIONS.md): still unmerged/stale; proposed registrations remain absent; current candidate reproduces scoped-count and historical-digest verifier failures. Ownership and the proposed 211→209 sequencing mismatch require a separate governed resolution. No WBS change, receipt, exception or live reconciliation occurred.
+- [S2-A decision package](../06_planning/SECURITY_S2A_IMPLEMENTATION_DECISION.md): operator-selected Option 2 direction; private SQLite, bounded asynchronous Argon2id, revocable digest-only opaque sessions, separately approved loopback HTTPS and offline ceremonies remain design defaults/choices awaiting exact approval. No S2-A code/dependencies, enrollment, migration, transport activation or existing-route authorization cutover.
+- Canonical task states, release/phase/milestone, DMK-197/198/206/208 ownership, Stage B2b2 trust/quorum and historical evidence remain unchanged. Last canonical VERIFIED task DMK-208 remains technical verification. DMK-198 retains its unresolved DMK-197 prerequisite; no downstream completion is inferred.
+- Next human decision: independently review the AZ-08 exact signed HEAD, CI and new V1 transition rules, then decide merge. Separately resolve the S2-A authorization fields and WBS dependencies; do not begin implementation. Keep all 14 privileged registrations disabled, live agents blocked, Gate 7 unexecuted and release unpromoted. Earlier handoffs below are preserved historical checkpoints.
+
+Disposition: `PR47_CLOSURE_VERIFIED / AZ08_CANDIDATE_HUMAN_REVIEW_REQUIRED / OPTION2_DIRECTION_SELECTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-19 — PR #46 closure and Security Authorization Sprint 2 proposal
 
 - Source control: GIT; verified master/merge `f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8`; new documentation branch `codex/pr46-closure-security-authorization-sprint2`. Exact signed documentation HEAD and draft PR are recorded on the new PR timeline.
