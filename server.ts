@@ -1,9 +1,12 @@
 import {sanitizeAndHashAudit} from './server/security/sanitizedAudit.js';
+import {localRequestBoundary, resolveLocalNetworkConfig} from './server/security/localPerimeter.ts';
+import {enforceApiRoutePolicy} from './server/security/apiRoutePolicy.ts';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { generateUniqueRequirementId, validateRequirementId } from './server/requirementId.ts';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
+import { installReviewerIdentity } from './server/proposals/identity.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
 import { recoverDocumentTransactions } from './server/docs/controlledDocsRecovery.ts';
 import { createControlledDocsRouter } from './server/docs/controlledDocsRouter.ts';
@@ -110,6 +113,7 @@ import {
 const store = new ProjectStore();
 
 async function startServer() {
+  const network=resolveLocalNetworkConfig();
   // Install console redaction interceptor (DMK-157.5)
   defaultRedactor.installConsoleInterceptor();
 
@@ -124,8 +128,8 @@ async function startServer() {
   }
 
   const app = express();
-  const PORT = Number(process.env.PORT || 3000);
-
+  app.use(localRequestBoundary);
+  app.use(enforceApiRoutePolicy);
   app.use(express.json({ limit: '10mb' }));
 
   const recoveryReport = recoverDocumentTransactions(process.cwd());
@@ -136,8 +140,16 @@ async function startServer() {
     );
   }
 
+  const reviewerAuth = installReviewerIdentity(app);
+  app.use((req,res,next)=>{
+    // This context grants only the pre-existing governance roles, never general
+    // project membership or the disabled administrative capabilities.
+    const reviewerTransition=req.method==='POST'&&/^\/api\/projects\/[^/]+\/work-items\/?$/i.test(req.path)&&['VERIFIED','APPROVED','RELEASED'].includes(req.body?.status);
+    if((res.locals.securityRouteClass==='SPECIALIZED_REVIEWER'||reviewerTransition)&&!reviewerAuth.requireHuman(req,res))return;
+    next();
+  });
   installProjectPersistence(app, store);
-  const reviewerAuth = registerSignoffRoutes(app, store);
+  registerSignoffRoutes(app, store, reviewerAuth);
   app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman));
   registerProposalRoutes(app, store, reviewerAuth);
   // Never let Git discover and mutate a parent repository outside this workspace.
@@ -1546,7 +1558,7 @@ async function startServer() {
   app.get('/api/projects/:id/agents', (req, res) => {
     const roles = store.agentRoles[req.params.id] || [];
     const runs = store.agentRuns[req.params.id] || [];
-    res.json({ roles, runs });
+    res.json({ roles, runs, executionMode:'DEMONSTRATION_ONLY', liveExecutionAvailable:false });
   });
 
   app.post('/api/projects/:id/agents/:agentId/run', (req, res) => {
@@ -1670,7 +1682,7 @@ async function startServer() {
 
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, host:'127.0.0.1', ws:false, hmr:false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -1682,8 +1694,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`docmonstakrakin Control Plane running at http://0.0.0.0:${PORT}`);
+  app.listen(network.port, network.host, () => {
+    console.log(`docmonstakrakin Control Plane running at http://${network.host}:${network.port}`);
   });
 }
 

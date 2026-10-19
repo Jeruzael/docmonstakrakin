@@ -1,4 +1,5 @@
 import { ReviewerSession } from './components/ReviewerSession';
+import { LocalContainmentNotice } from './components/LocalContainmentNotice';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -961,6 +962,7 @@ export default function App() {
         />
 
         <ReviewerSession />
+        <LocalContainmentNotice />
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{loadError}</p><button className="mt-2 underline font-semibold" onClick={()=>void fetchProjectData(activeProjectId)}>Retry selected project</button></div>}

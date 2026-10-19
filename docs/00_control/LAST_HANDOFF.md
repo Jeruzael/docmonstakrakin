@@ -1,5 +1,19 @@
 # Current session handoff
 
+## 2026-10-19 — Security Perimeter Sprint 1 containment candidate
+
+- Source-control mode: GIT; repository `Jeruzael/docmonstakrakin`; branch `codex/security-perimeter-sprint1`; verified master baseline `132b822979b7084302c7ad5efeb0da1c11607f09`.
+- User-authorized preparatory scope is partial containment associated with proposed DMK-209, not WBS registration or completion. PR #34 and canonical WBS remain unchanged.
+- Implemented: actual 69-route inventory; strict loopback configuration; shared main/dev/preview Host/Origin boundary; early denial of secret/repository/agent privileged groups; early existing reviewer authentication; package-export alias persistence correction; explicit UI restrictions and demonstration labels.
+- Evidence and remaining gaps: [Security Perimeter Sprint 1 report](../07_verification/SECURITY_PERIMETER_SPRINT1.md). Recovery/publication checklist: [implementation plan](../superpowers/plans/2026-10-19-security-perimeter-sprint1.md).
+- A fresh independent technical review found an authentication-before-persistence ordering gap; the fix and actual-entrypoint regression are included. This is agent technical review, not human approval.
+- Tests use disposable clones, synthetic credentials and synthetic CI state. Do not run `ci:prepare` against operator data. Final local results are in the report; exact signed HEAD, remote CI, human review request and actual review are separately attributable on the new PR timeline.
+- Remaining blockers: authenticated general project membership/resource permissions, package import/export authorization, privileged re-enablement, secured remote deployment and real agent identity/execution. Local access remains a capability of local processes, not authenticated identity.
+- Next action: independent human review and merge decision on the containment PR. Do not merge automatically or begin further backlog work. Proposed DMK-209 remains unregistered in blocked PR #34.
+- Gate 7, release status, Stage B2b2 trust/quorum, production WorkItems/credentials/runtime, historical evidence and canonical task states retain their existing authoritative states. No runtime reconciliation occurred.
+
+Disposition: `SECURITY_PERIMETER_CONTAINMENT_PARTIAL / HUMAN_REVIEW_PENDING / FULL_AUTHENTICATION_BLOCKED / AGENT_CENTER_LIVE_EXECUTION_BLOCKED`.
+
 ## 2026-09-25 — DMK-194 Human UI Review Sign-off & PR #16 Merged
 
 Current source-control checkpoint:

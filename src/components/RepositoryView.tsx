@@ -39,6 +39,7 @@ interface RepositoryViewProps {
 export const RepositoryView: React.FC<RepositoryViewProps> = ({ project }) => {
   const [repoStatus, setRepoStatus] = useState<RepoStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [diffContent, setDiffContent] = useState<string | null>(null);
   const [diffStaged, setDiffStaged] = useState(false);
@@ -63,7 +64,12 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({ project }) => {
       const res = await fetch(`/api/repo/status?projectId=${project.id}`);
       if (res.ok) {
         const data = await res.json();
+        setUnavailable(null);
         setRepoStatus(data);
+      } else if (res.status === 403) {
+        const data = await res.json();
+        setRepoStatus(null);
+        setUnavailable(data.message || 'Repository access is unavailable until authenticated repository authorization exists.');
       }
     } catch (err) {
       console.error('Failed to fetch repo status:', err);
@@ -181,6 +187,8 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({ project }) => {
   const isPreCommitReady = repoStatus?.checks.every(
     (c) => !c.blocking || c.status === 'PASSED'
   );
+
+  if (unavailable) return <section role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><h1 className="font-bold">Repository access unavailable</h1><p className="mt-2">{unavailable}</p><p className="mt-2">Use your separately authorized Git workflow for repository operations.</p></section>;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">

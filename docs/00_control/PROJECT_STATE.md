@@ -1,5 +1,17 @@
 # docmonstakrakin current project state
 
+## 2026-10-19 — Security Perimeter Sprint 1 containment candidate
+
+User-authorized preparatory containment is implemented on `codex/security-perimeter-sprint1`, based on verified master `132b822979b7084302c7ad5efeb0da1c11607f09`. This is an out-of-band candidate associated with proposed DMK-209; it neither registers nor closes DMK-209–214 or changes canonical task states. PR #34 remains untouched.
+
+The [route inventory and verification report](../07_verification/SECURITY_PERIMETER_SPRINT1.md) records 69 actual API registrations, loopback/Host/Origin containment, denial of 14 unsupported privileged registrations, preserved specialized reviewer controls, and explicit remaining project/package authorization gaps. Agent dispatch is disabled and demonstration records are labeled. Full authentication and live agent execution remain blocked.
+
+Implementation and a fresh independent technical review are complete. Publication evidence, exact signed HEAD, CI results and the independently attributable human review request belong to the new PR timeline. Human approval and merge remain pending; an agent technical review is not human approval. The [implementation plan](../superpowers/plans/2026-10-19-security-perimeter-sprint1.md) tracks publication steps.
+
+Release, phase/milestone governance, canonical WBS, last verified task, Stage B2b2 trust/quorum, historical evidence, production state, Gate 7 and release promotion retain their existing authoritative states. No live reconciliation was performed. Next action is independent human review of this containment candidate; no subsequent WBS implementation is authorized by this checkpoint.
+
+Disposition: `SECURITY_PERIMETER_CONTAINMENT_PARTIAL / HUMAN_REVIEW_PENDING / FULL_AUTHENTICATION_BLOCKED / AGENT_CENTER_LIVE_EXECUTION_BLOCKED`.
+
 ## 2026-10-12 — DMK-197 Post-Merge Governance Remediation Checkpoint
 
 Following independent review of the merged DMK-197 closure transition, this checkpoint records the governed post-merge evidence reconciliation, retrospective chronology investigation, additive governance attestation, and fail-closed historical verifier hardening on branch `dmk-197-post-merge-governance-reconciliation`.
