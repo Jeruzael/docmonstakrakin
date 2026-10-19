@@ -1,5 +1,19 @@
 # docmonstakrakin current project state
 
+## 2026-10-19 — PR #47 closure, AZ-08 candidate and selected authorization direction
+
+Verified master is `bf5d617fa5bb76323714cc21cc20270acd826616`: PR #47 was merged by `Jeruzael` after `jianzhihuoxin` approved exact final HEAD `0694072d05af2dcf284dc3d48b85f71515a994e5`. [Closure evidence](../07_verification/PR47_POST_MERGE_CLOSURE.md) records the approval/merge chronology, exact parents, all three successful post-merge CI jobs and the protection-settings visibility limit. The earlier checkpoints below remain historical and unchanged.
+
+The operator selected Option 2, central principal/action/resource authorization with resource enforcement, as the preferred architecture. The [S2-A decision package](../06_planning/SECURITY_S2A_IMPLEMENTATION_DECISION.md) records proposed defaults, compatibility, acceptance and unresolved store/KDF/transport/bootstrap/governance choices. **S2-A implementation and activation remain NOT AUTHORIZED.**
+
+The separately authorized [AZ-08 tactical candidate](../07_verification/AZ08_REQUIREMENT_LIFECYCLE_CANDIDATE.md), branch `codex/security-az08-requirement-lifecycle`, validates exact requirement statuses, V1 transitions and optional aggregate version expectations at the actual registered route. Local verification: 105 actual-route cases, 18 existing synchronization checks, 66/66 complete suites and 1,636 observed check outputs, build/typecheck/WBS and relevant security/controlled-document checks pass. Independent agent review found no concrete bypass/regression; independent human review and merge remain required. Exact signed HEAD, remote CI and review-request evidence belong to the new PR timeline. Master is not represented as already containing this fix.
+
+PR #34 remains open/unmerged with DMK-209–214 absent from canonical master. A [fresh isolated dependency/compatibility assessment](../06_planning/SECURITY_SPRINT2_GOVERNANCE_DECISIONS.md) reproduces three verifier failures for its candidate WBS. Partial perimeter containment does not complete proposed DMK-209 or satisfy proposed DMK-211's prerequisite. No exception, WBS registration/promotion or live reconciliation was applied.
+
+Release/phase/milestone and canonical states remain unchanged: DMK-197 VERIFICATION_PENDING; DMK-198 IN_PROGRESS with DMK-197 dependency; DMK-206 BACKLOG; DMK-208 VERIFIED. Canonical work remains subject to those dependencies; no new READY item is invented. Immediate next action is independent human review/merge decision for AZ-08 and a separate exact-scope authorization resolving the S2-A gate. Full authentication and tenant isolation are not implemented; 14 privileged registrations and Agent Center live execution remain blocked; Gate 7 and release remain unchanged.
+
+Disposition: `PR47_CLOSURE_VERIFIED / AZ08_CANDIDATE_HUMAN_REVIEW_REQUIRED / OPTION2_DIRECTION_SELECTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-19 — PR #46 merged checkpoint and Sprint 2 proposal
 
 **Current verified repository baseline:** `master` at `f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8`. `jianzhihuoxin` submitted an actual APPROVED review of final feature HEAD `48c68ec46fa335504bb06c6a8d04a1e72dc7c78a` at `2026-10-19T02:36:17Z`, before merge at `2026-10-19T02:37:01Z`. Exact-merge post-merge CI `39190812393` passed all three jobs, including 65/65 suites and 1,531 observed check outputs. The [additive closure record](../07_verification/PR46_POST_MERGE_CLOSURE.md) contains evidence URLs and preservation checks.

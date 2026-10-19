@@ -1,0 +1,20 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: unknown status is rejected without mutation: {"success":true,"requirement":{"id":"REQ-INVALID","title":"Password reset and verification tokens must expire after 15 minutes","statement":"Password-reset and account recovery tokens must be single-use and become cryptographically invalid exactly 15 minutes after initial issuance.","category":"SECURITY","status":"SYNTHETIC_INVALID_STATUS","priority":"HIGH","source":{"type":"questionnaire_answer","id":"AUTH-Q-014"},"riskLinks":["RISK-001"],"threatLinks":["THREAT-002"],"standardLinks":["CTRL-ASVS-2.1.1","CTRL-SSDF-PW.1"],"workItems":["DMK-042"],"tests":["TEST-104"],"evidence":["EV-102"],"updatedAt":"2026-10-19T04:15:10.203Z"}}
+
+200 !== 422
+
+    at rejected (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\az08-verify\scripts\testRequirementLifecycle.ts:89:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\az08-verify\scripts\testRequirementLifecycle.ts:97:3) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 200,
+  expected: 422,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.21.1

@@ -1,0 +1,106 @@
+PASS unknown status is rejected without mutation
+PASS malformed status ""
+PASS malformed status "approved"
+PASS malformed status "under_review"
+PASS malformed status " VERIFIED"
+PASS malformed status "DEFERRED "
+PASS malformed status "APPROVED\n"
+PASS malformed status "RELEASED"
+PASS malformed status "__proto__"
+PASS malformed status "toString"
+PASS malformed status "\u0000"
+PASS malformed status "ＶＥＲＩＦＩＥＤ"
+PASS malformed status null
+PASS malformed status true
+PASS malformed status 1
+PASS malformed status []
+PASS malformed status {}
+PASS malformed status ["APPROVED"]
+PASS invalid body {}
+PASS invalid body []
+PASS invalid body {"justification":"missing status"}
+PASS non-container JSON body null
+PASS non-container JSON body true
+PASS non-container JSON body 1
+PASS non-container JSON body "UNDER_REVIEW"
+PASS missing body
+PASS malformed JSON
+PASS invalid justification null
+PASS invalid justification 1
+PASS invalid justification []
+PASS invalid justification {}
+PASS invalid expected version null
+PASS invalid expected version "50"
+PASS invalid expected version -1
+PASS invalid expected version 1.5
+PASS invalid expected version true
+PASS invalid expected version {}
+PASS invalid expected version []
+PASS invalid expected version 9007199254740992
+PASS stale expected aggregate version
+PASS unknown persisted lifecycle source
+PASS non-string persisted lifecycle source
+PASS invalid persisted aggregate version 0
+PASS invalid persisted aggregate version 1
+PASS invalid persisted aggregate version 2
+PASS invalid persisted aggregate version 3
+PASS invalid persisted aggregate version 4
+PASS invalid persisted aggregate version 5
+PASS ambiguous requirement
+PASS missing requirement
+PASS missing project
+PASS PROPOSED -> PROPOSED
+PASS permitted PROPOSED -> UNDER_REVIEW
+PASS PROPOSED -> APPROVED
+PASS permitted PROPOSED -> REJECTED
+PASS permitted PROPOSED -> DEFERRED
+PASS permitted PROPOSED -> VERIFIED
+PASS UNDER_REVIEW -> PROPOSED
+PASS UNDER_REVIEW -> UNDER_REVIEW
+PASS UNDER_REVIEW -> APPROVED
+PASS permitted UNDER_REVIEW -> REJECTED
+PASS permitted UNDER_REVIEW -> DEFERRED
+PASS permitted UNDER_REVIEW -> VERIFIED
+PASS APPROVED -> PROPOSED
+PASS permitted APPROVED -> UNDER_REVIEW
+PASS APPROVED -> APPROVED
+PASS permitted APPROVED -> REJECTED
+PASS permitted APPROVED -> DEFERRED
+PASS permitted APPROVED -> VERIFIED
+PASS REJECTED -> PROPOSED
+PASS permitted REJECTED -> UNDER_REVIEW
+PASS REJECTED -> APPROVED
+PASS REJECTED -> REJECTED
+PASS permitted REJECTED -> DEFERRED
+PASS permitted REJECTED -> VERIFIED
+PASS DEFERRED -> PROPOSED
+PASS permitted DEFERRED -> UNDER_REVIEW
+PASS DEFERRED -> APPROVED
+PASS permitted DEFERRED -> REJECTED
+PASS DEFERRED -> DEFERRED
+PASS permitted DEFERRED -> VERIFIED
+PASS VERIFIED -> PROPOSED
+PASS permitted VERIFIED -> UNDER_REVIEW
+PASS VERIFIED -> APPROVED
+PASS permitted VERIFIED -> REJECTED
+PASS permitted VERIFIED -> DEFERRED
+PASS VERIFIED -> VERIFIED
+PASS alias invalid string /api/projects/PRJ-ATLAS-01/requirements/REQ-ALIAS/status/
+PASS alias direct approval /api/projects/PRJ-ATLAS-01/requirements/REQ-ALIAS/status/
+PASS alias invalid string /API/PROJECTS/PRJ-ATLAS-01/REQUIREMENTS/REQ-ALIAS/STATUS
+PASS alias direct approval /API/PROJECTS/PRJ-ATLAS-01/REQUIREMENTS/REQ-ALIAS/STATUS
+PASS unregistered method GET
+PASS unregistered method HEAD
+PASS unregistered method PUT
+PASS unregistered method PATCH
+PASS unregistered method DELETE
+PASS encoded path separator
+PASS foreign origin
+PASS trailing slash legitimate transition with legacy version omission
+PASS case alias legitimate transition
+PASS JSON escaped protected status
+PASS duplicate status keys resolve to protected value
+PASS replayed stale aggregate version
+PASS accepted transitions and audit survive restart without extra mutation
+PASS invalid status does not create absent snapshot
+Requirement lifecycle: 105 passed, 0 failed, 0 skipped

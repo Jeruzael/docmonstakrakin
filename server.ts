@@ -4,6 +4,7 @@ import {enforceApiRoutePolicy} from './server/security/apiRoutePolicy.ts';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { generateUniqueRequirementId, validateRequirementId } from './server/requirementId.ts';
+import { parseRequirementStatusRequest, validateRequirementTransition, REQUIREMENT_LIFECYCLE_POLICY_VERSION } from './server/requirementLifecycle.ts';
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installReviewerIdentity } from './server/proposals/identity.ts';
@@ -632,8 +633,9 @@ async function startServer() {
   });
 
   app.post('/api/projects/:id/requirements/:reqId/status', (req, res) => {
-    const { status, justification } = req.body;
-    if (status === 'APPROVED') return res.status(403).json({error:'Use Request Sign-Off and human quorum to approve a requirement'});
+    const parsed = parseRequirementStatusRequest(req.body);
+    if (parsed.ok === false) return res.status(parsed.status).json({ error: parsed.error });
+    const { status, justification } = parsed.value;
     const project = store.projects.find((p) => p.id === req.params.id);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
@@ -650,6 +652,9 @@ async function startServer() {
 
     const target = matching[0];
 
+    const transition = validateRequirementTransition(target.status, project.stateVersion, parsed.value);
+    if (transition.ok === false) return res.status(transition.status).json({ error: transition.error });
+
     const previousStatus = target.status;
     target.status = status;
     target.updatedAt = new Date().toISOString();
@@ -663,7 +668,7 @@ async function startServer() {
       'REQUIREMENT_STATUS_CHANGED',
       target.id,
       `Status changed from ${previousStatus} to ${status}${justification ? `: ${justification}` : ''}`,
-      { previousStatus, newStatus: status, justification }
+      { previousStatus, newStatus: status, justification, lifecyclePolicyVersion: REQUIREMENT_LIFECYCLE_POLICY_VERSION }
     );
 
     res.json({ success: true, requirement: target });
@@ -1675,6 +1680,9 @@ async function startServer() {
   // ==========================================
 
   app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (error?.type === 'entity.parse.failed' && _req.method === 'POST' && /^\/api\/projects\/[^/]+\/requirements\/[^/]+\/status\/?$/i.test(_req.path)) {
+      return res.status(400).json({ error: 'Malformed requirement status JSON body' });
+    }
     if (error instanceof DerivationError) return res.status(422).json({error: error.toJSON()});
     console.error(error);
     res.status(500).json({error: 'Request failed; canonical changes were not accepted'});
