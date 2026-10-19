@@ -76,6 +76,10 @@ docs/
 
 ## 2. Baseline Reference Documents
 
+### Agent Center design proposals
+
+- [Agent Center v0.3 publication review](./01_product/agent-center-v0.3/PUBLICATION_NOTES.md) — Independently reviewed design contracts, original source package, operator-selected 2D Cozy Minimal and 3D Soft Clay visual directions, and publication boundaries. Documentation publication is pending independent human review; implementation and policy ratification are not authorized.
+
 For legacy reference and continuity with previous development sprints:
 - [`MASTER_PLAN.md`](./MASTER_PLAN.md) — The complete baseline Master Product, Architecture, Security, and Implementation Plan.
 - [`ARCHITECTURE_AND_SPECS.md`](./ARCHITECTURE_AND_SPECS.md) — Detailed UI/UX token specifications, color semantics, and layout guidelines.
