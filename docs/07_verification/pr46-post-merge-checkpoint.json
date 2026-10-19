@@ -1,0 +1,143 @@
+{
+  "recordType": "post_merge_evidence_summary_not_authorization_receipt",
+  "repository": "Jeruzael/docmonstakrakin",
+  "evidenceCheckedAt": "2026-10-19 03:26:15 UTC",
+  "pr": 46,
+  "startingMaster": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+  "laterMasterChangesObservedAtStart": false,
+  "featureHead": "48c68ec46fa335504bb06c6a8d04a1e72dc7c78a",
+  "reviewRequest": {
+    "actor": "Jeruzael",
+    "reviewer": "jianzhihuoxin",
+    "submittedAt": "2026-10-19T01:42:50Z",
+    "timelineUrl": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/46/timeline?per_page=100"
+  },
+  "actualReview": {
+    "id": 5566365362,
+    "reviewer": "jianzhihuoxin",
+    "state": "APPROVED",
+    "commit": "48c68ec46fa335504bb06c6a8d04a1e72dc7c78a",
+    "submittedAt": "2026-10-19T02:36:17Z",
+    "url": "https://github.com/Jeruzael/docmonstakrakin/pull/46#pullrequestreview-5566365362",
+    "beforeMergeSeconds": 44
+  },
+  "merge": {
+    "sha": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+    "firstParent": "132b822979b7084302c7ad5efeb0da1c11607f09",
+    "secondParent": "48c68ec46fa335504bb06c6a8d04a1e72dc7c78a",
+    "at": "2026-10-19T02:37:01Z",
+    "by": "Jeruzael",
+    "target": "master",
+    "url": "https://github.com/Jeruzael/docmonstakrakin/commit/f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+  },
+  "postMergeCi": {
+    "id": 39190812393,
+    "event": "push",
+    "head": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393",
+    "jobs": [
+      {
+        "id": 117862968736,
+        "name": "Complete Regression",
+        "conclusion": "success",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968736",
+        "capturedDecodedLogSha256": "8da56aadcf7ca83e00b2bdeb9be4ef86ab1f5aee7c63585015808d49fde05d18"
+      },
+      {
+        "id": 117862968788,
+        "name": "Controlled Docs",
+        "conclusion": "success",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968788",
+        "capturedDecodedLogSha256": "50144fdd1b2c87665ed80fd06d36957ed100b3e99396fbdb4971cf4fa5e2b149"
+      },
+      {
+        "id": 117862968907,
+        "name": "Quality & Build",
+        "conclusion": "success",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968907",
+        "capturedDecodedLogSha256": "a07c35362dcfdf13fd5845ebe8654165be5cf0a8df9bbca5c2f1cec467572e74"
+      }
+    ],
+    "completeRegression": {
+      "suites": 65,
+      "passedSuites": 65,
+      "observedCheckOutputs": 1531,
+      "passedCheckOutputs": 1531,
+      "failed": 0,
+      "skipped": 0,
+      "serverPerimeterChecks": 51,
+      "vitePerimeterChecks": 11,
+      "counting": "Observed named outputs, including compound checks; not a count of individual Node assert calls."
+    }
+  },
+  "preservation": {
+    "canonicalWbsYamlSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "generatedWbsMarkdownSha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f",
+    "firstParentMergeDiffUnchanged": [
+      "canonical WBS YAML/Markdown",
+      "server/release",
+      "bootstrap",
+      "historical receipt files"
+    ],
+    "operatorRuntimeInspected": false,
+    "operatorRuntimeModified": false,
+    "pr34Modified": false
+  },
+  "classification": {
+    "LEGACY_LOCAL_UNSCOPED": 45,
+    "BLOCKED_SECRET_ADMIN": 7,
+    "SPECIALIZED_REVIEWER": 7,
+    "BLOCKED_REPOSITORY": 6,
+    "BLOCKED_AGENT_DISPATCH": 1,
+    "REVIEWER_SESSION": 3
+  },
+  "newCharacterization": {
+    "expectedObservations": 15,
+    "reproduced": 15,
+    "failed": 0,
+    "securityClosure": false,
+    "scope": "Real server disposable synthetic state; not every route dynamically exercised."
+  },
+  "proposal": {
+    "option": "central-policy",
+    "status": "PROPOSED_NOT_SELECTED_OR_IMPLEMENTED",
+    "firstSlice": "S2-A identity/session/default-deny primitives and actual-server authentication pilot",
+    "requiresSeparateHumanAuthorization": true
+  },
+  "disposition": [
+    "MERGED_AND_POST_MERGE_CI_VERIFIED",
+    "SECURITY_PERIMETER_CONTAINMENT_PARTIAL",
+    "FULL_AUTHENTICATION_NOT_IMPLEMENTED",
+    "AGENT_CENTER_LIVE_EXECUTION_BLOCKED",
+    "GATE_7_NOT_EXECUTED",
+    "RELEASE_NOT_PROMOTED"
+  ],
+  "documentationCandidateValidation": {
+    "applicationSourceRevision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+    "wbs": "PASS zero drift",
+    "typecheck": "PASS",
+    "build": "PASS existing large-chunk advisory",
+    "completeRegression": {
+      "timestamp": "2026-10-19T03:40:45.045Z",
+      "suitesPassed": 65,
+      "observedCheckOutputsPassed": 1531,
+      "failures": 0,
+      "skips": 0,
+      "retainedEvidenceChanges": 0,
+      "resultsSha256": "b493cf0b7234dfa642e1db0cda3e4fbb03170dbd726451c2d4930330b85d956c"
+    },
+    "controlledDocs": {
+      "core": 40,
+      "additionalSecurity": 29,
+      "focusedSuites": 11,
+      "failures": 0,
+      "snapshotMutation": false
+    },
+    "existingSecurityIntegration": "7/7 PASS",
+    "documentationConsistencyChecks": "12/12 PASS",
+    "actualServerCharacterization": "15/15 expected observations; not remediation",
+    "operatorRuntimeUsed": false
+  }
+}

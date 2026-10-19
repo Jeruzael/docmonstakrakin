@@ -1,0 +1,485 @@
+{
+  "documentType": "codex-security.hardening-analysis",
+  "schemaVersion": "1.0",
+  "analysisId": "authorization_sprint2_20261019",
+  "sourceEvidence": {
+    "kind": "document_collection",
+    "label": "PR46 merged source, post-merge CI and actual-server authorization characterization",
+    "collectionSha256": "1962ac92e9722d39185daecd99ad565b08c319bb38de8b27024bc517bb998864",
+    "artifactCount": 16,
+    "targetRevision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+    "sourceDrift": "none"
+  },
+  "assessment": {
+    "outcome": "opportunities_identified",
+    "summary": "Propose a common authenticated project/resource boundary; no authorization implementation or finding closure."
+  },
+  "constraints": {
+    "profile": "balanced",
+    "changeHorizons": [
+      "incremental"
+    ],
+    "nonNegotiables": [
+      "No activation or credential migration",
+      "Preserve 14 disabled routes, loopback and human quorum",
+      "No canonical WBS, PR34, historical evidence, operator runtime, Gate7 or release changes"
+    ],
+    "assumptions": [
+      "Single-process local application",
+      "No measured latency/RSS budget",
+      "Transport/bootstrap/store/KDF choices require human review"
+    ]
+  },
+  "opportunities": [
+    {
+      "opportunityId": "project-authorization",
+      "title": "Establish authenticated project and resource authority",
+      "summary": "Bind current principal and capabilities to resolved resources before reads/persistence.",
+      "diagnosis": "General route selection lacks membership; specialized reviewer roles do not supply general scope.",
+      "evidence": [
+        {
+          "evidenceId": "E-ROUTES",
+          "claimType": "observed",
+          "sourceKind": "source",
+          "path": "server/security/apiRoutePolicy.ts",
+          "claim": "Independent actual-registration inventory confirms 45 legacy,14 blocked,7 specialized,3 session routes."
+        },
+        {
+          "evidenceId": "E-PROBE",
+          "claimType": "observed",
+          "sourceKind": "experiment",
+          "path": "evidence/characterization.log",
+          "claim": "Actual server reproduces anonymous reads/writes/overwrite and unverified actor attribution."
+        },
+        {
+          "evidenceId": "E-IDENTITY",
+          "claimType": "observed",
+          "sourceKind": "source",
+          "path": "server/proposals/identity.ts",
+          "claim": "Roster sessions are specialized and have no project membership model."
+        },
+        {
+          "evidenceId": "E-PERSIST",
+          "claimType": "observed",
+          "sourceKind": "source",
+          "path": "server/projectPersistence.ts",
+          "claim": "Successful nominally read-only POSTs may enter snapshot persistence."
+        },
+        {
+          "evidenceId": "E-MERGE",
+          "claimType": "observed",
+          "sourceKind": "document",
+          "path": "https://github.com/Jeruzael/docmonstakrakin/pull/46",
+          "claim": "Actual final-head pre-merge review and exact-merge post-merge CI verified."
+        },
+        {
+          "evidenceId": "E-PLAN",
+          "claimType": "observed",
+          "sourceKind": "document",
+          "path": "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md",
+          "claim": "DMK209-214 ownership remains proposed; PR34 unmerged."
+        }
+      ],
+      "desiredInvariants": [
+        "Deny by default on principal/action/canonical resource",
+        "Explicit deny and current revision precede read/commit",
+        "Human-only distinct-role approval is nondelegable",
+        "No unauthorized project/vault/document/Git/audit business side effects",
+        "Imported labels and source ACLs never create local authority"
+      ],
+      "proposalPath": "proposals/project-authorization.md",
+      "options": [
+        {
+          "optionId": "local-guards",
+          "title": "Authenticated route-local guards",
+          "kind": "baseline",
+          "summary": "Repairs current routes if all guards agree; distributed future drift remains",
+          "diagramPaths": {
+            "before": "diagrams/project-authorization-before.mmd",
+            "after": "diagrams/project-authorization-local-guards-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "E-ROUTES",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PROBE",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Project/package/provenance paths can be addressed after implementation; the demonstrated AZ-08 state allowlist still requires a direct domain fix."
+            },
+            {
+              "evidenceId": "E-IDENTITY",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PERSIST",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-MERGE",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PLAN",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "Repairs current routes if all guards agree; distributed future drift remains",
+              "validationPlan": "Actual-entrypoint scope/alias/denial matrix and independent human review"
+            },
+            {
+              "dimension": "performance",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Repeated local lookups on request paths",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "memory",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Accounts sessions grants and per-handler caches",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "One process; omission and inconsistent failure handling remain",
+              "validationPlan": "Crash/revoke/lock/store-outage recovery tests"
+            },
+            {
+              "dimension": "operability",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Familiar handlers but broad audit surface",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "migration",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Family-by-family changes; owner mapping and disabled rollback required",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            }
+          ],
+          "residualRisks": [
+            "Operator OS/process compromise",
+            "Domain/state validation still required",
+            "No automatic agent/provider trust or human policy ratification"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server.ts",
+              "server/security/apiRoutePolicy.ts",
+              "server/projectPersistence.ts",
+              "server/proposals",
+              "server/docs"
+            ],
+            "workPackages": [
+              "Separate plan required if selected"
+            ],
+            "acceptanceCriteria": [
+              "Actual registered entrypoint negatives and positive workflows",
+              "Existing human gates and immutable evidence retained",
+              "No unauthorized persistence or disclosure"
+            ],
+            "migrationNotes": [
+              "Human-approved identity and project mapping",
+              "No current activation"
+            ],
+            "rollback": "Disable affected operation or stop service; never restore anonymous access."
+          }
+        },
+        {
+          "optionId": "central-policy",
+          "title": "Central policy with resource enforcement",
+          "kind": "structural",
+          "summary": "Shared principal/action/resource and commit revision contract",
+          "diagramPaths": {
+            "before": "diagrams/project-authorization-before.mmd",
+            "after": "diagrams/project-authorization-central-policy-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "E-ROUTES",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PROBE",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Project/package/provenance paths can be addressed after implementation; the demonstrated AZ-08 state allowlist still requires a direct domain fix."
+            },
+            {
+              "evidenceId": "E-IDENTITY",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PERSIST",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-MERGE",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PLAN",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "Shared principal/action/resource and commit revision contract",
+              "validationPlan": "Actual-entrypoint scope/alias/denial matrix and independent human review"
+            },
+            {
+              "dimension": "performance",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Common policy lookup and serialized sensitive commit",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "memory",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Private store indexes sessions and bounded KDF work",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Authority failure denies; coordinator recovery critical",
+              "validationPlan": "Crash/revoke/lock/store-outage recovery tests"
+            },
+            {
+              "dimension": "operability",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "One decision schema; private-store lifecycle added",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "migration",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Scoped handlers and explicit per-family cutover; preserve human gates",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            }
+          ],
+          "residualRisks": [
+            "Operator OS/process compromise",
+            "Domain/state validation still required",
+            "No automatic agent/provider trust or human policy ratification"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server.ts",
+              "server/security/apiRoutePolicy.ts",
+              "server/projectPersistence.ts",
+              "server/proposals",
+              "server/docs"
+            ],
+            "workPackages": [
+              "S2-A identity/session/primitives",
+              "S2-B membership",
+              "S2-C packages/sensitive data",
+              "S2-D remaining route cutovers",
+              "S2-E privileged capabilities",
+              "S2-F machine delegation"
+            ],
+            "acceptanceCriteria": [
+              "Actual registered entrypoint negatives and positive workflows",
+              "Existing human gates and immutable evidence retained",
+              "No unauthorized persistence or disclosure"
+            ],
+            "migrationNotes": [
+              "Human-approved identity and project mapping",
+              "No current activation"
+            ],
+            "rollback": "Disable affected operation or stop service; never restore anonymous access."
+          }
+        },
+        {
+          "optionId": "isolated-broker",
+          "title": "Isolated authority and state broker",
+          "kind": "isolation",
+          "summary": "Adds OS ownership isolation only if frontend loses direct data authority",
+          "diagramPaths": {
+            "before": "diagrams/project-authorization-before.mmd",
+            "after": "diagrams/project-authorization-isolated-broker-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "E-ROUTES",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PROBE",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Project/package/provenance paths can be addressed after implementation; the demonstrated AZ-08 state allowlist still requires a direct domain fix."
+            },
+            {
+              "evidenceId": "E-IDENTITY",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PERSIST",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-MERGE",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            },
+            {
+              "evidenceId": "E-PLAN",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "Conditional design coverage only; current containment, domain constraints and governance approvals remain necessary."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "Adds OS ownership isolation only if frontend loses direct data authority",
+              "validationPlan": "Actual-entrypoint scope/alias/denial matrix and independent human review"
+            },
+            {
+              "dimension": "performance",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "RPC serialization channel setup queueing and copies",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "memory",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Second process plus IPC and queue buffers",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "reliability",
+              "direction": "unknown",
+              "confidence": "low",
+              "basis": "source-derived",
+              "assessment": "Split crash outcomes require idempotency and supervision",
+              "validationPlan": "Crash/revoke/lock/store-outage recovery tests"
+            },
+            {
+              "dimension": "operability",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Service identities IPC ACLs version skew and diagnostics",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            },
+            {
+              "dimension": "migration",
+              "direction": "regresses",
+              "confidence": "low",
+              "basis": "hypothetical",
+              "assessment": "Sensitive data/file ownership migration; offline safe rollback",
+              "validationPlan": "Same-machine baseline/candidate latency RSS concurrency and migration/restore drills; budgets require approval"
+            }
+          ],
+          "residualRisks": [
+            "Operator OS/process compromise",
+            "Domain/state validation still required",
+            "No automatic agent/provider trust or human policy ratification"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "server.ts",
+              "server/security/apiRoutePolicy.ts",
+              "server/projectPersistence.ts",
+              "server/proposals",
+              "server/docs"
+            ],
+            "workPackages": [
+              "Separate plan required if selected"
+            ],
+            "acceptanceCriteria": [
+              "Actual registered entrypoint negatives and positive workflows",
+              "Existing human gates and immutable evidence retained",
+              "No unauthorized persistence or disclosure"
+            ],
+            "migrationNotes": [
+              "Human-approved identity and project mapping",
+              "No current activation"
+            ],
+            "rollback": "Disable affected operation or stop service; never restore anonymous access."
+          }
+        }
+      ],
+      "recommendedOptionId": "central-policy",
+      "recommendation": "Recommend central policy under current local single-process constraints; broker if OS-level isolation becomes required."
+    }
+  ],
+  "openQuestions": [
+    "Human selection and scope authorization",
+    "PR34 registration/dependency gates",
+    "Private security store/KDF approval",
+    "Loopback HTTPS and certificate ownership",
+    "Measured workstation budgets",
+    "Exact reviewer and grant migration mapping"
+  ]
+}

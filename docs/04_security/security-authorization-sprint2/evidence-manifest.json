@@ -1,0 +1,99 @@
+{
+  "format": "UTF-8 inventory of exact Git source blobs and captured evidence SHA-256 values",
+  "baseline": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8",
+  "entries": [
+    {
+      "path": "docs/00_control/MASTER_WBS.md",
+      "sha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "docs/00_control/MASTER_WBS.yaml",
+      "sha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "evidence/characterization-results.json",
+      "sha256": "ea9a4e7c6aa72ae11d8bc46ab72789c8871f615806f4450b5fb22c1f74b5a241",
+      "kind": "experiment"
+    },
+    {
+      "path": "evidence/characterization.log",
+      "sha256": "c79c5bad94579ac2d4ec82e56fbe77d3d59c310217c431e68f28885196b6da16",
+      "kind": "experiment"
+    },
+    {
+      "path": "evidence/probe-authorization-gaps.ts.txt",
+      "sha256": "d4bc35ac64b8dbe1bd78c70ce891c790fb7f3e8310f0f61b292fcb15e539aa9a",
+      "kind": "experiment"
+    },
+    {
+      "path": "github-actions/39190812393/job-117862968736.log",
+      "sha256": "8da56aadcf7ca83e00b2bdeb9be4ef86ab1f5aee7c63585015808d49fde05d18",
+      "kind": "decoded_job_log",
+      "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968736"
+    },
+    {
+      "path": "github-actions/39190812393/job-117862968788.log",
+      "sha256": "50144fdd1b2c87665ed80fd06d36957ed100b3e99396fbdb4971cf4fa5e2b149",
+      "kind": "decoded_job_log",
+      "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968788"
+    },
+    {
+      "path": "github-actions/39190812393/job-117862968907.log",
+      "sha256": "a07c35362dcfdf13fd5845ebe8654165be5cf0a8df9bbca5c2f1cec467572e74",
+      "kind": "decoded_job_log",
+      "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39190812393/job/117862968907"
+    },
+    {
+      "path": "server.ts",
+      "sha256": "8afda07a5fc8fdce00cb2c417219f48be41e9353b95452a786a14d55e00bcd5c",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/docs/controlledDocsRouter.ts",
+      "sha256": "7fa11ece5291a09708eaa6f7d67f85c396e76c9ab5656b58808600911a56519a",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/projectPersistence.ts",
+      "sha256": "2b4527819c151182df2dded78b86281d491abcfa00c20b3b2b6cc06188f49759",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/proposals/identity.ts",
+      "sha256": "5dd62f2f16cac0fca7532e1a7274e5f27a18558866e1c7ffcf9ba935b5394297",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/proposals/review.ts",
+      "sha256": "6cceff1dd4b98b46f43d969b31f22f9f9119034bf8ef1299f61beba6b2ab5a1f",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/proposals/signoff.ts",
+      "sha256": "93d98cfde1edf42e11a212f2e9fa93b8c1f9f317c027a836440dae0a399f6622",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/release/releaseGateEvaluator.ts",
+      "sha256": "24f87b06c064eeaaca986c72a2654e5a6e707e9010ee22f0a6c84b3dde71e626",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    },
+    {
+      "path": "server/security/apiRoutePolicy.ts",
+      "sha256": "d0beb09d2068336bd1df10722e45da577ad11fac7a8a16c9297ae683e209d419",
+      "kind": "source",
+      "revision": "f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8"
+    }
+  ]
+}

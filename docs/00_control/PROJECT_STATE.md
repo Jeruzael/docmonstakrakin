@@ -1,5 +1,17 @@
 # docmonstakrakin current project state
 
+## 2026-10-19 — PR #46 merged checkpoint and Sprint 2 proposal
+
+**Current verified repository baseline:** `master` at `f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8`. `jianzhihuoxin` submitted an actual APPROVED review of final feature HEAD `48c68ec46fa335504bb06c6a8d04a1e72dc7c78a` at `2026-10-19T02:36:17Z`, before merge at `2026-10-19T02:37:01Z`. Exact-merge post-merge CI `39190812393` passed all three jobs, including 65/65 suites and 1,531 observed check outputs. The [additive closure record](../07_verification/PR46_POST_MERGE_CLOSURE.md) contains evidence URLs and preservation checks.
+
+PR #46 is **MERGED_AND_POST_MERGE_CI_VERIFIED**. Its historical pre-publication checkpoint below remains unchanged; its pending status described that earlier point in time. The new documentation/planning candidate is on `codex/pr46-closure-security-authorization-sprint2` and requires its own human review.
+
+Independent source inventory confirms 69 registrations: 45 unscoped legacy, 14 blocked, 7 specialized and 3 session. The [Sprint 2 gap register and architecture portfolio](../04_security/security-authorization-sprint2/hardening.md) propose authenticated principal/action/resource decisions, project membership, package protection and separate human/machine identities. Fifteen disposable actual-server characterization cases reproduced expected gaps/controls; they do not close vulnerabilities. No authorization implementation or credential migration has occurred.
+
+Canonical task states, last verified task, release/milestone governance, Stage B2b2 trust/quorum, historical evidence, production state and PR #34 remain unchanged. DMK-209–214 are not registered or promoted. Next action is human review of this closure/design candidate; a separate exact-scope authorization and resolution of ownership/dependency, transport and bootstrap decisions are required before the proposed first implementation slice, S2-A.
+
+Disposition: `MERGED_AND_POST_MERGE_CI_VERIFIED / SECURITY_PERIMETER_CONTAINMENT_PARTIAL / FULL_AUTHENTICATION_NOT_IMPLEMENTED / AGENT_CENTER_LIVE_EXECUTION_BLOCKED / GATE_7_NOT_EXECUTED / RELEASE_NOT_PROMOTED`.
+
 ## 2026-10-19 — Security Perimeter Sprint 1 containment candidate
 
 User-authorized preparatory containment is implemented on `codex/security-perimeter-sprint1`, based on verified master `132b822979b7084302c7ad5efeb0da1c11607f09`. This is an out-of-band candidate associated with proposed DMK-209; it neither registers nor closes DMK-209–214 or changes canonical task states. PR #34 remains untouched.

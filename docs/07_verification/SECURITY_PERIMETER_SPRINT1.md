@@ -1,5 +1,15 @@
 # Security Perimeter Sprint 1 — Route Inventory and Containment
 
+## Current post-merge checkpoint — 2026-10-19
+
+PR #46 is **MERGED_AND_POST_MERGE_CI_VERIFIED** at `f35fa7bcd9fb00942c1bba76741a22a5cc7c80b8`. `jianzhihuoxin` approved its final feature HEAD before merge; post-merge CI `39190812393` passed all three jobs, 65/65 suites and 1,531 observed check outputs, including 51 server and 11 Vite checks. [The additive closure record](PR46_POST_MERGE_CLOSURE.md) preserves exact chronology, commits, URLs and CI-log evidence.
+
+Containment remains partial, full authentication is not implemented, Agent Center live execution remains blocked, Gate 7 is not executed and release is not promoted. The [Sprint 2 portfolio](../04_security/security-authorization-sprint2/hardening.md) is a proposal requiring separate review and implementation authorization.
+
+## Historical pre-publication candidate — preserved
+
+The status and publication statements below describe the original candidate before its review and merge. They are retained as historical evidence; the current checkpoint above supersedes their pending disposition for PR #46.
+
 **Status:** PARTIAL_CONTAINMENT_CANDIDATE / LOCAL_VALIDATION_PASS / HUMAN_REVIEW_PENDING
 
 **Verified starting master:** `132b822979b7084302c7ad5efeb0da1c11607f09`
