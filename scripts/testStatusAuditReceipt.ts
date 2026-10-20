@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import assert from 'node:assert/strict';
 import {
   verifyDmk208StatusAudit,
@@ -24,6 +25,16 @@ const rawPostMergeReceipt: Dmk208PostMergeVerificationReceipt = JSON.parse(fs.re
 const rawDmk196PostMergeReceipt = JSON.parse(fs.readFileSync(liveDmk196PostMergeReceiptPath, 'utf8'));
 
 console.log('--- Running Status Audit & Closure Receipt Test Suite (Scenarios A - BD) ---');
+
+for (const mode of ['PRE_APPLY', 'POST_APPLY_APPROVED', 'POST_CLOSURE_APPROVED'] as const) {
+  const result = verifyDmk208StatusAudit(workspaceRoot, undefined, undefined, { forceMode: mode });
+  assert.equal(result.valid, true);
+  assert.equal(result.historicalValid, true);
+  assert.equal(result.currentForwardChainValid, true);
+  assert.equal(result.summary.total, 27);
+  assert.equal(result.mayApply, false);
+  console.log('PASS exact pinned earlier DMK-208 view: ' + mode);
+}
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
@@ -933,4 +944,25 @@ const historicalPostClosureOverrides = { 'DMK-196': 'IN_PROGRESS', 'DMK-197': 'I
   console.log('✓ [Scenario BD] DMK-197 / DMK-198 drift still fail closed when DMK-196 is VERIFIED.');
 }
 
-console.log('--- All 56 Status Audit & Post-Merge Closure Scenarios (A - BD) Passed! ---');
+{
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'wbs-audit-boundary-'));
+  try {
+    for (const name of ['docs', 'src', 'server', 'scripts', 'server.ts']) fs.cpSync(path.join(workspaceRoot, name), path.join(temp, name), { recursive: true });
+    const baseline = verifyDmk208StatusAudit(temp);
+    assert.equal((baseline as any).historicalValid, true);
+    assert.equal((baseline as any).mayApply, false);
+    assert.equal(baseline.summary.total, 27);
+    fs.appendFileSync(path.join(temp, 'docs/00_control/MASTER_WBS.yaml'), '\n# ungoverned successor\n');
+    assert.throws(() => verifyDmk208StatusAudit(temp, undefined, undefined, {
+      forceMode: 'POST_APPLY_APPROVED', simulateStatusOverrides: historicalPostApplyOverrides,
+    }), (error: any) => {
+      assert.equal(error.verification.historicalValid, true);
+      assert.equal(error.verification.currentForwardChainValid, false);
+      assert.equal(error.verification.mayApply, false);
+      assert.equal(error.verification.summary.total, 27);
+      return true;
+    });
+    console.log('PASS DMK-208 historical 27-item scope cannot bypass current-state evidence');
+  } finally { fs.rmSync(temp, { recursive: true, force: true }); }
+}
+console.log('--- All Status Audit & Post-Merge Closure Scenarios Passed! ---');

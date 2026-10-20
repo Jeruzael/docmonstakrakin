@@ -4,6 +4,7 @@ import {
   CANONICAL_SIGNED_RECEIPT_DOMAIN_V2,
   canonicalSignedReceiptPayloadV2,
   makeHistoricalWbsReceiptLedger,
+  parseWbsReceiptLedgerV1,
   previewWbsRegistrationTransaction,
   serializeWbsReceiptLedger,
   signedReceiptDigestV2,
@@ -514,6 +515,16 @@ check('Ledger chain rejects repeated WBS state hashes including Genesis -> State
  assert.equal(validStep2.valid,true);
  assert.equal(validStep2.mode,'PREVIEW_VALID');
  assert.equal(validStep2.mayApply,false);
+});
+check('Shared ledger parser preserves strict serialization and replay rejection',()=>{
+ const applied=preview();
+ assert.equal(applied.valid,true);
+ const parsed=parseWbsReceiptLedgerV1(applied.proposedLedgerBytes!);
+ assert.equal(parsed.entries.length,1);
+ assert.throws(()=>parseWbsReceiptLedgerV1(Buffer.concat([applied.proposedLedgerBytes!,Buffer.from(' ')])));
+ assert.throws(()=>parseWbsReceiptLedgerV1(serializeWbsReceiptLedger({...parsed,entries:[...parsed.entries,...parsed.entries]})));
+ const replay=preview({beforeBytes:after,ledgerBytes:applied.proposedLedgerBytes!,expectedCurrentWbsSha256:digest(after),expectedCurrentLedgerSha256:applied.proposedLedgerSha256!,trustedContext:{...context,consumedReceiptIds:[receipt.intent.receiptId]}});
+ assert.equal(replay.valid,false); assert.equal(replay.mayApply,false);
 });
 console.log('TOTAL: '+passes+'/'+passes+' checks passed');
 

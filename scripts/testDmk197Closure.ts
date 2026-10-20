@@ -477,6 +477,8 @@ try {
     const cDir = path.join(tempDir, 'docs', '00_control');
     fs.mkdirSync(vDir, { recursive: true });
     fs.mkdirSync(cDir, { recursive: true });
+    // The complete boundary also requires the independently pinned historical view.
+    fs.cpSync(path.join(root, 'docs/07_verification/historical-wbs'), path.join(vDir, 'historical-wbs'), { recursive: true });
     fs.writeFileSync(path.join(cDir, 'MASTER_WBS.yaml'), postApplyWbsYaml);
     fs.writeFileSync(path.join(vDir, 'dmk-197-closure-transition-candidate.json'), fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-candidate.json')));
     fs.writeFileSync(path.join(vDir, 'dmk-197-closure-transition-receipt.json'), fs.readFileSync(path.join(root, 'docs', '07_verification', 'dmk-197-closure-transition-receipt.json')));
@@ -534,8 +536,31 @@ try {
   fail('26: Historical verification results remain valid with correctly chained evidence', err);
 }
 
+// Current-state evidence cannot be replaced by a historical test override.
+{
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'wbs-boundary-'));
+  try {
+    fs.cpSync(path.join(root, 'docs'), path.join(temp, 'docs'), { recursive: true });
+    for (const name of ['src', 'server', 'scripts', 'server.ts']) fs.cpSync(path.join(root, name), path.join(temp, name), { recursive: true });
+    const wbsPath = path.join(temp, 'docs/00_control/MASTER_WBS.yaml');
+    const original = fs.readFileSync(wbsPath, 'utf8');
+    const baseline = verifyDmk197Closure({ workspaceRoot: temp });
+    assert.equal(baseline.valid, true, baseline.errors.join('; '));
+    assert.equal((baseline as any).historicalValid, true);
+    assert.equal((baseline as any).mayApply, false);
+    fs.appendFileSync(wbsPath, '\n# ungoverned successor\n');
+    const result = verifyDmk197Closure({ workspaceRoot: temp, customWbsYamlContent: original });
+    assert.equal(result.valid, false);
+    assert.equal((result as any).historicalValid, true);
+    assert.equal((result as any).currentForwardChainValid, false);
+    fs.appendFileSync(path.join(temp, 'docs/07_verification/historical-wbs/DMK_197_POST_CLOSURE_MASTER_WBS.yaml'), ' ');
+    assert.equal((verifyDmk197Closure({ workspaceRoot: temp, customWbsYamlContent: original }) as any).historicalValid, false);
+    pass('Historical/current separation rejects ungoverned bytes and snapshot tampering');
+  } catch (err) { fail('Historical/current separation', err); }
+  finally { fs.rmSync(temp, { recursive: true, force: true }); }
+}
 console.log('\n================================================================');
-console.log(`TOTAL CLOSURE TESTS: 26 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL CLOSURE TESTS: ${passedCount + failedCount} | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================');
 
 if (failedCount > 0) {

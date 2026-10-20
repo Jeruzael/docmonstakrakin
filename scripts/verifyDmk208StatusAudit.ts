@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
+import { verifyWorkspaceWbsContinuity, resolveEarlierDmk208View, type TrustedForwardEvidenceProvider } from './wbsEvidenceContinuity.ts';
 import {
-  readCanonicalWbs,
-  getScopedCanonicalWbsItems,
-  computeMasterWbsSha256,
+  parseCanonicalWbsBytes,
+  isCanonicalRuntimeScoped,
 } from '../server/workTracking/canonicalWbs.ts';
 import {
   CANONICAL_LIFECYCLE_STATUSES,
@@ -182,7 +182,32 @@ export function verifyDmk208StatusAudit(
   workspaceRoot: string = process.cwd(),
   candidatePath?: string,
   receiptPath?: string,
-  options?: VerifyOptions
+  options?: VerifyOptions,
+  acquireForward?: TrustedForwardEvidenceProvider,
+) {
+  const { historicalBytes, continuity } = verifyWorkspaceWbsContinuity(workspaceRoot, acquireForward);
+  let historical;
+  try { historical = verifyHistoricalStatusAudit(workspaceRoot, candidatePath, receiptPath, options, historicalBytes); }
+  catch (error) {
+    // Preserve historical assertion messages/throw contract and expose both gates.
+    if (error instanceof Error) Object.assign(error, { verification: {
+      valid: false, historicalValid: false, currentForwardChainValid: continuity.currentForwardChainValid, mayApply: false, continuity,
+    } });
+    throw error;
+  }
+  const result = { ...historical, valid: historical.valid && continuity.valid,
+    historicalValid: historical.valid && continuity.historicalValid,
+    currentForwardChainValid: continuity.currentForwardChainValid, mayApply: false as const, continuity };
+  if (!result.valid) throw Object.assign(new Error('Current/historical WBS boundary: ' + continuity.errors.join('; ')), { verification: result });
+  return result;
+}
+
+function verifyHistoricalStatusAudit(
+  workspaceRoot: string = process.cwd(),
+  candidatePath?: string,
+  receiptPath?: string,
+  options?: VerifyOptions,
+  historicalBytes?: Buffer,
 ): {
   valid: boolean;
   mode: 'PRE_APPLY' | 'POST_APPLY_APPROVED' | 'POST_CLOSURE_APPROVED' | 'POST_MERGE_VERIFIED';
@@ -211,12 +236,7 @@ export function verifyDmk208StatusAudit(
   assert.equal(data.scopeEpic, EXPECTED_SCOPE_EPIC, `Invalid scopeEpic: expected ${EXPECTED_SCOPE_EPIC}`);
   assert.equal(data.scopeCount, EXPECTED_SCOPE_COUNT, `Invalid scopeCount: expected ${EXPECTED_SCOPE_COUNT}`);
 
-  const { scopedItems } = getScopedCanonicalWbsItems(workspaceRoot, EXPECTED_SCOPE_EPIC);
-  assert.equal(
-    scopedItems.length,
-    EXPECTED_SCOPE_COUNT,
-    `Scoped item count in MASTER_WBS.yaml (${scopedItems.length}) != expected (${EXPECTED_SCOPE_COUNT})`
-  );
+  assert.ok(historicalBytes, 'Independently pinned historical WBS snapshot missing');
 
   assert.ok(Array.isArray(data.items), 'items must be an array');
   assert.equal(data.items.length, EXPECTED_SCOPE_COUNT, `Candidate items count (${data.items.length}) != ${EXPECTED_SCOPE_COUNT}`);
@@ -280,7 +300,10 @@ export function verifyDmk208StatusAudit(
     mode = 'PRE_APPLY';
   }
 
-  const actualWbsSha = computeMasterWbsSha256(workspaceRoot);
+  const historicalWbs = parseCanonicalWbsBytes(mode === 'POST_MERGE_VERIFIED' ? historicalBytes : resolveEarlierDmk208View(mode));
+  const scopedItems = historicalWbs.items.filter(item => isCanonicalRuntimeScoped(item, EXPECTED_SCOPE_EPIC));
+  assert.equal(scopedItems.length, EXPECTED_SCOPE_COUNT, `Scoped item count in MASTER_WBS.yaml (${scopedItems.length}) != expected (${EXPECTED_SCOPE_COUNT})`);
+  const actualWbsSha = historicalWbs.rawSha256;
 
   if (mode === 'POST_MERGE_VERIFIED') {
     assert.ok(postMergeReceipt, 'Post-merge verification receipt must exist in POST_MERGE_VERIFIED mode');

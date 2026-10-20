@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import YAML from 'yaml';
 import {
   verifyDmk196PostMergeCandidate,
@@ -572,8 +573,31 @@ try {
   fail('AL: Candidate digest tampering fails in POST_APPLY_VERIFIED mode', err);
 }
 
+// Current-state evidence cannot be replaced by a historical test override.
+{
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'wbs-boundary-'));
+  try {
+    fs.cpSync(path.join(root, 'docs'), path.join(temp, 'docs'), { recursive: true });
+    for (const name of ['src', 'server', 'scripts', 'server.ts']) fs.cpSync(path.join(root, name), path.join(temp, name), { recursive: true });
+    const wbsPath = path.join(temp, 'docs/00_control/MASTER_WBS.yaml');
+    const original = fs.readFileSync(wbsPath, 'utf8');
+    const baseline = verifyDmk196PostMergeCandidate({ workspaceRoot: temp });
+    assert.equal(baseline.valid, true, baseline.errors.join('; '));
+    assert.equal((baseline as any).historicalValid, true);
+    assert.equal((baseline as any).mayApply, false);
+    fs.appendFileSync(wbsPath, '\n# ungoverned successor\n');
+    const result = verifyDmk196PostMergeCandidate({ workspaceRoot: temp, customWbsYamlContent: original, skipDigestCheck: true, mode: 'POST_APPLY_VERIFIED' });
+    assert.equal(result.valid, false);
+    assert.equal((result as any).historicalValid, true);
+    assert.equal((result as any).currentForwardChainValid, false);
+    fs.appendFileSync(path.join(temp, 'docs/07_verification/historical-wbs/DMK_197_POST_CLOSURE_MASTER_WBS.yaml'), ' ');
+    assert.equal((verifyDmk196PostMergeCandidate({ workspaceRoot: temp, customWbsYamlContent: original }) as any).historicalValid, false);
+    pass('Historical/current separation rejects ungoverned bytes and snapshot tampering');
+  } catch (err) { fail('Historical/current separation', err); }
+  finally { fs.rmSync(temp, { recursive: true, force: true }); }
+}
 console.log('\n================================================================');
-console.log(`TOTAL SCENARIOS: 38 | PASSED: ${passedCount} | FAILED: ${failedCount}`);
+console.log(`TOTAL SCENARIOS: ${passedCount + failedCount} | PASSED: ${passedCount} | FAILED: ${failedCount}`);
 console.log('================================================================\n');
 
 if (failedCount > 0) {
