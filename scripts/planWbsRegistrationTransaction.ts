@@ -391,7 +391,7 @@ export function makeHistoricalWbsReceiptLedger(): WbsReceiptLedgerV1 {
     entries: [],
   };
 }
-function parseLedger(bytes: Buffer): WbsReceiptLedgerV1 {
+export function parseWbsReceiptLedgerV1(bytes: Buffer): WbsReceiptLedgerV1 {
   if (bytes.length > 2 * 1024 * 1024) throw new Error('Receipt ledger exceeds supported preflight limit');
   const data: unknown = JSON.parse(bytes.toString('utf8'));
   if (!isPlainObject(data)) {
@@ -494,7 +494,7 @@ export function previewWbsRegistrationTransaction(
       fail('Receipt ledger differs from independently verified protected-branch snapshot');
     }
     let ledger: WbsReceiptLedgerV1;
-    try { ledger = parseLedger(input.ledgerBytes); }
+    try { ledger = parseWbsReceiptLedgerV1(input.ledgerBytes); }
     catch (err) {
       fail('Receipt ledger invalid: ' + (err instanceof Error ? err.message : String(err)));
       return denied();

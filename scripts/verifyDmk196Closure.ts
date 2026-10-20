@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { verifyWorkspaceWbsContinuity, combineWbsVerification, type TrustedForwardEvidenceProvider } from './wbsEvidenceContinuity.ts';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
@@ -103,7 +104,13 @@ export function validateDmk196ClosureReceipt(receipt: any): { valid: boolean; er
   };
 }
 
-export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}): { valid: boolean; errors: string[] } {
+export function verifyDmk196Closure(options: VerifyDmk196ClosureOptions = {}, acquireForward?: TrustedForwardEvidenceProvider) {
+  const { historicalBytes, continuity } = verifyWorkspaceWbsContinuity(options.workspaceRoot || process.cwd(), acquireForward);
+  const historical = verifyHistoricalClosure({ ...options, customWbsYamlContent: options.customWbsYamlContent ?? historicalBytes?.toString('utf8') });
+  return combineWbsVerification(historical, continuity);
+}
+
+function verifyHistoricalClosure(options: VerifyDmk196ClosureOptions): { valid: boolean; errors: string[] } {
   const root = options.workspaceRoot || process.cwd();
   const receiptPath = path.join(root, 'docs', '07_verification', 'dmk-196-closure-transition-receipt.json');
   const errors: string[] = [];

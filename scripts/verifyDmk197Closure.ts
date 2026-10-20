@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { verifyWorkspaceWbsContinuity, combineWbsVerification, type TrustedForwardEvidenceProvider } from './wbsEvidenceContinuity.ts';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
@@ -358,7 +359,13 @@ export function validateDmk197ClosureComplete(
   };
 }
 
-export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}): { valid: boolean; errors: string[] } {
+export function verifyDmk197Closure(options: VerifyDmk197ClosureOptions = {}, acquireForward?: TrustedForwardEvidenceProvider) {
+  const { historicalBytes, continuity } = verifyWorkspaceWbsContinuity(options.workspaceRoot || process.cwd(), acquireForward);
+  const historical = verifyHistoricalClosure({ ...options, customWbsYamlContent: options.customWbsYamlContent ?? historicalBytes?.toString('utf8') });
+  return combineWbsVerification(historical, continuity);
+}
+
+function verifyHistoricalClosure(options: VerifyDmk197ClosureOptions): { valid: boolean; errors: string[] } {
   const root = options.workspaceRoot || process.cwd();
   const receiptPath = path.join(root, RECEIPT_FILE_PATH);
   const errors: string[] = [];

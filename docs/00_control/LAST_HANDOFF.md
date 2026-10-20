@@ -1,5 +1,15 @@
 # Current session handoff
 
+## 2026-10-20 — WBS historical/forward verifier candidate, human gate retained
+
+- Verified starting master: `fd2f6e4e1320ad949adee4cb33a51ab612a1cd4e`, the human PR #50 merge; [workflow 39372189347](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39372189347) passed all three jobs. Original portfolio, patched dependencies and historical records are preserved. Earlier pending #50 statements below are historical handoffs, not current instructions.
+- The subsequent explicit operator authorization covers only the bounded 15-path verifier/test implementation, documentation and draft publication on `codex/wbs-historical-forward-verifier`. [Evidence and architecture](../07_verification/WBS_EVIDENCE_CONTINUITY_CANDIDATE.md) preserve historical hashes/counts and require a separate applied forward chain for current changes. No deployed trust adapter, apply/consume engine or arbitrary CLI trust override. `mayApply: false` throughout.
+- Test and CI preparation occur only in disposable synthetic environments. Exact signed publication HEAD, GitHub CI and `jianzhihuoxin` request/approval events must be inspected separately in the draft PR; a review request or agent review is not human approval. Stop before merge.
+- PR #34/canonical WBS, trust ratification/enrollment and exact six-item registration remain separately unauthorized. PR #52 is an unchanged separate archival draft. Preserve DMK-210 → 211 → 212 → 209 as a proposal; no task is completed. S2-A implementation/activation, credentials, certificates and quorum changes remain unauthorized.
+- Keep all 14 privileged registrations denied, live agents disabled, Gate 7 unexecuted and release unpromoted. The ordinary status endpoint remains unauthenticated; general authorization is incomplete. Next: independent security/governance review of the exact verifier candidate, then a separate explicit human integration decision.
+
+Disposition: `WBS_VERIFIER_CANDIDATE_ONLY / WBS_UNAPPLIED / HUMAN_REVIEW_REQUIRED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-20 — PR #49 actual integration verified; PR #50 reconciled for renewed human review
 
 - Source control: GIT; actual verified master `6f9e822ad9fd85f42a81b505259ca0013aa815b7`; reconciliation branch `codex/s2a-readiness-review`. Planned/prepared and checked by the executing Codex agent; independent human review of the changed HEAD remains required. No agent self-approval is represented as independent human verification.

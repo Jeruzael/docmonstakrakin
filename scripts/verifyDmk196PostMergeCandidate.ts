@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { verifyWorkspaceWbsContinuity, combineWbsVerification, type TrustedForwardEvidenceProvider } from './wbsEvidenceContinuity.ts';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
@@ -398,6 +399,15 @@ export function validateDmk196PostMergeReceipt(receipt: any): { valid: boolean; 
 }
 
 export function verifyDmk196PostMergeCandidate(
+  options: VerifyDmk196PostMergeCandidateOptions = {},
+  acquireForward?: TrustedForwardEvidenceProvider,
+) {
+  const { historicalBytes, continuity } = verifyWorkspaceWbsContinuity(options.workspaceRoot || process.cwd(), acquireForward);
+  const historical = verifyHistoricalPostMergeCandidate({ ...options, customWbsYamlContent: options.customWbsYamlContent ?? historicalBytes?.toString('utf8') });
+  return combineWbsVerification(historical, continuity);
+}
+
+function verifyHistoricalPostMergeCandidate(
   options: VerifyDmk196PostMergeCandidateOptions = {}
 ): { valid: boolean; errors: string[]; mode: 'CANDIDATE_PENDING' | 'POST_APPLY_VERIFIED' } {
   const root = options.workspaceRoot || process.cwd();
