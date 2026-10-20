@@ -1,0 +1,30 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Provisioning failed: ConvertTo-SecureString : The 'ConvertTo-SecureString' command was found in the module 'Microsoft.PowerShell.Security', 
+but the module could not be loaded. For more information, run 'Import-Module Microsoft.PowerShell.Security'.
+At C:\Users\HomePC\AppData\Local\Temp\dmk-account-test-tFABLW\capture.ps1:6 char:5
++     ConvertTo-SecureString $env:DMK_FIXTURE_PASSWORD -AsPlainText -Fo ...
++     ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (ConvertTo-SecureString:String) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : CouldNotAutoloadMatchingModule
+ 
+
+
+1 !== 0
+
+    at provision (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r4-pr49-merge-validation\scripts\testAccountProvisioning.ts:33:10)
+    at <anonymous> (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r4-pr49-merge-validation\scripts\testAccountProvisioning.ts:65:16)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.21.1

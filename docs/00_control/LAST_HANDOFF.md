@@ -1,5 +1,19 @@
 # Current session handoff
 
+## 2026-10-20 — PR #49 actual integration verified; PR #50 reconciled for renewed human review
+
+- Source control: GIT; actual verified master `6f9e822ad9fd85f42a81b505259ca0013aa815b7`; reconciliation branch `codex/s2a-readiness-review`. Planned/prepared and checked by the executing Codex agent; independent human review of the changed HEAD remains required. No agent self-approval is represented as independent human verification.
+- Human chronology: `jianzhihuoxin` approved exact PR #49 HEAD `fa7929627fd412dd4e0fe1503927f5217ddb1c0e` at `2026-10-19T19:02:06Z`; `Jeruzael` manually merged at `2026-10-20T02:48:53Z`. Parents are `4e10a92ec1cb89ea68cdf9385741df636bf19680` and `fa7929627fd412dd4e0fe1503927f5217ddb1c0e`; tree `8c0d63b861184968ce59ef91a9d302d991e2e635` matches the earlier tested synthetic integration tree. The Git commit timestamp is `02:48:52Z`, one second before the API merge event; neither timestamp is substituted for the other.
+- Actual master CI [39360943211](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39360943211): all three jobs PASS; complete 67/67 suites, 1,672 reported outputs, zero failures/skips; source-map 36, lifecycle 105, perimeter 51, Vite 11, human quorum 86; controlled docs 40+29+11 on synthetic fixtures. [Integration evidence and preservation checks](../07_verification/PR49_POST_MERGE_AND_PR50_RECONCILIATION_20261020.md) are additive.
+- Historical distinction: PR #48's original 66-suite/1,636-output closure and original high audit signal remain unchanged. PR #51's later independent dependency correction supplies patched npm/Bun source-map-js 1.2.2 in current master. No earlier test/audit/approval is backdated or replaced.
+- PR #50: normal merge of actual master into approved `83b52b9586cbdb73a6bd6097398ea38b7bad9c42`; no rebase or force push. Both conflicting dated summary additions are retained verbatim below. All 29 original portfolio files from signed `1f8a3674f76445c4a1a6bb1c460e140442ece15b`, the 20 historical input digests and immutable closure receipts remain preserved. Fresh reconciliation tests and exact signed publication/CI evidence are recorded separately; the old `83b52b9` approval does not approve the changed HEAD.
+- Next human gate: renewed independent `jianzhihuoxin` review of exact reconciled #50 HEAD, all three successful current GitHub jobs, then the separate human merge decision. Review request is not actual approval. PR #52 stays separate, draft, unchanged and pending independent review; the agent does not merge it or #50.
+- WBS and PR #34 remain unchanged/unapplied; no dependency exception, S2-A implementation/activation or credential change. Existing human quorum, 14 privileged denials, disabled live agents, Gate 7 and release restrictions remain. DMK-208 remains last canonical VERIFIED; DMK-197 VERIFICATION_PENDING, DMK-198 IN_PROGRESS with its prerequisite, DMK-206 BACKLOG.
+- After documentation decisions, resolve the proposed DMK-210/211 prerequisites and exact store/KDF/session/transport/bootstrap/recovery, acceptance/rollback and authority decisions before any S2-A implementation. General authorization remains incomplete; ordinary status stays unauthenticated.
+- Tests run only in disposable synthetic environments. Historical Windows/Linux primitive measurements are retained feasibility evidence, not fresh application acceptance. Earlier handoffs below describe their capture times and are not current instructions.
+
+Disposition: `PR49_INTEGRATED_AND_POST_MERGE_VERIFIED / PR50_RECONCILIATION_RENEWED_REVIEW_REQUIRED / WBS_UNAPPLIED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-19 — PR #48 human merge verified; documentation review gate
 
 - Source control: GIT; verified master/merge `cfca39902d6fd4bc0d4c5bdaf351b0522c780466`; documentation branch `codex/pr48-postmerge-verification`. Exact signed publication HEAD/PR/CI belong to its separate timeline; no new PR is automatically merged.
@@ -12,6 +26,18 @@
 - Fourteen privileged registrations remain blocked, live agents disabled, Gate 7 unexecuted and release unpromoted. No app or CI preparation was run against operator state. Prior handoff content below is preserved; earlier pending PR #48 statuses describe their original checkpoints.
 
 Disposition: `PR48_POST_MERGE_VERIFIED / AZ08_TACTICAL_VALIDATION_CLOSED / GENERAL_AUTHORIZATION_INCOMPLETE / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
+## 2026-10-19 — Independent review handoffs and preserved S2-A portfolio
+
+- Source control: GIT; documentation publication branch `codex/s2a-readiness-review`, verified master base `cfca39902d6fd4bc0d4c5bdaf351b0522c780466`. PR #48 is already human-merged and exact-merge CI verified; no merge performed by this session.
+- PR #49 retains signed HEAD `fa7929627fd412dd4e0fe1503927f5217ddb1c0e`, all three CI jobs successful and nine documentation/evidence paths. Its captured evidence digests and prior summary bytes match; no live secret exposure identified in the scoped publication check. Marked ready; Jeruzael requested jianzhihuoxin at `06:11:48Z` (event `33615525178`). A request does not establish actual human approval.
+- [Readiness publication reconciliation](../06_planning/s2a-readiness-publication-20261019/README.md) is the current entry point. Original branch `codex/az08-readiness-s2a-governance` stays at `1f8a3674f76445c4a1a6bb1c460e140442ece15b`; 29 source portfolio files and all 20 historical inputs are available without altered timestamps/results. Original pending-merge PR #48 statements describe the old capture only.
+- The exact proposed dependency strategy is DMK-209 → dependencies 210/211/212; DMK-210 → none; DMK-211 → 210. Preserve historical verifier receipts/counts/digests and require separately authorized forward evidence. PR #34, canonical WBS, statuses and existing human quorum remain unchanged. The bounded exception remains unsigned/ungranted.
+- Existing Windows/Linux probes each passed 34 synthetic primitive checks; standalone worker SQLite/Argon2id, sessions, TLS and recovery evidence does not prove application authorization or operational readiness. Untested assumptions and transport/custody alternatives are explicit in the review entry point. No S2-A implementation or activation.
+- Source-map-js lock correction and its actual installed/audit/regression evidence are a separate PR candidate, not part of this documentation diff. No broad upgrade or current-master remediation is implied by a proposal.
+- Next: independently review each exact candidate/CI, then separately decide the canonical prerequisite/verifier strategy or bounded exception and exact S2-A implementation fields. Keep 14 privileged routes denied, live agents disabled, Gate 7 unexecuted and release unpromoted. No automatic merge or operator-state preparation.
+
+Disposition: `S2A_PORTFOLIO_PUBLISHED_FOR_REVIEW / WBS_PROPOSAL_UNAPPLIED / EXCEPTION_NOT_GRANTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED / STAGE_B2B2_PRODUCTION_BLOCKED`.
 
 ## 2026-10-19 — PR #47 verified; AZ-08 publication and S2-A decision gate
 

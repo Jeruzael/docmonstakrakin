@@ -1,0 +1,10 @@
+flowchart LR
+  C[Untrusted local caller] --> L[Loopback TLS and CSRF boundary]
+  L --> R[Registered action and canonical resource]
+  A[Private authority worker] --> D[Central default-deny decision]
+  R --> D
+  D --> H[Existing domain and human quorum]
+  H --> Q[Shared revision and persistence coordinator]
+  A --> Q
+  Q --> P[Project snapshot and files]
+  Q --> J[Durable recovery intent]

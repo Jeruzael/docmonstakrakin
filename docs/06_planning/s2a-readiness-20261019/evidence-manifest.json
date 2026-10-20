@@ -1,0 +1,92 @@
+{
+  "recordType": "READINESS_EVIDENCE_INVENTORY_NOT_AUTHORIZATION",
+  "repository": "Jeruzael/docmonstakrakin",
+  "master": "bf5d617fa5bb76323714cc21cc20270acd826616",
+  "reviewedHead": "e33f5ea7869db34654c831550c91029e2236b789",
+  "sourceDrift": "none",
+  "artifactCount": 20,
+  "files": [
+    {
+      "path": "artifacts/az08-readiness/pr48-focused.log",
+      "sha256": "d88ebd230c153f6abf44d6fefdebd320ddc29cd258d5ec4b456a14f8c972aff8"
+    },
+    {
+      "path": "artifacts/az08-readiness/pr34-dmk208.log",
+      "sha256": "2c851931d9b046927dd14aecd6b4ee9f16fb427dcaab290d99f16cb77ea13f98"
+    },
+    {
+      "path": "artifacts/az08-readiness/pr34-dmk197.log",
+      "sha256": "63541ab5df5d8d54a9d13cd0d91ccf2f702c40e30f48d51f3d8e68b984fe5399"
+    },
+    {
+      "path": "artifacts/az08-readiness/pr34-dmk196.log",
+      "sha256": "21b119fe3124e675a07f9421eb3014fa13c2f7196978edd7735e9b2982ac26bf"
+    },
+    {
+      "path": "artifacts/az08-readiness/registration-preview.log",
+      "sha256": "c8fd0e1f378d65effb47cfd86b0eb555da62c5842177eb4056a7e848dc947b5d"
+    },
+    {
+      "path": "artifacts/az08-readiness/windows-install.log",
+      "sha256": "818a058776a2c2c1725a3b9347f7dc7834136eacda20b1cd4af0f1614ef5728b"
+    },
+    {
+      "path": "artifacts/az08-readiness/linux-slim-install-failure.log",
+      "sha256": "ec8c8ee007f1731043e28d1ab20dac2b4ea53b33ac2410afa7f898c393b46501"
+    },
+    {
+      "path": "artifacts/az08-readiness/linux-build-image-install.log",
+      "sha256": "466991e851d68cab6bfb105453c0fa1e245e59404d766c4b6c92bbe23e4dc899"
+    },
+    {
+      "path": "artifacts/az08-readiness/windows-benchmark.log",
+      "sha256": "13dd2f79364a2e72a38bc8a668e834ee0a841121809209effe15fcfe9bbb644a"
+    },
+    {
+      "path": "artifacts/az08-readiness/linux-benchmark.log",
+      "sha256": "4f0a3bd1d5721f39c3d3be2fe3889758034d82439ee8bd3c90db33cc585af1f7"
+    },
+    {
+      "path": "artifacts/az08-readiness/windows-results-raw.json",
+      "sha256": "896d0189511cd02981803e21326df18ca1646023f6e6cf21e322be1d46d7cfac"
+    },
+    {
+      "path": "artifacts/az08-readiness/linux-results-raw.json",
+      "sha256": "6c29d8d54e8ddc465fd69b185b4d355d5dc21536d179c2ef1d5c604bc68e5222"
+    },
+    {
+      "path": "artifacts/az08-readiness/dependency-package-lock.json",
+      "sha256": "78afbb96c5704ce29337c29a9b6fcc18fabaae1fde75afc0dfb2a8f63e59fdd4"
+    },
+    {
+      "path": "artifacts/az08-readiness/registration-proposal.json",
+      "sha256": "135e057cc668caf04547b8c6f938c88fbb39f42dfb1d42d2a237776b4a0028c5"
+    },
+    {
+      "path": "artifacts/az08-readiness/proposed-MASTER_WBS.yaml.txt",
+      "sha256": "a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9"
+    },
+    {
+      "path": "artifacts/az08-readiness/benchmark.mjs.txt",
+      "sha256": "3387f91a6133ec11400daa414d7c65adc064ab324c51cda6364232b792f5af28"
+    },
+    {
+      "path": "artifacts/az08-readiness/sqlite-worker.mjs.txt",
+      "sha256": "6116f8413b2d87b59016b144dc6f70a72be107acd31183189f742faa290e445c"
+    },
+    {
+      "path": "artifacts/az08-readiness/previewRegistration.mjs.txt",
+      "sha256": "17f98fae298c758542f8dcc63711c85b18eb475223218d1443c61635010be494"
+    },
+    {
+      "path": "artifacts/az08-readiness/github-readiness-snapshot.json",
+      "sha256": "4af78850071efdc992d41e60abb03ff4f84295519a4d66dbb7caa37c76dc6d63"
+    },
+    {
+      "path": "hardening/s2a-readiness-20261019/evidence/measurements.json",
+      "sha256": "eb3f13bc6c2f7a24ff857786cba638a87ada14dc719c94b2f6c3c119da1e20b7"
+    }
+  ],
+  "sourceCode": "Exact immutable Git source paths/SHAs are identified in the reports; no production security/runtime/canonical files modified",
+  "rawStorage": "Paths under artifacts/ are retained in the target-bound managed collection; distributable copies/summaries are under this package. Private TLS key is excluded."
+}

@@ -1,0 +1,272 @@
+{
+  "recordType": "UNAPPLIED_WBS_REGISTRATION_PROPOSAL_NOT_AUTHORIZATION",
+  "decision": "PENDING_HUMAN_REVIEW",
+  "canonicalWbsModified": false,
+  "sourcePr34Head": "5912185a005df3e0469dd46392d7d0dbb0378b68",
+  "currentMaster": "bf5d617fa5bb76323714cc21cc20270acd826616",
+  "beforeSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+  "originalCandidateSha256": "e166f4679a71e8cec45ec5e0c5dc60f0b12c8ade0ada4696339662e258132273",
+  "revisedCandidateSha256": "a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9",
+  "revisedDependencies": {
+    "DMK-209": [
+      "DMK-210",
+      "DMK-211",
+      "DMK-212"
+    ],
+    "DMK-211": [
+      "DMK-210"
+    ]
+  },
+  "unchangedAcceptance": true,
+  "proposedItems": [
+    {
+      "id": "DMK-209",
+      "wbs_path": "13.06.22",
+      "parent_id": "EPIC-13",
+      "title": "Local API Security Perimeter and Route Authorization",
+      "description": "Classify all API routes and protect privileged endpoints; default local service to loopback unless secure network mode is explicitly configured.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210",
+        "DMK-211",
+        "DMK-212"
+      ],
+      "requirements": [
+        "REQ-OPS-001",
+        "REQ-SEC-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02"
+      ],
+      "security_controls": [
+        "SEC-CTRL-011",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Bind the local server to 127.0.0.1 by default; wider network exposure requires an explicit secure deployment configuration.",
+        "Deny unauthenticated and unauthorized access to privileged secrets, Git operations, exports, administration, and project mutations.",
+        "Inventory every registered API route with action/resource policy and pass negative authorization regression tests."
+      ],
+      "verification_method": "API route policy inventory, network binding tests, privilege-escalation tests, Quality & Build, Controlled Docs and Complete Regression",
+      "evidence": []
+    },
+    {
+      "id": "DMK-210",
+      "wbs_path": "13.06.23",
+      "parent_id": "EPIC-13",
+      "title": "Local Identity, Authorization and Governance Policy Architecture",
+      "description": "Formalize local-first identity, authorization, human governance separation, threat boundaries and approval policy contracts without silently ratifying preliminary quorum rules.",
+      "type": "GOVERNANCE",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [],
+      "requirements": [
+        "REQ-GOV-001",
+        "REQ-GOV-002"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Specify a unified local-first identity/authorization design with distinct human and AI agent principal types.",
+        "Keep technically VERIFIED separate from independent human governance approval; protected operations require required authorized human approvals.",
+        "Document local bootstrap/recovery, role configuration, approval receipts, threat model and explicit unresolved policy decisions."
+      ],
+      "verification_method": "Human architecture review, threat-model tests, decision/requirement traceability and controlled-doc verification",
+      "evidence": []
+    },
+    {
+      "id": "DMK-211",
+      "wbs_path": "13.06.24",
+      "parent_id": "EPIC-13",
+      "title": "Persistent Local Human Authentication and Session Security",
+      "description": "Create persistent local accounts and revocable authenticated sessions with safe credential storage and controlled migration from the current reviewer roster.",
+      "type": "INFRASTRUCTURE",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210"
+      ],
+      "requirements": [
+        "REQ-SEC-014",
+        "REQ-SEC-019"
+      ],
+      "architecture_links": [
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-017",
+        "SEC-CTRL-019"
+      ],
+      "acceptance_criteria": [
+        "Persist distinct human principal IDs with hardened password verifiers; never store raw credentials or sessions in repository files.",
+        "Enforce secure session expiry, rotation, revocation, CSRF defenses, and reauthentication for sensitive operations.",
+        "Provide a recoverable bootstrap and reviewer migration with fail-closed malformed configuration and negative authentication tests."
+      ],
+      "verification_method": "Credential lifecycle, session revocation/restart, authentication boundary and migration security regression",
+      "evidence": []
+    },
+    {
+      "id": "DMK-212",
+      "wbs_path": "13.06.25",
+      "parent_id": "EPIC-13",
+      "title": "Configurable Project-Scoped RBAC and Custom Role Restrictions",
+      "description": "Provide built-in and custom roles with server-registered capabilities, configurable explicit restrictions, scoped grants and non-bypassable governance invariants.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210",
+        "DMK-211"
+      ],
+      "requirements": [
+        "REQ-GOV-REVIEWER-001",
+        "REQ-GOV-QUORUM-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Allow authorized administrators to configure custom role metadata, capabilities, restrictions, principal type, resource scopes and revision/audit history.",
+        "Enforce deny-by-default and explicit-deny precedence with server-side authorization on every protected operation.",
+        "Reject self-escalation, unauthorized role delegation, agent human-signoff, bypassed separation of duties and cross-project authorization."
+      ],
+      "verification_method": "Custom-role contract, privilege escalation and project isolation tests; independent security review",
+      "evidence": []
+    },
+    {
+      "id": "DMK-213",
+      "wbs_path": "13.06.26",
+      "parent_id": "EPIC-13",
+      "title": "Distinct AI Agent Identity and Scoped Delegation",
+      "description": "Bind agents to non-human identities, bounded permissions, expiring delegated authority and tamper-evident audit, with human governance actions nondelegable.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-212"
+      ],
+      "requirements": [
+        "REQ-COLLAB-002"
+      ],
+      "architecture_links": [
+        "CMP-03",
+        "CMP-04",
+        "CMP-07"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Agent authority must be independently scoped and cannot exceed the delegator's authorized permissions.",
+        "Delegations must support expiration, revocation, explicit project/resource scopes and attributable audit events.",
+        "Reject agent impersonation, forged human sign-off, stale delegations and cross-project execution; defer peer federation to a separate ratified decision."
+      ],
+      "verification_method": "Agent-delegation adversarial tests, scope/expiry/revocation integration tests and security review",
+      "evidence": []
+    },
+    {
+      "id": "DMK-214",
+      "wbs_path": "13.06.27",
+      "parent_id": "EPIC-13",
+      "title": "Authentication Migration and Cross-Workstream Security Verification",
+      "description": "Perform read-only review and governed integration verification of authentication, custom roles, delegation, migration and historical verifier continuity.",
+      "type": "QUALITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-209",
+        "DMK-211",
+        "DMK-212",
+        "DMK-213"
+      ],
+      "requirements": [
+        "REQ-REL-001",
+        "REQ-OPS-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Verify migration and recovery without exposing secrets or weakening existing reviewer, approval, or historical evidence controls.",
+        "Prove that unauthorized actions, forged receipts, stale permissions and agent self-approval fail closed across all integrated workflows.",
+        "Pass Quality & Build, Controlled Docs, Complete Regression and independent human security/architecture review before release authorization."
+      ],
+      "verification_method": "Full security/regression suites, controlled-document verification, reproducible evidence and independent human review",
+      "evidence": []
+    }
+  ],
+  "preview": {
+    "valid": true,
+    "decision": "PREVIEW",
+    "errors": [],
+    "addedIds": [
+      "DMK-209",
+      "DMK-210",
+      "DMK-211",
+      "DMK-212",
+      "DMK-213",
+      "DMK-214"
+    ],
+    "beforeCount": 69,
+    "afterCount": 75,
+    "beforeDigest": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "afterDigest": "a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9"
+  },
+  "topologicalOrder": [
+    "DMK-210",
+    "DMK-211",
+    "DMK-212",
+    "DMK-209",
+    "DMK-213",
+    "DMK-214"
+  ],
+  "negativeChecks": {
+    "missingApprovalDenied": true,
+    "existingStatusMutationDenied": true,
+    "manifestCountMismatchDenied": true
+  },
+  "authorizationReceiptCreated": false,
+  "mayApply": false
+}

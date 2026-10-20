@@ -1,0 +1,7 @@
+flowchart LR
+  C[Untrusted local caller] --> L[Loopback Host Origin boundary]
+  L --> U[45 unscoped legacy registrations]
+  U --> P[Project snapshot and files]
+  L --> H[Specialized human quorum]
+  H --> P
+  L --> B[14 privileged registrations denied]

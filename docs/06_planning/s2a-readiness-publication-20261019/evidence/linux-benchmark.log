@@ -1,0 +1,190 @@
+PASS private synthetic Linux directory mode0700
+PASS SQLite rollback fails without commit
+PASS SQLite readonly fails without commit
+PASS SQLite corrupt fails without commit
+PASS SQLite busy fails without commit
+PASS uncommitted writer crash rolls back
+PASS database remains valid after crashed writer
+PASS Argon2 correct password 19456
+PASS Argon2 wrong password denied 19456
+PASS Argon2 correct password 32768
+PASS Argon2 wrong password denied 32768
+PASS Argon2 correct password 65536
+PASS Argon2 wrong password denied 65536
+PASS malformed Argon2 verifier fails closed
+PASS bounded KDF active2 queued4 overload4 rejected
+PASS 10000 opaque token samples unique
+PASS digest-only session fixture lookup
+PASS idle expiry rejects
+PASS absolute expiry rejects
+PASS restart generation rejects
+PASS credential and policy revocations reject
+PASS logout/rotation removes prior session
+PASS raw token absent from database bytes
+PASS SQLite backup restore integrity
+PASS offline synthetic backup authenticated encryption roundtrip
+PASS offline recovery tampered backup rejected
+PASS offline ceremony exclusive lock rejects second writer
+PASS loopback HTTPS trusted fixture and secure host-only cookie
+PASS TLS1.3 negotiated
+PASS untrusted TLS leaf rejected
+PASS TLS hostname mismatch rejected
+PASS foreign HTTP Origin rejected
+PASS foreign HTTP Host rejected
+PASS unavailable authority path has no fallback store
+{
+  "timestamp": "2026-10-19T05:04:28.500Z",
+  "scope": "primitive feasibility experiment, not S2-A application implementation or acceptance",
+  "platform": "linux",
+  "arch": "x64",
+  "node": "v22.21.1",
+  "abi": "127",
+  "openssl": "3.5.4",
+  "cpu": "AMD Ryzen 5 5600G with Radeon Graphics",
+  "logicalCpus": 12,
+  "availableParallelism": 2,
+  "containerLimits": "2 CPUs,1GiB RAM,pids128,network disabled",
+  "packages": {
+    "betterSqlite3": "13.0.3",
+    "argon2": "0.45.1",
+    "sqlite": "3.53.4"
+  },
+  "filesystemParent": "/data",
+  "acl": {
+    "mode": "700",
+    "uid": 1000
+  },
+  "sqlite": {
+    "read": {
+      "n": 2000,
+      "p50Ms": 0.0032190000000582586,
+      "p95Ms": 0.005450999999993655,
+      "maxMs": 0.07454599999994116
+    },
+    "write": {
+      "n": 80,
+      "p50Ms": 5.559463000000051,
+      "p95Ms": 6.037121999999954,
+      "maxMs": 6.308914000000186
+    },
+    "rpc": {
+      "n": 100,
+      "p50Ms": 0.11556999999993423,
+      "p95Ms": 0.2042229999999563,
+      "maxMs": 0.34618299999988267
+    },
+    "busyMs": 101.07320000000004
+  },
+  "argon2": [
+    {
+      "memoryKiB": 19456,
+      "iterations": 2,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 19.370499999999993,
+        "p95Ms": 40.81074699999999,
+        "maxMs": 40.81074699999999
+      }
+    },
+    {
+      "memoryKiB": 32768,
+      "iterations": 3,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 62.99864699999989,
+        "p95Ms": 72.08420299999989,
+        "maxMs": 72.08420299999989
+      }
+    },
+    {
+      "memoryKiB": 65536,
+      "iterations": 3,
+      "parallelism": 1,
+      "verify": {
+        "n": 20,
+        "p50Ms": 132.25315299999966,
+        "p95Ms": 154.52732500000002,
+        "maxMs": 154.52732500000002
+      }
+    }
+  ],
+  "boundedKdf": {
+    "activeLimit": 2,
+    "queueLimit": 4,
+    "submitted": 10,
+    "admitted": 6,
+    "rejected": 4,
+    "peakActive": 2,
+    "peakQueued": 4,
+    "totalLatency": {
+      "n": 6,
+      "p50Ms": 137.77633399999922,
+      "p95Ms": 214.6596099999997,
+      "maxMs": 214.6596099999997
+    }
+  },
+  "session": {
+    "sampledTokens": 10000,
+    "bytesPerToken": 32,
+    "idleMs": 600000,
+    "absoluteMs": 1800000
+  },
+  "tls": {
+    "protocol": "TLSv1.3",
+    "firstHandshakeAndRequestMs": 13.151256999999532,
+    "systemTrustChanged": false,
+    "browserEnforcementTested": false
+  },
+  "resources": {
+    "rssBaseBytes": 59736064,
+    "peakRssBytes": 225583104,
+    "deltaRssBytes": 165847040,
+    "eventLoopP95Ms": 10.641407,
+    "eventLoopMaxMs": 39.157759
+  },
+  "tests": [
+    "private synthetic Linux directory mode0700",
+    "SQLite rollback fails without commit",
+    "SQLite readonly fails without commit",
+    "SQLite corrupt fails without commit",
+    "SQLite busy fails without commit",
+    "uncommitted writer crash rolls back",
+    "database remains valid after crashed writer",
+    "Argon2 correct password 19456",
+    "Argon2 wrong password denied 19456",
+    "Argon2 correct password 32768",
+    "Argon2 wrong password denied 32768",
+    "Argon2 correct password 65536",
+    "Argon2 wrong password denied 65536",
+    "malformed Argon2 verifier fails closed",
+    "bounded KDF active2 queued4 overload4 rejected",
+    "10000 opaque token samples unique",
+    "digest-only session fixture lookup",
+    "idle expiry rejects",
+    "absolute expiry rejects",
+    "restart generation rejects",
+    "credential and policy revocations reject",
+    "logout/rotation removes prior session",
+    "raw token absent from database bytes",
+    "SQLite backup restore integrity",
+    "offline synthetic backup authenticated encryption roundtrip",
+    "offline recovery tampered backup rejected",
+    "offline ceremony exclusive lock rejects second writer",
+    "loopback HTTPS trusted fixture and secure host-only cookie",
+    "TLS1.3 negotiated",
+    "untrusted TLS leaf rejected",
+    "TLS hostname mismatch rejected",
+    "foreign HTTP Origin rejected",
+    "foreign HTTP Host rejected",
+    "unavailable authority path has no fallback store"
+  ],
+  "passed": 34,
+  "limitations": [
+    "Timing samples are small and host load is uncontrolled; not a load/production benchmark.",
+    "Session decision logic is a fixture, not actual server routes.",
+    "TLS uses per-request fixture trust; no production certificate, CA installation or browser trust activation.",
+    "No cross-store commit/revocation coordinator or operational bootstrap/recovery was implemented."
+  ]
+}
