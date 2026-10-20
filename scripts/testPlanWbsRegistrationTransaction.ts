@@ -13,6 +13,10 @@ import {
 import { HISTORICAL_WBS_SHA256 } from './verifyForwardWbsEvidence.ts';
 import { policyDigestV2, registrationSigningPayloadV2, type TrustedPolicyV2, type RegistrationIntentV2 } from './verifyTrustedWbsRegistrationV2.ts';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 const historic=fs.readFileSync('docs/07_verification/historical-wbs/DMK_197_POST_CLOSURE_MASTER_WBS.yaml');
 const after=Buffer.concat([historic,Buffer.from('\n  - id: "DMK-209"\n    wbs_path: "13.06.22"\n    status: "PROPOSED"\n')]);
@@ -525,6 +529,86 @@ check('Shared ledger parser preserves strict serialization and replay rejection'
  assert.throws(()=>parseWbsReceiptLedgerV1(serializeWbsReceiptLedger({...parsed,entries:[...parsed.entries,...parsed.entries]})));
  const replay=preview({beforeBytes:after,ledgerBytes:applied.proposedLedgerBytes!,expectedCurrentWbsSha256:digest(after),expectedCurrentLedgerSha256:applied.proposedLedgerSha256!,trustedContext:{...context,consumedReceiptIds:[receipt.intent.receiptId]}});
  assert.equal(replay.valid,false); assert.equal(replay.mayApply,false);
+});
+const prefixApi: any = await import('./planWbsRegistrationTransaction.ts');
+check('Canonical prefix helper exists and rejects unparsed noncanonical evidence',()=>{
+ assert.equal(typeof prefixApi.parseWbsReceiptLedgerWithPrefixes,'function');
+ assert.throws(()=>prefixApi.parseWbsReceiptLedgerWithPrefixes(Buffer.concat([ledgerBytes,Buffer.from(' ')])));
+});
+for (const count of [0,1,2,8,32,256]) check('Every streaming prefix equals existing serializer SHA-256 at length '+count,()=>{
+ const ledger=makeHistoricalWbsReceiptLedger();
+ for(let i=0;i<count;i++) ledger.entries.push({
+  receiptId:'SYNTHETIC-PREFIX-'+i,preWbsSha256:i?ledger.entries[i-1].postWbsSha256:HISTORICAL_WBS_SHA256,
+  postWbsSha256:digest(Buffer.from('state:'+i)),policySha256:'d'.repeat(64),signedIntentSha256:'c'.repeat(64),
+  signedReceiptSha256:'b'.repeat(64),reviewedHeadCommitSha:'a'.repeat(40),reviewedHeadTreeSha:'b'.repeat(40),pullRequestNumber:i+1,
+ });
+ const bytes=serializeWbsReceiptLedger(ledger), result=prefixApi.parseWbsReceiptLedgerWithPrefixes(bytes);
+ assert.deepEqual(result.ledger,ledger);
+ assert.equal(result.digests.length,count+1);
+ for(let n=0;n<=count;n++) assert.equal(result.digests[n],digest(serializeWbsReceiptLedger({...ledger,entries:ledger.entries.slice(0,n)})));
+ assert.ok(result.encodedBytes+result.hashedBytes<=4*bytes.length+4096);
+ assert.equal(result.encodedEntries,count);
+ assert.ok(serializeWbsReceiptLedger(ledger).equals(bytes));
+});
+check('Prefix parser retains malformed, duplicate, reordered, replay and depth rejection',()=>{
+ const p=preview();const valid=parseWbsReceiptLedgerV1(p.proposedLedgerBytes!);
+ for(const bytes of [Buffer.from('{'),Buffer.from('['.repeat(65)+'0'+']'.repeat(65)),
+  serializeWbsReceiptLedger({...valid,entries:[...valid.entries,...valid.entries]}),
+  Buffer.from(p.proposedLedgerBytes!.toString().replace('"schemaVersion": "1.0",','"schemaVersion": "1.0", "schemaVersion": "1.0",')),
+  Buffer.from(p.proposedLedgerBytes!.toString().replace('"schemaVersion": "1.0",','"extra": 1, "schemaVersion": "1.0",'))])
+  assert.throws(()=>prefixApi.parseWbsReceiptLedgerWithPrefixes(bytes));
+});
+check('Seeded varied canonical ledgers and all prefixes preserve exact legacy digests',()=>{
+ let seed=0x53a11;
+ const next=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed;};
+ for(let trial=0;trial<20;trial++) {
+  const ledger=makeHistoricalWbsReceiptLedger(),count=next()%40;
+  for(let i=0;i<count;i++) ledger.entries.push({receiptId:'SYNTHETIC-RANDOM-'+next(),preWbsSha256:i?ledger.entries[i-1].postWbsSha256:HISTORICAL_WBS_SHA256,
+   postWbsSha256:digest(Buffer.from(String(next()))),policySha256:digest(Buffer.from(String(next()))),signedIntentSha256:digest(Buffer.from(String(next()))),
+   signedReceiptSha256:digest(Buffer.from(String(next()))),reviewedHeadCommitSha:crypto.createHash('sha1').update(String(next())).digest('hex'),
+   reviewedHeadTreeSha:crypto.createHash('sha1').update(String(next())).digest('hex'),pullRequestNumber:next()+1});
+  const bytes=serializeWbsReceiptLedger(ledger),p=prefixApi.parseWbsReceiptLedgerWithPrefixes(bytes);
+  for(let i=0;i<=count;i++) assert.equal(p.digests[i],digest(serializeWbsReceiptLedger({...ledger,entries:ledger.entries.slice(0,i)})));
+  assert.ok(p.encodedBytes+p.hashedBytes<=4*bytes.length+4096);
+ }
+});
+check('Existing 2 MiB/5000 ledger rejection limits remain unchanged',()=>{
+ assert.throws(()=>parseWbsReceiptLedgerV1(Buffer.alloc(2*1024*1024+1,32)),/limit/);
+ assert.throws(()=>parseWbsReceiptLedgerV1(Buffer.from(JSON.stringify({...genesis,entries:Array(5001).fill(null)}))),/entry count.*limit/);
+ for(const n of [4999,5000]) assert.throws(()=>parseWbsReceiptLedgerV1(Buffer.from(JSON.stringify({...genesis,entries:Array(n).fill(null)}))),/entry is not/);
+});
+check('Benchmark CLI fails failed/timed-out/missing/malformed prefix children and passes valid control',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'wbs-prefix-harness-'));
+ const preload=path.join(temp,'synthetic-child-results.mjs');
+ try {
+  // Inject subprocess outcomes at the OS boundary. No audit result here is
+  // performance evidence; this tests the real public CLI's exit propagation.
+  fs.writeFileSync(preload, String.raw`
+import cp from 'node:child_process';
+import {syncBuiltinESMExports} from 'node:module';
+const original=cp.spawnSync, kind=process.env.DMK_SYNTHETIC_PREFIX_OUTCOME;
+cp.spawnSync=function(executable,args,options){
+ if(Array.isArray(args)&&args.includes('--worker')) return {status:0,signal:null,stdout:'',stderr:'BENCH_RESULT '+JSON.stringify({count:Number(args.at(-1)),valid:true,mayApply:false,heapBefore:0,heapAfter:0})+'\n'};
+ if(Array.isArray(args)&&args.includes('--prefix')) {
+  const data={count:Number(args.at(-1)),encodedBytes:1,hashedBytes:1,encodedEntries:1,prefixMs:1,equivalenceMs:0};
+  return {status:kind==='timeout'?null:kind==='exit'?1:0,signal:null,
+   error:kind==='timeout'?Object.assign(new Error('SYNTHETIC_TIMEOUT'),{code:'ETIMEDOUT'}):undefined,
+   stdout:kind==='success'?'PREFIX_RESULT '+JSON.stringify(data)+'\n':kind==='malformed'?'PREFIX_RESULT {broken\n':'',
+   stderr:'SYNTHETIC_PREFIX_OUTCOME_'+kind};
+ }
+ return original.call(this,executable,args,options);
+};
+syncBuiltinESMExports();
+`);
+  const kinds=['exit','timeout','missing','malformed','success'];
+  const failures=kinds.map(kind=>{
+   const r=spawnSync(process.execPath,[...process.execArgv,'--import',pathToFileURL(preload).href,path.resolve('scripts/benchmarkWbsEvidenceContinuity.ts'),'--suite','SYNTHETIC-HARNESS-CONTROL'],
+    {cwd:process.cwd(),env:{...process.env,GEMINI_API_KEY:'',DMK_SYNTHETIC_PREFIX_OUTCOME:kind},encoding:'utf8',windowsHide:true,timeout:20000,maxBuffer:1024*1024});
+   assert.equal(r.error,undefined);assert.match(r.stdout,new RegExp('SYNTHETIC_PREFIX_OUTCOME_'+kind),r.stderr);
+   return r.status!==0;
+  });
+  assert.deepEqual(failures,[true,true,true,true,false],'CLI must propagate every invalid prefix outcome; valid control must exit zero');
+ } finally {fs.unlinkSync(preload);fs.rmdirSync(temp);}
 });
 console.log('TOTAL: '+passes+'/'+passes+' checks passed');
 
