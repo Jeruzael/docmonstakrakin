@@ -1,0 +1,1400 @@
+{
+  "capturedAt": "2026-10-20 02:28:08 UTC",
+  "repository": "Jeruzael/docmonstakrakin",
+  "git": {
+    "master": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+    "mergeTree": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+    "feature51Tree": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+    "featureMergeTreesEqual": true,
+    "masterParents": [
+      "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+      "8307445b96b4cc974160e4263d3f1acbd598cb7e"
+    ],
+    "npmResolved": {
+      "version": "1.2.2",
+      "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz",
+      "integrity": "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==",
+      "license": "BSD-3-Clause",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "onlyChangedNpmPackages": [
+      "node_modules/source-map-js"
+    ],
+    "bunPatchedTuple": "    \"source-map-js\": [\"source-map-js@1.2.2\", \"\", {}, \"sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==\"],",
+    "canonicalWbs": {
+      "yamlSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+      "markdownSha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f"
+    },
+    "pr49": {
+      "head": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+      "syntheticMerge": "b1b9e091f1e8bf9d5480028a6eefbb5c0af27617",
+      "parents": [
+        "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "fa7929627fd412dd4e0fe1503927f5217ddb1c0e"
+      ],
+      "tree": "8c0d63b861184968ce59ef91a9d302d991e2e635",
+      "deltaFromMaster": [
+        "docs/00_control/LAST_HANDOFF.md",
+        "docs/00_control/PROJECT_STATE.md",
+        "docs/07_verification/PR48_POST_MERGE_VERIFICATION.md",
+        "docs/07_verification/pr48-post-merge-checkpoint.json",
+        "docs/07_verification/pr48-postmerge/.gitattributes",
+        "docs/07_verification/pr48-postmerge/github-complete-regression.log",
+        "docs/07_verification/pr48-postmerge/github-controlled-docs.log",
+        "docs/07_verification/pr48-postmerge/github-quality-build.log",
+        "docs/07_verification/pr48-postmerge/github-snapshot.json"
+      ],
+      "approvedFileBytesPreserved": true
+    },
+    "pr50": {
+      "head": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "syntheticMerge": "cc8aa04df8cf51341fe68d2499f0f0dc90f398e3",
+      "parents": [
+        "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "83b52b9586cbdb73a6bd6097398ea38b7bad9c42"
+      ],
+      "tree": "f0092725d001c4fe15fd1332440eb624abe251c4",
+      "approvedFileBytesPreserved": true,
+      "prospectiveConflictPaths": [
+        "docs/00_control/LAST_HANDOFF.md",
+        "docs/00_control/PROJECT_STATE.md"
+      ]
+    },
+    "sourceReadinessHead": "1f8a3674f76445c4a1a6bb1c460e140442ece15b"
+  },
+  "featureVerification": {
+    "49": {
+      "sha": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+      "tree": "cb6b085cf0ff79521fb9a44820d5680367d198e3",
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgNpL5MA6LE1q1ttmrS5jCluysui\nI0RIUaOhEKO+7/lpYAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5\nAAAAQFwaniIwSllOFVBs7QtBQI403neE97dMzeuGeUD9jmyzHe+H6Vsw4nHJEsPbguALnk\nD+12nxck1ilvT4yJJ+cwg=\n-----END SSH SIGNATURE-----",
+        "payload": "tree cb6b085cf0ff79521fb9a44820d5680367d198e3\nparent cfca39902d6fd4bc0d4c5bdaf351b0522c780466\nauthor Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792388980 +0800\ncommitter Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792388980 +0800\n\ndocs: verify PR48 human merge and exact-commit regression\n",
+        "verified_at": "2026-10-19T05:49:50Z"
+      },
+      "url": "https://github.com/Jeruzael/docmonstakrakin/commit/fa7929627fd412dd4e0fe1503927f5217ddb1c0e"
+    },
+    "50": {
+      "sha": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "tree": "8518cd7a4a84503886e62602acd80fca18e17544",
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgNpL5MA6LE1q1ttmrS5jCluysui\nI0RIUaOhEKO+7/lpYAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5\nAAAAQNxckEKGTtDK36MU2Fq8lTFMaMX90QwfMozSdUa6nOiSsoNHcrVViyXfAMytqCUHYr\neCW1o80JfqgN4b+HhRBAA=\n-----END SSH SIGNATURE-----",
+        "payload": "tree 8518cd7a4a84503886e62602acd80fca18e17544\nparent cfca39902d6fd4bc0d4c5bdaf351b0522c780466\nauthor Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792391302 +0800\ncommitter Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792391302 +0800\n\ndocs: publish preserved S2A governance and readiness portfolio\n",
+        "verified_at": "2026-10-19T06:28:57Z"
+      },
+      "url": "https://github.com/Jeruzael/docmonstakrakin/commit/83b52b9586cbdb73a6bd6097398ea38b7bad9c42"
+    },
+    "51": {
+      "sha": "8307445b96b4cc974160e4263d3f1acbd598cb7e",
+      "tree": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgNpL5MA6LE1q1ttmrS5jCluysui\nI0RIUaOhEKO+7/lpYAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5\nAAAAQIQS+USYzB5nxcycfWNIJbH7bQzfZK2tKVsWO8geKbFL/qFHEIX7wzoq3nWQ/XJxjt\nzw7zVD5q5tUll8f906awU=\n-----END SSH SIGNATURE-----",
+        "payload": "tree 8e2485e1e35c8e00b35791094399382aae7c07dd\nparent cfca39902d6fd4bc0d4c5bdaf351b0522c780466\nauthor Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792391816 +0800\ncommitter Jeruzael <dumale.jeruzael.bscs2019@gmail.com> 1792391816 +0800\n\nfix(deps): pin patched source-map-js in npm and Bun locks\n",
+        "verified_at": "2026-10-19T06:37:39Z"
+      },
+      "url": "https://github.com/Jeruzael/docmonstakrakin/commit/8307445b96b4cc974160e4263d3f1acbd598cb7e"
+    }
+  },
+  "postmergeJobs": {
+    "total_count": 3,
+    "jobs": [
+      {
+        "id": 118413422083,
+        "run_id": 39356826749,
+        "workflow_name": "CI",
+        "head_branch": "master",
+        "run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39356826749",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUfusJs8AAAAbkf1uAw",
+        "head_sha": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/jobs/118413422083",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39356826749/job/118413422083",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T02:03:26Z",
+        "started_at": "2026-10-20T02:03:28Z",
+        "completed_at": "2026-10-20T02:03:56Z",
+        "name": "Quality & Build",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T02:03:29Z",
+            "completed_at": "2026-10-20T02:03:30Z"
+          },
+          {
+            "name": "Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T02:03:30Z",
+            "completed_at": "2026-10-20T02:03:31Z"
+          },
+          {
+            "name": "Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T02:03:31Z",
+            "completed_at": "2026-10-20T02:03:32Z"
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T02:03:32Z",
+            "completed_at": "2026-10-20T02:03:37Z"
+          },
+          {
+            "name": "Verify WBS integrity",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T02:03:37Z",
+            "completed_at": "2026-10-20T02:03:37Z"
+          },
+          {
+            "name": "TypeScript typecheck",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T02:03:37Z",
+            "completed_at": "2026-10-20T02:03:46Z"
+          },
+          {
+            "name": "Production build",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T02:03:46Z",
+            "completed_at": "2026-10-20T02:03:51Z"
+          },
+          {
+            "name": "Post Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-10-20T02:03:51Z",
+            "completed_at": "2026-10-20T02:03:53Z"
+          },
+          {
+            "name": "Post Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-10-20T02:03:53Z",
+            "completed_at": "2026-10-20T02:03:53Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-10-20T02:03:53Z",
+            "completed_at": "2026-10-20T02:03:54Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-runs/118413422083",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1000001549,
+        "runner_name": "GitHub Actions 1000001549",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 118413422429,
+        "run_id": 39356826749,
+        "workflow_name": "CI",
+        "head_branch": "master",
+        "run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39356826749",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUfusJs8AAAAbkf1vXQ",
+        "head_sha": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/jobs/118413422429",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39356826749/job/118413422429",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T02:03:26Z",
+        "started_at": "2026-10-20T02:03:28Z",
+        "completed_at": "2026-10-20T02:08:24Z",
+        "name": "Complete Regression",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T02:03:29Z",
+            "completed_at": "2026-10-20T02:03:30Z"
+          },
+          {
+            "name": "Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T02:03:30Z",
+            "completed_at": "2026-10-20T02:03:32Z"
+          },
+          {
+            "name": "Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T02:03:32Z",
+            "completed_at": "2026-10-20T02:03:35Z"
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T02:03:35Z",
+            "completed_at": "2026-10-20T02:03:43Z"
+          },
+          {
+            "name": "Install Playwright Chromium dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T02:03:43Z",
+            "completed_at": "2026-10-20T02:04:12Z"
+          },
+          {
+            "name": "Prepare synthetic CI runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T02:04:12Z",
+            "completed_at": "2026-10-20T02:04:12Z"
+          },
+          {
+            "name": "Run complete regression suite",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T02:04:12Z",
+            "completed_at": "2026-10-20T02:08:20Z"
+          },
+          {
+            "name": "Dump failed regression logs",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 8,
+            "started_at": "2026-10-20T02:08:20Z",
+            "completed_at": "2026-10-20T02:08:20Z"
+          },
+          {
+            "name": "Upload regression failure artifacts",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 9,
+            "started_at": "2026-10-20T02:08:20Z",
+            "completed_at": "2026-10-20T02:08:20Z"
+          },
+          {
+            "name": "Verify repository cleanliness",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10,
+            "started_at": "2026-10-20T02:08:20Z",
+            "completed_at": "2026-10-20T02:08:20Z"
+          },
+          {
+            "name": "Post Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19,
+            "started_at": "2026-10-20T02:08:20Z",
+            "completed_at": "2026-10-20T02:08:21Z"
+          },
+          {
+            "name": "Post Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 20,
+            "started_at": "2026-10-20T02:08:21Z",
+            "completed_at": "2026-10-20T02:08:21Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 21,
+            "started_at": "2026-10-20T02:08:21Z",
+            "completed_at": "2026-10-20T02:08:21Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-runs/118413422429",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1000001550,
+        "runner_name": "GitHub Actions 1000001550",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 118413422608,
+        "run_id": 39356826749,
+        "workflow_name": "CI",
+        "head_branch": "master",
+        "run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39356826749",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUfusJs8AAAAbkf1wEA",
+        "head_sha": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/jobs/118413422608",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39356826749/job/118413422608",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T02:03:26Z",
+        "started_at": "2026-10-20T02:03:28Z",
+        "completed_at": "2026-10-20T02:04:43Z",
+        "name": "Controlled Docs",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T02:03:29Z",
+            "completed_at": "2026-10-20T02:03:30Z"
+          },
+          {
+            "name": "Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T02:03:30Z",
+            "completed_at": "2026-10-20T02:03:31Z"
+          },
+          {
+            "name": "Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T02:03:31Z",
+            "completed_at": "2026-10-20T02:03:32Z"
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T02:03:32Z",
+            "completed_at": "2026-10-20T02:03:39Z"
+          },
+          {
+            "name": "Install Playwright Chromium dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T02:03:39Z",
+            "completed_at": "2026-10-20T02:04:08Z"
+          },
+          {
+            "name": "Prepare synthetic CI runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T02:04:08Z",
+            "completed_at": "2026-10-20T02:04:08Z"
+          },
+          {
+            "name": "Run controlled-document regression",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T02:04:08Z",
+            "completed_at": "2026-10-20T02:04:39Z"
+          },
+          {
+            "name": "Verify repository cleanliness",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-10-20T02:04:39Z",
+            "completed_at": "2026-10-20T02:04:39Z"
+          },
+          {
+            "name": "Post Setup Node.js 22",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-10-20T02:04:39Z",
+            "completed_at": "2026-10-20T02:04:40Z"
+          },
+          {
+            "name": "Post Checkout repository",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16,
+            "started_at": "2026-10-20T02:04:40Z",
+            "completed_at": "2026-10-20T02:04:40Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17,
+            "started_at": "2026-10-20T02:04:40Z",
+            "completed_at": "2026-10-20T02:04:40Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-runs/118413422608",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1000001551,
+        "runner_name": "GitHub Actions 1000001551",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      }
+    ]
+  },
+  "originalWorkflowRuns": {
+    "pr49": {
+      "id": 39206594559,
+      "name": "CI",
+      "node_id": "WFR_kwLOUfusJs8AAAAJIOUn_w",
+      "head_branch": "codex/pr48-postmerge-verification",
+      "head_sha": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+      "path": ".github/workflows/ci.yml",
+      "display_title": "docs: verify PR #48 human merge and AZ-08 tactical closure",
+      "run_number": 131,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 372946294,
+      "check_suite_id": 106238826867,
+      "check_suite_node_id": "CS_kwDOUfusJs8AAAAYvFPZcw",
+      "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559",
+      "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39206594559",
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/49",
+          "id": 4916498788,
+          "number": 49,
+          "head": {
+            "ref": "codex/pr48-postmerge-verification",
+            "sha": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+            "repo": {
+              "id": 1375448102,
+              "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+              "name": "docmonstakrakin"
+            }
+          },
+          "base": {
+            "ref": "master",
+            "sha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+            "repo": {
+              "id": 1375448102,
+              "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+              "name": "docmonstakrakin"
+            }
+          }
+        }
+      ],
+      "created_at": "2026-10-19T05:50:17Z",
+      "updated_at": "2026-10-19T05:54:50Z",
+      "actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "run_attempt": 1,
+      "referenced_workflows": [],
+      "run_started_at": "2026-10-19T05:50:17Z",
+      "triggering_actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "jobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559/jobs",
+      "logs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559/logs",
+      "check_suite_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-suites/106238826867",
+      "artifacts_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559/artifacts",
+      "cancel_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559/cancel",
+      "rerun_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39206594559/rerun",
+      "previous_attempt_url": null,
+      "workflow_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/workflows/372946294",
+      "head_commit": {
+        "id": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+        "tree_id": "cb6b085cf0ff79521fb9a44820d5680367d198e3",
+        "message": "docs: verify PR48 human merge and exact-commit regression",
+        "timestamp": "2026-10-19T05:49:40Z",
+        "author": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        },
+        "committer": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        }
+      },
+      "repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      },
+      "head_repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      }
+    },
+    "pr50": {
+      "id": 39210169906,
+      "name": "CI",
+      "node_id": "WFR_kwLOUfusJs8AAAAJIRu2Mg",
+      "head_branch": "codex/s2a-readiness-review",
+      "head_sha": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "path": ".github/workflows/ci.yml",
+      "display_title": "docs: publish S2-A governance and measured readiness for review",
+      "run_number": 132,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 372946294,
+      "check_suite_id": 106248262515,
+      "check_suite_node_id": "CS_kwDOUfusJs8AAAAYvOPTcw",
+      "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906",
+      "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39210169906",
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/50",
+          "id": 4916833073,
+          "number": 50,
+          "head": {
+            "ref": "codex/s2a-readiness-review",
+            "sha": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+            "repo": {
+              "id": 1375448102,
+              "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+              "name": "docmonstakrakin"
+            }
+          },
+          "base": {
+            "ref": "master",
+            "sha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+            "repo": {
+              "id": 1375448102,
+              "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+              "name": "docmonstakrakin"
+            }
+          }
+        }
+      ],
+      "created_at": "2026-10-19T06:29:03Z",
+      "updated_at": "2026-10-19T06:32:19Z",
+      "actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "run_attempt": 1,
+      "referenced_workflows": [],
+      "run_started_at": "2026-10-19T06:29:03Z",
+      "triggering_actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "jobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906/jobs",
+      "logs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906/logs",
+      "check_suite_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-suites/106248262515",
+      "artifacts_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906/artifacts",
+      "cancel_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906/cancel",
+      "rerun_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39210169906/rerun",
+      "previous_attempt_url": null,
+      "workflow_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/workflows/372946294",
+      "head_commit": {
+        "id": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+        "tree_id": "8518cd7a4a84503886e62602acd80fca18e17544",
+        "message": "docs: publish preserved S2A governance and readiness portfolio",
+        "timestamp": "2026-10-19T06:28:22Z",
+        "author": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        },
+        "committer": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        }
+      },
+      "repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      },
+      "head_repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      }
+    },
+    "pr51": {
+      "id": 39211010164,
+      "name": "CI",
+      "node_id": "WFR_kwLOUfusJs8AAAAJISiIdA",
+      "head_branch": "codex/fix-source-map-js-advisory",
+      "head_sha": "8307445b96b4cc974160e4263d3f1acbd598cb7e",
+      "path": ".github/workflows/ci.yml",
+      "display_title": "fix(deps): patch source-map-js GHSA-68fv-2mgg-jv7q",
+      "run_number": 133,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 372946294,
+      "check_suite_id": 106250501880,
+      "check_suite_node_id": "CS_kwDOUfusJs8AAAAYvQX--A",
+      "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164",
+      "html_url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39211010164",
+      "pull_requests": [],
+      "created_at": "2026-10-19T06:37:43Z",
+      "updated_at": "2026-10-19T06:42:34Z",
+      "actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "run_attempt": 1,
+      "referenced_workflows": [],
+      "run_started_at": "2026-10-19T06:37:43Z",
+      "triggering_actor": {
+        "login": "Jeruzael",
+        "id": 91640195,
+        "node_id": "U_kgDOBXZRgw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Jeruzael",
+        "html_url": "https://github.com/Jeruzael",
+        "followers_url": "https://api.github.com/users/Jeruzael/followers",
+        "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+        "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+        "repos_url": "https://api.github.com/users/Jeruzael/repos",
+        "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "jobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164/jobs",
+      "logs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164/logs",
+      "check_suite_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/check-suites/106250501880",
+      "artifacts_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164/artifacts",
+      "cancel_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164/cancel",
+      "rerun_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/runs/39211010164/rerun",
+      "previous_attempt_url": null,
+      "workflow_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/actions/workflows/372946294",
+      "head_commit": {
+        "id": "8307445b96b4cc974160e4263d3f1acbd598cb7e",
+        "tree_id": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+        "message": "fix(deps): pin patched source-map-js in npm and Bun locks",
+        "timestamp": "2026-10-19T06:36:56Z",
+        "author": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        },
+        "committer": {
+          "name": "Jeruzael",
+          "email": "dumale.jeruzael.bscs2019@gmail.com"
+        }
+      },
+      "repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      },
+      "head_repository": {
+        "id": 1375448102,
+        "node_id": "R_kgDOUfusJg",
+        "name": "docmonstakrakin",
+        "full_name": "Jeruzael/docmonstakrakin",
+        "private": false,
+        "owner": {
+          "login": "Jeruzael",
+          "id": 91640195,
+          "node_id": "U_kgDOBXZRgw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/91640195?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Jeruzael",
+          "html_url": "https://github.com/Jeruzael",
+          "followers_url": "https://api.github.com/users/Jeruzael/followers",
+          "following_url": "https://api.github.com/users/Jeruzael/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Jeruzael/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Jeruzael/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Jeruzael/subscriptions",
+          "organizations_url": "https://api.github.com/users/Jeruzael/orgs",
+          "repos_url": "https://api.github.com/users/Jeruzael/repos",
+          "events_url": "https://api.github.com/users/Jeruzael/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Jeruzael/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin",
+        "description": "Manages projects that based on ASSDLC",
+        "fork": false,
+        "url": "https://api.github.com/repos/Jeruzael/docmonstakrakin",
+        "forks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/forks",
+        "keys_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/teams",
+        "hooks_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/hooks",
+        "issue_events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/events",
+        "assignees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/tags",
+        "blobs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/languages",
+        "stargazers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/stargazers",
+        "contributors_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contributors",
+        "subscribers_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscribers",
+        "subscription_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/subscription",
+        "commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/merges",
+        "archive_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/downloads",
+        "issues_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/deployments"
+      }
+    }
+  },
+  "approvalMetadata": {
+    "49": [
+      {
+        "id": 5576321049,
+        "node_id": "PRR_kwDOUfusJs8AAAABTF_oGQ",
+        "user": {
+          "login": "jianzhihuoxin",
+          "id": 158029333,
+          "node_id": "U_kgDOCWtWFQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/158029333?u=45f92e1badfcd1385b0bcfc7d05fd4664990f126&v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/jianzhihuoxin",
+          "html_url": "https://github.com/jianzhihuoxin",
+          "followers_url": "https://api.github.com/users/jianzhihuoxin/followers",
+          "following_url": "https://api.github.com/users/jianzhihuoxin/following{/other_user}",
+          "gists_url": "https://api.github.com/users/jianzhihuoxin/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/jianzhihuoxin/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/jianzhihuoxin/subscriptions",
+          "organizations_url": "https://api.github.com/users/jianzhihuoxin/orgs",
+          "repos_url": "https://api.github.com/users/jianzhihuoxin/repos",
+          "events_url": "https://api.github.com/users/jianzhihuoxin/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/jianzhihuoxin/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "body": "reviewed. Awesome!",
+        "state": "APPROVED",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/pull/49#pullrequestreview-5576321049",
+        "pull_request_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/49",
+        "author_association": "COLLABORATOR",
+        "_links": {
+          "html": {
+            "href": "https://github.com/Jeruzael/docmonstakrakin/pull/49#pullrequestreview-5576321049"
+          },
+          "pull_request": {
+            "href": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/49"
+          }
+        },
+        "submitted_at": "2026-10-19T19:02:06Z",
+        "commit_id": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e"
+      }
+    ],
+    "50": [
+      {
+        "id": 5576384207,
+        "node_id": "PRR_kwDOUfusJs8AAAABTGDezw",
+        "user": {
+          "login": "jianzhihuoxin",
+          "id": 158029333,
+          "node_id": "U_kgDOCWtWFQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/158029333?u=45f92e1badfcd1385b0bcfc7d05fd4664990f126&v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/jianzhihuoxin",
+          "html_url": "https://github.com/jianzhihuoxin",
+          "followers_url": "https://api.github.com/users/jianzhihuoxin/followers",
+          "following_url": "https://api.github.com/users/jianzhihuoxin/following{/other_user}",
+          "gists_url": "https://api.github.com/users/jianzhihuoxin/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/jianzhihuoxin/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/jianzhihuoxin/subscriptions",
+          "organizations_url": "https://api.github.com/users/jianzhihuoxin/orgs",
+          "repos_url": "https://api.github.com/users/jianzhihuoxin/repos",
+          "events_url": "https://api.github.com/users/jianzhihuoxin/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/jianzhihuoxin/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "body": "Approved. Really long review, a lot documentation. I like it.",
+        "state": "APPROVED",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/pull/50#pullrequestreview-5576384207",
+        "pull_request_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/50",
+        "author_association": "COLLABORATOR",
+        "_links": {
+          "html": {
+            "href": "https://github.com/Jeruzael/docmonstakrakin/pull/50#pullrequestreview-5576384207"
+          },
+          "pull_request": {
+            "href": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/50"
+          }
+        },
+        "submitted_at": "2026-10-19T19:07:20Z",
+        "commit_id": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42"
+      }
+    ],
+    "51": [
+      {
+        "id": 5576425504,
+        "node_id": "PRR_kwDOUfusJs8AAAABTGGAIA",
+        "user": {
+          "login": "jianzhihuoxin",
+          "id": 158029333,
+          "node_id": "U_kgDOCWtWFQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/158029333?u=45f92e1badfcd1385b0bcfc7d05fd4664990f126&v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/jianzhihuoxin",
+          "html_url": "https://github.com/jianzhihuoxin",
+          "followers_url": "https://api.github.com/users/jianzhihuoxin/followers",
+          "following_url": "https://api.github.com/users/jianzhihuoxin/following{/other_user}",
+          "gists_url": "https://api.github.com/users/jianzhihuoxin/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/jianzhihuoxin/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/jianzhihuoxin/subscriptions",
+          "organizations_url": "https://api.github.com/users/jianzhihuoxin/orgs",
+          "repos_url": "https://api.github.com/users/jianzhihuoxin/repos",
+          "events_url": "https://api.github.com/users/jianzhihuoxin/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/jianzhihuoxin/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "body": "Approved. I like that patch~",
+        "state": "APPROVED",
+        "html_url": "https://github.com/Jeruzael/docmonstakrakin/pull/51#pullrequestreview-5576425504",
+        "pull_request_url": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/51",
+        "author_association": "COLLABORATOR",
+        "_links": {
+          "html": {
+            "href": "https://github.com/Jeruzael/docmonstakrakin/pull/51#pullrequestreview-5576425504"
+          },
+          "pull_request": {
+            "href": "https://api.github.com/repos/Jeruzael/docmonstakrakin/pulls/51"
+          }
+        },
+        "submitted_at": "2026-10-19T19:10:51Z",
+        "commit_id": "8307445b96b4cc974160e4263d3f1acbd598cb7e"
+      }
+    ]
+  },
+  "ruleset": {
+    "id": 25028032,
+    "name": "Master Protection",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "Jeruzael/docmonstakrakin",
+    "enforcement": "active",
+    "conditions": {
+      "ref_name": {
+        "exclude": [],
+        "include": [
+          "~DEFAULT_BRANCH",
+          "refs/heads/master"
+        ]
+      }
+    },
+    "rules": [
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews_on_push": true,
+          "required_reviewers": [],
+          "require_code_owner_review": false,
+          "require_last_push_approval": true,
+          "required_review_thread_resolution": true,
+          "require_extra_approval_for_unattributed_changes": true,
+          "allowed_merge_methods": [
+            "merge",
+            "squash",
+            "rebase"
+          ]
+        }
+      },
+      {
+        "type": "required_signatures"
+      },
+      {
+        "type": "required_status_checks",
+        "parameters": {
+          "strict_required_status_checks_policy": false,
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [
+            {
+              "context": "Quality & Build",
+              "integration_id": 15368
+            },
+            {
+              "context": "Complete Regression",
+              "integration_id": 15368
+            },
+            {
+              "context": "Controlled Docs",
+              "integration_id": 15368
+            }
+          ]
+        }
+      }
+    ],
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5R-6wmzgF95cA",
+    "created_at": "2026-10-14T04:02:15.353+08:00",
+    "updated_at": "2026-10-18T16:19:57.275+08:00",
+    "bypass_actors": [],
+    "current_user_can_bypass": "never",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/Jeruzael/docmonstakrakin/rulesets/25028032"
+      },
+      "html": {
+        "href": "https://github.com/Jeruzael/docmonstakrakin/rules/25028032"
+      }
+    }
+  },
+  "notes": [
+    "PR API base.sha was historical cfca399; live master and synthetic merge parents are authoritative for current integration base.",
+    "Current PR49/50 approved heads and files are unchanged; prospective sequential summary conflicts are not resolved/applied.",
+    "No new independent agent code review or full administrative policy attestation claimed."
+  ]
+}

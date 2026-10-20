@@ -1,0 +1,63 @@
+{
+  "master": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+  "mergeTree": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+  "feature51Tree": "8e2485e1e35c8e00b35791094399382aae7c07dd",
+  "featureMergeTreesEqual": true,
+  "masterParents": [
+    "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+    "8307445b96b4cc974160e4263d3f1acbd598cb7e"
+  ],
+  "npmResolved": {
+    "version": "1.2.2",
+    "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz",
+    "integrity": "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==",
+    "license": "BSD-3-Clause",
+    "engines": {
+      "node": ">=0.10.0"
+    }
+  },
+  "onlyChangedNpmPackages": [
+    "node_modules/source-map-js"
+  ],
+  "bunPatchedTuple": "    \"source-map-js\": [\"source-map-js@1.2.2\", \"\", {}, \"sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==\"],",
+  "canonicalWbs": {
+    "yamlSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "markdownSha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f"
+  },
+  "pr49": {
+    "head": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+    "syntheticMerge": "b1b9e091f1e8bf9d5480028a6eefbb5c0af27617",
+    "parents": [
+      "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+      "fa7929627fd412dd4e0fe1503927f5217ddb1c0e"
+    ],
+    "tree": "8c0d63b861184968ce59ef91a9d302d991e2e635",
+    "deltaFromMaster": [
+      "docs/00_control/LAST_HANDOFF.md",
+      "docs/00_control/PROJECT_STATE.md",
+      "docs/07_verification/PR48_POST_MERGE_VERIFICATION.md",
+      "docs/07_verification/pr48-post-merge-checkpoint.json",
+      "docs/07_verification/pr48-postmerge/.gitattributes",
+      "docs/07_verification/pr48-postmerge/github-complete-regression.log",
+      "docs/07_verification/pr48-postmerge/github-controlled-docs.log",
+      "docs/07_verification/pr48-postmerge/github-quality-build.log",
+      "docs/07_verification/pr48-postmerge/github-snapshot.json"
+    ],
+    "approvedFileBytesPreserved": true
+  },
+  "pr50": {
+    "head": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+    "syntheticMerge": "cc8aa04df8cf51341fe68d2499f0f0dc90f398e3",
+    "parents": [
+      "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+      "83b52b9586cbdb73a6bd6097398ea38b7bad9c42"
+    ],
+    "tree": "f0092725d001c4fe15fd1332440eb624abe251c4",
+    "approvedFileBytesPreserved": true,
+    "prospectiveConflictPaths": [
+      "docs/00_control/LAST_HANDOFF.md",
+      "docs/00_control/PROJECT_STATE.md"
+    ]
+  },
+  "sourceReadinessHead": "1f8a3674f76445c4a1a6bb1c460e140442ece15b"
+}
