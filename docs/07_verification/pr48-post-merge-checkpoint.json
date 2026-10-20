@@ -1,0 +1,621 @@
+{
+  "schemaVersion": 1,
+  "type": "ADDITIVE_POST_MERGE_VERIFICATION",
+  "repository": "Jeruzael/docmonstakrakin",
+  "pr": 48,
+  "capturedAt": "2026-10-19T05:45:43Z",
+  "disposition": [
+    "PR48_POST_MERGE_VERIFIED",
+    "AZ08_TACTICAL_VALIDATION_CLOSED",
+    "GENERAL_AUTHORIZATION_INCOMPLETE",
+    "S2A_IMPLEMENTATION_NOT_AUTHORIZED",
+    "STAGE_B2B2_PRODUCTION_BLOCKED"
+  ],
+  "reviewedHead": "e33f5ea7869db34654c831550c91029e2236b789",
+  "mergeCommit": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+  "masterAtInspection": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+  "parents": [
+    "bf5d617fa5bb76323714cc21cc20270acd826616",
+    "e33f5ea7869db34654c831550c91029e2236b789"
+  ],
+  "tree": "511e8616d252ad204ff870f70fcbbac0e2d92433",
+  "reviewedAndMergedTreesEqual": true,
+  "chronology": {
+    "reviewRequested": {
+      "actor": "Jeruzael",
+      "reviewer": "jianzhihuoxin",
+      "at": "2026-10-19T04:28:40Z",
+      "eventId": 33610379751
+    },
+    "approval": {
+      "actor": "jianzhihuoxin",
+      "state": "APPROVED",
+      "at": "2026-10-19T04:43:25Z",
+      "commitId": "e33f5ea7869db34654c831550c91029e2236b789",
+      "reviewId": 5567032372,
+      "url": "https://github.com/Jeruzael/docmonstakrakin/pull/48#pullrequestreview-5567032372"
+    },
+    "merge": {
+      "actor": "Jeruzael",
+      "at": "2026-10-19T05:30:31Z",
+      "eventId": 33613404908
+    },
+    "commitAuthorAndCommitterAt": "2026-10-19T05:30:30Z",
+    "approvalToMergeSeconds": 2826,
+    "operatorMergedBeforeFollowup": true,
+    "agentExecutedMerge": false,
+    "separatePremergeMergeAuthorizationReceivedByAgent": false,
+    "retrospectiveAuthorizationInvented": false,
+    "mergeMessageAuthorizationInterpretation": "Contemporaneous human merge statement preserved; no exact-scope S2-A implementation authority follows."
+  },
+  "signatures": {
+    "feature": {
+      "verified": true,
+      "reason": "valid",
+      "format": "SSH"
+    },
+    "merge": {
+      "verified": true,
+      "reason": "valid",
+      "format": "PGP_GITHUB"
+    }
+  },
+  "premergeCi": {
+    "runId": 39199644427,
+    "headSha": "e33f5ea7869db34654c831550c91029e2236b789",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 117889760596,
+        "name": "Controlled Docs",
+        "conclusion": "success"
+      },
+      {
+        "id": 117889760763,
+        "name": "Complete Regression",
+        "conclusion": "success"
+      },
+      {
+        "id": 117889760822,
+        "name": "Quality & Build",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "postmergeCi": {
+    "runId": 39204923024,
+    "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39204923024",
+    "attempt": 1,
+    "event": "push",
+    "headSha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 117905565967,
+        "name": "Complete Regression",
+        "headSha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+        "conclusion": "success",
+        "startedAt": "2026-10-19T05:30:36Z",
+        "completedAt": "2026-10-19T05:35:12Z",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39204923024/job/117905565967"
+      },
+      {
+        "id": 117905566268,
+        "name": "Controlled Docs",
+        "headSha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+        "conclusion": "success",
+        "startedAt": "2026-10-19T05:30:36Z",
+        "completedAt": "2026-10-19T05:31:44Z",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39204923024/job/117905566268"
+      },
+      {
+        "id": 117905566305,
+        "name": "Quality & Build",
+        "headSha": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+        "conclusion": "success",
+        "startedAt": "2026-10-19T05:30:35Z",
+        "completedAt": "2026-10-19T05:31:01Z",
+        "url": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39204923024/job/117905566305"
+      }
+    ],
+    "suites": {
+      "total": 66,
+      "passed": 66,
+      "failed": 0,
+      "skipped": 0
+    },
+    "reportedCheckOutputs": {
+      "total": 1636,
+      "passed": 1636,
+      "failed": 0,
+      "skipped": 0
+    },
+    "countCaveat": "Observed output counts; two successful suites report zero named outputs. Separate Controlled Docs counts overlap and are not added.",
+    "controlledDocs": {
+      "core": 40,
+      "additionalSecurity": 29,
+      "focused": 11,
+      "failed": 0,
+      "syntheticFixtureSnapshotMutated": false
+    },
+    "suiteDetails": [
+      {
+        "path": "scripts/runAutomatedQa.ts",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testAccountProvisioning.ts",
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testAuditValidation.ts",
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testCanonicalLifecycle.ts",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testCanonicalReconciliation.ts",
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocVersionSync.ts",
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocs.ts",
+        "passed": 87,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsApi.ts",
+        "passed": 36,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsClient.ts",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsPersistence.ts",
+        "passed": 34,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsRecovery.ts",
+        "passed": 69,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsRegistry.ts",
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsTransaction.ts",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsValidator.ts",
+        "passed": 35,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsViewComponent.ts",
+        "passed": 28,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testControlledDocsWorkspaceTabs.ts",
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testCryptoDemon.ts",
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testCryptoDemonIntegration.ts",
+        "passed": 48,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDiscoveryRemediation.ts",
+        "passed": 36,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk196Closure.ts",
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk196PostMergeCandidate.ts",
+        "passed": 38,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197ApprovalInboxUi.ts",
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197Closure.ts",
+        "passed": 26,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197ClosureCandidate.ts",
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197Persistence.ts",
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197PostMergeGovernance.ts",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testDmk197Quorum.ts",
+        "passed": 86,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testEnvironmentFixtures.ts",
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testForwardWbsEvidence.ts",
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testGate3Adversarial.ts",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testPlanWbsRegistrationTransaction.ts",
+        "passed": 26,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testProjectListReconciliation.ts",
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testProjectPersistenceClassifier.ts",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testProjectsWorkspace.ts",
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testProjectsWorkspaceUi.ts",
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testProposalContract.ts",
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testRequirementLifecycle.ts",
+        "passed": 105,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testRequirementSignoff.ts",
+        "passed": 15,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testRequirementStatusSync.ts",
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testSecurityPerimeter.ts",
+        "passed": 51,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testSelfBootstrapContract.ts",
+        "passed": 19,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testSelfBootstrapExecutionVerifier.ts",
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testSelfBootstrapExecutor.ts",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testSelfWorkItemReconciliation.ts",
+        "passed": 90,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testStageB2aAdversarial.ts",
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testStageB2b1Adversarial.ts",
+        "passed": 28,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testStatusAuditReceipt.ts",
+        "passed": 56,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testTechnicalBaseline.ts",
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testTrustedWbsRegistrationV2.ts",
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testVitePerimeter.ts",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testWbsRegistration.ts",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "scripts/testWorkItemUpdates.ts",
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/package/testPackageServerIntegration.ts",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/package/testPortablePackage.ts",
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/release/testReleaseGate.ts",
+        "passed": 30,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/release/testReleaseServerIntegration.ts",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testAuditRedactionIntegration.ts",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testCredentialMigration.ts",
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testMigrationServerIntegration.ts",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testOsKeychainStore.ts",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testRedactionFilter.ts",
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testSecretStore.ts",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testSecretStoreFactory.ts",
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/secrets/testServerIntegration.ts",
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/security/testSecurityRegression.ts",
+        "passed": 34,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server/security/testServerSecurityIntegration.ts",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "governance": {
+    "visibleExactHeadReviewAndCiConditionsSatisfied": true,
+    "unresolvedReviewThreads": 0,
+    "ruleset": {
+      "id": 25028032,
+      "enforcement": "active",
+      "refIncludes": [
+        "~DEFAULT_BRANCH",
+        "refs/heads/master"
+      ],
+      "updatedAt": "2026-10-18T16:19:57.275+08:00",
+      "bypassActors": [],
+      "currentUserCanBypass": "never"
+    },
+    "currentBranchProtected": true,
+    "legacyProtectionDetail": "403 Resource not accessible by integration",
+    "effectiveRulesEvaluation": "Connector endpoint unavailable",
+    "historicalAdministrativeEnforcement": "NOT_INDEPENDENTLY_ATTESTED",
+    "personalAndKeyCustodyIndependence": "NOT_ESTABLISHED",
+    "s2aImplementationAuthorized": false,
+    "wbsQuorumChanged": false,
+    "reviewIsWbsIntentSignature": false,
+    "policyChanged": false
+  },
+  "boundaries": {
+    "ordinaryStatusEndpointUnauthenticated": true,
+    "optionalExpectedStateVersion": true,
+    "fullRequirementAuthorizationEstablished": false,
+    "canonicalWbsChanged": false,
+    "dmk209Through214Closed": false,
+    "pr34Changed": false,
+    "privilegedRoutesBlocked": 14,
+    "liveAgentsEnabled": false,
+    "gate7Executed": false,
+    "releasePromoted": false,
+    "operatorStateExercised": false
+  },
+  "canonicalWbsRawSha256": {
+    "yaml": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "markdown": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f"
+  },
+  "historicalLocalReadiness": {
+    "branch": "codex/az08-readiness-s2a-governance",
+    "head": "1f8a3674f76445c4a1a6bb1c460e140442ece15b",
+    "published": false,
+    "includedInThisPr": false
+  },
+  "followups": [
+    "Human review and merge decision on closure documentation; no automatic merge.",
+    "Resolve PR #34 forward-evidence verification and dependency/ownership cycle without editing immutable receipts or canonical WBS absent separate authorization.",
+    "Review measured Option 2 portfolio and exact S2-A decision fields; no implementation, enrollment, certificate installation, migration, grants or activation.",
+    "Triage one high-severity npm audit signal using the exact lockfile in a disposable environment; no automatic audit fix."
+  ],
+  "evidence": [
+    {
+      "path": "pr48-postmerge/github-complete-regression.log",
+      "sha256": "ec4781e1243e5a033d7279e3a745407e15063f668f287cc62b950945c8e230e0",
+      "representation": "Exact decoded GitHub job log UTF-8 text"
+    },
+    {
+      "path": "pr48-postmerge/github-controlled-docs.log",
+      "sha256": "5e48013db7b9c7b63c9dcea5ffd4d1024d1bd35917a05e2007d71a33051946cf",
+      "representation": "Exact decoded GitHub job log UTF-8 text"
+    },
+    {
+      "path": "pr48-postmerge/github-quality-build.log",
+      "sha256": "e578594f281b509f192b0e1fd04d3d20568c418daf32eb17e4fca75d7923e135",
+      "representation": "Exact decoded GitHub job log UTF-8 text"
+    },
+    {
+      "path": "pr48-postmerge/github-snapshot.json",
+      "sha256": "6d208cbb872aad75e2c26c7febbe8682448daaa405a2487777aef7c50a0a73af",
+      "representation": "Captured read-only GitHub API JSON responses"
+    }
+  ],
+  "publication": {
+    "kind": "Documentation-only candidate targeting master",
+    "ownHeadAndPr": "Recorded on publication timeline; not self-referentially embedded",
+    "autoMergeAuthorized": false,
+    "humanReviewStatus": "PENDING_REQUEST"
+  }
+}
