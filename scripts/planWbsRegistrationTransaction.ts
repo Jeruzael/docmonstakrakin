@@ -467,6 +467,31 @@ export function parseWbsReceiptLedgerV1(bytes: Buffer): WbsReceiptLedgerV1 {
   }
   return normalizedLedger;
 }
+
+/** Strict parse first. Each canonical entry is encoded once; no prefix arrays. */
+export function parseWbsReceiptLedgerWithPrefixes(bytes: Buffer): {
+  ledger: WbsReceiptLedgerV1; digests: string[];
+  encodedEntries: number; encodedBytes: number; hashedBytes: number;
+} {
+  const ledger = parseWbsReceiptLedgerV1(bytes);
+  const empty = serializeWbsReceiptLedger({ ...ledger, entries: [] });
+  const header = empty.subarray(0, empty.length - Buffer.byteLength(']\n}\n'));
+  const state = crypto.createHash('sha256').update(header);
+  const digests = [state.copy().update(']\n}\n').digest('hex')];
+  // Include the strict parser's full-ledger canonical comparison in byte work.
+  // encodedEntries counts only subsequent prefix encoding (parser also visits n).
+  let encodedBytes = bytes.length + empty.length, hashedBytes = header.length + 4;
+  for (let i = 0; i < ledger.entries.length; i++) {
+    // Use the unchanged serializer itself to preserve key order and escaping.
+    const single = serializeWbsReceiptLedger({ ...ledger, entries: [ledger.entries[i]] });
+    const entry = single.subarray(header.length + 1, single.length - 7);
+    const separator = i === 0 ? '\n' : ',\n';
+    state.update(separator).update(entry);
+    digests.push(state.copy().update('\n  ]\n}\n').digest('hex'));
+    encodedBytes += single.length; hashedBytes += Buffer.byteLength(separator) + entry.length + 7;
+  }
+  return { ledger, digests, encodedEntries: ledger.entries.length, encodedBytes, hashedBytes };
+}
 export function previewWbsRegistrationTransaction(
   input: WbsRegistrationPreflightInput
 ): WbsRegistrationPreflightResult {

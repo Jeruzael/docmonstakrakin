@@ -199,4 +199,107 @@ check('missing immutable historical Git objects reject without fallback', () => 
     fs.rmSync(empty, { recursive: true, force: true });
   }
 });
+check('Resource admission is fixed, non-configurable by proof and counted before semantic parsing', () => {
+  assert.equal(typeof api.admitWbsContinuityProof, 'function');
+  assert.deepEqual(api.WBS_PROOF_LIMITS, { links:256, snapshotBytes:2*1024*1024, aggregateBytes:64*1024*1024, jsonDepth:64 });
+  const f=fixture();const before=digest(f.input.forward.ledgerBytes);
+  const measured=api.admitWbsContinuityProof(f.input,f.context);
+  assert.ok(measured.logicalBytes>historic.length*4);assert.equal(before,digest(f.input.forward.ledgerBytes));
+});
+check('Oversized current bytes fail current gate without erasing independently valid history',()=>{
+ const r=verify({historicalBytes:historic,currentBytes:Buffer.alloc(2*1024*1024+1)});
+ assert.equal(r.valid,false);assert.equal(r.historicalValid,true);assert.equal(r.currentForwardChainValid,false);assert.equal(r.mayApply,false);
+ assert.match(r.errors.join(';'),/limit/i);assert.equal(r.currentWbsSha256,undefined);
+});
+check('Acquisition failure never hashes an oversized current snapshot for error metadata',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'wbs-acquisition-budget-'));
+ try {
+  fs.mkdirSync(path.join(temp,'docs/00_control'),{recursive:true});
+  fs.mkdirSync(path.join(temp,'docs/07_verification/historical-wbs'),{recursive:true});
+  fs.writeFileSync(path.join(temp,'docs/00_control/MASTER_WBS.yaml'),Buffer.alloc(2*1024*1024+1));
+  fs.writeFileSync(path.join(temp,'docs/07_verification/historical-wbs/DMK_197_POST_CLOSURE_MASTER_WBS.yaml'),historic);
+  const r=api.verifyWorkspaceWbsContinuity(temp,()=>{throw Error('synthetic authority offline');}).continuity;
+  assert.equal(r.valid,false);assert.equal(r.historicalValid,true);assert.equal(r.mayApply,false);
+  assert.equal(r.currentWbsSha256,undefined);
+ } finally {
+  assert.ok(path.resolve(temp).startsWith(path.resolve(os.tmpdir())+path.sep));
+  fs.rmSync(temp,{recursive:true,force:true});
+ }
+});
+for(const delta of [-1,0,1]) check('Snapshot/raw receipt/ledger byte admission boundary '+delta,()=>{
+  const f=fixture(), size=2*1024*1024+delta;
+  for(const target of ['snapshot','receipt','ledger']) {
+    const x=fixture();
+    if(target==='snapshot') x.input.forward.links[0].afterBytes=Buffer.alloc(size,32);
+    if(target==='receipt') x.input.forward.links[0].rawReceiptBytes=Buffer.alloc(size,32);
+    if(target==='ledger') x.input.forward.ledgerBytes=Buffer.alloc(size,32);
+    if(delta<=0) assert.doesNotThrow(()=>api.admitWbsContinuityProof(x.input));
+    else {assert.throws(()=>api.admitWbsContinuityProof(x.input),/limit/);assert.equal(verify(x.input,x.authority).mayApply,false);}
+    assert.equal(verify(x.input,x.authority).valid,false,'admission cannot approve malformed evidence');
+  }
+});
+for(const delta of [-1,0,1]) check('Logical repeated-reference link boundary '+delta,()=>{
+  const f=fixture(); f.input.forward.links=Array(256+delta).fill(f.input.forward.links[0]);
+  if(delta<=0) assert.doesNotThrow(()=>api.admitWbsContinuityProof(f.input));
+  else assert.throws(()=>api.admitWbsContinuityProof(f.input),/link.*limit/i);
+  assert.equal(verify(f.input,f.authority).valid,false);
+  const applicationFixture=fixture();
+  applicationFixture.context.applications=Array(256+delta).fill(applicationFixture.context.applications[0]);
+  if(delta<=0) assert.doesNotThrow(()=>api.admitWbsContinuityProof(applicationFixture.input,applicationFixture.context));
+  else assert.throws(()=>api.admitWbsContinuityProof(applicationFixture.input,applicationFixture.context),/application.*limit/i);
+  assert.equal(verify(applicationFixture.input,applicationFixture.authority).valid,false);
+});
+for(const delta of [-1,0,1]) check('Raw JSON nesting boundary '+delta,()=>{
+  const f=fixture(); f.input.forward.links[0].rawReceiptBytes=Buffer.from('['.repeat(64+delta)+'0'+']'.repeat(64+delta));
+  if(delta<=0) assert.doesNotThrow(()=>api.admitWbsContinuityProof(f.input));
+  else assert.throws(()=>api.admitWbsContinuityProof(f.input),/depth.*limit/i);
+  assert.equal(verify(f.input,f.authority).valid,false);
+});
+check('Aggregate counts repeated snapshot/policy references and rejects before parsing',()=>{
+  const f=fixture(), link=f.input.forward.links[0];
+  link.beforeBytes=Buffer.alloc(1024*1024,32);link.afterBytes=link.beforeBytes;
+  f.input.forward.links=Array(33).fill(link);
+  assert.throws(()=>api.admitWbsContinuityProof(f.input),/aggregate.*limit/i);
+  const r=verify(f.input,f.authority);assert.equal(r.valid,false);assert.equal(r.mayApply,false);
+  assert.match(r.errors.join(';'),/aggregate.*limit/i);
+});
+for(const delta of [-1,0,1]) check('Exact aggregate admission boundary including escaped Unicode context '+delta,()=>{
+  const f=fixture(); const l=f.input.forward.links[0];
+  l.beforeBytes=Buffer.alloc(2*1024*1024,32);l.afterBytes=l.beforeBytes;
+  f.input.forward.links=Array(15).fill(l);
+  (f.context as any).padding='';(f.context as any).unicode='"\\\b\t\n\f\r\u0001é中😀\ud800';
+  const base=api.admitWbsContinuityProof(f.input,f.context).logicalBytes;
+  (f.context as any).padding='x'.repeat(64*1024*1024-base+delta);
+  if(delta<=0) assert.equal(api.admitWbsContinuityProof(f.input,f.context).logicalBytes,64*1024*1024+delta);
+  else assert.throws(()=>api.admitWbsContinuityProof(f.input,f.context),/aggregate.*limit/i);
+});
+for(const depth of [63,64,65]) check('Materialized JSON depth boundary '+depth,()=>{
+  const f=fixture();let nested:any=0;
+  for(let i=1;i<depth;i++) nested={child:nested};
+  (f.context as any).nested=nested;
+  if(depth<=64) assert.doesNotThrow(()=>api.admitWbsContinuityProof(f.input,f.context));
+  else assert.throws(()=>api.admitWbsContinuityProof(f.input,f.context),/depth.*limit/i);
+});
+check('Logical JSON measurement equals the actual serialized policy/receipt/authority bytes',()=>{
+ const f=fixture(2);(f.context as any).strings=['é','中','😀','\ud800','\udc00','"\\\b\t\n\f\r\u0000'];
+ let bytes=f.input.historicalBytes.length+f.input.currentBytes.length+f.input.forward.ledgerBytes.length+Buffer.byteLength(JSON.stringify(f.context));
+ for(const l of f.input.forward.links) bytes+=l.beforeBytes.length+l.afterBytes.length+l.rawReceiptBytes.length+Buffer.byteLength(JSON.stringify(l.receipt))+Buffer.byteLength(JSON.stringify(l.policy));
+ assert.equal(api.admitWbsContinuityProof(f.input,f.context).logicalBytes,bytes);
+});
+check('Cyclic, deep and executable object properties reject without invoking getters/toJSON',()=>{
+  for(const kind of ['cycle','depth','getter','toJSON','hidden-getter']) {
+    const f=fixture(); let touched=false;
+    if(kind==='cycle') (f.input.forward.links[0].policy as any).extra=f.input.forward.links[0].policy;
+    if(kind==='depth') {let x:any={};(f.context as any).extra=x;for(let i=0;i<65;i++){x.child={};x=x.child;}}
+    if(kind==='getter') Object.defineProperty(f.context,'extra',{enumerable:true,get(){touched=true;return 1;}});
+    if(kind==='toJSON') (f.context as any).toJSON=()=>{touched=true;return {};};
+    if(kind==='hidden-getter') Object.defineProperty(f.context,'nowIso',{enumerable:false,get(){touched=true;return '2026-12-01T00:00:00.000Z';}});
+    assert.throws(()=>api.admitWbsContinuityProof(f.input,f.context));assert.equal(touched,false);
+    assert.equal(verify(f.input,f.authority).valid,false);
+  }
+});
+check('Descendant identities remain rejected after valid WBS proof',()=>{
+  const f=fixture();f.context.protected.masterCommitSha='f'.repeat(40);
+  assert.equal(verify(f.input,f.authority).valid,false);
+});
 console.log(`TOTAL ${passed}/${passed} continuity checks passed`);

@@ -1,5 +1,25 @@
 # Current session handoff
 
+## 2026-10-20 — Bounded resource/prefix draft candidate; stop at independent review
+
+- Subsequent explicit authorization covers exactly the eight paths in the [resource candidate report](../07_verification/WBS_CONTINUITY_RESOURCE_BOUNDS_CANDIDATE.md), from reverified master `2af6637aa639c18e31795355d68b1454be22f389`. Existing parser/receipt/freshness limits are retained; proposed 256-link, 2 MiB snapshot, 64 MiB logical aggregate and depth-64 limits require independent human compatibility acceptance.
+- Exact canonical prefix SHA-256 and synchronous PRE-consumption replay semantics are preserved. Growing WBS semantics and v2 membership scanning remain superlinear. Synthetic Windows/Linux measurements, retained failures and limits belong to the report; no production capacity or trust adapter is claimed.
+- Publish one SSH-signed draft, verify all three exact-HEAD jobs and GitHub signature validity, and request `jianzhihuoxin` security/governance review. A request is not actual approval. Human approval and operator merge are separate gates; never auto-merge.
+- Earlier local PR #53 checkpoint text is retained verbatim in the report; its original file remains untouched and uncommitted. Earlier pending-authorization statements retain their capture-time meaning. Canonical WBS/history/original portfolio/dependencies, PR #34/#52, human-only quorum, 14 privileged denials, disabled agents, Gate 7 and release remain unchanged. No real signer/grant/receipt consumption, S2-A implementation or activation.
+
+Disposition: `WBS_PROOF_RESOURCE_CANDIDATE_ONLY / HUMAN_COMPATIBILITY_REVIEW_REQUIRED / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
+## 2026-10-20 — PR #53 closed; operator decision required before more code
+
+- Actual master `2af6637aa639c18e31795355d68b1454be22f389`; exact-head human approval preceded `Jeruzael`'s manual merge. Candidate and merge signatures valid; reviewed/merged trees equal. [Post-merge workflow 39387374368](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39387374368) passed all three jobs with 68/68 suites and 1,726 outputs, including continuity 46/perimeter 51/quorum 86; controlled docs 40+29+11. The agent did not merge.
+- [Retained closure and decision record](../07_verification/WBS_CONTINUITY_RESOURCE_BOUNDS_CANDIDATE.md#retained-pr53-closure-checkpoint) distinguishes verified code from missing production authority and proposes one eight-path proof-resource/prefix-performance candidate. Numerical budgets and implementation remain proposals requiring separate operator approval; no production adapter, descendant support, writer or S2-A is started.
+- Revised registration YAML remains unapplied SHA-256 `a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9`; fresh in-memory preview preserves exact definitions and 210 → 211 → 212 → 209 sequencing. Full proposed graph/bytes are recorded; mathematical preview does not register or complete tasks.
+- Canonical WBS/history/original portfolio and current dependencies remain intact. PR #34 open/unapplied; PR #52 separate unchanged draft. Policy ratification, independent real-human enrollment, authenticated acquisition, atomic protected application/consumption and exact registration each remain distinct future gates. The preparatory exception is ungranted.
+- Only local additive documentation is changed; no separate PR or commit. Local checkout remains reviewed `1ab55ba`, whose tree matches actual master. Do not confuse that local commit with remotely verified master or rewrite prior receipts/handoffs. All remote closure evidence is retained under managed `artifacts/r10`.
+- Stop before implementation pending exact authorization. Preserve human-only quorum, 14 privileged denials, disabled agents, Gate 7 unexecuted and release unpromoted. Ordinary status remains unauthenticated; full authorization remains incomplete.
+
+Disposition: `PR53_POST_MERGE_VERIFIED / REGISTRATION_BLOCKED / OPERATOR_IMPLEMENTATION_DECISION_PENDING / STAGE_B2B2_PRODUCTION_BLOCKED`.
+
 ## 2026-10-20 — WBS historical/forward verifier candidate, human gate retained
 
 - Verified starting master: `fd2f6e4e1320ad949adee4cb33a51ab612a1cd4e`, the human PR #50 merge; [workflow 39372189347](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39372189347) passed all three jobs. Original portfolio, patched dependencies and historical records are preserved. Earlier pending #50 statements below are historical handoffs, not current instructions.
