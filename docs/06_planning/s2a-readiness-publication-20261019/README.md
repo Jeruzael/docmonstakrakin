@@ -1,5 +1,15 @@
 # S2-A readiness portfolio — current-master review entry point
 
+## 2026-10-20 — current integration context; original evidence retained
+
+The sections below preserve the original publication context and measured evidence. **Actual verified master is now `6f9e822ad9fd85f42a81b505259ca0013aa815b7`: PR #51 patched source-map-js in both application lockfiles, then the human operator merged approved PR #49.** PR #49's exact-master workflow [39360943211](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39360943211) passed all three jobs, 67 suites/1,672 reported outputs and controlled docs 40+29+11. Its PR #48 closure files are now inherited from master, along with PR #51's separate remediation evidence.
+
+PR #50 was reconciled by a normal merge preserving approved `83b52b9586cbdb73a6bd6097398ea38b7bad9c42` as an ancestor. Both current-summary conflicts are resolved additively. **All 29 original portfolio files, all 20 captured input hashes and this publication's original evidence index remain unchanged.** Statements below such as “ready for review”, “separate unmerged candidate” and “does not contain PR #49's closure files” describe the original `cfca399` publication baseline, not current master. The historical 66-suite PR #48 results and recorded vulnerability remain historical; later 67-suite results and the dependency fix are separate evidence.
+
+See the [new integration/reconciliation checkpoint](../../07_verification/PR49_POST_MERGE_AND_PR50_RECONCILIATION_20261020.md) for actual chronology, immutable-file checks and fresh local verification. The changed #50 HEAD requires fresh exact-HEAD GitHub CI and renewed independent human review; its older approval is not approval of this reconciliation. Review request, actual approval and merge remain distinct. PR #52 remains a separate unchanged draft.
+
+Publication and reconciliation grant no canonical registration, preparatory exception, S2-A implementation/activation, live grants, credentials, transport trust or release authority. Existing quorum, 14 privileged denials, disabled agents and Gate 7 remain unchanged.
+
 ## Status and source preservation
 
 **DOCUMENTATION_REVIEW_CANDIDATE / WBS_UNAPPLIED / EXCEPTION_NOT_GRANTED / S2A_IMPLEMENTATION_NOT_AUTHORIZED.** The operator authorized publication for independent inspection, not the proposed implementation or governance transaction.

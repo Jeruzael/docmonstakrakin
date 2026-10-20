@@ -1,0 +1,122 @@
+{
+  "recordType": "DISPOSABLE_RECONCILIATION_VALIDATION",
+  "startedAt": "2026-10-20T03:40:51.602Z",
+  "completedAt": "2026-10-20T03:48:52.807Z",
+  "validationRevision": "cbdd0a1e3dafa21097680fc38dba6116914914d6",
+  "indexTree": "65c9913469b256d7ae12dd45aa7e2b130a463ac4",
+  "platform": "win32",
+  "node": "v22.21.1",
+  "syntheticOnly": true,
+  "processOnlyLegacyPowerShellModulePath": true,
+  "installedSourceMapJs": "1.2.2",
+  "commands": [
+    {
+      "name": "pr50-npm-ci",
+      "args": [
+        "ci"
+      ],
+      "exitCode": 0,
+      "durationMs": 38456,
+      "log": "pr50-npm-ci.log"
+    },
+    {
+      "name": "pr50-npm-ls",
+      "args": [
+        "ls",
+        "source-map-js",
+        "--all"
+      ],
+      "exitCode": 0,
+      "durationMs": 1982,
+      "log": "pr50-npm-ls.log"
+    },
+    {
+      "name": "pr50-npm-audit",
+      "args": [
+        "audit",
+        "--json"
+      ],
+      "exitCode": 0,
+      "durationMs": 2207,
+      "log": "pr50-npm-audit.log"
+    },
+    {
+      "name": "pr50-quality",
+      "args": [
+        "run",
+        "ci:quality"
+      ],
+      "exitCode": 0,
+      "durationMs": 20163,
+      "log": "pr50-quality.log"
+    },
+    {
+      "name": "pr50-ci-prepare",
+      "args": [
+        "run",
+        "ci:prepare"
+      ],
+      "exitCode": 0,
+      "durationMs": 831,
+      "log": "pr50-ci-prepare.log"
+    },
+    {
+      "name": "pr50-complete-regression",
+      "args": [
+        "run",
+        "test:complete"
+      ],
+      "exitCode": 0,
+      "durationMs": 363148,
+      "log": "pr50-complete-regression.log"
+    },
+    {
+      "name": "pr50-controlled-prepare",
+      "args": [
+        "run",
+        "ci:prepare"
+      ],
+      "exitCode": 0,
+      "durationMs": 969,
+      "log": "pr50-controlled-prepare.log"
+    },
+    {
+      "name": "pr50-controlled-docs",
+      "args": [
+        "run",
+        "test:controlled-docs"
+      ],
+      "exitCode": 0,
+      "durationMs": 53344,
+      "log": "pr50-controlled-docs.log"
+    }
+  ],
+  "suites": {
+    "total": 67,
+    "passed": 67,
+    "failed": 0,
+    "skipped": 0
+  },
+  "reportedOutputs": {
+    "total": 1672,
+    "passed": 1672,
+    "failed": 0,
+    "skipped": 0
+  },
+  "controlledDocs": {
+    "core": 40,
+    "additional": 29,
+    "focused": 11,
+    "syntheticSnapshotMutated": false
+  },
+  "auditVulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "protectedEvidenceUnchanged": true,
+  "workingTreeClean": true
+}

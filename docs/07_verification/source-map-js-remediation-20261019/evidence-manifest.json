@@ -1,0 +1,158 @@
+{
+  "recordType": "DEPENDENCY_REMEDIATION_CANDIDATE_EVIDENCE_NOT_AUTHORIZATION",
+  "repository": "Jeruzael/docmonstakrakin",
+  "base": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+  "advisory": "GHSA-68fv-2mgg-jv7q",
+  "version": {
+    "before": "1.2.1",
+    "candidate": "1.2.2"
+  },
+  "runtime": {
+    "node": "22.21.1",
+    "platform": "win32",
+    "bun": "1.4.2"
+  },
+  "scope": {
+    "onlyChangedNpmPackage": "source-map-js",
+    "sameBunTupleOnly": true,
+    "packageJsonUnchanged": true,
+    "applicationRuntimeSourceUnchanged": true,
+    "canonicalWbsAndHistoricalEvidenceUnchanged": true
+  },
+  "checks": {
+    "npmCiBefore": true,
+    "npmCiAfter": true,
+    "bunFrozenInstall": true,
+    "npmInstalledVersion": "1.2.2",
+    "bunInstalledVersion": "1.2.2",
+    "auditBeforeHigh": 1,
+    "auditAfterTotal": 0,
+    "focusedBaseline": {
+      "passed": 9,
+      "failed": 27,
+      "expectedFailure": true
+    },
+    "focusedCandidate": {
+      "passed": 36,
+      "failed": 0
+    },
+    "typecheck": true,
+    "build": true,
+    "wbsZeroDrift": true,
+    "initialComplete": {
+      "suitesPassed": 66,
+      "suitesFailed": 1,
+      "outputsPassed": 1671,
+      "outputsFailed": 1,
+      "skipped": 0
+    },
+    "serialComplete": {
+      "suitesPassed": 67,
+      "suitesFailed": 0,
+      "outputsPassed": 1672,
+      "outputsFailed": 0,
+      "skipped": 0
+    },
+    "perimeter": 51,
+    "vitePerimeter": 11,
+    "az08Lifecycle": 105,
+    "humanQuorum": 86,
+    "controlledDocs": {
+      "core": 40,
+      "additional": 29,
+      "focused": 11,
+      "syntheticSnapshotMutated": false
+    }
+  },
+  "failureTruth": "Initial 8-second UI harness render timeout before Scenario 4 assertion, 49 other scenarios passed. Concurrent install was a confounder, not proven cause. Unchanged serial rerun passed 50/50 UI scenarios and all 67 suites. No app/test/timeout weakening.",
+  "agentReview": {
+    "investigator": "/root/source_map_investigation",
+    "reviewer": "/root/source_map_candidate_review",
+    "concreteSurvivingBypassOrIntroducedRegression": false,
+    "humanApproval": false
+  },
+  "limitations": [
+    "No live-service or large-gap DoS execution",
+    "Application attacker reachability not established",
+    "Zero audit is time-specific, not full supply-chain certification",
+    "Human merge and post-merge verification still required"
+  ],
+  "files": [
+    {
+      "path": "npm-ci-before.log",
+      "sha256": "ea989e856b339ae992aefb5e9a2bbee688fbbbc1491975183eae568e0d422134"
+    },
+    {
+      "path": "audit-before.json",
+      "sha256": "13e613f6b8b5e1f0bf718701e6bb2edbb48d1c3c0a00c4ad7625b618e7588972"
+    },
+    {
+      "path": "registry-1.2.2.json",
+      "sha256": "e1d21075e72cfc2c7e23a51a3a558bc06462fa49d699231892e45c06e007081b"
+    },
+    {
+      "path": "npm-ci-after.log",
+      "sha256": "154c5d0e30a33aca0bd58da8285a0ff040bc16a339e62a0dc5bbe8b0d35a88ed"
+    },
+    {
+      "path": "audit-after.json",
+      "sha256": "9038f2b54a9abbc1f01bfb529231f3ed723cb0521263a35f679abc59d6500c35"
+    },
+    {
+      "path": "focused-before.log",
+      "sha256": "760f2a62ff33c5e3497f1cafe06d71fd2d8c1278660df2a0fb5bd8cc552e633b"
+    },
+    {
+      "path": "focused-after.log",
+      "sha256": "33974b1da5dfdeb3c66b0ff379a6cf777d09a11fde103c90738012269a610c33"
+    },
+    {
+      "path": "npm-ls-after.log",
+      "sha256": "b6ce08882e2276e3ade4bd51abb3a1a57a61ece514e3d1f7aca54ff03ada82ef"
+    },
+    {
+      "path": "bun-frozen-install.log",
+      "sha256": "b63b58c9b0604fc7e7e3cef2c45a62c38d9574c3262567889ac3d47bc25ef3d8"
+    },
+    {
+      "path": "typecheck.log",
+      "sha256": "80ed5468c9258a99a74efb4ad1b8514afe99af3990752b933cae3097b64e7e81"
+    },
+    {
+      "path": "build.log",
+      "sha256": "c70a9d9448d9dd50f3d3d31a08b6ca95797fb8d88ee9115b874d731289c1f9fa"
+    },
+    {
+      "path": "wbs-check.log",
+      "sha256": "dd45da50f3e1b876f1d3ef8c871f5adf075c4439729771cc5dc98c78197ea423"
+    },
+    {
+      "path": "complete-regression-serial.log",
+      "sha256": "4ba3860952a433713e41b9c74c5ea8486800d6f5c437d7bb5d0a58453d56c326"
+    },
+    {
+      "path": "complete-results.json",
+      "sha256": "abdc3656e44e9bb82122e5e19eae55f2d375bd7b11cb96800a87b1ca9083b9e6"
+    },
+    {
+      "path": "controlled-docs.log",
+      "sha256": "a1b3b74ccff4302f5c308e367fdfc88c77f2ddb2d514786d49359c0e94494d35"
+    },
+    {
+      "path": "lock-provenance-check.json",
+      "sha256": "aed70e371e80846b185072be2c4ef7199fca0a34c04bfe10ac6ba7744938be3f"
+    },
+    {
+      "path": "initial-complete-regression.log",
+      "sha256": "0fe5c4fac16f9cb0842a64754137237b5175c5f3885f32e7511b4fcc4fa79831"
+    },
+    {
+      "path": "initial-complete-results.json",
+      "sha256": "0468f186b8efbd5541b078c4c04e2daf5b904663a11efc61769e0faa734ecaf5"
+    },
+    {
+      "path": "initial-ui-timeout.log",
+      "sha256": "5aa9630b03b2e9b59f61d9b9fc7fb459406a6ca8259eb9e95363ac18ddac600f"
+    }
+  ]
+}

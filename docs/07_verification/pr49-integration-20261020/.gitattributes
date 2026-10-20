@@ -1,0 +1,3 @@
+# Retain captured evidence bytes across Windows and Linux.
+*.json -text whitespace=cr-at-eol
+*.log -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

@@ -1,0 +1,270 @@
+{
+  "recordType": "RECONCILIATION_PRESERVATION_VERIFICATION",
+  "verifiedAt": "2026-10-20T02:59:27.729Z",
+  "master": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+  "oldApprovedHead": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+  "sourceReadinessHead": "1f8a3674f76445c4a1a6bb1c460e140442ece15b",
+  "indexTree": "65c9913469b256d7ae12dd45aa7e2b130a463ac4",
+  "masterFileCount": 449,
+  "unexpectedMasterChanges": [],
+  "summarySections": [
+    {
+      "path": "docs/00_control/PROJECT_STATE.md",
+      "source": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "sha256": "272d58823e384bafe666fa722ee3a19e60fb94b99d76cb99ff60134f613227ba",
+      "bytes": 2482
+    },
+    {
+      "path": "docs/00_control/PROJECT_STATE.md",
+      "source": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+      "sha256": "4160d51a99fc1cb1de9e47c350e1d377fbdf442e411b7f2c8e5157064ec20e86",
+      "bytes": 2811
+    },
+    {
+      "path": "docs/00_control/LAST_HANDOFF.md",
+      "source": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "sha256": "994b09e6638ff6ff9a5d4462a9b7c5c0ca4b941e550be4259c582f273747cecf",
+      "bytes": 2560
+    },
+    {
+      "path": "docs/00_control/LAST_HANDOFF.md",
+      "source": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+      "sha256": "8717bfab2a6545f409a872db98f1f8b584e807ec3cafd292e57076f80b297db7",
+      "bytes": 3113
+    }
+  ],
+  "originalPortfolioFiles": [
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/.gitattributes",
+      "gitBlob": "2aa48398e3b9f35befb13b0991b5ac34626c181e",
+      "sha256": "3eea876a4544a5e2c60aadb6c2a9ffa0759c9268e65f85a5c5a1dc3b1e1838be"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/GOVERNANCE_RESOLUTION.md",
+      "gitBlob": "b135007c0c6d7087549fa60d4512ad4c22bafdfb",
+      "sha256": "7ed39ced97a614503787ad15b4c07194ec3c7c3b7adc1be4d8aad9d042476268"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/PR48_MERGE_READINESS.md",
+      "gitBlob": "42e9a492477490130b02aad5bf26b750a7851e7b",
+      "sha256": "21249d4d06cfbd859a9d694fa3d7976f03f2041bc76ec3e36181c386822e057e"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/README.md",
+      "gitBlob": "d9a6df242f6f75912ce16c57f3a30fbfa456bbda",
+      "sha256": "5dc47677f59385823368cc73aef3cdace5b41254310ef5c9c01b4960e3e92454"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/context.md",
+      "gitBlob": "7a2940e2bba61f3f4cfdca717639b1fef4a252c0",
+      "sha256": "6a27343900e1d3e6a1d6eb48bf33f1735f01866e77079ee02bd3d445c729ec4a"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/diagrams/before.mmd",
+      "gitBlob": "596f419c8656d606dd0317a043a7c0c30e21e4fe",
+      "sha256": "a119c550be1deac152bf1d51b09a3f621a0ecb232664f518e2ff930f4a8851c5"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/diagrams/central-policy-after.mmd",
+      "gitBlob": "19205d68d36ec8a93c6cf75ce800c5493be5fc91",
+      "sha256": "84a22c0edad543f54b98b0fd2048e119e9f14624ecde15d91291864d7bb9d688"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/diagrams/isolated-broker-after.mmd",
+      "gitBlob": "4dde5977a35f9c69509da7d6ae54c49a142bb493",
+      "sha256": "60ec46c0dc2c4c8521a5b296aaf351a924aa600df70df7b1ef99869ae6649c94"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/diagrams/local-guards-after.mmd",
+      "gitBlob": "2660d90bf6a533f03cf5c70b11191344525def87",
+      "sha256": "120b9292cab28437e596aecffdd2d58f9cdcc0868727dd3cd1b4537c93c51611"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence-manifest.json",
+      "gitBlob": "5211718bbf2226dc6574abbf4784165885891d1d",
+      "sha256": "f6cbd1ac346ad152f136d297a79c0bbcf6347cc81bc3000895447056cefe202b"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/REPRODUCIBILITY.md",
+      "gitBlob": "6241b49898c3613587b1adcc567144a8648d35b0",
+      "sha256": "1b6f29a1e2f8e8324eeb061305350e2d631555928044cffde1f5a1e5f5acdf89"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/benchmark.mjs.txt",
+      "gitBlob": "04c30b2a5809e03fae1cacd11372e3b7268b770f",
+      "sha256": "3387f91a6133ec11400daa414d7c65adc064ab324c51cda6364232b792f5af28"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/dependency-package-lock.json",
+      "gitBlob": "c3336de98906a4e77fb422a369fefa91de567cf9",
+      "sha256": "78afbb96c5704ce29337c29a9b6fcc18fabaae1fde75afc0dfb2a8f63e59fdd4"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/linux-build-image-install.log",
+      "gitBlob": "d93bab142c406ac5baa87e3b56705a6a1db0dd0d",
+      "sha256": "466991e851d68cab6bfb105453c0fa1e245e59404d766c4b6c92bbe23e4dc899"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/linux-slim-install-failure.log",
+      "gitBlob": "3dd81254c290ce80856ce904fdf3035a9137337d",
+      "sha256": "ec8c8ee007f1731043e28d1ab20dac2b4ea53b33ac2410afa7f898c393b46501"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/measurements.json",
+      "gitBlob": "f9ab4c997524600a65bcafedafe63c6e3c4f72e6",
+      "sha256": "eb3f13bc6c2f7a24ff857786cba638a87ada14dc719c94b2f6c3c119da1e20b7"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk196.log",
+      "gitBlob": "efc6a04d70c7d8d2050f93fca79be6b95b9737eb",
+      "sha256": "21b119fe3124e675a07f9421eb3014fa13c2f7196978edd7735e9b2982ac26bf"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk197.log",
+      "gitBlob": "e2fd04745470168ad2715f48a143cc46eadc2a7b",
+      "sha256": "63541ab5df5d8d54a9d13cd0d91ccf2f702c40e30f48d51f3d8e68b984fe5399"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk208.log",
+      "gitBlob": "faa6c3ea2fa0c79d82cfc95cc6a6eb87eba36784",
+      "sha256": "2c851931d9b046927dd14aecd6b4ee9f16fb427dcaab290d99f16cb77ea13f98"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr48-focused.log",
+      "gitBlob": "06387af83a39352dccce86f3cba0dcf29cd1869b",
+      "sha256": "d88ebd230c153f6abf44d6fefdebd320ddc29cd258d5ec4b456a14f8c972aff8"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/previewRegistration.mjs.txt",
+      "gitBlob": "23283660d7aefe0bdc86d7d30aa664fbd69ce9ef",
+      "sha256": "17f98fae298c758542f8dcc63711c85b18eb475223218d1443c61635010be494"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/sqlite-worker.mjs.txt",
+      "gitBlob": "3251b04918fb8dac1d922dc52109433350529c17",
+      "sha256": "6116f8413b2d87b59016b144dc6f70a72be107acd31183189f742faa290e445c"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/governance/preparatory-exception-proposal.json",
+      "gitBlob": "307f6f90cc48f146553fc19823115153a436f432",
+      "sha256": "a360f9032f2cf272e24939f19ebce52e7847791f21979bf997cc372566e3fc73"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/governance/proposed-MASTER_WBS.yaml.txt",
+      "gitBlob": "8fd9f66f10b9473a1a0860451c3ad0963b188e90",
+      "sha256": "a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/governance/registration-proposal.json",
+      "gitBlob": "22db30612dbca89e6d86722745e559d94a3bff1b",
+      "sha256": "135e057cc668caf04547b8c6f938c88fbb39f42dfb1d42d2a237776b4a0028c5"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/hardening.json",
+      "gitBlob": "2df828fb1c3f98ceaede1b61cfe7e9d82606717f",
+      "sha256": "6e922fe8b25cbd7ca7402acb103f5946db2c162f00510a432e82e9eb808c72ba"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/hardening.md",
+      "gitBlob": "0a8dc40f54e9de22e5857fa586fd4bf2abf3c459",
+      "sha256": "678d76550c176eaeeaa6d920de3fa2b92ab0dd5313821aa717fdad787304518e"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/implementation/central-policy.md",
+      "gitBlob": "b2deebb8982f579470425f8185b120e1f246056f",
+      "sha256": "6279448b7b0fd21d265b2bb52cf5a79e89bb1a9c1ff23cc4b0bdf31f3cbfb488"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/proposals/s2a-foundations.md",
+      "gitBlob": "b6a399928429a8334c3b657dc7949e4839e6ed42",
+      "sha256": "6009a87f59935f820e2002ded31efd7734c69238f1c605abcd7ef07ca6674f2d"
+    }
+  ],
+  "historicalInputs": [
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr48-focused.log",
+      "sha256": "d88ebd230c153f6abf44d6fefdebd320ddc29cd258d5ec4b456a14f8c972aff8"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk208.log",
+      "sha256": "2c851931d9b046927dd14aecd6b4ee9f16fb427dcaab290d99f16cb77ea13f98"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk197.log",
+      "sha256": "63541ab5df5d8d54a9d13cd0d91ccf2f702c40e30f48d51f3d8e68b984fe5399"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/pr34-dmk196.log",
+      "sha256": "21b119fe3124e675a07f9421eb3014fa13c2f7196978edd7735e9b2982ac26bf"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/registration-preview.log",
+      "sha256": "c8fd0e1f378d65effb47cfd86b0eb555da62c5842177eb4056a7e848dc947b5d"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/windows-install.log",
+      "sha256": "818a058776a2c2c1725a3b9347f7dc7834136eacda20b1cd4af0f1614ef5728b"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/linux-slim-install-failure.log",
+      "sha256": "ec8c8ee007f1731043e28d1ab20dac2b4ea53b33ac2410afa7f898c393b46501"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/linux-build-image-install.log",
+      "sha256": "466991e851d68cab6bfb105453c0fa1e245e59404d766c4b6c92bbe23e4dc899"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/windows-benchmark.log",
+      "sha256": "13dd2f79364a2e72a38bc8a668e834ee0a841121809209effe15fcfe9bbb644a"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/linux-benchmark.log",
+      "sha256": "4f0a3bd1d5721f39c3d3be2fe3889758034d82439ee8bd3c90db33cc585af1f7"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/windows-results-raw.json",
+      "sha256": "896d0189511cd02981803e21326df18ca1646023f6e6cf21e322be1d46d7cfac"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/linux-results-raw.json",
+      "sha256": "6c29d8d54e8ddc465fd69b185b4d355d5dc21536d179c2ef1d5c604bc68e5222"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/dependency-package-lock.json",
+      "sha256": "78afbb96c5704ce29337c29a9b6fcc18fabaae1fde75afc0dfb2a8f63e59fdd4"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/governance/registration-proposal.json",
+      "sha256": "135e057cc668caf04547b8c6f938c88fbb39f42dfb1d42d2a237776b4a0028c5"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/governance/proposed-MASTER_WBS.yaml.txt",
+      "sha256": "a3d7de535fddd4ad2521335e8f9f333eabe1bde5a67747cf5fb466bb54a88ae9"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/benchmark.mjs.txt",
+      "sha256": "3387f91a6133ec11400daa414d7c65adc064ab324c51cda6364232b792f5af28"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/sqlite-worker.mjs.txt",
+      "sha256": "6116f8413b2d87b59016b144dc6f70a72be107acd31183189f742faa290e445c"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/previewRegistration.mjs.txt",
+      "sha256": "17f98fae298c758542f8dcc63711c85b18eb475223218d1443c61635010be494"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-publication-20261019/evidence/github-readiness-snapshot.json",
+      "sha256": "4af78850071efdc992d41e60abb03ff4f84295519a4d66dbb7caa37c76dc6d63"
+    },
+    {
+      "path": "docs/06_planning/s2a-readiness-20261019/evidence/measurements.json",
+      "sha256": "eb3f13bc6c2f7a24ff857786cba638a87ada14dc719c94b2f6c3c119da1e20b7"
+    }
+  ],
+  "publicationEvidenceFilesPreserved": 9,
+  "wbs": {
+    "docs/00_control/MASTER_WBS.yaml": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "docs/00_control/MASTER_WBS.md": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f"
+  }
+}

@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "recordType": "ADDITIVE_PR49_INTEGRATION_AND_PR50_RECONCILIATION",
+  "repository": "Jeruzael/docmonstakrakin",
+  "preparedAt": "2026-10-20T03:49:48.732Z",
+  "master": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+  "pr49": {
+    "reviewedHead": "fa7929627fd412dd4e0fe1503927f5217ddb1c0e",
+    "actualReview": {
+      "id": 5576321049,
+      "actor": "jianzhihuoxin",
+      "state": "APPROVED",
+      "at": "2026-10-19T19:02:06Z"
+    },
+    "merge": {
+      "sha": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+      "actor": "Jeruzael",
+      "apiAt": "2026-10-20T02:48:53Z",
+      "commitAt": "2026-10-20T02:48:52Z",
+      "parents": [
+        "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+        "fa7929627fd412dd4e0fe1503927f5217ddb1c0e"
+      ],
+      "tree": "8c0d63b861184968ce59ef91a9d302d991e2e635"
+    },
+    "agentPerformedMerge": false,
+    "separatePriorAgentMergeAuthorizationInvented": false,
+    "postmergeWorkflow": {
+      "id": 39360943211,
+      "head": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 118426731825,
+          "name": "Controlled Docs",
+          "head": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-20T02:48:57Z",
+          "completedAt": "2026-10-20T02:49:47Z"
+        },
+        {
+          "id": 118426732002,
+          "name": "Quality & Build",
+          "head": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-20T02:48:58Z",
+          "completedAt": "2026-10-20T02:49:25Z"
+        },
+        {
+          "id": 118426732064,
+          "name": "Complete Regression",
+          "head": "6f9e822ad9fd85f42a81b505259ca0013aa815b7",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-20T02:48:57Z",
+          "completedAt": "2026-10-20T02:53:37Z"
+        }
+      ],
+      "suites": 67,
+      "reportedOutputs": 1672,
+      "failed": 0,
+      "skipped": 0,
+      "controlledDocs": {
+        "core": 40,
+        "additional": 29,
+        "focused": 11
+      }
+    }
+  },
+  "historicalEvidence": {
+    "pr48Merge": "cfca39902d6fd4bc0d4c5bdaf351b0522c780466",
+    "pr48OriginalSuites": 66,
+    "pr48OriginalOutputs": 1636,
+    "pr48OriginalHighAuditSignalPreserved": true,
+    "pr51LaterSeparateRemediationMerge": "4e10a92ec1cb89ea68cdf9385741df636bf19680",
+    "currentApplicationSourceMapJs": "1.2.2",
+    "historicalEvidenceRewritten": false
+  },
+  "pr50": {
+    "oldApprovedHead": "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+    "oldApproval": {
+      "id": 5576384207,
+      "actor": "jianzhihuoxin",
+      "at": "2026-10-19T19:07:20Z"
+    },
+    "normalMergeParents": [
+      "83b52b9586cbdb73a6bd6097398ea38b7bad9c42",
+      "6f9e822ad9fd85f42a81b505259ca0013aa815b7"
+    ],
+    "conflicts": [
+      "docs/00_control/PROJECT_STATE.md",
+      "docs/00_control/LAST_HANDOFF.md"
+    ],
+    "resolution": "BOTH_DATED_ADDITIONS_AND_COMMON_HISTORY_RETAINED_VERBATIM_NEW_CURRENT_SECTION_ADDED",
+    "originalPortfolioFilesPreserved": 29,
+    "historicalInputsVerified": 20,
+    "publicationEvidenceFilesPreserved": 9,
+    "rebase": false,
+    "forcePush": false,
+    "reviewAtPreparation": {
+      "state": "PENDING_REQUEST",
+      "requiredReviewer": "jianzhihuoxin",
+      "actualRequest": "Recorded separately on PR50 timeline after signed HEAD publication; request is not approval"
+    },
+    "newHeadCI": "Required separately on exact published HEAD; not substituted with local or old CI",
+    "mergedByAgent": false
+  },
+  "pr52": {
+    "head": "89b1527f75dfdd69a3e49bda752b64d4edd70a54",
+    "draft": true,
+    "modifiedByAgent": false,
+    "mergedByAgent": false,
+    "independentReview": "PENDING"
+  },
+  "localValidation": {
+    "recordType": "DISPOSABLE_RECONCILIATION_VALIDATION",
+    "startedAt": "2026-10-20T03:40:51.602Z",
+    "completedAt": "2026-10-20T03:48:52.807Z",
+    "validationRevision": "cbdd0a1e3dafa21097680fc38dba6116914914d6",
+    "indexTree": "65c9913469b256d7ae12dd45aa7e2b130a463ac4",
+    "platform": "win32",
+    "node": "v22.21.1",
+    "syntheticOnly": true,
+    "processOnlyLegacyPowerShellModulePath": true,
+    "installedSourceMapJs": "1.2.2",
+    "commands": [
+      {
+        "name": "pr50-npm-ci",
+        "args": [
+          "ci"
+        ],
+        "exitCode": 0,
+        "durationMs": 38456,
+        "log": "pr50-npm-ci.log"
+      },
+      {
+        "name": "pr50-npm-ls",
+        "args": [
+          "ls",
+          "source-map-js",
+          "--all"
+        ],
+        "exitCode": 0,
+        "durationMs": 1982,
+        "log": "pr50-npm-ls.log"
+      },
+      {
+        "name": "pr50-npm-audit",
+        "args": [
+          "audit",
+          "--json"
+        ],
+        "exitCode": 0,
+        "durationMs": 2207,
+        "log": "pr50-npm-audit.log"
+      },
+      {
+        "name": "pr50-quality",
+        "args": [
+          "run",
+          "ci:quality"
+        ],
+        "exitCode": 0,
+        "durationMs": 20163,
+        "log": "pr50-quality.log"
+      },
+      {
+        "name": "pr50-ci-prepare",
+        "args": [
+          "run",
+          "ci:prepare"
+        ],
+        "exitCode": 0,
+        "durationMs": 831,
+        "log": "pr50-ci-prepare.log"
+      },
+      {
+        "name": "pr50-complete-regression",
+        "args": [
+          "run",
+          "test:complete"
+        ],
+        "exitCode": 0,
+        "durationMs": 363148,
+        "log": "pr50-complete-regression.log"
+      },
+      {
+        "name": "pr50-controlled-prepare",
+        "args": [
+          "run",
+          "ci:prepare"
+        ],
+        "exitCode": 0,
+        "durationMs": 969,
+        "log": "pr50-controlled-prepare.log"
+      },
+      {
+        "name": "pr50-controlled-docs",
+        "args": [
+          "run",
+          "test:controlled-docs"
+        ],
+        "exitCode": 0,
+        "durationMs": 53344,
+        "log": "pr50-controlled-docs.log"
+      }
+    ],
+    "suites": {
+      "total": 67,
+      "passed": 67,
+      "failed": 0,
+      "skipped": 0
+    },
+    "reportedOutputs": {
+      "total": 1672,
+      "passed": 1672,
+      "failed": 0,
+      "skipped": 0
+    },
+    "controlledDocs": {
+      "core": 40,
+      "additional": 29,
+      "focused": 11,
+      "syntheticSnapshotMutated": false
+    },
+    "auditVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "protectedEvidenceUnchanged": true,
+    "workingTreeClean": true
+  },
+  "initialValidation": {
+    "completed": false,
+    "failedAccountTest": true,
+    "cause": "Bundled PowerShell 7 module path inherited by Windows PowerShell; type-data AuthorizationManager validation failure",
+    "remedy": "Only disposable validation process PSModulePath limited to Windows PowerShell module directories; no source or machine/user policy change",
+    "logsRetained": true
+  },
+  "boundaries": {
+    "canonicalWbsChanged": false,
+    "pr34Changed": false,
+    "humanQuorumChanged": false,
+    "credentialsChanged": false,
+    "privilegedRoutesEnabled": 0,
+    "liveAgentsEnabled": false,
+    "gate7Executed": false,
+    "releasePromoted": false,
+    "s2aImplementationStarted": false,
+    "s2aActivated": false
+  },
+  "evidence": [
+    {
+      "path": "github-integration-snapshot.json",
+      "sha256": "a46ab9ad5a1ad0fd01a5eec6ad6a705501e756388cf707c1c444efd5638acec6",
+      "bytes": 345570,
+      "redacted": false
+    },
+    {
+      "path": "governance-snapshot.json",
+      "sha256": "9d5e2abf88db987c4318f18941e461ebf1afb7735d972fcec05857b056dfb856",
+      "bytes": 228342,
+      "redacted": false
+    },
+    {
+      "path": "preservation-verification.json",
+      "sha256": "f8026967bfc5d26266a15de7ca275415eeb94bf08dab093f0dbb9f2ca342c9a3",
+      "bytes": 12488,
+      "redacted": false
+    },
+    {
+      "path": "pr49-postmerge-quality-build.log",
+      "sha256": "b1b6bd74248cbc074d01d64e6bf55a8253d174beb0eedb4459199bff3aa0a8d9",
+      "bytes": 21774,
+      "redacted": false
+    },
+    {
+      "path": "pr49-postmerge-complete-regression.log",
+      "sha256": "dcf983638319d8383b48aa578bef19d1a36f594cd408ca91c0f65792fe70fb0b",
+      "bytes": 51027,
+      "redacted": false
+    },
+    {
+      "path": "pr49-postmerge-controlled-docs.log",
+      "sha256": "2b07ca0cf9234212e769071046c793fab326d5594d39131dad4d82ba53542755",
+      "bytes": 54181,
+      "redacted": false
+    },
+    {
+      "path": "initial-incomplete-regression.log",
+      "sha256": "586f90ad5b46851be0e98118155b11e8c41f61dee8a505a8c873a0dc98f4e471",
+      "bytes": 437,
+      "redacted": false
+    },
+    {
+      "path": "initial-account-provisioning-module-failure.log",
+      "sha256": "3c45510c9bfcc2e4d6fbe308b652964541f9c1700326c55892e61cb165fc6885",
+      "bytes": 1577,
+      "redacted": false
+    },
+    {
+      "path": "pr50-npm-ci.log",
+      "sha256": "021f11709a1fb7e5f708f4ae6f722f3818116d1a37f9f45aa5eb5025c3191e6b",
+      "bytes": 238,
+      "redacted": false
+    },
+    {
+      "path": "pr50-npm-ls.log",
+      "sha256": "b897a792723d0c5a993c7b38bd9c2441fa9b5ab8b57c324f299bcce938a26017",
+      "bytes": 380,
+      "redacted": false
+    },
+    {
+      "path": "pr50-npm-audit.log",
+      "sha256": "5e8a7af917623b1e32358bd8d012fecf8f126e368b3b73c7b8362a56e1f1f1e8",
+      "bytes": 365,
+      "redacted": false
+    },
+    {
+      "path": "pr50-quality.log",
+      "sha256": "dbc5387e1231560d6253fb25e61eb50f00a5b2cb729ef74c27f084ca2cea0984",
+      "bytes": 1198,
+      "redacted": false
+    },
+    {
+      "path": "pr50-ci-prepare.log",
+      "sha256": "e248a23857981cc492f18ad490cb8345ae41acad4478955c502b31dd8d835fbd",
+      "bytes": 468,
+      "redacted": false
+    },
+    {
+      "path": "pr50-controlled-prepare.log",
+      "sha256": "e248a23857981cc492f18ad490cb8345ae41acad4478955c502b31dd8d835fbd",
+      "bytes": 468,
+      "redacted": false
+    },
+    {
+      "path": "pr50-complete-regression.log",
+      "sha256": "20f489e4424ae4987a5626583d135ecd91df8eeb25d53ec4515342fe241178b0",
+      "bytes": 5352,
+      "redacted": false
+    },
+    {
+      "path": "pr50-complete-results.json",
+      "sha256": "3fe7292690ac7ac26b1e6595493ae5cf4caa3fd6beff8848845e765ff00aa23b",
+      "bytes": 17555,
+      "redacted": false
+    },
+    {
+      "path": "pr50-controlled-docs.log",
+      "sha256": "4e5ac9e2dd9dd1e231c175287c41d9d2e41d54589505ec1fb148cec02de2ddb2",
+      "bytes": 6924,
+      "redacted": false
+    },
+    {
+      "path": "pr50-local-validation.json",
+      "sha256": "d5a2f368b90eaee787c5e2a7075d245c8185738126d55f98be03b1dbff269ea4",
+      "bytes": 2497,
+      "redacted": false
+    }
+  ],
+  "nextHumanGate": "RENEWED_INDEPENDENT_EXACT_HEAD_REVIEW_AND_THREE_CI_JOBS_THEN_SEPARATE_PR50_HUMAN_MERGE_DECISION"
+}

@@ -1,0 +1,37 @@
+PASS negative line rejected as object
+PASS negative line rejected as JSON
+PASS fractional line rejected as object
+PASS fractional line rejected as JSON
+PASS string line rejected as object
+PASS string line rejected as JSON
+PASS null line rejected as object
+PASS null line rejected as JSON
+PASS unsafe line rejected as object
+PASS unsafe line rejected as JSON
+PASS over-limit line rejected as object
+PASS over-limit line rejected as JSON
+PASS negative column rejected as object
+PASS negative column rejected as JSON
+PASS fractional column rejected as object
+PASS fractional column rejected as JSON
+PASS string column rejected as object
+PASS string column rejected as JSON
+PASS null column rejected as object
+PASS null column rejected as JSON
+PASS unsafe column rejected as object
+PASS unsafe column rejected as JSON
+PASS nonfinite line NaN rejected
+PASS nonfinite line Infinity rejected
+PASS cumulative nested limit rejected as object
+PASS cumulative nested limit rejected as JSON
+PASS ordinary basic map query
+PASS valid indexed offset query
+PASS valid nested sections retain sources
+PASS maximum allowed line accepted without serializing a gap
+PASS large legal column accepted without serializing a gap
+PASS generator preserves ordinary short gaps
+PASS SourceNode preserves ordinary generated code
+PASS PostCSS inline indexed previous-map positive control
+PASS PostCSS inline fractional previous-map coordinate rejected
+PASS PostCSS transformation preserves normal previous-map compatibility
+Source-map dependency checks: 36 passed, 0 failed.

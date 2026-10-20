@@ -1,0 +1,9 @@
+
+> docmonstakrakin@0.0.0 test:complete
+> tsx scripts/runCompleteRegression.ts
+
+PASSED scripts/runAutomatedQa.ts: 11 passed, 0 failed, 0 skipped
+FAILED scripts/testAccountProvisioning.ts: 0 passed, 1 failed, 0 skipped
+PASSED scripts/testAuditValidation.ts: 0 passed, 0 failed, 0 skipped
+PASSED scripts/testCanonicalLifecycle.ts: 16 passed, 0 failed, 0 skipped
+PASSED scripts/testCanonicalReconciliation.ts: 17 passed, 0 failed, 0 skipped
