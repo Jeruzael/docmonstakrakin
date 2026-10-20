@@ -1,0 +1,5 @@
+
+> docmonstakrakin@0.0.0 wbs:check
+> tsx scripts/renderWbs.ts --check
+
+✓ [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).

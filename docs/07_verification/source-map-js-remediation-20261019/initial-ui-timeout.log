@@ -1,0 +1,71 @@
+------------------------------------------------------------
+DMK Controlled Document Project Version Synchronization Test
+------------------------------------------------------------
+PASS: Scenario 1 & 2: Successful save updates TopBar to v121 and matches banner without reload
+PASS: Scenario 3: ControlledDocsView remains mounted, preserving editor context & success banner
+PASS: Scenario 5: Signed-Out Save disables save progression and preserves TopBar version
+PASS: Scenario 6: Stale document response (HTTP 409) does not advance version
+PASS: Scenario 7: Uncertain save timeout does not update TopBar version
+PASS: Scenario 8: Switching to Project B while Project A save is in flight preserves Project B
+PASS: Scenario 9 (Test E): UI-triggered project fetch rejecting deferred stale snapshot as a whole, preserving confirmed state, and recovering via retry
+PASS: Scenario 10: Consecutive saves advance version monotonically (120 -> 121 -> 122)
+PASS: Scenario 11: Save success followed by refresh failure preserves confirmed TopBar version
+PASS: Scenario 12: Saved auditEventId and stateVersion match server acknowledged response
+PASS: Scenario 13 (Case A): Successful controlled document save synchronizes authoritative audit ledger in EvidenceView without reload
+PASS: Scenario 14 (Case B): Delayed audit response displays refreshing status while preserving save confirmation, then transitions to synchronized
+PASS: Scenario 15 (Case C): Audit refresh failure displays recoverable warning, preserves existing audit records, and retry succeeds
+PASS: Scenario 16 (Case D): Audit response omitting the committed event leaves status unconfirmed with warning
+PASS: Scenario 17 (Case E): Project switching during audit refresh isolates audit state and does not leak events into Project B
+PASS: Scenario 18 (Case F): Consecutive saves handle out-of-order audit responses preserving the newer audit state
+PASS: Scenario 19 (Cases I & J): Failed saves do not trigger false audit sync and ledger contains zero duplicated or synthetic records
+PASS: Scenario 20 (Test A): Audit response with mismatched fields (wrong target, duplicate IDs) is rejected and leaves ledger UNCONFIRMED
+PASS: Scenario 21 (Blocker 2): Genuine project-list request rejects stale metadata and accepts fresh metadata without navigating away (Tests A-E)
+PASS: Scenario 22 (Test C): Re-selecting active project through TopBar preserves unconfirmed audit status when project snapshot omits audit event
+PASS: Scenario 23 (Test D): Navigation from Project A -> B -> A preserves Project A pending audit state without cross-project leakage and recovers upon valid refresh
+PASS: Scenario 24 (Test A - Blocker 1): Previously Confirmed Event Is Retained Across Later Project Refreshes
+PASS: Scenario 25 (Tests B & C - Blocker 1): Altered Previously Confirmed Event Rejected & Recovery to Synchronized State
+PASS: Scenario 26 (Tests D & E - Blocker 1): Multiple Confirmed Saves Watermark & Unverified Save Coexistence
+PASS: Scenario 27 (Test F - Blocker 1): Navigation (A -> B -> A) Preserves Confirmed Audit Watermark
+PASS: Scenario 28 (Test H - Blocker 1): Initial Project Without Prior Saves Loads Cleanly
+PASS: Scenario 29 (RED Test A - Blocker 3): Same-project selection does not clear unresolved snapshot warning while refresh is in-flight
+PASS: Scenario 30 (RED Test B - Blocker 3): Project-list warning retries GET /api/projects instead of individual-project endpoint
+PASS: Scenario 31 (RED Test C - Blocker 3): Stale project-list warning appears even when safe cached metadata is preserved
+PASS: Scenario 32 (Tests D & J - Blocker 3): Project switching and workspace navigation preserves unresolved snapshot warning
+PASS: Scenario 33 (Tests E, F, G - Blocker 3): Simultaneous list and snapshot warnings with independent recovery
+PASS: Scenario 34 (Test I - Blocker 3): Failed retry preserves warning and allows repeated retry attempts
+PASS: Scenario 35 (Test H - Blocker 3): Unavailable project list without safe cache displays explicit alert and recovers via retry
+PASS: Scenario 35b (Blocker 3): Genuinely empty project database shows empty state instead of unavailable alert
+PASS: Scenario 36 (RED Scenario A - Blocker 3): Stale project A disappears from response but warning persists
+PASS: Scenario 37 (RED Scenario B - Blocker 3): Empty list response does not prove deletion and retains warning
+PASS: Scenario 38 (Blocker 3): Multiple stale projects retain warning until all confirmed watermarks are satisfied
+PASS: Scenario 39 (Blocker 3): Re-appearance of omitted project preserves warning if still stale, and clears when fresh
+PASS: Scenario 40 (Blocker 3): Retry controls have unique identities and are disabled while requests are in flight
+PASS: Scenario 41 (MONO-14): Malformed list stateVersion is rejected without mutating accepted state; valid v0 is supported
+PASS: Scenario 42 (MONO-15): List-accepted B v51 rejects subsequent snapshot B v50 as a whole with project warning
+PASS: Scenario 43 (MONO-09): Late list response cannot overwrite a newer accepted version
+PASS: Scenario 44 (MONO-17): List floor advance disables canonical readiness on stale mounted snapshot
+PASS: Scenario 45 (MONO-18): Unsafe stateVersion in save response is rejected with zero false save or version effects
+PASS: Scenario 46 (MONO-13): Genuine Project Wizard creation establishes floor, protects against downgrade, and handles invalid responses
+PASS: Scenario 47 (RED-01): Controlled document save acknowledgment must not certify full canonical project snapshot
+PASS: Scenario 48 (RED-02): Project creation response must not certify complete canonical snapshot
+PASS: Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale
+PASS: Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale
+============================================================
+TOTAL TESTS: 50
+PASSED: 49
+FAILED: 1
+============================================================
+FAIL: Scenario 4: Failed save does not advance TopBar version
+locator.waitFor: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Select project' }) to be visible[22m
+
+    at createHarness (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r3-source-map-fix\scripts\testControlledDocVersionSync.ts:428:64)
+    at async <anonymous> (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r3-source-map-fix\scripts\testControlledDocVersionSync.ts:585:19)
+    at async test (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r3-source-map-fix\scripts\testControlledDocVersionSync.ts:44:5)
+    at async <anonymous> (C:\Users\HomePC\AppData\Local\Temp\codex-security-artifacts-26f85b591043c7b00003b9a0d81fdfdc25f5e49c587640d6578536eb69d42bbe\r3-source-map-fix\scripts\testControlledDocVersionSync.ts:584:1) {
+  log: [
+    "  - waiting for getByRole('button', { name: 'Select project' }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
