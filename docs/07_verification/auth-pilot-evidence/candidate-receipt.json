@@ -75,6 +75,8 @@
     "focused-windows.txt": "44f3e6a62ca14997afdfa93a4c98b2e877cc3771af4e4c5c5e0b1522eee5e65c",
     "full-before-browser-extension.json": "44426dc23677818f6f8abdb4062bc415d10f3f6cd1eefb5507a4f1131b8f5d0c",
     "full-before-browser-extension.txt": "a6c4c074959b35e646f2d221c2368f1bdc2a628ad7a1161c77c7483bcb586f60",
+    "header-count-ci-failure.json": "174daf49089626b351144dad714479a6477decebfea88cc24011617583efc271",
+    "header-count-local-green.txt": "fdaba244c24162808ad259f713e8ed050051a3c4edafcf8f10881038d4bc4adf",
     "initial-browser-binary-failure.txt": "41db0eb20909b5019df6dcc0accd5104fde1f4a8f7da1e112518a3da960ef83e",
     "initial-full-results.json": "abd59f174349978a97dee51f59e3f04f7915c0588e893417b5b39783dc94b98a",
     "initial-port-collision.txt": "95f3bab740eae7bcc04706cceef61726289b159772c1e88f49fc3bfc331d67e4",
@@ -82,5 +84,15 @@
     "npm-audit.json": "646ce2fa9d8d21b9674f96caada594d35cdba776e17acd9f50140cf0b70bbf43",
     "post-session-red.txt": "81f4b64630aefa5b6def8e7a8e830f778e3b4a4742c4341de6d09998cd4ec871",
     "unpaired-surrogate-red.txt": "6b62318c7f5289d00beeddc504eb06f538fa9e0e094a879ccfb4239a0075ea13"
+  },
+  "headerCompatibility": {
+    "originalSignedHead": "0d8cca631e73f31f070ecbd3fd68e68b81af13a7",
+    "failedWorkflow": 39571259933,
+    "failedJob": 119125727187,
+    "cause": "native431 rather than middleware403",
+    "assertions": "ONLY403or431; entire authority stateHash unchanged; limits/runtime unchanged",
+    "localChecks": 41,
+    "localTypeScript": "PASSED",
+    "newExactHeadCI": "REQUIRED_NOT_PREDECLARED"
   }
 }
