@@ -16,6 +16,9 @@ import { Project, ApprovalItem, ApprovalType } from '../types';
 interface ApprovalsViewProps {
   project: Project;
   onRefreshData?: () => void;
+  sessionRevision?: number;
+  sessionPhase?: 'checking' | 'pending' | 'confirmed' | 'unknown';
+  onSessionRecheck?: () => void;
 }
 
 interface ReviewerSessionIdentity {
@@ -26,9 +29,12 @@ interface ReviewerSessionIdentity {
   roleSource: string;
 }
 
-export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefreshData }) => {
+export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefreshData, sessionRevision = 0, sessionPhase = 'confirmed', onSessionRecheck }) => {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
-  const [sessionIdentity, setSessionIdentity] = useState<ReviewerSessionIdentity | null>(null);
+  const [sessionObservation, setSessionObservation] = useState<{revision: number; projectId: string; confirmed: boolean; identity: ReviewerSessionIdentity | null} | null>(null);
+  const observationCurrent = sessionPhase === 'confirmed' && sessionObservation?.revision === sessionRevision && sessionObservation.projectId === project.id;
+  const sessionIdentity = observationCurrent ? sessionObservation.identity : null;
+  const sessionConfirmed = observationCurrent && sessionObservation.confirmed;
   const [authStatus, setAuthStatus] = useState<'UNAUTHENTICATED' | 'FORBIDDEN' | ''>('');
   const [error, setError] = useState('');
   const [humanConfirmed, setHumanConfirmed] = useState(false);
@@ -62,20 +68,67 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
   const requestGenerationRef = React.useRef(0);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const submissionGenerationRef = React.useRef(0);
+  const sessionGeneration = React.useRef(0);
+  const sessionController = React.useRef<AbortController | null>(null);
+  const sessionMounted = React.useRef(false);
+  const sessionContext = React.useRef({revision: sessionRevision, phase: sessionPhase, projectId: project.id});
+  sessionContext.current = {revision: sessionRevision, phase: sessionPhase, projectId: project.id};
 
   activeProjectIdRef.current = project.id;
 
-  const fetchSession = async () => {
+  const fetchSession = React.useCallback(async () => {
+    const generation = ++sessionGeneration.current;
+    sessionController.current?.abort();
+    setHumanConfirmed(false);
+    setReissueConfirmed(false);
+    const observation = {revision: sessionRevision, projectId: project.id, confirmed: false, identity: null};
+    setSessionObservation(observation);
+    if (sessionPhase !== 'confirmed') return;
+    const controller = new AbortController();
+    sessionController.current = controller;
+    const current = () => sessionMounted.current && sessionGeneration.current === generation &&
+      sessionContext.current.revision === sessionRevision && sessionContext.current.phase === 'confirmed' && sessionContext.current.projectId === project.id;
+    let onAbort!: () => void;
+    const cancelled = new Promise<never>((_, reject) => {
+      onAbort = () => reject(new Error('Session observation interrupted'));
+      controller.signal.addEventListener('abort', onAbort, {once: true});
+    });
+    const deadline = setTimeout(() => controller.abort(), 20_000);
     try {
-      const res = await fetch('/api/governance/session');
-      if (res.ok) {
-        const data = await res.json();
-        setSessionIdentity(data.identity || null);
-      }
-    } catch (err) {
-      console.error('Failed to fetch governance session:', err);
+      const identity = await Promise.race([(async () => {
+        const response = await fetch('/api/governance/session', {credentials: 'same-origin', signal: controller.signal});
+        if (!response.ok) throw new Error('Unconfirmed session observation');
+        const body: unknown = await response.json();
+        if (!body || typeof body !== 'object' || Array.isArray(body) || !Object.hasOwn(body, 'identity')) throw new Error('Invalid session observation');
+        const identity = (body as {identity: unknown}).identity;
+        if (identity === null) return null;
+        if (!identity || typeof identity !== 'object' || Array.isArray(identity)) throw new Error('Invalid reviewer');
+        const {id, name, roles, kind, roleSource} = identity as Partial<ReviewerSessionIdentity>;
+        if (typeof id !== 'string' || !id.trim() || typeof name !== 'string' || !name.trim() ||
+            !Array.isArray(roles) || roles.some(role => typeof role !== 'string') || kind !== 'HUMAN' || roleSource !== 'LOCAL_SERVER_ROSTER') throw new Error('Invalid reviewer display identity');
+        return {id, name, roles: [...roles], kind, roleSource} as ReviewerSessionIdentity;
+      })(), cancelled]);
+      if (current()) setSessionObservation({...observation, confirmed: true, identity});
+    } catch {
+      if (current()) setSessionObservation(observation);
+    } finally {
+      clearTimeout(deadline);
+      controller.signal.removeEventListener('abort', onAbort);
+      if (current()) sessionController.current = null;
     }
+  }, [sessionRevision, sessionPhase, project.id]);
+
+  const recheckSession = () => {
+    if (sessionPhase === 'pending') return;
+    if (onSessionRecheck) onSessionRecheck();
+    else void fetchSession();
   };
+
+  useEffect(() => {
+    sessionMounted.current = true;
+    void fetchSession();
+    return () => {sessionMounted.current = false; ++sessionGeneration.current; sessionController.current?.abort();};
+  }, [fetchSession]);
 
   const fetchApprovalsForProject = React.useCallback(async (targetProjectId: string, preserveSelection = false) => {
     if (abortControllerRef.current) {
@@ -164,7 +217,6 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
     setAuthStatus('');
 
     fetchApprovalsForProject(project.id, false);
-    fetchSession();
 
     return () => {
       if (abortControllerRef.current) {
@@ -503,9 +555,9 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-xs flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>No active human reviewer session. Sign in as a configured reviewer to sign decisions.</span>
+            <span>{sessionConfirmed ? 'No active human reviewer session. Sign in as a configured reviewer to sign decisions.' : 'Reviewer session is unconfirmed. Use Refresh to re-check before relying on reviewer details.'}</span>
           </div>
-          <span className="text-[10px] font-mono text-slate-400 uppercase">UNAUTHENTICATED</span>
+          <span className="text-[10px] font-mono text-slate-400 uppercase">{sessionConfirmed ? 'UNAUTHENTICATED' : 'UNCONFIRMED'}</span>
         </div>
       )}
 
@@ -528,8 +580,8 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { fetchApprovalsForProject(project.id, true); fetchSession(); }}
-            disabled={loading}
+            onClick={() => { fetchApprovalsForProject(project.id, true); recheckSession(); }}
+            disabled={loading || sessionPhase === 'pending'}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
@@ -648,9 +700,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
               <button
                 type="button"
                 onClick={() => {
-                  fetchSession();
+                  recheckSession();
                   fetchApprovalsForProject(project.id, false);
                 }}
+                disabled={sessionPhase === 'pending'}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -669,9 +722,10 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({ project, onRefresh
               <button
                 type="button"
                 onClick={() => {
-                  fetchSession();
+                  recheckSession();
                   fetchApprovalsForProject(project.id, false);
                 }}
+                disabled={sessionPhase === 'pending'}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
