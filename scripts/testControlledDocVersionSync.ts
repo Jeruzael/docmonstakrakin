@@ -161,6 +161,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
   const endpointFetchCounts: Record<string, number> = {};
   const signoffCalls: any[] = [];
   let releaseGatesData: ReleaseAuditReport = syntheticReadyReport(projectAData);
+  let releaseGatesHoldPromise: Promise<void> | null = null;
 
   const projectAAuditLogs: any[] = [
     {
@@ -240,6 +241,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
     // Release endpoints
     if (url.endsWith('/release/gates') && method === 'GET') {
+      if (releaseGatesHoldPromise) await releaseGatesHoldPromise;
       return send(releaseGatesData);
     }
     if (url.endsWith('/release/signoff') && method === 'POST') {
@@ -500,6 +502,9 @@ async function createHarness(options: TestHarnessOptions = {}) {
     getSignoffCalls: () => signoffCalls,
     setReleaseGatesData: (d: any) => {
       releaseGatesData = d;
+    },
+    holdReleaseGatesResponse: (p: Promise<void> | null) => {
+      releaseGatesHoldPromise = p;
     },
     getFetchCountFor: (endpoint: string) => endpointFetchCounts[endpoint] || 0,
     close: async () => {
@@ -4196,6 +4201,8 @@ await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical
 await test('Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale', async () => {
   let resolveListHold: (() => void) | null = null;
   const listHoldPromise = new Promise<void>((r) => (resolveListHold = r));
+  let resolveReportHold: (() => void) | null = null;
+  const reportHoldPromise = new Promise<void>((resolve) => (resolveReportHold = resolve));
 
   const harness = await createHarness({ initialStateVersion: 120 });
   try {
@@ -4282,7 +4289,9 @@ await test('Scenario 50: Already-open release sign-off modal must automatically 
     // 11. Exactly 0 sign-off POST requests issued
     assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
 
-    // 12. Deliver authoritative snapshot v121; click snapshot retry button; stale warning clears, readiness restores, entry button re-enabled
+    // 12. Hold the separate release evaluation while the canonical snapshot recovers.
+    // Snapshot recovery alone must not reuse the previous scope's release report.
+    harness.holdReleaseGatesResponse(reportHoldPromise);
     harness.setProjectAData({
       ...structuredClone(INITIAL_PROJECTS[0]),
       id: 'PRJ-DOCMONSTAKRAKIN',
@@ -4295,10 +4304,21 @@ await test('Scenario 50: Already-open release sign-off modal must automatically 
 
     assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
     assert.ok(await packageBtn.isVisible(), 'TopBar package button restored on v121 complete snapshot recovery');
+    await page.getByText('Loading current release evaluation…', {exact: true}).waitFor({state: 'visible'});
+    assert.ok(!(await signoffBtn.isVisible()), 'Sign-off entry must remain unavailable while the new report is pending');
+    assert.ok(!(await modalHeading.isVisible()), 'The invalidated sign-off modal must remain closed while the report is pending');
+    assert.equal(harness.getSignoffCalls().length, 0, 'A recovered snapshot with a pending report must issue zero signoff POSTs');
+
+    // 13. Admit the current report, then retain every original recovery assertion.
+    harness.holdReleaseGatesResponse(null);
+    if (resolveReportHold) { (resolveReportHold as () => void)(); resolveReportHold = null; }
+    await signoffBtn.waitFor({state: 'visible', timeout: 8000});
     assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible after recovery');
     assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be re-enabled after recovery');
     assert.equal(harness.getSignoffCalls().length, 0, 'Signoff POST calls must remain 0');
   } finally {
+    harness.holdReleaseGatesResponse(null);
+    if (resolveReportHold) (resolveReportHold as () => void)();
     harness.holdProjectListResponse(null);
     if (resolveListHold) {
       (resolveListHold as () => void)();
