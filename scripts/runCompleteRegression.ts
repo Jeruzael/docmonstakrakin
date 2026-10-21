@@ -3,6 +3,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {KNOWN_EVIDENCE_PATHS} from '../server/bootstrap/selfBootstrapIntegrity.ts';
+import {classifyRegressionResult, REGRESSION_REPORT_SCHEMA_VERSION, REGRESSION_COUNTING_VERSION, REGRESSION_COUNTING_DESCRIPTION} from './lib/regressionResult.ts';
 
 const root=process.cwd();
 // Historical rc-regression/results.json is pinned bootstrap evidence. New runs
@@ -19,14 +20,13 @@ for(const file of files){
   const name=path.relative(root,file).replaceAll('\\','/');
   const r=spawnSync(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,file],{cwd:root,windowsHide:true,encoding:'utf8',timeout:120000,env:{...process.env,GEMINI_API_KEY:''}});
   const changedEvidence=protectedPaths.filter(p=>!fs.existsSync(path.join(root,p))||!fs.readFileSync(path.join(root,p)).equals(retained.get(p)!));
-  const output=(r.stdout||'')+(r.stderr||'')+(changedEvidence.length?`\nFAIL retained evidence changed: ${changedEvidence.join(', ')}\n`:'');
+  // Keep each captured stream's first result marker at a line boundary even if
+  // stdout ends without a newline; otherwise stderr FAIL could become PASS text.
+  const output=[r.stdout||'',r.stderr||''].join('\n')+(changedEvidence.length?`\nFAIL retained evidence changed: ${changedEvidence.join(', ')}\n`:'');
   const log=name.replaceAll('/','_').replace('.ts','.log');fs.writeFileSync(path.join(evidence,log),output);
-  // Count actual named check results, not stale hardcoded banner totals.
-  const passed=output.split(/\r?\n/).filter(l=>/^\s*(?:✓|✅|PASS\b|\[PASS\])/.test(l) && !/\bSKIP/i.test(l) && !/^✓ All Release Gate verification invariants/.test(l)).length;
-  const failed=Math.max(r.status === 0 ? 0 : 1, output.split(/\r?\n/).filter(l=>/^\s*(?:✗|❌|FAIL\b|\[FAIL\])/.test(l)).length);
-  const skipped=output.split(/\r?\n/).filter(l=>/^\s*(?:SKIP\b|.*\[SKIP\])/.test(l)).length;
-  const result={suite:name,exitCode:r.status,status:r.status===0&&!changedEvidence.length?'PASSED':'FAILED',passed,failed,skipped,log,error:r.error?.message,changedEvidence};
-  results.push(result);console.log(`${result.status} ${name}: ${passed} passed, ${failed} failed, ${skipped} skipped`);
+  const classified=classifyRegressionResult(output,r,changedEvidence);
+  const result={suite:name,exitCode:r.status,signal:r.signal,...classified,log,error:r.error?.message,changedEvidence};
+  results.push(result);console.log(`${result.status} ${name}: ${result.passed} passed, ${result.failed} failed, ${result.skipped} skipped`);
 }
-const report={timestamp:new Date().toISOString(),counting:'Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.',suites:{total:results.length,passed:results.filter(r=>r.status==='PASSED').length,failed:results.filter(r=>r.status==='FAILED').length,skipped:0},assertions:{total:results.reduce((n,r)=>n+r.passed+r.failed+r.skipped,0),passed:results.reduce((n,r)=>n+r.passed,0),failed:results.reduce((n,r)=>n+r.failed,0),skipped:results.reduce((n,r)=>n+r.skipped,0)},results};
+const report={schemaVersion:REGRESSION_REPORT_SCHEMA_VERSION,countingVersion:REGRESSION_COUNTING_VERSION,timestamp:new Date().toISOString(),counting:REGRESSION_COUNTING_DESCRIPTION,suites:{total:results.length,passed:results.filter(r=>r.status==='PASSED').length,failed:results.filter(r=>r.status==='FAILED').length,skipped:0},assertions:{total:results.reduce((n,r)=>n+r.passed+r.failed+r.skipped,0),passed:results.reduce((n,r)=>n+r.passed,0),failed:results.reduce((n,r)=>n+r.failed,0),skipped:results.reduce((n,r)=>n+r.skipped,0)},results};
 fs.writeFileSync(path.join(evidence,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({suites:report.suites,assertions:report.assertions},null,2));process.exitCode=report.suites.failed?1:0;
