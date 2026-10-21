@@ -1,0 +1,20 @@
+PASS default factories remain inactive despite ambient enable text
+PASS unsafe options and non-disconnected authority reject
+PASS versioned owned store uses WAL FULL foreign keys and exact native provenance
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Missing expected rejection.
+    at async <anonymous> (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:34:335)
+    at async check (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:19:70)
+    at async <anonymous> (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:34:3) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: undefined,
+  expected: { message: 'AUTH_PILOT_PASSWORD_INVALID' },
+  operator: 'rejects',
+  diff: 'simple'
+}
+
+Node.js v22.21.1
