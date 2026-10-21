@@ -88,6 +88,8 @@ jobs:
 
       - name: Qualify npm native runtime and existing quality gates
         run: |
+          node scripts/testBunLifecycleInventory.ts
+          if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard regression failed' }
           npx.cmd playwright install chromium
           if ($LASTEXITCODE -ne 0) { throw 'Disposable Chromium fixture acquisition failed' }
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
@@ -108,6 +110,9 @@ jobs:
       - name: Fresh frozen Bun install in a separate exact-checkout clone
         run: |
           $ErrorActionPreference = 'Stop'
+          $utf8 = [System.Text.UTF8Encoding]::new($false)
+          [Console]::OutputEncoding = $utf8
+          $OutputEncoding = $utf8
           $sha = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Checkout identity unavailable' }
           $clone = Join-Path $env:RUNNER_TEMP 'native-bun-checkout'
@@ -126,9 +131,8 @@ jobs:
             $trustExit = $LASTEXITCODE
             $untrusted | ForEach-Object { Write-Output $_ }
             if ($trustExit -ne 0) { throw 'Bun lifecycle trust inventory failed' }
-            if (($untrusted | Out-String) -match '(?i)\b(better-sqlite3|argon2|esbuild)\s*@') {
-              throw 'Required native dependency lifecycle was blocked'
-            }
+            $untrusted | node scripts/lib/bunLifecycleInventory.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard failed' }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
             node --import tsx scripts/testAuthPilot.ts
@@ -161,6 +165,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify fail-closed Bun lifecycle inventory guard
+        run: node scripts/testBunLifecycleInventory.ts
+
       - name: Verify WBS integrity
         run: npm run wbs:check
 
@@ -189,10 +196,7 @@ jobs:
           npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/native-linux-bun-cache"
           untrusted=$(npx --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1)
           printf '%s\n' "$untrusted"
-          if printf '%s\n' "$untrusted" | rg -i '\b(better-sqlite3|argon2|esbuild)\s*@'; then
-            echo 'Required native dependency lifecycle was blocked'
-            exit 1
-          fi
+          printf '%s\n' "$untrusted" | node scripts/lib/bunLifecycleInventory.mjs
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
