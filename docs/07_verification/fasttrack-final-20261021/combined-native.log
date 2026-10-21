@@ -1,0 +1,40 @@
+$ node --import tsx scripts/testSyntheticSecurityFoundations.ts
+PASS default factory remains inert and denies even with ambient opt-in text
+PASS development deadline metadata is exact and unknown activation options reject
+PASS pure policy fails closed for malformed authority snapshots and effects
+PASS audit canonicalization is recursive and rejects ambiguous data
+PASS hostile verifiers reject before allocating native work
+PASS two active and four queued admit six of ten without a hidden queue
+PASS active abort retains admission until native completion and queued abort removes work
+PASS queued timeout and native failure release only their own budgets
+SYNTHETIC_COMPATIBILITY {"schemaVersion":1,"journalMode":"wal","synchronous":2,"foreignKeys":1,"busyTimeoutMs":100,"sqliteVersion":"3.53.4","node":"v22.21.1","arch":"x64","platform":"win32","packages":{"sqlite":"13.0.3"},"nativePath":"<USER_PROFILE>\\AppData\\Local\\Temp\\dmk-combined-5758\\node_modules\\better-sqlite3\\prebuilds\\win32-x64.node","nativeSha256":"e21e5efd71fba66578e95b62554d9028064a80dafd7221bf8a8ef155de8d240a"}
+SYNTHETIC_ARGON2_NATIVE {"version":"0.45.1","nativePath":"<USER_PROFILE>\\AppData\\Local\\Temp\\dmk-combined-5758\\node_modules\\argon2\\prebuilds\\win32-x64\\argon2.glibc.node","nativeSha256":"7d1716c8eafe32d54a12af5c0d3024cd715a7e1fdc8092eea84fd369d267075c"}
+PASS worker records actual native compatibility and owns a fresh private temporary store
+SYNTHETIC_KDF_SAMPLE_MS 169.889
+PASS real Argon2id hashing and password verification use exact approved synthetic profile
+PASS malformed noncanonical session tokens deny without authority state changes
+PASS unknown or excessive worker commands and malformed inputs deny without mutation
+PASS policy requires a registered current principal action resource and explicit matching allow
+PASS explicit deny and nonhuman exclusion take precedence over allow rules
+PASS rotation atomically invalidates replay and preserves the absolute expiry
+PASS idle expiry uses the exact boundary and rejected tokens never extend a session
+PASS observed idle expiry cannot be reversed by clock rollback
+PASS absolute expiry survives activity and rotation and clock rollback denies
+PASS observed absolute expiry cannot be reversed by clock rollback
+PASS denied authorization records only sanitized monotonic time and cannot reverse it
+PASS credential reset disable and restart revoke existing session generations
+PASS stale credential work cannot publish a session and rejected transactions roll back
+PASS audit persistence failure rolls back its paired authority mutation
+PASS expiry observed during an audit failure cannot reverse after SQLite rollback
+PASS busy writer rejects without a partial domain or audit commit
+PASS worker RPC admission rejects excess work without an unbounded message queue
+PASS synthetic principal and resource cardinality bounds reject without writes
+PASS audit chain is deterministic tamper evident and omits credential and token material
+PASS terminated authority denies future policy and session work without fallback
+PASS unsupported existing schema rejects reopen without creating a fallback store
+PASS missing authority during restart denies instead of silently creating an empty store
+PASS corrupt authority rejects reopen and never falls back to memory or another path
+PASS fixture close removes only its own disposable private root
+PASS raw worker rejects an arbitrary repository root before importing SQLite
+PASS overlapping restart and close keep one worker and child exits within its bound
+Synthetic security foundations: 35 named checks passed; synthetic feasibility only.

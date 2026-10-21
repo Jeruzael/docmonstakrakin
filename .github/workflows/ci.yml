@@ -17,6 +17,119 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  windows_native:
+    name: Windows Native Qualification
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CI: "true"
+      GEMINI_API_KEY: ""
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: "false"
+    steps:
+      - name: Checkout isolated candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Record existing Windows toolchain
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $userConfig = Join-Path $env:RUNNER_TEMP 'native-empty.npmrc'
+          Set-Content -LiteralPath $userConfig -Value ''
+          "NPM_CONFIG_USERCONFIG=$userConfig" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_CACHE=$env:RUNNER_TEMP/native-npm-cache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({defaultTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
+          if ($LASTEXITCODE -ne 0) { throw 'Default temporary-path inventory failed' }
+          # Use a job-owned, unaliased temporary parent. The fixture's strict
+          # canonical-path/ownership checks remain unchanged and mandatory.
+          $fixtureTemp = Join-Path $env:RUNNER_TEMP 'native-fixtures'
+          New-Item -ItemType Directory -Path $fixtureTemp -Force | Out-Null
+          "TEMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
+          node --version
+          if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
+          npm.cmd --version
+          if ($LASTEXITCODE -ne 0) { throw 'npm inventory failed' }
+          python --version
+          if ($LASTEXITCODE -ne 0) { throw 'Python inventory failed' }
+          git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Checkout identity unavailable' }
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if ($LASTEXITCODE -ne 0) { throw 'Existing C++ tools unavailable' }
+          $kits = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10'
+          $sdks = @(Get-ChildItem -LiteralPath "$kits/Include" -Directory | Where-Object {
+            (Test-Path -LiteralPath "$($_.FullName)/um/Windows.h") -and
+            (Test-Path -LiteralPath "$kits/Lib/$($_.Name)/um/x64/kernel32.lib") -and
+            (Test-Path -LiteralPath "$kits/Lib/$($_.Name)/ucrt/x64/ucrt.lib")
+          })
+          if ($sdks.Count -eq 0) { throw 'No complete preinstalled Windows SDK' }
+          $sdks.FullName
+
+      - name: Fresh npm install and audit with lifecycle scripts
+        run: |
+          npm.cmd ci --foreground-scripts
+          if ($LASTEXITCODE -ne 0) { throw 'Clean Windows npm installation failed' }
+          npm.cmd audit --json
+          if ($LASTEXITCODE -ne 0) { throw 'Windows npm audit failed' }
+          npm.cmd ls better-sqlite3 argon2 vite source-map-js --all
+          if ($LASTEXITCODE -ne 0) { throw 'Installed dependency provenance failed' }
+
+      - name: Qualify npm native runtime and existing quality gates
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
+          if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
+          node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          npm.cmd run ci:quality
+          if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { throw 'npm verification changed tracked source' }
+
+      - name: Fresh frozen Bun install in a separate exact-checkout clone
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Checkout identity unavailable' }
+          $clone = Join-Path $env:RUNNER_TEMP 'native-bun-checkout'
+          git clone --no-hardlinks --no-checkout $env:GITHUB_WORKSPACE $clone
+          if ($LASTEXITCODE -ne 0) { throw 'Disposable Bun clone failed' }
+          git -C $clone checkout --detach $sha
+          if ($LASTEXITCODE -ne 0) { throw 'Bun checkout identity mismatch' }
+          if (Test-Path -LiteralPath "$clone/node_modules") { throw 'Bun dependency tree must start absent' }
+          npx.cmd --yes --package=bun@1.4.2 -- bun --version
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Bun acquisition failed' }
+          Push-Location $clone
+          try {
+            npx.cmd --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$env:RUNNER_TEMP/native-bun-cache"
+            if ($LASTEXITCODE -ne 0) { throw 'Clean frozen Windows Bun installation failed' }
+            $untrusted = npx.cmd --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1
+            $trustExit = $LASTEXITCODE
+            $untrusted | ForEach-Object { Write-Output $_ }
+            if ($trustExit -ne 0) { throw 'Bun lifecycle trust inventory failed' }
+            if (($untrusted | Out-String) -match '(?i)\b(better-sqlite3|argon2|esbuild)\s*@') {
+              throw 'Required native dependency lifecycle was blocked'
+            }
+            node --import tsx scripts/testSyntheticSecurityFoundations.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            git diff --exit-code
+            if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
+          } finally { Pop-Location }
+
   quality:
     name: Quality & Build
     runs-on: ubuntu-latest
@@ -42,6 +155,9 @@ jobs:
 
       - name: TypeScript typecheck
         run: npm run lint
+
+      - name: Verify disconnected synthetic foundations and native provenance
+        run: node --import tsx scripts/testSyntheticSecurityFoundations.ts
 
       - name: Production build
         run: npm run build

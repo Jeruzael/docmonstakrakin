@@ -1,0 +1,196 @@
+===== quality-final.log (sanitized tool log) =====
+$ npm run ci:quality
+
+> docmonstakrakin@0.0.0 ci:quality
+> npm run wbs:check && npm run lint && npm run build
+
+
+> docmonstakrakin@0.0.0 wbs:check
+> tsx scripts/renderWbs.ts --check
+
+✓ [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
+
+> docmonstakrakin@0.0.0 lint
+> tsc --noEmit
+
+
+> docmonstakrakin@0.0.0 build
+> vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
+
+[36mvite v6.4.4 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 2370 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m    0.86 kB[22m[1m[22m[2m │ gzip:   0.40 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[2mdist/[22m[35massets/index-CoCP3pF_.css  [39m[1m[2m   65.15 kB[22m[1m[22m[2m │ gzip:  11.07 kB[22m
+[2mdist/[22m[36massets/index-D8o1n1ar.js   [39m[1m[33m1,004.72 kB[39m[22m[2m │ gzip: 267.86 kB[22m
+[32m✓ built in 6.58s[39m
+
+  dist\server.cjs      518.4kb
+  dist\server.cjs.map  920.6kb
+
+Done in 27ms
+
+===== controlled-docs-final.log (sanitized tool log) =====
+$ npm run ci:controlled-docs
+
+> docmonstakrakin@0.0.0 ci:controlled-docs
+> npm run ci:prepare && npm run test:controlled-docs
+
+
+> docmonstakrakin@0.0.0 ci:prepare
+> tsx scripts/prepareCiRuntime.ts
+
+[prepareCiRuntime] Synthetic CI runtime initialized:
+  Path:           <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\.local\project-state.json
+  stateVersion:   1
+  auditCount:     0
+  snapshot SHA:   355979A8DCCF594684CAE4C9B40B757EB3EB8B2614F2828D7DF812A33D90C8E8
+  transactions:   0 active
+
+> docmonstakrakin@0.0.0 test:controlled-docs
+> tsx scripts/testControlledDocs.ts
+
+================================================================
+   DMK-195 CONTROLLED DOCS SECURITY MATRIX (TASK 12)
+   Comprehensive Boundary, Rollback & Lifecycle Regression Suite
+================================================================
+
+[Phase 1] Pre-Flight Live Governance Baseline Verification:
+  Live snapshot SHA-256: 355979A8DCCF594684CAE4C9B40B757EB3EB8B2614F2828D7DF812A33D90C8E8
+  Live stateVersion:      1
+  Live audit count:      0
+  Live audit chain:      0 / 0 valid (REVERSE_CHRONOLOGICAL)
+  Live tx directory:     clean (0 active transactions)
+  Live registered docs:  28 / 28 hashed
+  ✓ Pre-flight live baseline captured and verified byte-for-byte.
+
+[Phase 2] Executing Focused Controlled-Doc Suites (Single-Pass Orchestration):
+  ✓ [SUITE PASS] testControlledDocsRegistry          (exit: 0, tests: 22, 0.63s)
+  ✓ [SUITE PASS] testControlledDocsPersistence       (exit: 0, tests: 34, 0.56s)
+  ✓ [SUITE PASS] testControlledDocsValidator         (exit: 0, tests: 35, 0.49s)
+  ✓ [SUITE PASS] testControlledDocsTransaction       (exit: 0, tests: 40, 1.51s)
+  ✓ [SUITE PASS] testControlledDocsRecovery          (exit: 0, tests: 69, 2.37s)
+  ✓ [SUITE PASS] testControlledDocsApi               (exit: 0, tests: 36, 2.08s)
+  ✓ [SUITE PASS] testControlledDocsClient            (exit: 0, tests: 27, 0.48s)
+  ✓ [SUITE PASS] testControlledDocsViewComponent     (exit: 0, tests: 28, 18.17s)
+  ✓ [SUITE PASS] testControlledDocsWorkspaceTabs     (exit: 0, tests: 14, 4.91s)
+  ✓ [SUITE PASS] testProjectPersistenceClassifier    (exit: 0, tests: 18, 1.05s)
+  ✓ [SUITE PASS] testWorkItemUpdates                 (exit: 0, tests: 9, 9.18s)
+
+  All 11 focused suites passed (332 measured assertions verified).
+
+[Phase 3] Executing Core Matrix A–AN (40 Items) Probes:
+  ✓ [PASS] Test A  — Registry Listing
+  ✓ [PASS] Test B  — Authority Classification
+  ✓ [PASS] Test C  — Hash-Pinned MATCH
+  ✓ [PASS] Test D  — Hash-Pinned CHANGED
+  ✓ [PASS] Test E  — UNPINNED Living Documents
+  ✓ [PASS] Test F  — Traversal Rejection
+  ✓ [PASS] Test G  — Absolute Path Rejection
+  ✓ [PASS] Test H  — Unregistered Document Rejection
+  ✓ [PASS] Test I  — Project Isolation
+  ✓ [PASS] Test J  — Projection Edit Rejection
+  ✓ [PASS] Test K  — MASTER_WBS.yaml Edit Rejection
+  ✓ [PASS] Test L  — Controlled Editable Flow
+  ✓ [PASS] Test M  — Diff Non-Mutating
+  ✓ [PASS] Test N  — Validation Failure Blocks Save
+  ✓ [PASS] Test O  — Stale Base Hash Rejection
+  ✓ [PASS] Test P  — Atomic Persistence
+  ✓ [PASS] Test Q  — Audit Event Correctness
+  ✓ [PASS] Test R  — Persistence & Reload
+  ✓ [PASS] Test S  — Project Switching State Reset
+  ✓ [PASS] Test T  — UI Smoke & Accessibility
+  ✓ [PASS] Test U  — Diff Early Exit
+  ✓ [PASS] Test V  — Validate Early Exit
+  ✓ [PASS] Test W  — stateVersion Increment
+  ✓ [PASS] Test X  — Client Identity Claims Rejected
+  ✓ [PASS] Test Y  — Snapshot Persistence Failure Rollback
+  ✓ [PASS] Test Z  — Startup Recovery Restores Unaudited Replace
+  ✓ [PASS] Test AA — Stale COMMITTED Journal Cleans Safely
+  ✓ [PASS] Test AB — Ambiguous Journal Fails Closed
+  ✓ [PASS] Test AC — Raw Markdown HTML Inert
+  ✓ [PASS] Test AD — Unregistered docs/ File Invisible
+  ✓ [PASS] Test AE — LAST_HANDOFF.md Invisible
+  ✓ [PASS] Test AF — Raw-Byte Hashing Semantics
+  ✓ [PASS] Test AG — EOL Style Preservation
+  ✓ [PASS] Test AH — Mixed-EOL Edit Fails Closed
+  ✓ [PASS] Test AI — Mounted Path & Method Classification
+  ✓ [PASS] Test AJ — Candidate Sibling Placement
+  ✓ [PASS] Test AK — Rollback Sibling Placement
+  ✓ [PASS] Test AL — Forward Same-Directory Replacement
+  ✓ [PASS] Test AM — Atomic Rollback Same-Directory Replacement
+  ✓ [PASS] Test AN — Journal Path Tampering
+
+[Phase 4] Executing Additional Security & Contract Scenarios:
+  ✓ [PASS] Additional: Recovery Lock Enforcement
+  ✓ [PASS] Additional: Audit Event ID Invariant
+  ✓ [PASS] Additional: Reserved Audit ID Duplicate Rejection
+  ✓ [PASS] Additional: Default addAuditEvent Backward Compatibility
+  ✓ [PASS] Additional: Client auditEventId Injection Rejection
+  ✓ [PASS] Additional: Post-Replacement Pre-Audit Failure (Stage F)
+  ✓ [PASS] Additional: Audit Append Failure (Stage G)
+  ✓ [PASS] Additional: PREPARED-Crash Ambiguity Recovery
+  ✓ [PASS] Additional: Markdown Link Safety - Javascript URI
+  ✓ [PASS] Additional: Markdown Link Safety - Data URI
+  ✓ [PASS] Additional: Markdown Link Safety - External Rel
+  ✓ [PASS] Additional: Markdown Link Safety - Safe Relative Links
+  ✓ [PASS] Additional: Raw-Byte Diff Hash (LF Source)
+  ✓ [PASS] Additional: Raw-Byte Diff Hash (CRLF Source)
+  ✓ [PASS] Additional: Diff-to-Save Hash Identity
+  ✓ [PASS] Additional: Encoding Drift Detection
+  ✓ [PASS] Additional: Save Contract & UI Lifecycle
+  ✓ [PASS] Additional: Failure Stage A (Rollback sibling write failure)
+  ✓ [PASS] Additional: Failure Stage B (Candidate sibling write failure)
+  ✓ [PASS] Additional: Failure Stage C (Candidate fsync failure)
+  ✓ [PASS] Additional: Failure Stage D (Journal write/fsync failure)
+  ✓ [PASS] Additional: Failure Stage E (Candidate rename failure)
+  ✓ [PASS] Additional: Failure Stage F (Post-replacement pre-audit failure)
+  ✓ [PASS] Additional: Failure Stage G (Audit append failure)
+  ✓ [PASS] Additional: Failure Stage H (Snapshot persistence failure)
+  ✓ [PASS] Additional: Failure Stage I (Rollback failure -> locked)
+  ✓ [PASS] Additional: Failure Stage J (Post-commit cleanup failure -> COMMITTED_CLEANUP_PENDING)
+  ✓ [PASS] Additional: Registered Missing Document (integrityStatus MISSING, GET 410)
+  ✓ [PASS] Additional: Symlink Write Rejection
+
+[Phase 5] Core Matrix Completeness Guard Verification:
+  Core matrix expected: 40
+  Core matrix covered:  40
+  Core matrix failed:   0
+  Unique IDs tracked:   40
+  CORE MATRIX COVERAGE: 40 / 40 PASS (0 duplicates, 0 missing)
+
+[Phase 6] Post-Test Live Governance Baseline Re-Verification:
+  ✓ Live snapshot SHA-256 verified unchanged: 355979A8DCCF594684CAE4C9B40B757EB3EB8B2614F2828D7DF812A33D90C8E8
+  ✓ Live stateVersion verified unchanged:      1
+  ✓ Live auditCount verified unchanged:       0
+  ✓ Live audit chain verified unchanged:      0 / 0 valid
+  ✓ Live document-transactions verified:      clean (0 active transactions)
+  ✓ All 28 registered live documents verified untouched
+
+================================================
+DMK-195 CONTROLLED DOCS SECURITY MATRIX
+================================================
+
+CORE MATRIX:
+40 / 40 PASS
+
+A–AN:
+0 failed
+
+ADDITIONAL SECURITY:
+29 / 29 PASS
+
+FOCUSED SUITES:
+11 / 11 PASS
+
+LIVE SNAPSHOT MUTATION:
+NONE
+
+================================================

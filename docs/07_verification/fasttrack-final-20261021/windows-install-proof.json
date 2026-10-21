@@ -1,0 +1,35 @@
+{
+  "sourceHead": "2665712449b38813e91a18d256fa693ab318d406",
+  "sourceTree": "aafb8dceacc5a3fd826ad248e9f61ef5eee7a0c9",
+  "command": "npm ci --foreground-scripts",
+  "execution": "Ordinary root execution context, not the separately retained AppContainer/DNS failure",
+  "node": "22.21.1",
+  "npm": "11.7.0",
+  "nodeGyp": "12.1.0",
+  "exitCode": 1,
+  "rootCause": "VS2026 18.9.12120.119 / C++ v145 found; missing any Windows SDK; Include/Lib/bin absent",
+  "scriptsBypassed": false,
+  "dependencyVersionsChanged": false,
+  "operatorHostModified": false,
+  "isolatedEmptyNpmConfigs": true,
+  "privateCaches": true,
+  "rawSourceSha256": "cd2780484c938b1a228bf6ed87fd869a436332792bae03111cfbf812e11a4cf2",
+  "publishedSanitization": "Windows profile/account placeholders; LF and trailing-horizontal-whitespace normalization. Raw source digest is unchanged.",
+  "agentAttempt": {
+    "result": "ENOTFOUND / Exit handler never called before native build",
+    "nativeSdkConclusionFromAgentInstall": false
+  },
+  "hostedAttempts": [
+    {
+      "head": "b6a5230ae8e3ed5bb91cbe0d24b0443e02a59d85",
+      "run": 39545523319,
+      "result": "Invalid workflow: runner.temp unavailable in job-level env; no jobs executed; corrected at step runtime"
+    },
+    {
+      "head": "2d49886ba77e29d410fd3585a8686aed8a8632e0",
+      "run": 39545674257,
+      "job": 119043183986,
+      "result": "Ordinary npm lifecycle/install and audit0 succeeded; synthetic factory subsequently rejected default temp with STORE_PATH_INVALID before SQLite import"
+    }
+  ]
+}

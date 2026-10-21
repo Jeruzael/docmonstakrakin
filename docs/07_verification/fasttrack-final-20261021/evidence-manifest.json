@@ -1,0 +1,72 @@
+{
+  "scope": "Public final-gate evidence; preflight is not actual master integration",
+  "baseMaster": "5d10299cc0aa6f93b4f2861bf1bdd5167cbfba09",
+  "pr57": "f4fbede5088eaae0147ee912499089b623ebc267",
+  "pr58Implementation": "2665712449b38813e91a18d256fa693ab318d406",
+  "originalLinuxJobsUnchanged": true,
+  "readOnlyPermissionsUnchanged": true,
+  "runtimeTestDependencyBlobsUnchanged": [
+    "server/security/syntheticFoundations/audit.mjs",
+    "server/security/syntheticFoundations/audit.ts",
+    "server/security/syntheticFoundations/boundedVerifier.ts",
+    "server/security/syntheticFoundations/contracts.ts",
+    "server/security/syntheticFoundations/index.ts",
+    "server/security/syntheticFoundations/policy.mjs",
+    "server/security/syntheticFoundations/policy.ts",
+    "server/security/syntheticFoundations/privateStore.ts",
+    "server/security/syntheticFoundations/privateStoreWorker.mjs",
+    "server/security/syntheticFoundations/sessions.ts",
+    "scripts/testSyntheticSecurityFoundations.ts",
+    "package.json",
+    "package-lock.json",
+    "bun.lock"
+  ],
+  "sanitization": "Local account/profile paths replaced in local logs; hosted excerpts remove ANSI and echoed conditional source, preserving actual observations. Full raw hosted hashes and links recorded in gate MD. Public log lines use LF and omit trailing horizontal whitespace; original raw hashes remain recorded.",
+  "files": [
+    {
+      "path": "combined-native.log",
+      "bytes": 3635,
+      "sha256": "3953fcc5576431d0c929fc02e0ae21af697b808a2bf62551ba34b9a58b070c62"
+    },
+    {
+      "path": "combined-proof.json",
+      "bytes": 11667,
+      "sha256": "75930339f0b7d4cf84463ae2eb6f0aa4372da9bd3733e8fc43cfa8d87ae8658d"
+    },
+    {
+      "path": "combined-quality-controlled.log",
+      "bytes": 8948,
+      "sha256": "65837e3a88e82597fa9da55c8f1c4683e3b20cfcafc7d3915633c514eae2453d"
+    },
+    {
+      "path": "combined-regression-results.json",
+      "bytes": 18599,
+      "sha256": "2dec961ceaf5b854f0b5a3850d781a519285b2b658e150cdf69800c0ee9a3dcf"
+    },
+    {
+      "path": "combined-regression.log",
+      "bytes": 6146,
+      "sha256": "ec403b5b4891913b02ff4840d33eb6daf25e75dc83e916505d22528520f70948"
+    },
+    {
+      "path": "prior-fixture-setup-failures.log",
+      "bytes": 10683,
+      "sha256": "7f890745aabddf9b88a2091537b4e57302f775d65d2bc27a047840b5bc7385ad"
+    },
+    {
+      "path": "windows-hosted-excerpt.log",
+      "bytes": 13085,
+      "sha256": "ae5d2633577278964c1e76685ba673c808c4ef86f44f6eb39e1138b1ec55c76a"
+    },
+    {
+      "path": "windows-install-proof.json",
+      "bytes": 1545,
+      "sha256": "eae6eb3f5aaa700d8f392aa0a3a5243ffe3ad8f54e289fd4928439dd506728cc"
+    },
+    {
+      "path": "windows-local-npm-ci.log",
+      "bytes": 4232,
+      "sha256": "c315bcd228b712e12e7f1bf5ab298dd055925b57453dba23d2e53ee8c53f684d"
+    }
+  ]
+}
