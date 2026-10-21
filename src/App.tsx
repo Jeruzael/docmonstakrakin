@@ -774,18 +774,27 @@ export default function App() {
   };
 
   const handleAddRequirement = async (reqData: Partial<Requirement>) => {
+    const projectId = currentProject.id;
+    const deadline = AbortSignal.timeout(20000);
+    let res: Response;
     try {
-      const res = await fetch(`/api/projects/${currentProject.id}/requirements`, {
+      res = await fetch(`/api/projects/${projectId}/requirements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reqData),
+        signal: deadline,
       });
-      if (res.ok) {
-        await fetchProjectData(currentProject.id);
-      }
-    } catch (err) {
-      console.error('Failed to add requirement:', err);
+    } catch {
+      throw new Error(`${deadline.aborted ? 'The save request timed out. ' : ''}Could not confirm whether the requirement was saved. Your draft is retained; refresh and check the requirements list before retrying.`);
     }
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      const message = typeof data?.error === 'string' ? data.error : data?.error?.message;
+      throw new Error(typeof message === 'string' && message.trim()
+        ? message
+        : `Requirement creation was rejected (HTTP ${res.status}). Your draft is retained.`);
+    }
+    await fetchProjectData(projectId);
   };
 
   const handleUpdateRequirementStatus = async (

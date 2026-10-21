@@ -1,5 +1,5 @@
 import { RequestSignoff } from './RequestSignoff';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Plus,
@@ -60,6 +60,17 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   const [newCategory, setNewCategory] = useState<RequirementCategory>('FUNCTIONAL');
   const [newPriority, setNewPriority] = useState<RiskLevel>('MEDIUM');
   const [newRationale, setNewRationale] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const createPendingRef = useRef(false);
+  const createScopeRef = useRef(0);
+
+  useEffect(() => {
+    createPendingRef.current = false;
+    setIsCreating(false);
+    setCreateError('');
+    return () => { createScopeRef.current++; };
+  }, [project?.id]);
 
   const filteredRequirements = (requirements || []).filter((r) => {
     if (categoryFilter !== 'ALL' && r.category !== categoryFilter) return false;
@@ -78,29 +89,46 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
 
   const handleCreateRequirement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newStatement.trim()) return;
+    if (createPendingRef.current || !newTitle.trim() || !newStatement.trim()) return;
+    // The ref admits only one request even before React has rendered disabled controls.
+    createPendingRef.current = true;
+    const scope = createScopeRef.current;
+    setIsCreating(true);
+    setCreateError('');
 
-    // Honest manual entry: NO fabricated links to RISK-001, CTRL-SSDF-PW.1, or DMK-042!
-    await onAddRequirement({
-      title: newTitle.trim(),
-      statement: newStatement.trim(),
-      category: newCategory,
-      priority: newPriority,
-      status: 'PROPOSED',
-      source: { type: 'stakeholder', id: 'MANUAL_ENTRY' },
-      riskLinks: [],
-      threatLinks: [],
-      standardLinks: [],
-      workItems: [],
-      tests: [],
-      evidence: [],
-      rationale: newRationale.trim() || undefined,
-    });
-
-    setNewTitle('');
-    setNewStatement('');
-    setNewRationale('');
-    setShowAddModal(false);
+    try {
+      // Honest manual entry: NO fabricated links to RISK-001, CTRL-SSDF-PW.1, or DMK-042!
+      await onAddRequirement({
+        title: newTitle.trim(),
+        statement: newStatement.trim(),
+        category: newCategory,
+        priority: newPriority,
+        status: 'PROPOSED',
+        source: { type: 'stakeholder', id: 'MANUAL_ENTRY' },
+        riskLinks: [],
+        threatLinks: [],
+        standardLinks: [],
+        workItems: [],
+        tests: [],
+        evidence: [],
+        rationale: newRationale.trim() || undefined,
+      });
+      if (scope !== createScopeRef.current) return;
+      setNewTitle('');
+      setNewStatement('');
+      setNewRationale('');
+      setShowAddModal(false);
+    } catch (error) {
+      if (scope !== createScopeRef.current) return;
+      setCreateError(error instanceof Error && error.message
+        ? error.message
+        : 'Requirement creation failed. Your draft is retained.');
+    } finally {
+      if (scope === createScopeRef.current) {
+        createPendingRef.current = false;
+        setIsCreating(false);
+      }
+    }
   };
 
   const handleStatusChange = async (reqId: string, newStatus: RequirementStatus) => {
@@ -611,7 +639,9 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900">Add Canonical Requirement</h2>
-            <form onSubmit={handleCreateRequirement} className="space-y-4 text-xs">
+            <form onSubmit={handleCreateRequirement} className="space-y-4 text-xs" aria-busy={isCreating}>
+              {createError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-800">{createError}</div>}
+              <fieldset disabled={isCreating} className="space-y-4">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Requirement Title</label>
                 <input
@@ -689,9 +719,10 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
                 >
-                  Save as Proposed Requirement
+                  {isCreating ? 'Saving requirement…' : 'Save as Proposed Requirement'}
                 </button>
               </div>
+              </fieldset>
             </form>
           </div>
         </div>
