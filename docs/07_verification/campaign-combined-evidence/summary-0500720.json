@@ -1,0 +1,60 @@
+{
+  "type": "SIGNED_DEVELOPER_EVIDENCE_SUPPLEMENT_NOT_MASTER_INTEGRATION",
+  "sourceHead": "0500720ccd0fb129712e137bf265c9063eb70ad9",
+  "sourceTree": "a71f5ab3b6a7c5bb44536cb1ad7e3af60b417b2e",
+  "originalCombinedSource": "7c31fb3b2899ba65c1551eb456df6d3fc526b5b1",
+  "addedGuardHead": "6a1f2f458879ce3b2bd7c4e3f2dc04aea7650bb3",
+  "currentMasterAtPreparation": "3705f67b2be4c0506a0933ee6c8d6976b0edda9c",
+  "masterQualification": "HOLD: original missing-tool guard defect; PR65 actual candidate CI passed, independent approval/post-merge evidence pending",
+  "runtime": "private official verified Node22.23.3 Windows x64",
+  "dependencies": "retained pinned fixture; not clean operator-host installation",
+  "startedAt": "2026-10-21T10:10:06.6374988Z",
+  "completedAt": "2026-10-21T10:19:01.3019031Z",
+  "quality": "WBS/TypeScript/production build passed",
+  "suites": {
+    "total": 82,
+    "passed": 82,
+    "failed": 0,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 2093,
+    "passed": 2093,
+    "failed": 0,
+    "skipped": 0
+  },
+  "guardFocusedChecks": 20,
+  "guardRunnerCountedOutputs": 19,
+  "countQualification": "Runner excludes a passing alias-test label containing word 'skip'; actual assertion executed. No runner/test assertion weakened.",
+  "sourceManifestBeforeSha256": "76f8091e43130328e74f7894f3d206222895c61453b5ab3da8eb56dae2f310a2",
+  "sourceManifestAfterSha256": "76f8091e43130328e74f7894f3d206222895c61453b5ab3da8eb56dae2f310a2",
+  "logs": [
+    {
+      "name": "quality",
+      "rawSha256": "e658504b4fd7eda02ff42642ba1a825fb772ff8691a70bf49a7a6c5fb0372bfc",
+      "publishedSha256": "f813ef7c995163105e97a3275d86e8910b995b12e36616d39dc3fac59cd3b14b"
+    },
+    {
+      "name": "regression",
+      "rawSha256": "469ebfb3767dca7db081f75e941e71656632cddab738d47da1bb21287b239cb0",
+      "publishedSha256": "16de73a6873f79263272faa49389bd90aff9f6ecca986d69b4fcdc46c86e0ae1"
+    }
+  ],
+  "separateControlledRun": {
+    "sourceHead": "7c31fb3b2899ba65c1551eb456df6d3fc526b5b1",
+    "additional": 29,
+    "core": 40,
+    "liveSnapshotMutation": "NONE",
+    "assertions": 332,
+    "note": "No controlled implementation changed in guard correction; dedicated current guard CI39582257796 also passed40/29/11.",
+    "focused": 11
+  },
+  "mayApply": false,
+  "operationalAuthority": false,
+  "limitations": [
+    "Not actual master post-merge CI or human approval",
+    "No clean operator-host installation",
+    "No production identity/trust/authorization activation",
+    "Does not establish worst-case capacity or total process-tree resource budgets"
+  ]
+}
