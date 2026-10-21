@@ -162,6 +162,28 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Fresh frozen Linux Bun native qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate=$(mktemp -d "$RUNNER_TEMP/native-linux-bun.XXXXXX")
+          sha=$(git rev-parse HEAD)
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$candidate"
+          git -C "$candidate" checkout --detach "$sha"
+          test ! -e "$candidate/node_modules"
+          cd "$candidate"
+          npx --yes --package=bun@1.4.2 -- bun --version
+          npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/native-linux-bun-cache"
+          untrusted=$(npx --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1)
+          printf '%s\n' "$untrusted"
+          if printf '%s\n' "$untrusted" | rg -i '\b(better-sqlite3|argon2|esbuild)\s*@'; then
+            echo 'Required native dependency lifecycle was blocked'
+            exit 1
+          fi
+          node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          git diff --exit-code
+
   controlled_docs:
     name: Controlled Docs
     runs-on: ubuntu-latest

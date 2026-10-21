@@ -150,14 +150,16 @@ await check('actual native canonical TEMP supports available Windows 8dot3 alias
   const directory = await fs.mkdtemp(path.join(parent, 'dmk-s2a-synthetic-'));
   const prior = {TEMP: process.env.TEMP, TMP: process.env.TMP};
   // Use Windows' existing filesystem automation API, avoiding a C# compiler
-  // startup in every test process. The first hosted attempt timed out inside
-  // the Add-Type/GetShortPathName helper after 15s, before any path assertion.
+  // startup in every test process. Hosted Windows PowerShell 5.1 timed out
+  // before output with both Add-Type and this compilation-free helper. Use
+  // the existing PowerShell 7 host, with explicit stage diagnostics.
   // The same canonical-equality and actual native-open assertions remain.
   const probe = `$filesystem = New-Object -ComObject Scripting.FileSystemObject; $alias = $filesystem.GetFolder($env:DMK_TEST_ALIAS_PARENT).ShortPath; if ([string]::IsNullOrWhiteSpace($alias)) { throw 'Short-path acquisition failed' }; [Console]::Write($alias)`;
   try {
-    const env = Object.fromEntries(['PATH', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA'].filter(k => process.env[k] !== undefined).map(k => [k, process.env[k]]));
-    const quietProbe = "$ProgressPreference='SilentlyContinue';" + probe;
-    const alias = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', Buffer.from(quietProbe, 'utf16le').toString('base64')], {env: {...env, DMK_TEST_ALIAS_PARENT: directory}, windowsHide: true, timeout: 15_000, encoding: 'utf8'}).trim();
+    const quietProbe = "$ProgressPreference='SilentlyContinue';[Console]::Error.WriteLine('ALIAS_HELPER_STARTED pwsh7');" + probe + ";[Console]::Error.WriteLine('ALIAS_HELPER_COMPLETE')";
+    // Inherit normal process bootstrap variables; do not print environment
+    // values. The script reads only its generated fixture path and OS metadata.
+    const alias = execFileSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', Buffer.from(quietProbe, 'utf16le').toString('base64')], {env: {...process.env, DMK_TEST_ALIAS_PARENT: directory}, windowsHide: true, timeout: 15_000, encoding: 'utf8'}).trim();
     assert.equal(await fs.realpath(alias), directory);
     process.env.TEMP = alias; process.env.TMP = alias;
     await assert.doesNotReject(async () => {
