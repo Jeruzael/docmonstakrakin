@@ -1,0 +1,135 @@
+{
+  "recordedAt": "2026-10-21T10:11:45.918Z",
+  "kind": "ADDITIVE_CI_QUALIFICATION_RECONCILIATION",
+  "originalCandidate": "ab20b3026fba1200d5acd54ab04c9efd0862ba14",
+  "originalReceiptSha256": "a95417e437a296de656c822589213b213bd63822a087a732fabc86dfc717a5fc",
+  "historicalResults": "76 suites/1983 checks belong to original frozen-source runs, not a new full pass after CI correction",
+  "verifiedActualMaster": "3705f67b2be4c0506a0933ee6c8d6976b0edda9c",
+  "signedSharedGuard": "6a1f2f458879ce3b2bd7c4e3f2dc04aea7650bb3",
+  "guardGithubVerification": "valid",
+  "newBase": "4293d071a300121d3787c356a6940df1bf9a4f22",
+  "baseParents": [
+    "41354d43b879a0a1352e0d53254139daf080b9fa",
+    "6a1f2f458879ce3b2bd7c4e3f2dc04aea7650bb3"
+  ],
+  "candidateMerge": "4443e3bf3e17ace5a4cfa6744a3a892d95017bce",
+  "candidateMergeParents": [
+    "ab20b3026fba1200d5acd54ab04c9efd0862ba14",
+    "4293d071a300121d3787c356a6940df1bf9a4f22"
+  ],
+  "finalCandidate": "Signed commit containing this additive receipt; acquire exact GitHub HEAD independently",
+  "scope": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "d9f8bf26e905a8f1ad90b6a51ecd6a2266997f1849dfc70f0d441c2bd6e7631c",
+      "gitBlob": "d85377facc3b06ad891c7aca28c43f9bf8291eb1",
+      "originalSha256": "d9f8bf26e905a8f1ad90b6a51ecd6a2266997f1849dfc70f0d441c2bd6e7631c",
+      "currentSha256": "fdc9e39d6399546f947c1c1f92bc031bb8ecfd4587ec2223720142d4f2e70d80",
+      "changed": true
+    },
+    {
+      "path": "server/security/authPilot/index.ts",
+      "sha256": "3a43aee5be4f1ef3fb41c94e394438c7baf455142ba09331ece891d2def6333a",
+      "gitBlob": "0bd9b7ff74610169f078ee4cce749aeafda31b39",
+      "originalSha256": "3a43aee5be4f1ef3fb41c94e394438c7baf455142ba09331ece891d2def6333a",
+      "currentSha256": "3a43aee5be4f1ef3fb41c94e394438c7baf455142ba09331ece891d2def6333a",
+      "changed": false
+    },
+    {
+      "path": "server/security/authPilot/fixtureRecovery.ts",
+      "sha256": "7a1b746c220fb59a300f699d968033ad908d390976fa175a898783c478101c22",
+      "gitBlob": "f260a74c7798352969f39acfbe758e4c509e7ba5",
+      "originalSha256": "7a1b746c220fb59a300f699d968033ad908d390976fa175a898783c478101c22",
+      "currentSha256": "7a1b746c220fb59a300f699d968033ad908d390976fa175a898783c478101c22",
+      "changed": false
+    },
+    {
+      "path": "server/security/syntheticFoundations/contracts.ts",
+      "sha256": "8fb2c9f5fb4a6b27114b4133706faa3859fff6bb7c4fc8eae1cf5768e8977332",
+      "gitBlob": "14bfe4d2bbad55b321e6c5990cce9a1b211bb1e3",
+      "originalSha256": "8fb2c9f5fb4a6b27114b4133706faa3859fff6bb7c4fc8eae1cf5768e8977332",
+      "currentSha256": "8fb2c9f5fb4a6b27114b4133706faa3859fff6bb7c4fc8eae1cf5768e8977332",
+      "changed": false
+    },
+    {
+      "path": "server/security/syntheticFoundations/ownedDirectory.mjs",
+      "sha256": "033ade0043c3ae3e74be22fbe12d55ce7e258f074361d6b4c56ec55abd9a71fb",
+      "gitBlob": "4f82b19e1c1774027d754ba4bf91b08c0f540113",
+      "originalSha256": "033ade0043c3ae3e74be22fbe12d55ce7e258f074361d6b4c56ec55abd9a71fb",
+      "currentSha256": "033ade0043c3ae3e74be22fbe12d55ce7e258f074361d6b4c56ec55abd9a71fb",
+      "changed": false
+    },
+    {
+      "path": "server/security/syntheticFoundations/privateStore.ts",
+      "sha256": "683592d5452bece806347b058d1dc61c30e0cf4426aaeb190eb676f81fd3f142",
+      "gitBlob": "209c509498a682936b6dfe01cd7cd9db8ebeac09",
+      "originalSha256": "683592d5452bece806347b058d1dc61c30e0cf4426aaeb190eb676f81fd3f142",
+      "currentSha256": "683592d5452bece806347b058d1dc61c30e0cf4426aaeb190eb676f81fd3f142",
+      "changed": false
+    },
+    {
+      "path": "server/security/syntheticFoundations/privateStoreWorker.mjs",
+      "sha256": "779d6e8a2372268c9dff38c51f835b7e5abef7dc1ec3f0defa02c4dc8a6497e1",
+      "gitBlob": "45de5f332dff29de81942200da15b36b6671efc3",
+      "originalSha256": "779d6e8a2372268c9dff38c51f835b7e5abef7dc1ec3f0defa02c4dc8a6497e1",
+      "currentSha256": "779d6e8a2372268c9dff38c51f835b7e5abef7dc1ec3f0defa02c4dc8a6497e1",
+      "changed": false
+    },
+    {
+      "path": "scripts/testAuthPilotRecovery.ts",
+      "sha256": "2c682e6117136ea58475f5b5b07fd0b40ecd70456e2e7e846b363175f8c1a45b",
+      "gitBlob": "a4c8d50bbefd0276f386103a2ff53f66b688ece8",
+      "originalSha256": "2c682e6117136ea58475f5b5b07fd0b40ecd70456e2e7e846b363175f8c1a45b",
+      "currentSha256": "2c682e6117136ea58475f5b5b07fd0b40ecd70456e2e7e846b363175f8c1a45b",
+      "changed": false
+    }
+  ],
+  "initialCi": {
+    "runId": 39578907017,
+    "providerConclusion": "success for all4 jobs",
+    "qualification": "FAILED_LINUX_BUN_GUARD_MISSING_RG",
+    "originalDecodedLogEncoding": "Untouched decoded GitHub connector log text re-encoded as UTF8; BOM/CR/LF preserved. Hashes do not assert access to original HTTP transport bytes.",
+    "logs": [
+      {
+        "name": "quality",
+        "path": "runtime\\pr64-ci\\quality.raw.log",
+        "bytes": 47273,
+        "sha256": "bf8c9701695ae570983b92f2191137d48faae6b95d4f1c2bc5b71a06a6688c50"
+      },
+      {
+        "name": "controlled",
+        "path": "runtime\\pr64-ci\\controlled.raw.log",
+        "bytes": 61954,
+        "sha256": "35e0f172978d52ba84e4a1accf9d36604a1e26861d9b60d58ea9eb2577a225a1"
+      },
+      {
+        "name": "windows",
+        "path": "runtime\\pr64-ci\\windows.raw.log",
+        "bytes": 89616,
+        "sha256": "54cd53fc11e0b738ee458f8aa5ed3dc6c3b16dae6ec5e2d7b10e90962607f88a"
+      },
+      {
+        "name": "complete",
+        "path": "runtime\\pr64-ci\\complete.raw.log",
+        "bytes": 59065,
+        "sha256": "63b576224c055eaec0231f7f2c754fcbc6ae1e7ba47ba3eddf22b7961da4698f"
+      }
+    ],
+    "qualityArchive": "initial-quality-39578907017.raw.b64",
+    "qualityDecodedSha256": "bf8c9701695ae570983b92f2191137d48faae6b95d4f1c2bc5b71a06a6688c50"
+  },
+  "postReconciliationLocal": {
+    "focusedGuard": 20,
+    "rawGuardLogSha256": "a46586e131b41177803938e65a6848f931cfb0f1bcd203f976159ca707e86a9b",
+    "publishedGuardLogSha256": "7c6ff8f5bc23dfb412c47a71d392074d348056e276cd87c8de3ccba144606c14",
+    "newFullRegression": "NOT_RUN",
+    "runtimeAndTestSourceHashes": "all7 original files unchanged"
+  },
+  "pending": [
+    "exact new-HEAD GitHub signature and four CI jobs",
+    "actual independent human review",
+    "actual protected merge/post-merge verification of #60/#62/#65 before master eligibility",
+    "normal final master reconciliation/retarget/current-diff review"
+  ],
+  "productionActivation": false
+}
