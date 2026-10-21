@@ -5,7 +5,8 @@ This Workstream D candidate contains product planning changes and synthetic test
 It does not activate authentication, trust roots, WBS registration, agents or release.
 Its fixture-isolation dependency is separately reviewable in
 [PR #62](https://github.com/Jeruzael/docmonstakrakin/pull/62), signed commit
-`1b636b74f9700811fa72cde2e3f63ca375bc6a92`. That dependency is not assumed merged.
+`9f0a61c0694f059b8c541127a4afc9a6eade9be3` (initial historical version
+`1b636b74f9700811fa72cde2e3f63ca375bc6a92`). That dependency is not assumed merged.
 
 ## Implemented changes
 
@@ -163,10 +164,12 @@ Earlier focused results used Node 22.21.1. Dependencies are a retained private
 fixture reached by a new task-owned junction; no install ran through that junction.
 The prior physical task dependencies were retained outside the source tree.
 Neither this evidence nor the retained native binaries establish a fresh install
-on Windows or Linux. No operator SDK, global package, original dependency junction
-or credential store was modified.
+on Windows or Linux. No operator SDK, global package or original dependency junction
+was modified. The later constructor-side-effect finding and task-worktree fallback
+artifact are explicitly qualified below; earlier probe-only evidence was incomplete.
 
-Final local results, after the lossless-text correction:
+Frozen local results after the lossless-text correction, before the subsequent
+requirement-ID and constructor-isolation review corrections:
 
 | Verification | Observed result |
 |---|---|
@@ -191,13 +194,46 @@ This timing qualification is retained; exact signed-HEAD GitHub CI is still requ
 
 The complete regression report SHA-256 is
 `938eb8811e31a8493fc2d4c1b753d49a0907f495ad1faf2cd0c24ccddf46a779`.
-The final browser acceptance JSON SHA-256 is
+That run's browser acceptance JSON SHA-256 is
 `11a6d6ac6f2e5a6de094c5265df2f2aa0d7e3ef9771b994a1abfe2c66d61c55a`.
 It records incomplete discovery (1/22 mandatory answers resolved, 5% coverage),
 `releaseReady:false`, `signedOff:false` and no browser errors. Run artifacts are
 regenerable outputs, not independent human review or immutable historical receipts.
 The full local run used the combined infrastructure/product working tree; it does
 not substitute for CI on either separately published commit.
+
+## Subsequent independent review corrections
+
+The original infrastructure commit `1b636b74f9700811fa72cde2e3f63ca375bc6a92`
+constructed a default `OSKeychainSecretStore` inside its negative test. Its fallback
+constructor could probe or initialize ordinary-cwd credential state before the
+native-access tripwire ran. A safe filesystem tripwire reproduced the first probe
+without permitting that access. Corrected infrastructure commit
+`9f0a61c0694f059b8c541127a4afc9a6eade9be3` supplies an explicit inert throwing
+fallback and additionally proves zero ordinary-cwd credential filesystem probes;
+the six-case isolation test and TypeScript pass. Earlier runs created a 64-byte
+fallback token in this task worktree at `2026-10-21T08:38:54.2770357Z`. Only metadata
+was inspected afterward; token contents were not printed, inspected or deleted.
+The metadata remained unchanged, JSON SHA-256
+`694c3396a351774e0778b59f1b4891dbbfe3af1a8fa30cb3dd27124db2aa73b0`.
+The original operator checkout and its dependency junction remain untouched.
+
+Product correction `547aee65cd2477ae1953debe18685a90ed3097cc` addresses distinct
+accepted requirement IDs aliasing under lossy UTF-8 hashing. A real API RED case
+returned 409 instead of 201 for the second ID. Work identity now hashes the JSON
+string representation, preserving distinct UTF-16 string identities. Both accepted
+IDs produce separate proposed work and reciprocal links. Corrected derivation
+9/9, actual browser 9/9 and TypeScript pass; no production WorkItem ID migration is
+performed. Normal signed merge `fced4f46ccef70e4db356b35665fedd29e3383c6` retains
+both the product correction and corrected infrastructure. The earlier 77/1,943 run
+is prior-source evidence and is not relabeled as proof for these corrections.
+
+The product PR is stacked on PR #62. Its directly related CI supplement retains
+the master trigger and adds `codex/campaign-*` pull-request bases, allowing all four
+existing jobs on explicitly stacked campaign candidates. Jobs, read-only token
+permissions and production boundaries are unchanged. Final signed-HEAD CI and
+independent human approval remain mandatory, followed by normal reconciliation to
+actual master and renewed checks/review whenever required.
 
 ## Security limits and rollback
 
