@@ -12,6 +12,7 @@ import {
   ExternalLink,
   AlertTriangle,
   RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import { Evidence, AuditEvent } from '../types';
 
@@ -21,6 +22,15 @@ interface EvidenceViewProps {
   auditSyncStatus?: 'CURRENT' | 'REFRESHING' | 'REFRESH_FAILED';
   auditSyncError?: string;
   onRetryAuditRefresh?: () => void;
+}
+
+function storedResultPresentation(result: unknown) {
+  if (result === 'PASSED' || result === 'VERIFIED') return {
+    label: result, Icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  };
+  if (result === 'FAILED') return {label: result, Icon: XCircle, color: 'text-rose-700 bg-rose-50 border-rose-200'};
+  if (result === 'UNTRUSTED') return {label: result, Icon: AlertTriangle, color: 'text-amber-700 bg-amber-50 border-amber-200'};
+  return {label: 'UNAVAILABLE', Icon: Clock, color: 'text-slate-700 bg-slate-50 border-slate-200'};
 }
 
 export const EvidenceView: React.FC<EvidenceViewProps> = ({
@@ -67,7 +77,7 @@ export const EvidenceView: React.FC<EvidenceViewProps> = ({
               tab === 'EVIDENCE' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Verification Evidence ({evidenceList.length})
+            Evidence Records ({evidenceList.length})
           </button>
           <button
             onClick={() => setTab('AUDIT')}
@@ -92,8 +102,17 @@ export const EvidenceView: React.FC<EvidenceViewProps> = ({
             </div>
           </div>
 
+          <p className="text-xs text-slate-600">
+            Stored results and digest references are displayed as recorded. This view does not independently authenticate
+            artifacts, verify their hashes or approve task completion.
+          </p>
+          {evidenceList.length === 0 && <p role="status" className="text-sm text-slate-500">No evidence records for this project.</p>}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {evidenceList.map((ev) => (
+            {evidenceList.map((ev) => {
+              const result = storedResultPresentation(ev.result);
+              const validDigest = typeof ev.sha256Hash === 'string' && /^[a-fA-F0-9]{64}$/.test(ev.sha256Hash);
+              return (
               <div
                 key={ev.id}
                 className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-3"
@@ -102,9 +121,9 @@ export const EvidenceView: React.FC<EvidenceViewProps> = ({
                   <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
                     {ev.id}
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {ev.result}
+                  <span className={`text-[11px] font-bold border px-2 py-0.5 rounded flex items-center gap-1 ${result.color}`}>
+                    <result.Icon className="w-3.5 h-3.5" />
+                    Stored result: {result.label}
                   </span>
                 </div>
 
@@ -134,12 +153,12 @@ export const EvidenceView: React.FC<EvidenceViewProps> = ({
                   <div>
                     <span>Producer:</span> <strong className="text-slate-700">{ev.producer}</strong>
                   </div>
-                  <div className="font-mono text-[10px] truncate max-w-[140px]" title={ev.sha256Hash}>
-                    sha256: {ev.sha256Hash.substring(0, 10)}...
+                  <div className="font-mono text-[10px] truncate max-w-[190px]" title={validDigest ? ev.sha256Hash : undefined}>
+                    {validDigest ? `Stored SHA-256: ${ev.sha256Hash.substring(0, 10)}...` : 'SHA-256 reference unavailable'}
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         </div>
       )}
