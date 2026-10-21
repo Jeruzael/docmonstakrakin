@@ -90,10 +90,14 @@ jobs:
         run: |
           node scripts/testBunLifecycleInventory.ts
           if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard regression failed' }
+          npx.cmd playwright install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Disposable Chromium fixture acquisition failed' }
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
           if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          node --import tsx scripts/testAuthPilot.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed disconnected authentication pilot failed' }
           node --import tsx scripts/testSyntheticStorePaths.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           npm.cmd run ci:quality
@@ -129,6 +133,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard failed' }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            node --import tsx scripts/testAuthPilot.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed disconnected authentication pilot failed' }
             node --import tsx scripts/testSyntheticStorePaths.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             git diff --exit-code

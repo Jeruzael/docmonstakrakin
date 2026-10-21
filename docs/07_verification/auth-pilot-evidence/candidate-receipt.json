@@ -1,0 +1,98 @@
+{
+  "baseline": "148be8892b37aaf1944aca0c0671b6a948192f38",
+  "branch": "codex/campaign-auth-pilot",
+  "mode": "DISCONNECTED_SYNTHETIC_ONLY",
+  "productionActivation": false,
+  "localEnvironment": {
+    "node": "22.21.1",
+    "platform": "win32",
+    "arch": "x64",
+    "dependencyQualification": "retained physical lock-matching fixture via NEW task-owned test-only junction; no install through junction; not a clean-install claim"
+  },
+  "focused": {
+    "namedChecks": 41,
+    "status": "PASSED",
+    "latestLog": "focused-browser-windows.txt",
+    "earlierConcurrentLog": "focused-windows.txt",
+    "redCase": "unpaired-surrogate-red.txt"
+  },
+  "initialFull": {
+    "suites": 72,
+    "passed": 70,
+    "failed": 2,
+    "checksPassed": 1905,
+    "checksFailed": 2,
+    "json": "initial-full-results.json",
+    "causes": [
+      "PowerShell child module-autoload mismatch; standalone retry with process-only native PSModulePath passed 6 checks",
+      "Concurrent fixed Vite port5173 already in use by another campaign regression fixture"
+    ],
+    "rawHashes": {
+      "accountLog": "2b584c2f4e6334e607f977401049440e5cffe66020a7e6c6e81f2cbd9e2b619f",
+      "portLog": "b24b867ad09c8ac6d3eeb5c19db4d7fe7a9c1385ca8fa97a84bfc835a18004b5",
+      "runnerLog": "ef7d78dd08da11ebd174cb6c7582c0b6775a4ad80127587f33f1b8d47927cace"
+    }
+  },
+  "quality": "WBS/TypeScript/production build PASSED on prior39-check source; final41-check source TypeScript PASSED; exact final CI pending",
+  "controlled": {
+    "core": 40,
+    "additional": 29,
+    "focused": 11,
+    "assertions": 332,
+    "liveSnapshotMutation": "NONE",
+    "status": "PASSED"
+  },
+  "freshNpmAudit": {
+    "total": 0,
+    "critical": 0,
+    "high": 0,
+    "moderate": 0,
+    "low": 0,
+    "file": "npm-audit.json"
+  },
+  "finalFull": "PASSED 72/72 suites 1943/1943 checks zero failures/skips; prior to subsequent browser/POST-session extension",
+  "CI": "NOT_RUN_BY_WORKER",
+  "humanApproval": "NOT_REQUESTED_BY_WORKER",
+  "merged": false,
+  "browserQualification": {
+    "getSessionWithoutOrigin": 403,
+    "productionTrustAccepted": false,
+    "CSRFRejected": true,
+    "actualBrowserGeneratedOrigin": true,
+    "trust": "per-process exact ephemeral certificate SPKI exception; no host trust installation",
+    "crossSiteDenied": true,
+    "postSession": 200,
+    "ignoreHTTPSErrors": false,
+    "HttpOnlyCookie": true,
+    "browser": "155.0.8059.79"
+  },
+  "publicEvidenceNormalization": "UTF-8; CR/CRLF-to-LF, trailing horizontal whitespace and trailing blank-line normalization for new public logs only; original raw failure hashes retained",
+  "postSessionRed": "post-session-red.txt",
+  "finalFocused": "41/41 actual native/HTTP/browser checks, final TypeScript passed; signed exact-head full CI required",
+  "publicFileDigests": {
+    "focused-browser-windows.txt": "341907b4b8b991a7ca6c176789f12579a8631dabf0eb15d8b2e33495b3f995d4",
+    "focused-windows-utf8-green.txt": "c645b8bf03dc3288da438a1b6cefc62cfc77cf93f2f2fa0ff1e0e1de14f0578b",
+    "focused-windows.txt": "44f3e6a62ca14997afdfa93a4c98b2e877cc3771af4e4c5c5e0b1522eee5e65c",
+    "full-before-browser-extension.json": "44426dc23677818f6f8abdb4062bc415d10f3f6cd1eefb5507a4f1131b8f5d0c",
+    "full-before-browser-extension.txt": "a6c4c074959b35e646f2d221c2368f1bdc2a628ad7a1161c77c7483bcb586f60",
+    "header-count-ci-failure.json": "174daf49089626b351144dad714479a6477decebfea88cc24011617583efc271",
+    "header-count-local-green.txt": "fdaba244c24162808ad259f713e8ed050051a3c4edafcf8f10881038d4bc4adf",
+    "initial-browser-binary-failure.txt": "41db0eb20909b5019df6dcc0accd5104fde1f4a8f7da1e112518a3da960ef83e",
+    "initial-full-results.json": "abd59f174349978a97dee51f59e3f04f7915c0588e893417b5b39783dc94b98a",
+    "initial-port-collision.txt": "95f3bab740eae7bcc04706cceef61726289b159772c1e88f49fc3bfc331d67e4",
+    "initial-powershell-module-failure.txt": "5bf7f103e4b1adf34d3a93e3eefadbd43a02347fe8ea626a8bcd3f67a7d8e552",
+    "npm-audit.json": "646ce2fa9d8d21b9674f96caada594d35cdba776e17acd9f50140cf0b70bbf43",
+    "post-session-red.txt": "81f4b64630aefa5b6def8e7a8e830f778e3b4a4742c4341de6d09998cd4ec871",
+    "unpaired-surrogate-red.txt": "6b62318c7f5289d00beeddc504eb06f538fa9e0e094a879ccfb4239a0075ea13"
+  },
+  "headerCompatibility": {
+    "originalSignedHead": "0d8cca631e73f31f070ecbd3fd68e68b81af13a7",
+    "failedWorkflow": 39571259933,
+    "failedJob": 119125727187,
+    "cause": "native431 rather than middleware403",
+    "assertions": "ONLY403or431; entire authority stateHash unchanged; limits/runtime unchanged",
+    "localChecks": 41,
+    "localTypeScript": "PASSED",
+    "newExactHeadCI": "REQUIRED_NOT_PREDECLARED"
+  }
+}
