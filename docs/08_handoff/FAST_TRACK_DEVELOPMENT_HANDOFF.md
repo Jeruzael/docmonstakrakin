@@ -1,5 +1,62 @@
 # Subscription-independent development handoff
 
+## Final verified campaign handoff — 2026-10-21T15:51:15Z
+
+Verified runtime master is **`4514f1b9f174222ac47bd5bcafdb64deaae33368`**, tree **`c3f25d8138fea3a163dde4dd6e79265b63c94207`**. All four actual push-CI jobs passed on this exact merge. This additive documentation record is published on a separate record branch without a closure-only PR; it does not change runtime master or claim that its later documentation commit is the CI-tested merge. Older pending/current-state sections below remain historical snapshots.
+
+The operator waived ordinary independent-human development review and authorized normal merges. Every listed integration used the expected-HEAD guard, valid signed candidate, clean repository mergeability, exact candidate/synthetic/merged tree and actual predecessor/post-merge checks. Agent review and agent-invoked merge are not human APPROVED reviews or ratification of operational governance. Agent operations used no force push, rebase, auto-merge, branch-protection edit or direct master push; the operator reported changing repository settings separately.
+
+| PR | Signed candidate HEAD | Actual merge | Actual post-merge CI | Suites / reported checks |
+| --- | --- | --- | --- | --- |
+| [#66](https://github.com/Jeruzael/docmonstakrakin/pull/66) | `bcf282812b84d28512503c38527bdb76bb020cce` | `21da1d5bebaecf58b5037c255561c8b8315b429d` | [39598218255](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39598218255) | 79 / 1972 |
+| [#67](https://github.com/Jeruzael/docmonstakrakin/pull/67) | `2e1c67a37a819d820fdf5852b0e51fe08b70c76c` | `f1cc0255627fa9f986e5fa4ee70b383a6322225a` | [39601546184](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39601546184) | 80 / 1988 |
+| [#60](https://github.com/Jeruzael/docmonstakrakin/pull/60) | `b7e3cfb47665130127d41240c9e78ac3b424b3a2` | `acdb3e2c1057262612766d7d98ab91c32b3c084b` | [39603324113](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39603324113) | 81 / 2029 |
+| [#61](https://github.com/Jeruzael/docmonstakrakin/pull/61) | `03a142586118519193df4bd3cb36942293ad5cff` | `59fea80b9374a7e90b0d4f855df6ede09aa350c8` | [39605514442](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39605514442) | 82 / 2085 |
+| [#64](https://github.com/Jeruzael/docmonstakrakin/pull/64) | `d574915eedf164d201c3b5e0fc7bbaf5076005b6` | `ef160d4dea3122309687b1f44bb8972c07e879a5` | [39608076350](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39608076350) | 83 / 2109 |
+| [#68](https://github.com/Jeruzael/docmonstakrakin/pull/68) | `2f051d09d33aa0bfbb688e570d84f645f9806da0` | `9a0054cd7875cd836ffde990607bb0d788806707` | [39610190107](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39610190107) | 85 / 2134 |
+| [#72](https://github.com/Jeruzael/docmonstakrakin/pull/72) | `80b5eaaec09bcf31747d8c1e0acc83f6d6ccac1e` | `2eb709089d142be39ca082b66508e60701f04dcf` | [39618130544](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39618130544) | 86 / 2155 |
+| [#70](https://github.com/Jeruzael/docmonstakrakin/pull/70) | `7f725e95a8831a0398ff55252bbb8896a5f87962` | `e2863c1d5a12ce7c5ece350e3bb09fca6676d7ef` | [39619260025](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39619260025) | 87 / 2171 |
+| [#71](https://github.com/Jeruzael/docmonstakrakin/pull/71) | `6902efe99df28938b0dbb8405617007c53dfd5f0` | `9143c0bfc9456ef66491eb7fda4ebf3933065858` | [39620551356](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39620551356) | 88 / 2179 |
+| [#73](https://github.com/Jeruzael/docmonstakrakin/pull/73) | `9af653951e87207317f7a2d4fcc1b30ac88e0dea` | `e81a649064d3a8149f75db5fbfd427948fafa81b` | [39621699571](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39621699571) | 89 / 2189 |
+| [#75](https://github.com/Jeruzael/docmonstakrakin/pull/75) | `6311e91f2e1258d4ade61f16669b45dd130aeb8e` | `a8decba9ee305f1d3bd8ec96b5f80837332f8d71` | [39623054845](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39623054845) | 90 / 2193 |
+| [#76](https://github.com/Jeruzael/docmonstakrakin/pull/76) | `1acf2a543a5add8894c0f4baecbb81a56db8158d` | `f0845a48664b3df5e7e3d4141251e538cc465f33` | [39624137247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39624137247) | 91 / 2212 |
+| [#74](https://github.com/Jeruzael/docmonstakrakin/pull/74) | `b8784d97c727160f46b77930c39428d8124ba5db` | `bd3900d5a2febcdb579204d53c1ddb1cb65e4171` | [39625427884](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39625427884) | 92 / 2230 |
+| [#77](https://github.com/Jeruzael/docmonstakrakin/pull/77) | `c6d6e3fde57166309d1153fe6557ebd6d5af8ace` | `38e49274e6050df8cca6f23aa0d428bdf0d6f68c` | [39626733222](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39626733222) | 93 / 2241 |
+| [#78](https://github.com/Jeruzael/docmonstakrakin/pull/78) | `3d2ad3cc778318059a35b026e7fdac948cbf1bee` | `4514f1b9f174222ac47bd5bcafdb64deaae33368` | [39628029882](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882) | 94 / 2252 |
+
+Final actual job evidence:
+
+| Job | GitHub job | Result |
+| --- | --- | --- |
+| Quality & Build | [119318407161](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407161) | success |
+| Windows Native Qualification | [119318407437](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407437) | success |
+| Complete Regression | [119318407624](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407624) | success |
+| Controlled Docs | [119318407741](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407741) | success |
+
+The final full regression reports **94/94 suites and 2252/2252 reported named checks**, with zero failures/skips. Controlled-document checks retain40/40 core,29/29 additional security and11/11 focused suites/332 assertions, with no live-snapshot mutation. WBS integrity, TypeScript, production build, dependency audit and fresh Windows/Linux npm/Bun native qualifications passed for the actual merge. Synthetic native measurements do not establish production capacity or a clean original operator installation. Historical counting qualifications remain unchanged.
+
+### Preserved failures and qualifications
+
+- PR #69 actual merge `31fbb412792f2327adeee50cf306e8e26ed900d6`, CI39612706919, failed85/86 suites and2154/2155 checks. PR #72 repaired the recovered-report timing test without removing original assertions. Its separate attempt1 completion-metadata inconsistency and ordinary successful attempt2 remain recorded; none rewrites the actual #69 failure.
+- PR #74 candidateCI39619890700 attempt1 Windows Bun failed17/18 with an existing3000ms ready-worker RPC timeout, total245266ms. Fresh npm passed18/18 but was also roughly3.1times slower than the earlier identical-source run. One unchanged Windows retry passed18/18 under npm/Bun in109245/110519ms. The timed-out command and root cause remain unproven; fail-closed timeout behavior and all resource ceilings remain unchanged. Subsequent actual-master successes qualify their own runs, not production capacity or the failed attempt. [Failure](https://github.com/Jeruzael/docmonstakrakin/pull/74#issuecomment-6319323661), [retry](https://github.com/Jeruzael/docmonstakrakin/pull/74#issuecomment-6319589135).
+- PR #78 local full94/2251 predates its final consent-reset line. Retained actual-App RED10/1 became11/11 with identical test bytes; final exact-HEAD hosted and actual-master results above supply later full qualification. No earlier result is assigned to a newer tree.
+- Final actual regression metadata reported queued through15:48 despite execution. Completed metadata/logs subsequently confirmed job119318407624 started15:41:56 and succeeded15:49:51, with the test step15:42:35–15:49:49. All four actual jobs are successful; no retry/cancellation or fabricated check was used. Earlier pending observations remain historical. [Final closure](https://github.com/Jeruzael/docmonstakrakin/pull/78#issuecomment-6320204127).
+
+### Work completed and work still open
+
+The campaign integrated the recovered product journey/demo, corrected regression counting, disconnected authentication/governance/recovery foundations, truthful Reports/release/risk/evidence/Work displays, requirement-draft retention, bounded reviewer-session handling, inactive session-capacity reclamation, Discovery save sequencing and mounted-App reviewer/consent coherence. The app is not declared production-complete. All69 canonical entries retain their exact statuses/dependencies:23 VERIFIED,14 IMPLEMENTED,3 VERIFICATION_PENDING,1 IN_PROGRESS,1 READY,6 BACKLOG and21 PROPOSED. Six DMK-209–214 proposals remain unregistered. See the complete canonical inventory and next-work matrix in the task ledger.
+
+Next ordinary implementation: reproduce and fix feature creation draft loss in App/FeaturesView, then ADR/component creation in App/ArchitectureView, in separate bounded candidates. Parent callbacks currently swallow failures. Actual-App tests must distinguish acknowledged201 creation plus failed refresh from an unknown write outcome, retain all draft fields, prevent duplicate submission, bound headers/body waits and fence late project/form completions. Do not retry POST automatically. The ledger below includes exact file inventories and executable RED scenarios. Full DMK-202 evidence authority, DMK-206 evidence/sign-off workflow and DMK-207 deterministic project health remain separate unfinished scope.
+
+Human/operational decisions remain: charter/policy and resource ratification, independent role appointments and person separation, trust/root/recovery custody, enrollment, trusted clock/revocation/provenance, durable crash-safe application and evidence retention, operator browser acceptance and explicit operational activation. Ordinary review waiver does not provide any of those. Maintain proposed210→211→212→209/213→214 sequencing without declaring tasks registered or completed.
+
+Protected baseline comparison preserves canonical YAML SHA-256 `53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d` and Markdown `0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f`; packages/locks, historical receipts and authority-boundary segments are unchanged. API inventory remains45 legacy local-unscoped,7 specialized-reviewer,3 reviewer-session and14 privileged-denied registrations. This is partial containment. No real identity, credential, signer, root, grant, canonical WBS/receipt application, production authentication, privileged route, live agent, Gate7 or release activation occurred. PR #34/#52 remain separate.
+
+Original host Node/native SDK clean installation remains unqualified; its old source-map-js1.2.1 installation is local drift distinct from committed patched locks. The original node_modules junction, SDK/toolchain and credentials were not modified. Existing repository verification notes, public PR chronology, full tests and GitHub logs make this handoff usable without Codex. Ignored local logs and manifests are supplemental evidence.
+
+The [complete task ledger](../06_planning/FOUR_HOUR_COMPLETION_LEDGER_20261021.md) includes every remaining canonical item and the next bounded implementation plan. The [local product demo guide](LOCAL_PRODUCT_DEMO.md) describes the usable product journey.
+
+
 ## Publication preparation checkpoint — 2026-10-21, 15:18 UTC
 
 The last fully verified master is `a8decba9ee305f1d3bd8ec96b5f80837332f8d71`: PR #75 actual [CI39623054845](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39623054845) passed all four jobs, 90/90 suites and 2,193/2,193 reported checks; [closure](https://github.com/Jeruzael/docmonstakrakin/pull/75#issuecomment-6319503075). PR #76 was then normally merged at15:16:27Z as `f0845a48664b3df5e7e3d4141251e538cc465f33`, with exact candidate tree `49b9f9674b18698201b1acd1b2d45d89256d8844`, valid signature and three intended paths. Its actual [CI39624137247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39624137247) is pending at this checkpoint. The next merge waits for that actual result.

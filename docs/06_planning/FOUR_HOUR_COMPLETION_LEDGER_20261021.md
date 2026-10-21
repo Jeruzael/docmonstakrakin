@@ -1,5 +1,111 @@
 # Four-hour engineering continuation and complete task ledger
 
+## Final verified campaign handoff — 2026-10-21T15:51:15Z
+
+Verified runtime master is **`4514f1b9f174222ac47bd5bcafdb64deaae33368`**, tree **`c3f25d8138fea3a163dde4dd6e79265b63c94207`**. All four actual push-CI jobs passed on this exact merge. This additive documentation record is published on a separate record branch without a closure-only PR; it does not change runtime master or claim that its later documentation commit is the CI-tested merge. Older pending/current-state sections below remain historical snapshots.
+
+The operator waived ordinary independent-human development review and authorized normal merges. Every listed integration used the expected-HEAD guard, valid signed candidate, clean repository mergeability, exact candidate/synthetic/merged tree and actual predecessor/post-merge checks. Agent review and agent-invoked merge are not human APPROVED reviews or ratification of operational governance. Agent operations used no force push, rebase, auto-merge, branch-protection edit or direct master push; the operator reported changing repository settings separately.
+
+| PR | Signed candidate HEAD | Actual merge | Actual post-merge CI | Suites / reported checks |
+| --- | --- | --- | --- | --- |
+| [#66](https://github.com/Jeruzael/docmonstakrakin/pull/66) | `bcf282812b84d28512503c38527bdb76bb020cce` | `21da1d5bebaecf58b5037c255561c8b8315b429d` | [39598218255](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39598218255) | 79 / 1972 |
+| [#67](https://github.com/Jeruzael/docmonstakrakin/pull/67) | `2e1c67a37a819d820fdf5852b0e51fe08b70c76c` | `f1cc0255627fa9f986e5fa4ee70b383a6322225a` | [39601546184](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39601546184) | 80 / 1988 |
+| [#60](https://github.com/Jeruzael/docmonstakrakin/pull/60) | `b7e3cfb47665130127d41240c9e78ac3b424b3a2` | `acdb3e2c1057262612766d7d98ab91c32b3c084b` | [39603324113](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39603324113) | 81 / 2029 |
+| [#61](https://github.com/Jeruzael/docmonstakrakin/pull/61) | `03a142586118519193df4bd3cb36942293ad5cff` | `59fea80b9374a7e90b0d4f855df6ede09aa350c8` | [39605514442](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39605514442) | 82 / 2085 |
+| [#64](https://github.com/Jeruzael/docmonstakrakin/pull/64) | `d574915eedf164d201c3b5e0fc7bbaf5076005b6` | `ef160d4dea3122309687b1f44bb8972c07e879a5` | [39608076350](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39608076350) | 83 / 2109 |
+| [#68](https://github.com/Jeruzael/docmonstakrakin/pull/68) | `2f051d09d33aa0bfbb688e570d84f645f9806da0` | `9a0054cd7875cd836ffde990607bb0d788806707` | [39610190107](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39610190107) | 85 / 2134 |
+| [#72](https://github.com/Jeruzael/docmonstakrakin/pull/72) | `80b5eaaec09bcf31747d8c1e0acc83f6d6ccac1e` | `2eb709089d142be39ca082b66508e60701f04dcf` | [39618130544](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39618130544) | 86 / 2155 |
+| [#70](https://github.com/Jeruzael/docmonstakrakin/pull/70) | `7f725e95a8831a0398ff55252bbb8896a5f87962` | `e2863c1d5a12ce7c5ece350e3bb09fca6676d7ef` | [39619260025](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39619260025) | 87 / 2171 |
+| [#71](https://github.com/Jeruzael/docmonstakrakin/pull/71) | `6902efe99df28938b0dbb8405617007c53dfd5f0` | `9143c0bfc9456ef66491eb7fda4ebf3933065858` | [39620551356](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39620551356) | 88 / 2179 |
+| [#73](https://github.com/Jeruzael/docmonstakrakin/pull/73) | `9af653951e87207317f7a2d4fcc1b30ac88e0dea` | `e81a649064d3a8149f75db5fbfd427948fafa81b` | [39621699571](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39621699571) | 89 / 2189 |
+| [#75](https://github.com/Jeruzael/docmonstakrakin/pull/75) | `6311e91f2e1258d4ade61f16669b45dd130aeb8e` | `a8decba9ee305f1d3bd8ec96b5f80837332f8d71` | [39623054845](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39623054845) | 90 / 2193 |
+| [#76](https://github.com/Jeruzael/docmonstakrakin/pull/76) | `1acf2a543a5add8894c0f4baecbb81a56db8158d` | `f0845a48664b3df5e7e3d4141251e538cc465f33` | [39624137247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39624137247) | 91 / 2212 |
+| [#74](https://github.com/Jeruzael/docmonstakrakin/pull/74) | `b8784d97c727160f46b77930c39428d8124ba5db` | `bd3900d5a2febcdb579204d53c1ddb1cb65e4171` | [39625427884](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39625427884) | 92 / 2230 |
+| [#77](https://github.com/Jeruzael/docmonstakrakin/pull/77) | `c6d6e3fde57166309d1153fe6557ebd6d5af8ace` | `38e49274e6050df8cca6f23aa0d428bdf0d6f68c` | [39626733222](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39626733222) | 93 / 2241 |
+| [#78](https://github.com/Jeruzael/docmonstakrakin/pull/78) | `3d2ad3cc778318059a35b026e7fdac948cbf1bee` | `4514f1b9f174222ac47bd5bcafdb64deaae33368` | [39628029882](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882) | 94 / 2252 |
+
+Final actual job evidence:
+
+| Job | GitHub job | Result |
+| --- | --- | --- |
+| Quality & Build | [119318407161](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407161) | success |
+| Windows Native Qualification | [119318407437](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407437) | success |
+| Complete Regression | [119318407624](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407624) | success |
+| Controlled Docs | [119318407741](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39628029882/job/119318407741) | success |
+
+The final full regression reports **94/94 suites and 2252/2252 reported named checks**, with zero failures/skips. Controlled-document checks retain40/40 core,29/29 additional security and11/11 focused suites/332 assertions, with no live-snapshot mutation. WBS integrity, TypeScript, production build, dependency audit and fresh Windows/Linux npm/Bun native qualifications passed for the actual merge. Synthetic native measurements do not establish production capacity or a clean original operator installation. Historical counting qualifications remain unchanged.
+
+### Preserved failures and qualifications
+
+- PR #69 actual merge `31fbb412792f2327adeee50cf306e8e26ed900d6`, CI39612706919, failed85/86 suites and2154/2155 checks. PR #72 repaired the recovered-report timing test without removing original assertions. Its separate attempt1 completion-metadata inconsistency and ordinary successful attempt2 remain recorded; none rewrites the actual #69 failure.
+- PR #74 candidateCI39619890700 attempt1 Windows Bun failed17/18 with an existing3000ms ready-worker RPC timeout, total245266ms. Fresh npm passed18/18 but was also roughly3.1times slower than the earlier identical-source run. One unchanged Windows retry passed18/18 under npm/Bun in109245/110519ms. The timed-out command and root cause remain unproven; fail-closed timeout behavior and all resource ceilings remain unchanged. Subsequent actual-master successes qualify their own runs, not production capacity or the failed attempt. [Failure](https://github.com/Jeruzael/docmonstakrakin/pull/74#issuecomment-6319323661), [retry](https://github.com/Jeruzael/docmonstakrakin/pull/74#issuecomment-6319589135).
+- PR #78 local full94/2251 predates its final consent-reset line. Retained actual-App RED10/1 became11/11 with identical test bytes; final exact-HEAD hosted and actual-master results above supply later full qualification. No earlier result is assigned to a newer tree.
+- Final actual regression metadata reported queued through15:48 despite execution. Completed metadata/logs subsequently confirmed job119318407624 started15:41:56 and succeeded15:49:51, with the test step15:42:35–15:49:49. All four actual jobs are successful; no retry/cancellation or fabricated check was used. Earlier pending observations remain historical. [Final closure](https://github.com/Jeruzael/docmonstakrakin/pull/78#issuecomment-6320204127).
+
+### Work completed and work still open
+
+The campaign integrated the recovered product journey/demo, corrected regression counting, disconnected authentication/governance/recovery foundations, truthful Reports/release/risk/evidence/Work displays, requirement-draft retention, bounded reviewer-session handling, inactive session-capacity reclamation, Discovery save sequencing and mounted-App reviewer/consent coherence. The app is not declared production-complete. All69 canonical entries retain their exact statuses/dependencies:23 VERIFIED,14 IMPLEMENTED,3 VERIFICATION_PENDING,1 IN_PROGRESS,1 READY,6 BACKLOG and21 PROPOSED. Six DMK-209–214 proposals remain unregistered. See the complete canonical inventory and next-work matrix in the task ledger.
+
+Next ordinary implementation: reproduce and fix feature creation draft loss in App/FeaturesView, then ADR/component creation in App/ArchitectureView, in separate bounded candidates. Parent callbacks currently swallow failures. Actual-App tests must distinguish acknowledged201 creation plus failed refresh from an unknown write outcome, retain all draft fields, prevent duplicate submission, bound headers/body waits and fence late project/form completions. Do not retry POST automatically. The ledger below includes exact file inventories and executable RED scenarios. Full DMK-202 evidence authority, DMK-206 evidence/sign-off workflow and DMK-207 deterministic project health remain separate unfinished scope.
+
+Human/operational decisions remain: charter/policy and resource ratification, independent role appointments and person separation, trust/root/recovery custody, enrollment, trusted clock/revocation/provenance, durable crash-safe application and evidence retention, operator browser acceptance and explicit operational activation. Ordinary review waiver does not provide any of those. Maintain proposed210→211→212→209/213→214 sequencing without declaring tasks registered or completed.
+
+Protected baseline comparison preserves canonical YAML SHA-256 `53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d` and Markdown `0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f`; packages/locks, historical receipts and authority-boundary segments are unchanged. API inventory remains45 legacy local-unscoped,7 specialized-reviewer,3 reviewer-session and14 privileged-denied registrations. This is partial containment. No real identity, credential, signer, root, grant, canonical WBS/receipt application, production authentication, privileged route, live agent, Gate7 or release activation occurred. PR #34/#52 remain separate.
+
+Original host Node/native SDK clean installation remains unqualified; its old source-map-js1.2.1 installation is local drift distinct from committed patched locks. The original node_modules junction, SDK/toolchain and credentials were not modified. Existing repository verification notes, public PR chronology, full tests and GitHub logs make this handoff usable without Codex. Ignored local logs and manifests are supplemental evidence.
+
+## Next ordinary product corrections — preserved source inspection
+
+Inspected 2026-10-21 at candidate HEAD `3d2ad3cc778318059a35b026e7fdac948cbf1bee`. This source-inspection record is preparation only: no implementation, test execution, endpoint mutation, or new PR. Findings below come from source inspection; the proposed reproductions still need actual-App RED evidence. Recheck anchors against the next verified master before editing.
+
+## Confirmed source defects and user-visible reproduction
+
+| Creation flow | Parent callback | Form callback and reset | Reproduction to execute in an isolated actual-App fixture |
+| --- | --- | --- | --- |
+| Feature | `src/App.tsx:844`, `handleAddFeature` | `src/components/FeaturesView.tsx:58`, `handleCreate`; reset/close at 76–80; form at 236 | Open **Register Feature**, enter title, capability, description, personas and priority; return HTTP 500 or reject the POST. The parent resolves, so the modal closes and text fields clear despite no observed success. Priority persists. |
+| ADR | `src/App.tsx:888`, `handleAddADR` | `src/components/ArchitectureView.tsx:125`, `handleCreateAdr`; reset/close at 142–149; form at 802 | Open **Propose ADR**, enter title, context, decision and positive/negative consequences; reject creation. The modal closes and the draft clears. A generated-placeholder ADR validation failure is also a real server 422 path. |
+| Component | `src/App.tsx:918`, `handleAddComponent` | `src/components/ArchitectureView.tsx:151`, `handleCreateComponent`; reset/close at 168–171; form at 896 | Open **Register Component**, enter name, technology and description, select category/trust zone/classification; reject creation. The modal closes and text fields clear. The selected enum values persist. |
+
+Each parent checks only `res.ok`, silently skips non-2xx responses, and catches network failures with `console.error`; each child clears immediately after the normally resolved callback. None of these three forms has submission/error state or a synchronous in-flight guard. The POST waits are unbounded. With a held POST, controls remain usable and another submit can issue another POST; cancel/reopen plus a late completion can reset the newer draft in the same mounted component. Project-change behavior needs mounted-App proof rather than assuming components remain mounted.
+
+## Contract and refresh constraints
+
+- Actual creation routes are `server.ts:564` (features), `:890` (ADRs), and `:967` (components). Each returns HTTP **201 with the created entity** (`:584`, `:923`, `:997`). ADR creation calls `validateGenerated`; feature/component creation does not expose that same validation contract. Do not invent feature/component 422 validation in a fixture and call it real behavior.
+- A received failure response proves an observed HTTP failure, not a general guarantee that no write occurred. A lost reply, malformed acknowledgement, local abort or timeout does not prove rollback. There is no inspected idempotency contract. Never automatically retry a creation POST.
+- `src/App.tsx:391`, `fetchProjectData`, delegates to `src/data/projectWorkspace.ts:35`, `createProjectLoader`; its `load` at 41 catches errors at 62–64 and calls `onError` without rejecting. Therefore `await fetchProjectData(...)` does **not** prove a successful refresh. Preserve the loader's existing selected-project/generation fence.
+- Distinguish **confirmed creation acknowledgement, refresh unavailable** from **creation outcome unknown**. A confirmed write followed by a failed GET must not become a misleading creation-failed message or encourage blind POST replay. Use the existing selected-project refresh recovery where appropriate. If a clear acknowledgement/result contract cannot fit the bounded paths below, report that before expanding the loader/API scope.
+- `src/App.tsx:1190` wires FeaturesView; its props at `FeaturesView.tsx:20` currently have no project identity. ArchitectureView already receives `project` (`:37`, App wiring `:1276`). Explicitly capture the submission project and fence each form/request generation; project change, cancel/reopen and unmount must not let an old completion clear a current draft. A request already sent may still commit after navigation.
+
+## Bounded execution order and file inventory
+
+1. **Feature creation draft/error handling** — four paths: `src/App.tsx`, `src/components/FeaturesView.tsx`, new `scripts/testFeatureDraftRetention.ts`, new `docs/07_verification/FEATURE_DRAFT_RETENTION_20261021.md` (date/name may follow actual execution date). Actual-App RED first; retain draft on rejection/uncertainty, bound waits, prevent duplicate submits, and make observed success/refresh outcomes truthful.
+2. **ADR and component creation draft/error handling** — four paths: `src/App.tsx`, `src/components/ArchitectureView.tsx`, new `scripts/testArchitectureDraftRetention.ts`, new `docs/07_verification/ARCHITECTURE_DRAFT_RETENTION_20261021.md`. Exercise both distinct payloads and forms. Split into sequential candidates if the combined behavior cannot stay small. Both slices touch App, so serialize ownership/reconciliation.
+
+Use the existing actual-App fixture pattern in `scripts/testRequirementDraftRetention.ts`; block unrelated mutation/authority routes and use only synthetic project data. The 20-second bounded-wait convention is a reasonable candidate default. Include body decoding in any new response deadline, settle local waits even if transport ignores abort, retain the draft on an unknown outcome, and require explicit user checking before a manual retry. No abort-as-rollback claim.
+
+## Required mounted-App RED cases, then unchanged GREEN
+
+Run the following matrix for feature, ADR and component creation; combine cases only when assertions still prove every form:
+
+1. Received HTTP failure (including non-JSON 500), and network rejection: modal/draft retained, bounded useful error, no false success. ADR's actual generated-validation 422 shape is an additional valid contract case. Preserve all visible text and selected enums.
+2. Held response headers and held response body: deadline restores usable controls with an **outcome unknown** message; no automatic retry; releasing the late result cannot clear/close a new draft or overwrite the current error/result.
+3. Same-turn duplicate submit produces one POST. Pending edits/cancel/close follow one explicit policy and cannot create overlapping saves. After a definite failure, an intentional edited manual retry sends precisely the new payload once.
+4. Genuine 201 entity acknowledgement plus successful list refresh closes/resets only its owning form, renders the new entry, and preserves current source/PROPOSED defaults. Malformed acknowledgement must not be described as a definite rejected write.
+5. Genuine 201 followed by failed/invalid refresh: accurately distinguish the acknowledged save from unavailable refreshed data; manual read recovery must not replay the POST. This catches the loader's swallowed-refresh-error behavior.
+6. Hold project A's request, switch to B, and open/fill B's form; release A's success/error. Verify exact request project/payload, no old-project data adoption and no reset/closure of B's draft. Exercise actual App loading/unmount behavior, not an invented always-mounted parent.
+7. Cancel/reopen or unmount during a held request, according to the chosen pending policy: late completion cannot wipe the new form; no unhandled rejection or false cancellation/rollback claim.
+
+Retain RED/fixture corrections/GREEN logs and source hashes. Then run relevant project-loader, requirement-retention and controlled-document regressions plus TypeScript/WBS/build, coordinated complete regression, exact signed-head hosted checks and actual post-merge verification. This note executes none of those gates.
+
+## Explicit scope boundaries and adjacent observations
+
+- No server routes, authentication activation, credentials, grants, quorum, sign-off writers, canonical document authority or data schema changes. These creation routes remain `LEGACY_LOCAL_UNSCOPED` in `server/security/apiRoutePolicy.ts:19–20,35–39`; this UI work does not confer authorization.
+- Do not silently include `handleUpdateADRStatus` (`src/App.tsx:903`), ArchitectureView selection/gates/sign-off, or other callbacks that also catch failures. Inventory separately if requested.
+- Component creation currently supplies fixed inbound/outbound protocols and `['Policy Interceptor', 'Mutual TLS']` controls (`ArchitectureView.tsx:162–164`). Their truthfulness is an adjacent issue, not part of draft retention; do not claim those controls were verified or silently change the payload.
+- Searching `scripts/test*.ts` for FeaturesView/ArchitectureView found historical scope assertions in `testRequirementSignoff.ts`, not a mounted creation-failure suite. This is a scoped search result, not a claim of exhaustive test absence.
+
+
+
 ## Publication preparation checkpoint — 2026-10-21, 15:18 UTC
 
 The last fully verified master is `a8decba9ee305f1d3bd8ec96b5f80837332f8d71`: PR #75 actual [CI39623054845](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39623054845) passed all four jobs, 90/90 suites and 2,193/2,193 reported checks; [closure](https://github.com/Jeruzael/docmonstakrakin/pull/75#issuecomment-6319503075). PR #76 was then normally merged at15:16:27Z as `f0845a48664b3df5e7e3d4141251e538cc465f33`, with exact candidate tree `49b9f9674b18698201b1acd1b2d45d89256d8844`, valid signature and three intended paths. Its actual [CI39624137247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39624137247) is pending at this checkpoint. The next merge waits for that actual result.
