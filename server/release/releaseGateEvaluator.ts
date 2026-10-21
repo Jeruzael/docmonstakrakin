@@ -97,6 +97,14 @@ export interface ProjectDataAccessor {
   ) => AuditEvent;
 }
 
+// Reference presence is not evidence authentication. Preserve supplied text and
+// order, but never replace absent or malformed references with catalog defaults.
+function evidenceReferences(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((reference): reference is string => typeof reference === 'string' && reference.trim().length > 0)
+    : [];
+}
+
 /**
  * Evaluates all 7 release gates deterministically for the given project.
  */
@@ -125,14 +133,17 @@ export function evaluateReleaseGates(
   );
   const unresolvedBlockers = blockingQuestions.filter((q) => q.state === 'UNRESOLVED');
   const gate1Passed = unresolvedBlockers.length === 0;
+  const questionStates = ['UNRESOLVED', 'ANSWERED', 'DEFERRED', 'NOT_APPLICABLE'];
+  const blockingStateSummary = questionStates.map(state => `${state}=${blockingQuestions.filter(q => q.state === state).length}`).join('; ');
+  const otherBlockingStates = blockingQuestions.filter(q => !questionStates.includes(q.state)).length;
   gates.push({
     gateId: 1,
     code: 'GATE-01-BLOCKERS',
     name: 'Zero Unresolved Blocker Questions',
     status: gate1Passed ? 'PASSED' : 'FAILED',
-    details: gate1Passed
-      ? `All ${blockingQuestions.length} blocking questions resolved or formally addressed.`
-      : `${unresolvedBlockers.length} blocking discovery questions remain UNRESOLVED (${unresolvedBlockers.map((q) => q.id).join(', ')}).`,
+    details: `Stored question-state check: ${blockingQuestions.length} blocking questions selected; ${blockingStateSummary}; OTHER_OR_MISSING=${otherBlockingStates}.`
+      + (unresolvedBlockers.length ? ` Unresolved question IDs: ${unresolvedBlockers.map(q => q.id).join(', ')}.` : '')
+      + ' This evaluation does not verify answers, applicability decisions, or formal acceptance of deferrals.',
     blocking: true,
     evidenceLinks: ['EV-104'],
   });
@@ -141,20 +152,26 @@ export function evaluateReleaseGates(
   const coreRequirements = requirements.filter(
     (r) => r.priority === 'CRITICAL' || r.priority === 'HIGH'
   );
-  const unverifiedCore = coreRequirements.filter(
+  // Preserve the existing priority/status policy. Authenticated evidence and the
+  // treatment of VERIFIED requirements still require the broader DMK-202 work.
+  const unapprovedCore = coreRequirements.filter(
     (r) => r.status !== 'APPROVED'
   );
-  const gate2Passed = coreRequirements.length > 0 && unverifiedCore.length === 0;
+  const missingCoreReferences = coreRequirements.filter((r) => evidenceReferences(r.evidence).length === 0);
+  const gate2Passed = coreRequirements.length > 0 && unapprovedCore.length === 0 && missingCoreReferences.length === 0;
   gates.push({
     gateId: 2,
     code: 'GATE-02-REQUIREMENTS',
     name: '100% Core Requirements Verification',
     status: gate2Passed ? 'PASSED' : 'FAILED',
-    details: gate2Passed
-      ? `All ${coreRequirements.length} core requirements verified or approved with authenticated evidence.`
-      : `${unverifiedCore.length} of ${coreRequirements.length} core requirements lack verification evidence (${unverifiedCore.map((r) => r.id).join(', ')}).`,
+    details: (coreRequirements.length === 0
+      ? 'No CRITICAL or HIGH core requirements are available for the existing approval/reference check.'
+      : gate2Passed
+        ? `All ${coreRequirements.length} CRITICAL/HIGH core requirements are APPROVED and have evidence references.`
+        : `${coreRequirements.length} CRITICAL/HIGH core requirements checked: ${unapprovedCore.length} not APPROVED (${unapprovedCore.map((r) => r.id).join(', ') || 'none'}); ${missingCoreReferences.length} missing evidence references (${missingCoreReferences.map((r) => r.id).join(', ') || 'none'}).`)
+      + ' This evaluation does not authenticate evidence or inspect test results.',
     blocking: true,
-    evidenceLinks: ['EV-101', 'EV-102', 'EV-104', 'EV-105'],
+    evidenceLinks: coreRequirements.flatMap((r) => evidenceReferences(r.evidence)),
   });
 
   // Gate 3: Secret Store Integration Complete (DMK-157)
@@ -168,11 +185,9 @@ export function evaluateReleaseGates(
     code: 'GATE-03-SECRETS',
     name: 'Secret Store Integration Complete (DMK-157 & DMK-158)',
     status: gate3Passed ? 'PASSED' : 'FAILED',
-    details: gate3Passed
-      ? 'SecretStore OS keychain abstraction active with AES-256-GCM fallback and live key rotation ceremony. Zero plaintext secrets in repository or environment logs.'
-      : 'SecretStore or credential migration incomplete (DMK-157 / DMK-158 not verified).',
+    details: `Stored work-item status check: DMK-157=${dmk157?.status ?? 'MISSING'}; DMK-158=${dmk158?.status ?? 'MISSING'}. Both must be VERIFIED or APPROVED. This evaluation does not inspect credential storage, run rotation, or perform a secret sweep.`,
     blocking: true,
-    evidenceLinks: ['EV-157', 'EV-158'],
+    evidenceLinks: [...evidenceReferences(dmk157?.evidence), ...evidenceReferences(dmk158?.evidence)],
   });
 
   // Gate 4: Security Regression Passing (DMK-159)
@@ -183,11 +198,9 @@ export function evaluateReleaseGates(
     code: 'GATE-04-SECURITY-REGRESSION',
     name: 'Security Regression Passing (DMK-159)',
     status: gate4Passed ? 'PASSED' : 'FAILED',
-    details: gate4Passed
-      ? '100% pass rate on path traversal (15 vectors), command sandboxing (13 vectors), and cryptographic audit hash chaining (6 vectors) - 41/41 automated tests passing.'
-      : 'Security regression test suite (DMK-159) has not passed.',
+    details: `Stored work-item status check: DMK-159=${dmk159?.status ?? 'MISSING'}; VERIFIED is required. This evaluation does not execute test suites or authenticate their results.`,
     blocking: true,
-    evidenceLinks: ['EV-159'],
+    evidenceLinks: evidenceReferences(dmk159?.evidence),
   });
 
   // Gate 5: Golden Reference Project Execution
@@ -202,11 +215,9 @@ export function evaluateReleaseGates(
     code: 'GATE-05-GOLDEN-REFERENCE',
     name: 'Golden Reference Project Execution & Package Sealing',
     status: gate5Passed ? 'PASSED' : 'FAILED',
-    details: gate5Passed
-      ? `Golden reference project (${project.name}) successfully planned, executed, and validated with sealed portable package roundtrip (DMK-156 verified).`
-      : 'Golden reference project verification incomplete or portable package unverified.',
+    details: `Legacy reference-project check: project ${project.id} (requires PRJ-ATLAS-01); ${requirements.length} requirements (minimum 4); ${workItems.length} work items (minimum 10); DMK-156=${dmk156?.status ?? 'MISSING'} (requires VERIFIED). This evaluation does not execute or authenticate a package roundtrip.`,
     blocking: true,
-    evidenceLinks: ['EV-103', 'EV-156'],
+    evidenceLinks: evidenceReferences(dmk156?.evidence),
   });
 
   // Gate 6: Cryptographic Audit Ledger Integrity
@@ -243,9 +254,11 @@ export function evaluateReleaseGates(
     code: 'GATE-07-RELEASE-SIGNOFF',
     name: 'Security Lead DoD Sign-off (DMK-165)',
     status: gate7Passed ? 'PASSED' : 'HUMAN_APPROVAL_REQUIRED',
-    details: gate7Passed
-      ? `Formal v0.1 Definition-of-Done sign-off recorded in cryptographic audit ledger by ${signoffEvent?.actor || 'Authorized Human Signer'}.`
-      : 'Gates 1–6 technically verified (100% core capabilities verified). Gate 7 requires explicit human sign-off authorization per SEC-CTRL-020.',
+    details: signoffEvent
+      ? `Existing release sign-off audit event ${signoffEvent.id} (${signoffEvent.action}) recorded by ${signoffEvent.actor} at ${signoffEvent.timestamp}.`
+      : releaseApproval
+        ? `Existing approved release-signoff approval record ${releaseApproval.id}. No matching local sign-off audit event is present.`
+        : 'No local release sign-off audit event or approved release-signoff approval record is present. Gate 7 requires explicit human sign-off authorization per SEC-CTRL-020; technical gate and capability results are reported separately.',
     blocking: true,
     evidenceLinks: gate7Passed ? ['EV-165'] : [],
   });
@@ -284,15 +297,17 @@ export function evaluateReleaseGates(
     const directItem = workItems.find((w) => w.id === cap.dmk);
     const primaryId = CAPABILITY_PRIMARY_ITEM_MAP[cap.dmk] || cap.dmk;
     const primaryItem = directItem || workItems.find((w) => w.id === primaryId);
-    const status = (directItem?.status === 'VERIFIED' || primaryItem?.status === 'VERIFIED')
+    const status = primaryItem?.status === 'VERIFIED'
       ? 'VERIFIED'
-      : 'IMPLEMENTED';
+      // canonical IMPLEMENTED / VERIFICATION_PENDING map to runtime VERIFICATION.
+      // Approval or a missing/early/unknown status does not establish implementation.
+      : primaryItem?.status === 'VERIFICATION' ? 'IMPLEMENTED' : 'PENDING';
     return {
       capabilityId: cap.id,
       title: cap.title,
       referenceDmk: cap.dmk,
       status,
-      evidence: cap.evidence,
+      evidence: evidenceReferences(primaryItem?.evidence).join(', '),
     };
   });
 
