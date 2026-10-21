@@ -857,6 +857,15 @@ export default function App() {
     await fetchProjectData(projectId);
   };
 
+  const handleDeriveRequirementWork = async (requirementId:string) => {
+    if(!projectReady || !currentProject)throw new Error('Select a ready project before proposing work');
+    const projectId=currentProject.id;
+    const response=await fetch(`/api/projects/${projectId}/work-items`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({operation:'DERIVE_REQUIREMENT',requirementId,expectedStateVersion:currentProject.stateVersion})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error || 'Task proposal failed');
+    await fetchProjectData(projectId);
+  };
+
   const handleAddADR = async (adrData: Partial<ADR>) => {
     try {
       const res = await fetch(`/api/projects/${currentProject.id}/adrs`, {
@@ -1184,6 +1193,8 @@ export default function App() {
               projectId={activeProjectId}
               workItems={workItems}
               onUpdateWorkItem={handleUpdateWorkItem}
+              requirements={requirements}
+              onDeriveRequirementWork={handleDeriveRequirementWork}
               selectedItemId={selectedWorkItemId}
             />
           )}

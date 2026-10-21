@@ -53,7 +53,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </h1>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                On track
+                {unresolvedBlockers.length>0 || project.progress.requirementsReadiness<100 ? 'Discovery incomplete' : 'Review gates remain separate'}
               </span>
             </div>
             <p className="text-xs md:text-sm text-slate-500 mt-1 font-medium">
@@ -92,7 +92,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className="text-sm font-bold text-slate-900">Project Health & Dimensions</h2>
             </div>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-              ✓ Compliant
+              Planning projection
             </span>
           </div>
 
@@ -121,7 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
                   {project.healthScore}%
                 </span>
-                <span className="text-[10px] text-slate-400 font-semibold uppercase">Overall</span>
+                <span className="text-[10px] text-slate-400 font-semibold uppercase">Stored planning score</span>
               </div>
             </div>
 
@@ -169,6 +169,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
+          <p className="text-[11px] text-slate-500 pb-3">Stored planning data does not establish verification, compliance or release approval.</p>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span>A-SSDLC Phase: <strong className="text-slate-700">{project.lifecyclePhase}</strong></span>
             <button
