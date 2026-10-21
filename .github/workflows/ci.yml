@@ -51,6 +51,14 @@ jobs:
           "NPM_CONFIG_USERCONFIG=$userConfig" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "NPM_CONFIG_CACHE=$env:RUNNER_TEMP/native-npm-cache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({defaultTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
+          if ($LASTEXITCODE -ne 0) { throw 'Default temporary-path inventory failed' }
+          # Use a job-owned, unaliased temporary parent. The fixture's strict
+          # canonical-path/ownership checks remain unchanged and mandatory.
+          $fixtureTemp = Join-Path $env:RUNNER_TEMP 'native-fixtures'
+          New-Item -ItemType Directory -Path $fixtureTemp -Force | Out-Null
+          "TEMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
           node --version
           if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
@@ -83,6 +91,8 @@ jobs:
 
       - name: Qualify npm native runtime and existing quality gates
         run: |
+          node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
+          if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
           npm.cmd run ci:quality
