@@ -121,6 +121,32 @@ function currentSession(key, now) {
   if (!p || p.disabled || session.revoked || session.generation !== current.generation || session.policyRevision !== current.policyRevision || session.credentialRevision !== p.credentialRevision || now < session.issuedAt || now < session.lastSeenAt || now - session.lastSeenAt >= 600_000 || now - session.issuedAt >= 1_800_000) return null;
   return {principalId: p.id, kind: p.kind, issuedAt: session.issuedAt, lastSeenAt: session.lastSeenAt, credentialRevision: session.credentialRevision, policyRevision: session.policyRevision, generation: session.generation};
 }
+// Called only inside issuance's immediate transaction, after its clock and CAS
+// checks. Retain malformed/future rows: denial alone is not proof that a row can
+// never become usable. Revisions/generations only advance in this store contract.
+function reclaimSessionCapacity(now, current) {
+  if (db.prepare('SELECT count(*) AS n FROM sessions').get().n < MAX_SESSIONS) return;
+  const candidates = db.prepare(`SELECT s.*, p.credentialRevision AS currentCredentialRevision,
+    p.disabled AS principalDisabled, p.kind AS principalKind FROM sessions s
+    LEFT JOIN principals p ON p.id=s.principalId ORDER BY s.digest LIMIT ?`).all(MAX_SESSIONS);
+  const remove = db.prepare('DELETE FROM sessions WHERE digest=?');
+  let removed = 0;
+  for (const session of candidates) {
+    if (typeof session.digest !== 'string' || !/^[a-f0-9]{64}$/.test(session.digest) ||
+        typeof session.principalId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(session.principalId) ||
+        !['HUMAN', 'AGENT'].includes(session.principalKind) || ![0, 1].includes(session.principalDisabled) || ![0, 1].includes(session.revoked) ||
+        ![session.issuedAt, session.lastSeenAt, session.generation, session.policyRevision, session.credentialRevision, session.currentCredentialRevision].every(Number.isSafeInteger) ||
+        session.issuedAt < 0 || session.lastSeenAt < session.issuedAt || session.issuedAt > now || session.lastSeenAt > now ||
+        session.generation < 1 || session.generation > current.generation || session.policyRevision < 1 || session.policyRevision > current.policyRevision ||
+        session.credentialRevision < 1 || session.currentCredentialRevision < 1 || session.credentialRevision > session.currentCredentialRevision) continue;
+    if (session.revoked === 1 || session.principalDisabled === 1 || session.generation < current.generation ||
+        session.policyRevision < current.policyRevision || session.credentialRevision < session.currentCredentialRevision ||
+        now - session.lastSeenAt >= 600_000 || now - session.issuedAt >= 1_800_000) removed += remove.run(session.digest).changes;
+  }
+  // No token or digest is emitted. Cleanup and both audit events roll back if
+  // issuance cannot finish, including when fewer than two audit slots remain.
+  if (removed) appendAudit('SESSIONS_RECLAIMED', 'fixture', 'INACTIVE_SESSION_CAPACITY', now);
+}
 function touch(key, now) { db.prepare('UPDATE sessions SET lastSeenAt=? WHERE digest=?').run(now, key); }
 function mutate(callback) { return db.transaction(callback).immediate(); }
 function handle(message) {
@@ -218,6 +244,7 @@ function handle(message) {
         const p = principal(c.principalId), current = meta();
         if (!p || p.disabled) fail('PRINCIPAL_UNAVAILABLE');
         if (c.expectedCredentialRevision !== undefined && c.expectedCredentialRevision !== p.credentialRevision || c.expectedGeneration !== undefined && c.expectedGeneration !== current.generation) fail('STALE_CREDENTIAL');
+        reclaimSessionCapacity(c.now, current);
         capacity('sessions', MAX_SESSIONS);
         db.prepare('INSERT INTO sessions(digest,principalId,issuedAt,lastSeenAt,credentialRevision,policyRevision,generation,revoked) VALUES(?,?,?,?,?,?,?,0)').run(c.digest, p.id, c.now, c.now, p.credentialRevision, current.policyRevision, current.generation);
         appendAudit('SESSION_ISSUED', p.id, 'SYNTHETIC_ONLY', c.now); return true;

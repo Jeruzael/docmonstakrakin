@@ -100,6 +100,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed disconnected authentication pilot failed' }
           node --import tsx scripts/testAuthPilotRecovery.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed test-only process recovery failed' }
+          node --import tsx scripts/testSyntheticSessionCapacity.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic session capacity failed' }
           node --import tsx scripts/testSyntheticStorePaths.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
@@ -141,6 +143,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed disconnected authentication pilot failed' }
             node --import tsx scripts/testAuthPilotRecovery.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed test-only process recovery failed' }
+            node --import tsx scripts/testSyntheticSessionCapacity.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic session capacity failed' }
             node --import tsx scripts/testSyntheticStorePaths.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
@@ -183,6 +187,9 @@ jobs:
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
 
+      - name: Verify transactional synthetic session capacity
+        run: node --import tsx scripts/testSyntheticSessionCapacity.ts
+
       - name: Production build
         run: npm run build
 
@@ -202,6 +209,7 @@ jobs:
           printf '%s\n' "$untrusted"
           printf '%s\n' "$untrusted" | node scripts/lib/bunLifecycleInventory.mjs
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testSyntheticSessionCapacity.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
           git diff --exit-code
