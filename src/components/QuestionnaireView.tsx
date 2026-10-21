@@ -1,4 +1,5 @@
-import { calculateDiscoveryCoverage } from '../data/derivationEngine';
+import { calculateDiscoveryCoverage, isQuestionMandatory, wizardQuestionCoverage } from '../data/derivationEngine';
+import { normalizeTechChoice } from '../data/projectInitialization';
 import React, { useState, useEffect } from 'react';
 import {
   HelpCircle,
@@ -69,6 +70,9 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
   const [naJustification, setNaJustification] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const coverage = calculateDiscoveryCoverage(questions, project);
+  const wizardAnswers = wizardQuestionCoverage(project);
+
   const filteredQuestions = questions.filter((q) => {
     if (selectedDomain !== 'ALL') {
       const qDomain = q.domain || q.category?.toUpperCase();
@@ -76,7 +80,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
         return false;
       }
     }
-    if (filter === 'BLOCKING') return q.importance === 'BLOCKING';
+    if (filter === 'BLOCKING') return isQuestionMandatory(q) && q.state === 'UNRESOLVED' && !wizardAnswers[q.id];
     if (filter === 'UNRESOLVED') return q.state === 'UNRESOLVED';
     return true;
   });
@@ -89,7 +93,16 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
     return 0;
   });
 
-  const activeQuestion = filteredQuestions[currentIndex] || filteredQuestions[0] || questions[0];
+  const activeIndex = Math.min(currentIndex, Math.max(0, filteredQuestions.length - 1));
+  const activeQuestion = filteredQuestions[activeIndex];
+  const technicalAnswer = activeQuestion?.answer;
+  const savedTechChoice = activeQuestion?.answerType === 'TECH_DECISION' && technicalAnswer &&
+    typeof technicalAnswer === 'object' && !Array.isArray(technicalAnswer)
+    ? normalizeTechChoice(technicalAnswer) : null;
+
+  useEffect(() => {
+    setCurrentIndex(index => Math.min(index, Math.max(0, filteredQuestions.length - 1)));
+  }, [filteredQuestions.length]);
 
   // Sync component local state whenever activeQuestion changes
   useEffect(() => {
@@ -150,12 +163,12 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
     // TECH_DECISION
     if (activeQuestion.answerType === 'TECH_DECISION') {
-      if (activeQuestion.answer) {
-        setTechVal(String(activeQuestion.answer));
-        setTechMode('USER_SPECIFIED');
+      if (savedTechChoice) {
+        setTechVal(savedTechChoice.finalSelection || '');
+        setTechMode(savedTechChoice.decision_mode || savedTechChoice.type);
       } else {
-        setTechVal('');
-        setTechMode('USER_SPECIFIED');
+        setTechVal(typeof technicalAnswer === 'string' ? technicalAnswer : '');
+        setTechMode(activeQuestion.state === 'DEFERRED' ? 'UNKNOWN' : 'USER_SPECIFIED');
       }
     }
   }, [activeQuestion?.id]);
@@ -276,27 +289,21 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
     setNaJustification('');
   };
 
-  const coverage = calculateDiscoveryCoverage(questions, project);
-  const resolvedCount = questions.filter((q) => q.state === 'ANSWERED').length;
-  const blockingCount = questions.filter((q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED').length;
-  const deferredCount = questions.filter((q) => q.state === 'DEFERRED').length;
-  const naCount = questions.filter((q) => q.state === 'NOT_APPLICABLE').length;
-  const readinessPercent = questions.length > 0 ? Math.round(((resolvedCount + naCount) / questions.length) * 100) : 0;
+  const resolvedCount = coverage.domainSummaries.reduce((total, domain) => total + domain.resolved, 0);
+  const blockingCount = coverage.blockingPending;
+  const deferredCount = coverage.domainSummaries.reduce((total, domain) => total + domain.deferred, 0);
+  const naCount = coverage.domainSummaries.reduce((total, domain) => total + domain.notApplicable, 0);
+  const readinessPercent = coverage.coveragePercentage;
 
-  // Calculate domain-level progress
-  const domainStats = DISCOVERY_DOMAINS.map((dom) => {
-    const domainQs = questions.filter(
-      (q) => (q.domain === dom) || (q.category?.toUpperCase() === dom) || (q.category === dom.toLowerCase())
-    );
-    const answered = domainQs.filter((q) => q.state === 'ANSWERED' || q.state === 'NOT_APPLICABLE').length;
-    const blocking = domainQs.filter((q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED').length;
+  const domainStats = DISCOVERY_DOMAINS.map((domain) => {
+    const summary = coverage.domainSummaries.find(item => item.domain === domain)!;
     return {
-      domain: dom,
-      meta: getDomainMetadata(dom),
-      total: domainQs.length,
-      answered,
-      blocking,
-      percentage: domainQs.length > 0 ? Math.round((answered / domainQs.length) * 100) : 100,
+      domain,
+      meta: getDomainMetadata(domain),
+      total: summary.total,
+      answered: summary.resolved + summary.notApplicable,
+      blocking: summary.blockingPending,
+      percentage: summary.coveragePercentage,
     };
   });
 
@@ -408,7 +415,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                     {activeQuestion.id}
                   </span>
                   <span className="text-xs text-slate-500 font-medium">
-                    Question {currentIndex + 1} of {filteredQuestions.length} in this view
+                    Question {activeIndex + 1} of {filteredQuestions.length} in this view
                   </span>
                   {activeQuestion.domain && (
                     <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase">
@@ -978,7 +985,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                     <div className="space-y-3 pt-2">
                       <span className="text-xs font-semibold text-slate-700 block">Select or Enter Technology:</span>
                       {activeQuestion.options?.map((opt) => {
-                        const isSelected = activeQuestion.answer === opt.value;
+                        const isSelected = (savedTechChoice?.finalSelection ?? technicalAnswer) === opt.value;
                         return (
                           <div
                             key={opt.value}
@@ -1210,16 +1217,16 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
               {/* Navigation Footer */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                 <button
-                  onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-                  disabled={currentIndex === 0}
+                  onClick={() => setCurrentIndex(Math.max(0, activeIndex - 1))}
+                  disabled={activeIndex === 0}
                   className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-30 rounded-lg hover:bg-slate-100 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Previous
                 </button>
 
                 <button
-                  onClick={() => setCurrentIndex(Math.min(filteredQuestions.length - 1, currentIndex + 1))}
-                  disabled={currentIndex >= filteredQuestions.length - 1}
+                  onClick={() => setCurrentIndex(Math.min(filteredQuestions.length - 1, activeIndex + 1))}
+                  disabled={activeIndex >= filteredQuestions.length - 1}
                   className="px-3.5 py-2 text-xs font-bold text-slate-800 hover:text-slate-950 disabled:opacity-30 rounded-lg hover:bg-slate-100 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   Next Question <ArrowRight className="w-3.5 h-3.5" />
