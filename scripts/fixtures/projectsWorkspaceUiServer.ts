@@ -7,6 +7,7 @@ import {createServer} from 'node:net';
 import {pathToFileURL} from 'node:url';
 import {ProjectStore} from '../../server/projectStore.ts';
 import {readProjectSnapshot} from '../../server/projectPersistence.ts';
+import {createSyntheticServerPreload} from './syntheticServerPreload.ts';
 
 /** Actual package endpoints and persistence, confined to a synthetic empty workspace. */
 export async function startPackageFixture(initialSnapshot?: unknown) {
@@ -16,12 +17,13 @@ export async function startPackageFixture(initialSnapshot?: unknown) {
   const store=new ProjectStore();for(const key of Object.keys(store))(store as any)[key]=key==='projects'?[]:{};
   fs.mkdirSync(path.join(dir,'.local'));const snapshot=path.join(dir,'.local/project-state.json');
   fs.writeFileSync(snapshot,JSON.stringify(initialSnapshot ?? {schemaVersion:1,state:store}));
+  const preload=createSyntheticServerPreload(dir);
   // Deliberately do not inherit provider keys, reviewer credentials or master keys.
   const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:'{}'};
   for(const key of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[key])env[key]=process.env[key];
   let output='';
   const launch=()=>{
-    const process=spawn(globalThis.process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,path.join(root,'server.ts')],{cwd:dir,windowsHide:true,env,stdio:'pipe'});
+    const process=spawn(globalThis.process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,'--import',pathToFileURL(preload).href,path.join(root,'server.ts')],{cwd:dir,windowsHide:true,env,stdio:'pipe'});
     process.stdout.on('data',b=>output+=b);process.stderr.on('data',b=>output+=b);process.on('error',e=>output+=e.message);return process;
   };
   let child=launch();
