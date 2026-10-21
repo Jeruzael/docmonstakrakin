@@ -41,7 +41,7 @@ await check('creation admission rejects a substituted junction before provisioni
       return generated;
     }) as typeof fs.mkdtemp;
     await assert.rejects(async () => { unexpected = await PrivateSyntheticStore.create(); }, {code: 'STORE_PATH_INVALID'});
-    assert.deepEqual(await fs.readdir(target!), [], 'rejected target receives no ACL/owner/database provisioning');
+    assert.deepEqual(await fs.readdir(target!), [], 'rejected target receives no owner/database files');
   } finally {
     fs.mkdtemp = originalMkdtemp;
     if (unexpected) await unexpected.close();
@@ -149,7 +149,11 @@ await check('actual native canonical TEMP supports available Windows 8dot3 alias
   }
   const directory = await fs.mkdtemp(path.join(parent, 'dmk-s2a-synthetic-'));
   const prior = {TEMP: process.env.TEMP, TMP: process.env.TMP};
-  const probe = `Add-Type -TypeDefinition 'using System.Text; using System.Runtime.InteropServices; public static class CampaignShortPath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetShortPathName(string value, StringBuilder output, uint size); }'; $buffer = New-Object Text.StringBuilder 32768; $n = [CampaignShortPath]::GetShortPathName($env:DMK_TEST_ALIAS_PARENT, $buffer, 32768); if ($n -eq 0 -or $n -ge 32768) { throw 'Short-path acquisition failed' }; [Console]::Write($buffer.ToString())`;
+  // Use Windows' existing filesystem automation API, avoiding a C# compiler
+  // startup in every test process. The first hosted attempt timed out inside
+  // the Add-Type/GetShortPathName helper after 15s, before any path assertion.
+  // The same canonical-equality and actual native-open assertions remain.
+  const probe = `$filesystem = New-Object -ComObject Scripting.FileSystemObject; $alias = $filesystem.GetFolder($env:DMK_TEST_ALIAS_PARENT).ShortPath; if ([string]::IsNullOrWhiteSpace($alias)) { throw 'Short-path acquisition failed' }; [Console]::Write($alias)`;
   try {
     const env = Object.fromEntries(['PATH', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA'].filter(k => process.env[k] !== undefined).map(k => [k, process.env[k]]));
     const quietProbe = "$ProgressPreference='SilentlyContinue';" + probe;
