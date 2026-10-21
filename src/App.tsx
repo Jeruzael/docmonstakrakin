@@ -68,6 +68,16 @@ import {
 export default function App() {
   // Navigation & Shell State
   const [currentView, setCurrentView] = useState<NavView>('overview');
+  // Display observations only; server session checks remain authoritative.
+  const [reviewerDisplay, setReviewerDisplay] = useState<{revision: number; checkRevision: number; phase: 'checking' | 'pending' | 'confirmed' | 'unknown'}>({revision: 0, checkRevision: 0, phase: 'checking'});
+  const handleReviewerState = useCallback((phase: 'checking' | 'pending' | 'confirmed' | 'unknown') => {
+    setReviewerDisplay(previous => ({...previous, revision: previous.revision + 1, phase}));
+  }, []);
+  const recheckReviewerSession = useCallback(() => {
+    setReviewerDisplay(previous => previous.phase === 'pending' ? previous : {
+      revision: previous.revision + 1, checkRevision: previous.checkRevision + 1, phase: 'checking',
+    });
+  }, []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [isWizardOpen, setIsWizardOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -979,7 +989,7 @@ export default function App() {
           onImportPackage={() => {setPackageMode('import');setIsPackageModalOpen(true);}}
         />
 
-        <ReviewerSession />
+        <ReviewerSession onSessionStateChange={handleReviewerState} checkRevision={reviewerDisplay.checkRevision} />
         <LocalContainmentNotice />
         {/* Scrollable View Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
@@ -1284,6 +1294,9 @@ export default function App() {
             <ApprovalsView
               project={currentProject}
               onRefreshData={() => fetchProjectData(currentProject.id)}
+              sessionRevision={reviewerDisplay.revision}
+              sessionPhase={reviewerDisplay.phase}
+              onSessionRecheck={recheckReviewerSession}
             />
           )}
 

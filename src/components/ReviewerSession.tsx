@@ -42,7 +42,12 @@ async function requestIdentity(controller: AbortController, init: RequestInit = 
   }
 }
 
-export function ReviewerSession() {
+interface ReviewerSessionProps {
+  onSessionStateChange?: (phase: 'checking' | 'pending' | 'confirmed' | 'unknown') => void;
+  checkRevision?: number;
+}
+
+export function ReviewerSession({onSessionStateChange, checkRevision = 0}: ReviewerSessionProps = {}) {
   const [identity, setIdentity] = useState<ReviewerSessionInfo | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -54,32 +59,51 @@ export function ReviewerSession() {
   const mounted = useRef(false);
   const mutating = useRef(false);
   const activeRequest = useRef<AbortController | null>(null);
+  const notify = useRef(onSessionStateChange);
+  notify.current = onSessionStateChange;
   const current = (request: number) => mounted.current && generation.current === request;
 
   useEffect(() => {
     mounted.current = true;
-    const request = ++generation.current;
-    const controller = new AbortController();
-    activeRequest.current = controller;
-    void (async () => {
-      try {
-        const session = await requestIdentity(controller);
-        if (!current(request)) return;
-        setIdentity(session);
-        setStatus('confirmed');
-        if (session) {setOpen(false); setPassword('');}
-      } catch {
-        if (!current(request)) return;
-        setStatus('unknown');
-        setError('Session status could not be confirmed. You can try signing in.');
-      } finally {if (current(request)) activeRequest.current = null;}
-    })();
     return () => {
       mounted.current = false;
       ++generation.current;
       activeRequest.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    // A re-check queued before a same-turn mutation must yield to that mutation.
+    if (mutating.current) return;
+    const request = ++generation.current;
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    setStatus('checking');
+    setError('');
+    notify.current?.('checking');
+    void (async () => {
+      try {
+        const session = await requestIdentity(controller);
+        if (!current(request)) return;
+        setIdentity(session);
+        setStatus('confirmed');
+        notify.current?.('confirmed');
+        if (session) {setOpen(false); setPassword('');}
+      } catch {
+        if (!current(request)) return;
+        setStatus('unknown');
+        notify.current?.('unknown');
+        setError('Session status could not be confirmed. You can try signing in.');
+      } finally {if (current(request)) activeRequest.current = null;}
+    })();
+    return () => {
+      if (current(request)) {
+        ++generation.current;
+        controller.abort();
+        activeRequest.current = null;
+      }
+    };
+  }, [checkRevision]);
 
   function begin(action: 'signIn' | 'signOut'): {request: number; controller: AbortController} | null {
     // A ref closes the same-event-loop gap before disabled controls rerender.
@@ -91,6 +115,7 @@ export function ReviewerSession() {
     activeRequest.current = controller;
     setPending(action);
     setError('');
+    notify.current?.('pending');
     return {request, controller};
   }
 
@@ -117,6 +142,7 @@ export function ReviewerSession() {
       if (!current(request)) return;
       setIdentity(session);
       setStatus('confirmed');
+      notify.current?.('confirmed');
       setOpen(false);
     } catch (cause) {
       if (!current(request)) return;
@@ -128,6 +154,7 @@ export function ReviewerSession() {
         if (cause.status === 429) failure = 'Sign-in could not be confirmed. Too many attempts; retry in 15 minutes.';
       }
       setStatus('unknown');
+      notify.current?.('unknown');
       setError(failure);
     } finally {finish(request);}
   }
@@ -141,18 +168,20 @@ export function ReviewerSession() {
       if (!current(request)) return;
       setIdentity(null);
       setStatus('confirmed');
+      notify.current?.('confirmed');
       setOpen(false);
     } catch {
       if (!current(request)) return;
       // A lost reply may follow a committed logout. Preserve the last observation
       // with an uncertainty label, rather than claiming either current outcome.
       setStatus('unknown');
+      notify.current?.('unknown');
       setError('Sign-out could not be confirmed. Please try again.');
     } finally {finish(request);}
   }
 
   return <div className="px-6 py-2 border-b bg-white text-xs" aria-busy={pending !== null}>
-    {identity ? <span>{status === 'unknown' ? 'Last confirmed reviewer: ' : 'Reviewer: '}<strong>{identity.name}</strong> · {identity.roles.join(', ')} <button className="underline ml-3" disabled={pending !== null} onClick={signOut}>Sign out</button></span> : <button className="underline" disabled={pending !== null} onClick={() => setOpen(!open)}>Sign in for governance review</button>}
+    {identity ? <span>{status !== 'confirmed' ? 'Last confirmed reviewer: ' : 'Reviewer: '}<strong>{identity.name}</strong> · {identity.roles.join(', ')} <button className="underline ml-3" disabled={pending !== null} onClick={signOut}>Sign out</button></span> : <button className="underline" disabled={pending !== null} onClick={() => setOpen(!open)}>Sign in for governance review</button>}
     {open && <form onSubmit={signIn} className="flex flex-wrap gap-2 mt-2">
       <input aria-label="Reviewer username" placeholder="Reviewer username" required disabled={pending !== null} value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" className="border p-2 rounded"/>
       <input aria-label="Reviewer password" placeholder="Password" type="password" required disabled={pending !== null} value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" className="border p-2 rounded"/>
