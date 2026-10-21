@@ -95,6 +95,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          node --import tsx scripts/testSyntheticWbsRegistration.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
           npm.cmd run ci:quality
           if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
           git diff --exit-code
@@ -126,6 +128,8 @@ jobs:
             }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            node --import tsx scripts/testSyntheticWbsRegistration.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
