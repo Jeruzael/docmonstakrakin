@@ -112,6 +112,20 @@ function handle(message) {
         db.prepare('UPDATE principals SET verifier=?,credentialRevision=credentialRevision+1 WHERE id=?').run(c.verifier, c.principalId);
         appendAudit('CREDENTIAL_RESET', c.principalId); return true;
       });
+    case 'recordAuthFailure':
+      exactKeys(c, ['command', 'now']); time(c.now);
+      return mutate(() => { if (!observeFixtureTime(c.now)) fail('STORE_CLOCK_ROLLBACK'); appendAudit('AUTHENTICATION_FAILED', 'login', 'CREDENTIAL_REJECTED', c.now); return true; });
+    case 'changeOwnCredential':
+      exactKeys(c, ['command', 'digest', 'verifier', 'expectedCredentialRevision', 'now']); digest(c.digest); verifier(c.verifier); revision(c.expectedCredentialRevision); time(c.now);
+      return mutate(() => {
+        if (!observeFixtureTime(c.now)) fail('STORE_CLOCK_ROLLBACK');
+        const session = currentSession(c.digest, c.now);
+        if (!session || session.kind !== 'HUMAN' || session.credentialRevision !== c.expectedCredentialRevision) fail('STALE_CREDENTIAL');
+        if (session.credentialRevision >= Number.MAX_SAFE_INTEGER) fail('STORE_REVISION_INVALID');
+        const updated = db.prepare('UPDATE principals SET verifier=?,credentialRevision=credentialRevision+1 WHERE id=? AND credentialRevision=? AND disabled=0').run(c.verifier, session.principalId, c.expectedCredentialRevision);
+        if (updated.changes !== 1) fail('STALE_CREDENTIAL');
+        appendAudit('CREDENTIAL_CHANGED', session.principalId, 'SYNTHETIC_ONLY', c.now); return true;
+      });
     case 'disablePrincipal':
       exactKeys(c, ['command', 'principalId']); id(c.principalId);
       return mutate(() => { if (!principal(c.principalId)) fail('PRINCIPAL_UNAVAILABLE'); db.prepare('UPDATE principals SET disabled=1 WHERE id=?').run(c.principalId); appendAudit('PRINCIPAL_DISABLED', c.principalId); return true; });

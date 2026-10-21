@@ -1,0 +1,47 @@
+PASS default factories remain inactive despite ambient enable text
+PASS unsafe options and non-disconnected authority reject
+PASS versioned owned store uses WAL FULL foreign keys and exact native provenance
+PASS only synthetic principals may be provisioned and passwords are bounded
+PASS HUMAN login issues opaque token and synchronizer proof
+PASS unknown identities wrong credentials AGENT and forged actor fail uniformly
+PASS hostile password types arrays prototype and excess fields reject before authority
+PASS server-owned handles reject forged resources and unregistered actions
+PASS policy changes fence existing sessions and explicit denial wins
+PASS CSRF is token-bound and rotation consumes old session exactly once
+PASS password change requires current secret and atomically revokes sibling sessions
+PASS offline synthetic reset fences all previous credentials and sessions
+PASS concurrent credential changes accept exactly one revision-guarded mutation
+PASS worker crash recovery retains principals audit and schema while fencing sessions
+PASS unsupported schema rejects recovery without automatic migration or downgrade
+PASS credential disable cannot be bypassed by old token or password
+PASS per-principal throttling includes valid and unknown accounts and survives worker restart
+PASS global loopback throttle rejects distinct-account flooding without growing unbounded state
+PASS concurrent login work is bounded and eventually releases capacity
+PASS audit-write failure rolls back session creation and reveals no token
+PASS credential audit failure atomically retains old verifier revision and sessions
+PASS hostile stored PHC cannot amplify native KDF parameters
+PASS idle and absolute expiration are inclusive and clock rollback cannot revive
+PASS strict flat JSON rejects duplicate escaped keys prototype nesting and malformed UTF8
+PASS actual trusted-fixture HTTPS login uses secure host-only HttpOnly Strict cookie
+PASS actual session endpoint returns only sanitized HUMAN identity and proof
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+404 !== 200
+
+    at <anonymous> (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:127:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async check (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:19:70)
+    at async <anonymous> (<TASK_CHECKOUT>\scripts\testAuthPilot.ts:125:3) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 404,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.21.1
