@@ -1,0 +1,26 @@
+{
+  "source": "Exact functions.write_stdin output for session88895; original per-run log was reused before archiving. This is a transcribed observation, not a retained raw log.",
+  "rawSha256": null,
+  "node": "v22.23.3",
+  "platform": "win32",
+  "checks": 24,
+  "actualChildProcesses": 51,
+  "profile": {
+    "proofBytes": 694,
+    "latenciesMs": [
+      352.05,
+      337.71,
+      357.42,
+      360.3,
+      377.61
+    ],
+    "p50Ms": 357.42,
+    "p95Ms": 377.61,
+    "parentPeakRssBytes": 107520000,
+    "parentCpuMicroseconds": {
+      "user": 781000,
+      "system": 718000
+    }
+  },
+  "limitations": "Synthetic only. Parent metrics exclude child tree. Use recovery24.txt for retained final-run raw digest and primary qualification."
+}

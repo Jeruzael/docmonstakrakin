@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - 'codex/campaign-*'
   push:
     branches:
       - master
@@ -95,6 +96,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
           node --import tsx scripts/testAuthPilot.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed disconnected authentication pilot failed' }
+          node --import tsx scripts/testAuthPilotRecovery.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed test-only process recovery failed' }
           node --import tsx scripts/testSyntheticStorePaths.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           npm.cmd run ci:quality
@@ -130,6 +133,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
             node --import tsx scripts/testAuthPilot.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed disconnected authentication pilot failed' }
+            node --import tsx scripts/testAuthPilotRecovery.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed test-only process recovery failed' }
             node --import tsx scripts/testSyntheticStorePaths.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             git diff --exit-code
@@ -162,8 +167,10 @@ jobs:
       - name: TypeScript typecheck
         run: npm run lint
 
-      - name: Verify disconnected synthetic foundations and native provenance
-        run: node --import tsx scripts/testSyntheticSecurityFoundations.ts
+      - name: Verify disconnected foundations native provenance and process recovery
+        run: |
+          node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testAuthPilotRecovery.ts
 
       - name: Production build
         run: npm run build
@@ -188,6 +195,7 @@ jobs:
           fi
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
+          node --import tsx scripts/testAuthPilotRecovery.ts
           git diff --exit-code
 
   controlled_docs:

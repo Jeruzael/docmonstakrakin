@@ -10,7 +10,9 @@ export type StoreCommand =
   | {command: 'resetCredential'; principalId: string; verifier: string}
   | {command: 'recordAuthFailure'; now: number}
   | {command: 'changeOwnCredential'; digest: string; verifier: string; expectedCredentialRevision: number; now: number}
+  | {command: 'prepareTestTransfer'; transferDigest: string; now: number}
   | {command: 'registerResource'; id: string}
+  | {command: 'resourceExists'; id: string}
   | {command: 'setRule'; principalId: string; action: SyntheticAction; resourceId: string; effect: 'ALLOW' | 'DENY'}
   | {command: 'issueSession'; principalId: string; digest: string; now: number; expectedCredentialRevision?: number; expectedGeneration?: number}
   | {command: 'acceptSession' | 'revokeSession'; digest: string; now: number}
