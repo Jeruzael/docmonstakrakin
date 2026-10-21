@@ -43,6 +43,9 @@ jobs:
       - name: TypeScript typecheck
         run: npm run lint
 
+      - name: Verify disconnected synthetic foundations and native provenance
+        run: node --import tsx scripts/testSyntheticSecurityFoundations.ts
+
       - name: Production build
         run: npm run build
 
