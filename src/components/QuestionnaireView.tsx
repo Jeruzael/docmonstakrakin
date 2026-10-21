@@ -72,6 +72,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
   const coverage = calculateDiscoveryCoverage(questions, project);
   const wizardAnswers = wizardQuestionCoverage(project);
+  const blockingQuestions = questions.filter(q => isQuestionMandatory(q) && q.state === 'UNRESOLVED' && !wizardAnswers[q.id]);
 
   const filteredQuestions = questions.filter((q) => {
     if (selectedDomain !== 'ALL') {
@@ -80,7 +81,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
         return false;
       }
     }
-    if (filter === 'BLOCKING') return isQuestionMandatory(q) && q.state === 'UNRESOLVED' && !wizardAnswers[q.id];
+    if (filter === 'BLOCKING') return blockingQuestions.includes(q);
     if (filter === 'UNRESOLVED') return q.state === 'UNRESOLVED';
     return true;
   });
@@ -99,6 +100,9 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
   const savedTechChoice = activeQuestion?.answerType === 'TECH_DECISION' && technicalAnswer &&
     typeof technicalAnswer === 'object' && !Array.isArray(technicalAnswer)
     ? normalizeTechChoice(technicalAnswer) : null;
+  const savedRecommendation = savedTechChoice?.type === 'RECOMMEND_FOR_ME' ? savedTechChoice : null;
+  const recommendationValue = savedRecommendation?.finalSelection || savedRecommendation?.recommendation?.preferredTechnology || activeQuestion?.options?.[0]?.value;
+  const recommendationLabel = activeQuestion?.options?.find(option => option.value === recommendationValue)?.label || recommendationValue;
 
   useEffect(() => {
     setCurrentIndex(index => Math.min(index, Math.max(0, filteredQuestions.length - 1)));
@@ -290,7 +294,8 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
   };
 
   const resolvedCount = coverage.domainSummaries.reduce((total, domain) => total + domain.resolved, 0);
-  const blockingCount = coverage.blockingPending;
+  const blockingCount = blockingQuestions.length;
+  const projectPrerequisiteCount = Math.max(0, coverage.blockingPending - blockingCount);
   const deferredCount = coverage.domainSummaries.reduce((total, domain) => total + domain.deferred, 0);
   const naCount = coverage.domainSummaries.reduce((total, domain) => total + domain.notApplicable, 0);
   const readinessPercent = coverage.coveragePercentage;
@@ -1039,7 +1044,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                         <div>
                           <div className="text-xs font-bold text-indigo-950">System Recommended Architectural Choice:</div>
                           <p className="text-xs text-indigo-900 mt-1">
-                            {activeQuestion.options?.[0]?.label || 'No recommendation available; leave this decision open.'}
+                            {recommendationLabel || 'No recommendation available; leave this decision open.'}
                           </p>
                           <p className="text-[11px] text-indigo-700 mt-1">
                             Candidate only. Review suitability for this project; acceptance is separate from architecture ratification.
@@ -1049,7 +1054,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                       <div className="pt-2 flex justify-end">
                         <button
                           type="button"
-                          onClick={() => handleSaveAnswer({type:'RECOMMEND_FOR_ME',decision_mode:'RECOMMEND_FOR_ME',recommendation:{status:'ACCEPTED',preferredTechnology:activeQuestion.options?.[0]?.value},finalSelection:activeQuestion.options?.[0]?.value || null,status:'NOT_RATIFIED'})}
+                          onClick={() => handleSaveAnswer({type:'RECOMMEND_FOR_ME',decision_mode:'RECOMMEND_FOR_ME',recommendation:{...savedRecommendation?.recommendation,status:'ACCEPTED',preferredTechnology:recommendationValue},finalSelection:recommendationValue || null,status:'NOT_RATIFIED'})}
                           disabled={isSaving}
                           className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
                         >
@@ -1264,9 +1269,15 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 <span className="font-bold text-emerald-700">{resolvedCount}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100">
-                <span className="text-slate-600">Blocking Unresolved:</span>
+                <span className="text-slate-600">Blocking Questions:</span>
                 <span className="font-bold text-red-600">{blockingCount}</span>
               </div>
+              {projectPrerequisiteCount > 0 && (
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">Open project prerequisites:</span>
+                  <span className="font-semibold text-amber-700">{projectPrerequisiteCount}</span>
+                </div>
+              )}
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600">Deferred with Justification:</span>
                 <span className="font-semibold text-slate-800">{deferredCount}</span>
@@ -1276,6 +1287,11 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 <span className="font-semibold text-slate-800">{naCount}</span>
               </div>
             </div>
+            {projectPrerequisiteCount > 0 && (
+              <p className="text-xs text-amber-800">
+                Project maturity or source-control decisions remain open in the coverage table. They are separate from question blockers.
+              </p>
+            )}
           </div>
 
           {/* Domain Breakdown Card */}
@@ -1329,7 +1345,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 <span>{blockingCount} Blocking Items Pending</span>
               </div>
               <p className="text-xs text-red-700">
-                A-SSDLC prevents advancement to Architecture until all blocking questions are answered or bypassed.
+                These questionnaire blockers remain unresolved. Project prerequisites are tracked separately in the coverage table.
               </p>
               <button
                 onClick={() => onOpenOverrideModal('DISCOVERY_PHASE_GATE')}

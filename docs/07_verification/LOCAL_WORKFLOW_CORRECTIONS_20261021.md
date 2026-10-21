@@ -5,8 +5,8 @@ This is a bounded non-security frontend correction candidate on `codex/local-wor
 ## Reproduced defects and resulting behavior
 
 1. An empty domain or unresolved filter fell back to the first question outside that filter. A shrinking list also displayed positions such as `Question 3 of 1`. The questionnaire now renders its existing empty state and clamps both the displayed position and subsequent navigation to the filtered list.
-2. Returning to a saved structured technical answer coerced it to `[object Object]` and selected User Specified regardless of its recorded mode. The questionnaire now uses the existing `normalizeTechChoice` contract to restore accepted recommendations, structured user selections and their selected-option badge. Legacy string selections remain editable; deferred legacy decisions restore Unknown / Defer. Restoration never submits an answer or ratifies an architecture decision. The existing accepted recommendation payload retains `NOT_RATIFIED`.
-3. The readiness card and domain navigation independently counted raw question states, ignoring wizard contributions and the mandatory-question denominator already used by the coverage projection. A two-question synthetic fixture with one wizard-resolved mandatory question showed 0% instead of 50%. These displays now consume the existing `calculateDiscoveryCoverage` result. The Blockers filter uses the existing mandatory-question and wizard-coverage helpers to show unresolved question blockers consistently with that projection. The coverage engine, server acceptance rules and governance actions are unchanged.
+2. Returning to a saved structured technical answer coerced it to `[object Object]` and selected User Specified regardless of its recorded mode. The questionnaire now uses the existing `normalizeTechChoice` contract to restore accepted recommendations, structured user selections and their selected-option badge. Legacy string selections remain editable; deferred legacy decisions restore Unknown / Defer. Restoration never submits an answer or ratifies an architecture decision. The recommendation display and acceptance payload preserve the actual saved technology, including a non-first catalog option and its recorded rationale; fresh recommendations keep the existing first-option behavior. The existing accepted recommendation payload retains `NOT_RATIFIED`.
+3. The readiness card and domain navigation independently counted raw question states, ignoring wizard contributions and the mandatory-question denominator already used by the coverage projection. A two-question synthetic fixture with one wizard-resolved mandatory question showed 0% instead of 50%. These displays now consume the existing `calculateDiscoveryCoverage` result. The Blockers filter uses the existing mandatory-question and wizard-coverage helpers. Its count and the existing question-override affordance include only actual unresolved questionnaire blockers. Open project-maturity or source-control prerequisites remain included in canonical readiness/domain coverage and are explained separately with a count and coverage-table guidance; no metadata-override action is added. The coverage engine, server acceptance rules and governance actions are unchanged.
 
 Existing requirement context: DMK-027 / REQ-UX-003 describes interactive readiness updates; DMK-186 / REQ-REQ-001 describes valid adaptive navigation. These references describe existing functionality only; no canonical status transition is made by this candidate.
 
@@ -16,7 +16,7 @@ Existing requirement context: DMK-027 / REQ-UX-003 describes interactive readine
 
 - No application HTTP server or loopback listener is started.
 - Every browser request is aborted; each passing case also asserts that no request occurred and that no browser runtime error occurred.
-- Synthetic project/question fixtures use the existing catalog and types. The project has an explicit local source-control selection, avoiding an unrelated open metadata prerequisite in the hand-calculated readiness cases.
+- Synthetic project/question fixtures use the existing catalog and types. The base project has an explicit local source-control selection for the initial hand-calculated readiness cases. Review-edge fixtures deliberately leave source control unknown, or both maturity and source control unknown, to verify metadata-only and mixed prerequisite displays.
 - The test launches `DMK_TEST_BROWSER`, a detected local Chrome/Edge executable, or Playwright's installed Chromium. It writes no browser or application state to the repository.
 - Dependencies were installed physically in this managed worktree with `npm ci --ignore-scripts --no-audit --no-fund` (316 packages). The primary checkout's dependency junction was not used. Installation emitted the existing `node-domexception@1.0.0` deprecation warning.
 - The existing complete-regression runner discovers `test*.ts`; no manifest, lockfile or runner edit is needed.
@@ -38,11 +38,21 @@ Before changing the component, the new script exited 1 with **1 passed / 8 faile
 
 T2, the legacy string compatibility case, already passed. After the first correction, these nine cases passed. An additional T5 visual regression then exited 1 with **9 passed / 1 failed** because a known structured selection lacked its selected-option badge. Normalizing the saved selection for that badge addressed the same restoration defect.
 
-Final focused verification in the isolated Windows worktree:
+Review of commit `996efc77ec86e2adb1002d218d530c9d9c61eb63` exposed two edge gaps in the same restoration/readiness corrections. Before the follow-up code change, new tests exited 1 with **10 passed / 3 failed**:
+
+| Case | Review-edge RED evidence | Corrected behavior |
+| --- | --- | --- |
+| T6 saved non-first recommendation | Saved Rust label count was 0; rendering assumed the first TypeScript option | Displays Rust and reaccepts Rust with its recorded rationale and `NOT_RATIFIED` status |
+| R3 metadata-only prerequisite | `Blockers (0)` was absent because the count included the open source-control prerequisite | Canonical readiness remains 50%; question count is 0, empty filter is truthful, no question-override button appears, one project prerequisite is shown separately |
+| R4 mixed prerequisites | `Blockers (1)` was absent because two open metadata prerequisites inflated the question count | Canonical readiness remains 25%; only the actual technical question is filtered/counts toward the existing question-override card; two project prerequisites are shown separately |
+
+The ordinary fresh-recommendation case T1 remains in the suite and still checks the unchanged TypeScript-first accepted payload. The follow-up is a normal signed commit after the reviewed candidate, without rewriting the initial RED history.
+
+Final focused verification in the isolated Windows worktree after these review-edge corrections:
 
 | Command | Result |
 | --- | --- |
-| `node --import tsx scripts/testDiscoveryQuestionnaireUi.ts` | PASS: 10 named cases, zero failures |
+| `node --import tsx scripts/testDiscoveryQuestionnaireUi.ts` | PASS: 13 named cases, zero failures |
 | `node --import tsx scripts/testDiscoveryRemediation.ts` | PASS: 36 criteria, zero failures |
 | `node --import tsx scripts/testTechnicalBaseline.ts` | PASS: 10 criteria, zero failures |
 | `npm run lint` | PASS: TypeScript, exit 0 |

@@ -165,6 +165,25 @@ try {
     assert.equal(await page.getByText('Selected', {exact: true}).count(), 1);
     assert.deepEqual(await page.evaluate(() => window.discoveryFixture.answers), []);
   }));
+  await test('T6 stored non-first recommendation displays and reaccepts its saved technology', () => fixture([
+    technicalQuestion({state: 'ANSWERED', answer: {
+      type: 'RECOMMEND_FOR_ME', decision_mode: 'RECOMMEND_FOR_ME',
+      recommendation: {status: 'ACCEPTED', preferredTechnology: 'rust', rationale: ['Existing local selection']},
+      finalSelection: 'rust', status: 'NOT_RATIFIED',
+    } satisfies TechChoice}), freeQuestion('OTHER'),
+  ], async page => {
+    assert.equal(await page.getByText('Rust 2021 Edition (Memory-Safe Native)', {exact: true}).count(), 1);
+    await page.getByRole('button', {name: 'Accept Selection (Not Ratified)', exact: true}).click();
+    const [saved] = await page.evaluate(() => window.discoveryFixture.answers);
+    const answer = saved.answer as TechChoice;
+    assert.equal(answer.finalSelection, 'rust');
+    assert.equal(answer.recommendation?.preferredTechnology, 'rust');
+    assert.deepEqual(answer.recommendation?.rationale, ['Existing local selection']);
+    assert.equal(answer.status, 'NOT_RATIFIED');
+    await page.getByRole('button', {name: 'Next Question', exact: true}).click();
+    await page.getByRole('button', {name: 'Previous', exact: true}).click();
+    assert.equal(await page.getByText('Rust 2021 Edition (Memory-Safe Native)', {exact: true}).count(), 1);
+  }));
   await test('R1 readiness and domain counts include wizard-resolved mandatory answer', () => fixture([productQuestion(), technicalQuestion()], async page => {
     assert.match(await readiness(page), /50%/);
     assert.match(await page.getByText('Answered / Resolved:', {exact: true}).locator('..').innerText(), /1$/);
@@ -181,6 +200,28 @@ try {
     assert.equal(await page.getByRole('button', {name: 'Blockers (0)', exact: true}).count(), 1);
     assert.match(await page.getByRole('button', {name: /^Product Problem & Value/}).innerText(), /1\/2/);
   }));
+  await test('R3 metadata-only prerequisite preserves readiness without a question override', () => fixture([
+    productQuestion(),
+  ], async page => {
+    assert.match(await readiness(page), /50%/);
+    assert.equal(await page.getByRole('button', {name: 'Blockers (0)', exact: true}).count(), 1);
+    assert.equal(await page.getByRole('button', {name: 'Override Discovery Gate', exact: true}).count(), 0);
+    assert.match(await page.getByText('Open project prerequisites:', {exact: true}).locator('..').innerText(), /1$/);
+    await page.getByRole('button', {name: 'Blockers (0)', exact: true}).click();
+    assert.equal(await page.getByText('No questions found for the selected domain or filter.', {exact: true}).count(), 1);
+    assert.deepEqual(await page.evaluate(() => window.discoveryFixture.answers), []);
+  }, {...project, technicalBaseline: normalizeTechnicalBaseline()}));
+  await test('R4 mixed prerequisites count only question blockers in filter and override card', () => fixture([
+    productQuestion(), technicalQuestion(),
+  ], async page => {
+    assert.match(await readiness(page), /25%/);
+    assert.equal(await page.getByRole('button', {name: 'Blockers (1)', exact: true}).count(), 1);
+    assert.equal(await page.getByRole('button', {name: 'Override Discovery Gate', exact: true}).count(), 1);
+    assert.match(await page.getByText('Open project prerequisites:', {exact: true}).locator('..').innerText(), /2$/);
+    await page.getByRole('button', {name: 'Blockers (1)', exact: true}).click();
+    await page.getByRole('heading', {name: technicalQuestion().question, exact: true}).waitFor();
+    assert.equal(await position(page), 'Question 1 of 1 in this view');
+  }, {...project, maturity: undefined, technicalBaseline: normalizeTechnicalBaseline()}));
 } finally {
   await browser.close();
 }
