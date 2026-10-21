@@ -15,6 +15,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { Project, RecommendedNextAction, AuditEvent, Risk, Question } from '../types';
+import { projectRiskDisplay } from '../data/riskDisplayProjection';
 
 interface DashboardViewProps {
   project: Project;
@@ -39,7 +40,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     (q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED'
   );
 
-  const topRisk = (risks || []).find((r) => r.inherentLevel === 'CRITICAL') || (risks || [])[0];
+  const topRisk = (risks || []).find((r) => r?.inherentLevel === 'CRITICAL') || (risks || [])[0];
+  const riskDisplay = projectRiskDisplay(topRisk);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -236,7 +238,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <Flame className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-bold text-slate-900">Project Risk Classification</h2>
+              <h2 className="text-sm font-bold text-slate-900">Project Risk Record</h2>
             </div>
             <button
               onClick={() => onNavigate('risk')}
@@ -246,34 +248,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
 
+          <div className="text-xs text-slate-600 space-y-1">
+            <p>First CRITICAL record, otherwise first stored record. This is a stored record summary.</p>
+            <p>{topRisk ? <>Displayed record: <strong>{riskDisplay.id}</strong> — {riskDisplay.title}</> : 'No risk record is available.'}</p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-red-50/60 p-3.5 rounded-lg border border-red-100">
-              <span className="text-[11px] font-semibold text-red-600 uppercase">Inherent Risk</span>
+            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+              <span className="text-[11px] font-semibold text-slate-600 uppercase">Inherent Risk</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold text-red-800">{topRisk?.inherentScore || 18}</span>
-                <span className="text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded">
-                  ● {topRisk?.inherentLevel || 'CRITICAL'}
+                <span className="text-2xl font-bold text-slate-800">{riskDisplay.inherentScore}</span>
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {riskDisplay.inherentLevel}
                 </span>
               </div>
-              <span className="text-[10px] text-red-600 mt-1 block">Likelihood 4 × Impact 5</span>
+              <span className="text-[10px] text-slate-600 mt-1 block">Likelihood {riskDisplay.inherentLikelihood} · Impact {riskDisplay.inherentImpact}</span>
             </div>
 
-            <div className="bg-amber-50/60 p-3.5 rounded-lg border border-amber-100">
-              <span className="text-[11px] font-semibold text-amber-600 uppercase">Residual Risk</span>
+            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+              <span className="text-[11px] font-semibold text-slate-600 uppercase">Residual Risk</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold text-amber-800">{topRisk?.residualScore || 10}</span>
-                <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                  ● {topRisk?.residualLevel || 'HIGH'}
+                <span className="text-2xl font-bold text-slate-800">{riskDisplay.residualScore}</span>
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {riskDisplay.residualLevel}
                 </span>
               </div>
-              <span className="text-[10px] text-amber-600 mt-1 block">Post-Control Mitigation</span>
+              <span className="text-[10px] text-slate-600 mt-1 block">Likelihood {riskDisplay.residualLikelihood} · Impact {riskDisplay.residualImpact}</span>
             </div>
           </div>
 
           <div>
-            <span className="text-xs font-semibold text-slate-700 block mb-2">Key Risk Contributors:</span>
+            <span className="text-xs font-semibold text-slate-700 block mb-2">Stored Risk Contributors:</span>
             <div className="flex flex-wrap gap-2">
-              {topRisk?.drivers.map((driver, idx) => (
+              {riskDisplay.drivers.map((driver, idx) => (
                 <span
                   key={idx}
                   className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200"
@@ -281,17 +288,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {driver}
                 </span>
               ))}
+              {riskDisplay.drivers.length === 0 && <span className="text-xs text-slate-500">Unavailable</span>}
             </div>
           </div>
 
-          {topRisk?.mandatoryFloorApplied && (
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 flex items-start gap-2">
-              <Lock className="w-3.5 h-3.5 text-slate-500 mt-0.5 shrink-0" />
-              <span>
-                <strong>Mandatory Risk Floor:</strong> {topRisk.floorReason}
-              </span>
-            </div>
-          )}
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 space-y-1">
+            <p>Stored floor flag: {riskDisplay.floorFlag}{riskDisplay.floorReason !== undefined && <> — {riskDisplay.floorReason}</>}</p>
+            <p>A stored floor flag does not establish enforcement.</p>
+          </div>
         </div>
 
         {/* Missing-Information Blockers Screen (6 cols) */}
