@@ -68,6 +68,8 @@ These profile values and any additional admission bounds are **synthetic fixture
 
 ## Rollback and exclusions
 
+Final review/qualification supplement: [FAST_TRACK_FINAL_GATE_20261021.md](../07_verification/FAST_TRACK_FINAL_GATE_20261021.md). PR #58 has left draft state. A bounded added Windows CI job qualifies fresh npm and frozen Bun installations on an already provisioned hosted SDK image; it does not install an operator SDK, change versions or relax SQLite checks. The configured fixture passes with an unaliased job-owned TEMP, while default short-name TEMP compatibility remains unresolved. Bun's existing blocked protobufjs postinstall prevents an all-dependency-lifecycle claim. The disposable combined candidate preflight passed 71 suites / 1,904 checks, distinct from actual master integration. Final CI/review must cover the later signed handoff HEAD; this supplement does not substitute for either.
+
 Before integration, leave a failed candidate unmerged and preserve evidence. The default remains disabled; there is no operational cutover to reverse. Any future code revert or operational use needs its own authorized decision. Do not enroll or migrate real users, create real grants, bootstrap/recover operator authority, install certificates, expose a public listener, consume WBS receipts or change trust roots.
 
 Existing server authentication and all protected routes, project/user stores, human quorum, canonical WBS and historical evidence remain unchanged. All 14 privileged API registrations stay blocked, live agents stay disabled, Gate 7 remains unexecuted and release remains blocked. PR #34 and archival PR #52 receive no merge or modification authority from this exception.

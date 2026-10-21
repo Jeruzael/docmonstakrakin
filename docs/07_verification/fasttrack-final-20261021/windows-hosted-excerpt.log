@@ -1,0 +1,146 @@
+Selected execution output; ANSI formatting removed and echoed conditional script lines omitted. Full raw jobs are linked in FAST_TRACK_FINAL_GATE_20261021.md. This excerpt is not the full job log.
+
+=== Default-TEMP attempt: HEAD 2d49886ba77e29d410fd3585a8686aed8a8632e0, job119043183986 (FAILED) ===
+2026-10-21T04:44:31.4430529Z node: v22.23.3
+2026-10-21T04:44:31.4430959Z npm: 10.9.9
+2026-10-21T04:44:31.7869354Z ImageOS=win22 ImageVersion=20261012.333.1
+2026-10-21T04:44:31.8007487Z v22.23.3
+2026-10-21T04:44:31.9969302Z 10.9.9
+2026-10-21T04:44:32.5902823Z C:\Program Files\Microsoft Visual Studio\2022\Enterprise
+2026-10-21T04:44:32.9040775Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0
+2026-10-21T04:44:32.9041424Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0
+2026-10-21T04:44:32.9041944Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0
+2026-10-21T04:44:32.9042454Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0
+2026-10-21T04:44:41.8861995Z > argon2@0.45.1 install
+2026-10-21T04:44:41.8862378Z > cross-env ZERO_AR_DATE=1 node-gyp-build
+2026-10-21T04:44:42.0668041Z > better-sqlite3@13.0.3 install
+2026-10-21T04:44:42.0668464Z > node-gyp rebuild
+2026-10-21T04:44:42.3036190Z gyp info it worked if it ends with ok
+2026-10-21T04:44:42.3038608Z gyp info using node-gyp@11.5.0
+2026-10-21T04:44:42.3038934Z gyp info using node@22.23.3 | win32 | x64
+2026-10-21T04:44:43.3644229Z gyp info find Python using Python version 3.14.8 found at "C:\hostedtoolcache\windows\Python\3.14.8\x64\python.exe"
+2026-10-21T04:45:34.3401320Z gyp info find VS using VS2022 (17.14.37710.0) found at:
+2026-10-21T04:45:34.3401792Z gyp info find VS "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+2026-10-21T04:45:34.3402197Z gyp info find VS run with --verbose for detailed information
+2026-10-21T04:45:34.3447550Z gyp info spawn C:\hostedtoolcache\windows\Python\3.14.8\x64\python.exe
+2026-10-21T04:45:34.3468814Z gyp info spawn args [
+2026-10-21T04:45:34.3469592Z gyp info spawn args 'C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp\\gyp\\gyp_main.py',
+2026-10-21T04:45:34.3470403Z gyp info spawn args 'binding.gyp',
+2026-10-21T04:45:34.3470825Z gyp info spawn args '-f',
+2026-10-21T04:45:34.3472831Z gyp info spawn args 'msvs',
+2026-10-21T04:45:34.3473188Z gyp info spawn args '-I',
+2026-10-21T04:45:34.3473927Z gyp info spawn args 'D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3\\build\\config.gypi',
+2026-10-21T04:45:34.3476335Z gyp info spawn args '-I',
+2026-10-21T04:45:34.3477203Z gyp info spawn args 'C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp\\addon.gypi',
+2026-10-21T04:45:34.3477894Z gyp info spawn args '-I',
+2026-10-21T04:45:34.3478497Z gyp info spawn args 'D:\\a\\_temp\\native-node-headers\\22.23.3\\include\\node\\common.gypi',
+2026-10-21T04:45:34.3479121Z gyp info spawn args '-Dlibrary=shared_library',
+2026-10-21T04:45:34.3479570Z gyp info spawn args '-Dvisibility=default',
+2026-10-21T04:45:34.3480162Z gyp info spawn args '-Dnode_root_dir=D:\\a\\_temp\\native-node-headers\\22.23.3',
+2026-10-21T04:45:34.3481124Z gyp info spawn args '-Dnode_gyp_dir=C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp',
+2026-10-21T04:45:34.3482256Z gyp info spawn args '-Dnode_lib_file=D:\\\\a\\\\_temp\\\\native-node-headers\\\\22.23.3\\\\<(target_arch)\\\\node.lib',
+2026-10-21T04:45:34.3483307Z gyp info spawn args '-Dmodule_root_dir=D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3',
+2026-10-21T04:45:34.3483997Z gyp info spawn args '-Dnode_engine=v8',
+2026-10-21T04:45:34.3484380Z gyp info spawn args '--depth=.',
+2026-10-21T04:45:34.3484708Z gyp info spawn args '--no-parallel',
+2026-10-21T04:45:34.3484957Z gyp info spawn args '--generator-output',
+2026-10-21T04:45:34.3485386Z gyp info spawn args 'D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3\\build',
+2026-10-21T04:45:34.3485767Z gyp info spawn args '-Goutput_dir=.'
+2026-10-21T04:45:34.3485980Z gyp info spawn args ]
+2026-10-21T04:45:35.8287158Z gyp info spawn C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe
+2026-10-21T04:45:35.8287761Z gyp info spawn args [
+2026-10-21T04:45:35.8287993Z gyp info spawn args 'build/binding.sln',
+2026-10-21T04:45:35.8288272Z gyp info spawn args '/clp:Verbosity=minimal',
+2026-10-21T04:45:35.8288562Z gyp info spawn args '/nologo',
+2026-10-21T04:45:35.8288847Z gyp info spawn args '/nodeReuse:false',
+2026-10-21T04:45:35.8289160Z gyp info spawn args '/p:Configuration=Release;Platform=x64'
+2026-10-21T04:45:35.8289420Z gyp info spawn args ]
+2026-10-21T04:45:44.8709393Z gyp info ok
+2026-10-21T04:45:44.8833715Z > esbuild@0.25.12 postinstall
+2026-10-21T04:45:44.9924751Z > protobufjs@7.6.6 postinstall
+2026-10-21T04:45:45.0425370Z > esbuild@0.28.2 postinstall
+2026-10-21T04:45:45.2136928Z added 329 packages, and audited 330 packages in 1m
+2026-10-21T04:45:45.2148451Z found 0 vulnerabilities
+2026-10-21T04:45:48.5914639Z       throw new SyntheticSecurityError(error instanceof SyntheticSecurityError ? error.code : 'STORE_UNAVAILABLE');
+2026-10-21T04:45:48.5915975Z SyntheticSecurityError: STORE_PATH_INVALID
+2026-10-21T04:45:48.5921884Z   code: 'STORE_PATH_INVALID'
+2026-10-21T04:45:48.5922736Z Node.js v22.23.3
+2026-10-21T04:45:48.8209217Z ##[error]Process completed with exit code 1.
+
+=== Job-owned unaliased TEMP: HEAD 06b01ebb849ff47518ca608ef619dc84c30c7c80, job119044657915 (PASSED) ===
+2026-10-21T04:49:49.3085704Z node: v22.23.3
+2026-10-21T04:49:49.3086608Z npm: 10.9.9
+2026-10-21T04:49:49.7759198Z {"defaultTemp":"C:\\Users\\RUNNER~1\\AppData\\Local\\Temp","sync":"C:\\Users\\RUNNER~1\\AppData\\Local\\Temp","async":"C:\\Users\\runneradmin\\AppData\\Local\\Temp"}
+2026-10-21T04:49:49.7941601Z ImageOS=win22 ImageVersion=20261012.333.1
+2026-10-21T04:49:49.8079456Z v22.23.3
+2026-10-21T04:49:50.0495749Z 10.9.9
+2026-10-21T04:49:50.6020100Z C:\Program Files\Microsoft Visual Studio\2022\Enterprise
+2026-10-21T04:49:50.8701635Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0
+2026-10-21T04:49:50.8702489Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0
+2026-10-21T04:49:50.8703115Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0
+2026-10-21T04:49:50.8705283Z C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0
+2026-10-21T04:50:01.3952081Z > argon2@0.45.1 install
+2026-10-21T04:50:01.3952766Z > cross-env ZERO_AR_DATE=1 node-gyp-build
+2026-10-21T04:50:01.6662302Z > better-sqlite3@13.0.3 install
+2026-10-21T04:50:01.6662915Z > node-gyp rebuild
+2026-10-21T04:50:01.7629048Z gyp info it worked if it ends with ok
+2026-10-21T04:50:01.7631426Z gyp info using node-gyp@11.5.0
+2026-10-21T04:50:01.7631936Z gyp info using node@22.23.3 | win32 | x64
+2026-10-21T04:50:02.5025404Z gyp info find Python using Python version 3.14.8 found at "C:\hostedtoolcache\windows\Python\3.14.8\x64\python.exe"
+2026-10-21T04:50:17.8015225Z gyp info find VS using VS2022 (17.14.37710.0) found at:
+2026-10-21T04:50:17.8016014Z gyp info find VS "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+2026-10-21T04:50:17.8016730Z gyp info find VS run with --verbose for detailed information
+2026-10-21T04:50:17.8070377Z gyp info spawn C:\hostedtoolcache\windows\Python\3.14.8\x64\python.exe
+2026-10-21T04:50:17.8075369Z gyp info spawn args [
+2026-10-21T04:50:17.8076487Z gyp info spawn args 'C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp\\gyp\\gyp_main.py',
+2026-10-21T04:50:17.8077253Z gyp info spawn args 'binding.gyp',
+2026-10-21T04:50:17.8077675Z gyp info spawn args '-f',
+2026-10-21T04:50:17.8078072Z gyp info spawn args 'msvs',
+2026-10-21T04:50:17.8078477Z gyp info spawn args '-I',
+2026-10-21T04:50:17.8081121Z gyp info spawn args 'D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3\\build\\config.gypi',
+2026-10-21T04:50:17.8082164Z gyp info spawn args '-I',
+2026-10-21T04:50:17.8082816Z gyp info spawn args 'C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp\\addon.gypi',
+2026-10-21T04:50:17.8083367Z gyp info spawn args '-I',
+2026-10-21T04:50:17.8083952Z gyp info spawn args 'D:\\a\\_temp\\native-node-headers\\22.23.3\\include\\node\\common.gypi',
+2026-10-21T04:50:17.8084719Z gyp info spawn args '-Dlibrary=shared_library',
+2026-10-21T04:50:17.8085263Z gyp info spawn args '-Dvisibility=default',
+2026-10-21T04:50:17.8085985Z gyp info spawn args '-Dnode_root_dir=D:\\a\\_temp\\native-node-headers\\22.23.3',
+2026-10-21T04:50:17.8087124Z gyp info spawn args '-Dnode_gyp_dir=C:\\hostedtoolcache\\windows\\node\\22.23.3\\x64\\node_modules\\npm\\node_modules\\node-gyp',
+2026-10-21T04:50:17.8088462Z gyp info spawn args '-Dnode_lib_file=D:\\\\a\\\\_temp\\\\native-node-headers\\\\22.23.3\\\\<(target_arch)\\\\node.lib',
+2026-10-21T04:50:17.8089719Z gyp info spawn args '-Dmodule_root_dir=D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3',
+2026-10-21T04:50:17.8090540Z gyp info spawn args '-Dnode_engine=v8',
+2026-10-21T04:50:17.8091064Z gyp info spawn args '--depth=.',
+2026-10-21T04:50:17.8091537Z gyp info spawn args '--no-parallel',
+2026-10-21T04:50:17.8092082Z gyp info spawn args '--generator-output',
+2026-10-21T04:50:17.8092886Z gyp info spawn args 'D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3\\build',
+2026-10-21T04:50:17.8093605Z gyp info spawn args '-Goutput_dir=.'
+2026-10-21T04:50:17.8094852Z gyp info spawn args ]
+2026-10-21T04:50:19.2256465Z gyp info spawn C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe
+2026-10-21T04:50:19.2257592Z gyp info spawn args [
+2026-10-21T04:50:19.2258167Z gyp info spawn args 'build/binding.sln',
+2026-10-21T04:50:19.2258844Z gyp info spawn args '/clp:Verbosity=minimal',
+2026-10-21T04:50:19.2259447Z gyp info spawn args '/nologo',
+2026-10-21T04:50:19.2260005Z gyp info spawn args '/nodeReuse:false',
+2026-10-21T04:50:19.2260820Z gyp info spawn args '/p:Configuration=Release;Platform=x64'
+2026-10-21T04:50:19.2261452Z gyp info spawn args ]
+2026-10-21T04:50:27.3788180Z gyp info ok
+2026-10-21T04:50:27.3913440Z > esbuild@0.25.12 postinstall
+2026-10-21T04:50:27.5343491Z > protobufjs@7.6.6 postinstall
+2026-10-21T04:50:27.5962668Z > esbuild@0.28.2 postinstall
+2026-10-21T04:50:27.8114085Z added 329 packages, and audited 330 packages in 36s
+2026-10-21T04:50:27.8120987Z found 0 vulnerabilities
+2026-10-21T04:50:29.6620470Z ##[group]Run node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
+2026-10-21T04:50:29.9265523Z {"fixtureTemp":"D:\\a\\_temp\\native-fixtures","sync":"D:\\a\\_temp\\native-fixtures","async":"D:\\a\\_temp\\native-fixtures"}
+2026-10-21T04:50:30.5183858Z SYNTHETIC_COMPATIBILITY {"schemaVersion":1,"journalMode":"wal","synchronous":2,"foreignKeys":1,"busyTimeoutMs":100,"sqliteVersion":"3.53.4","node":"v22.23.3","arch":"x64","platform":"win32","packages":{"sqlite":"13.0.3"},"nativePath":"D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\better-sqlite3\\prebuilds\\win32-x64.node","nativeSha256":"e21e5efd71fba66578e95b62554d9028064a80dafd7221bf8a8ef155de8d240a"}
+2026-10-21T04:50:30.5198646Z SYNTHETIC_ARGON2_NATIVE {"version":"0.45.1","nativePath":"D:\\a\\docmonstakrakin\\docmonstakrakin\\node_modules\\argon2\\prebuilds\\win32-x64\\argon2.glibc.node","nativeSha256":"7d1716c8eafe32d54a12af5c0d3024cd715a7e1fdc8092eea84fd369d267075c"}
+2026-10-21T04:50:30.7442812Z SYNTHETIC_KDF_SAMPLE_MS 224.042
+2026-10-21T04:50:32.8372747Z Synthetic security foundations: 35 named checks passed; synthetic feasibility only.
+2026-10-21T04:50:53.6599615Z bun install v1.4.2 (744846f84)
+2026-10-21T04:50:58.4168559Z 323 packages installed [4.76s]
+2026-10-21T04:50:59.4419549Z bun pm untrusted v1.4.2 (744846f84)
+2026-10-21T04:50:59.4451454Z .\node_modules\protobufjs @7.6.6
+2026-10-21T04:50:59.4460460Z These dependencies had their lifecycle scripts blocked during install.
+2026-10-21T04:51:00.0764989Z SYNTHETIC_COMPATIBILITY {"schemaVersion":1,"journalMode":"wal","synchronous":2,"foreignKeys":1,"busyTimeoutMs":100,"sqliteVersion":"3.53.4","node":"v22.23.3","arch":"x64","platform":"win32","packages":{"sqlite":"13.0.3"},"nativePath":"D:\\a\\_temp\\native-bun-checkout\\node_modules\\better-sqlite3\\prebuilds\\win32-x64.node","nativeSha256":"e21e5efd71fba66578e95b62554d9028064a80dafd7221bf8a8ef155de8d240a"}
+2026-10-21T04:51:00.0780636Z SYNTHETIC_ARGON2_NATIVE {"version":"0.45.1","nativePath":"D:\\a\\_temp\\native-bun-checkout\\node_modules\\argon2\\prebuilds\\win32-x64\\argon2.glibc.node","nativeSha256":"7d1716c8eafe32d54a12af5c0d3024cd715a7e1fdc8092eea84fd369d267075c"}
+2026-10-21T04:51:00.3058998Z SYNTHETIC_KDF_SAMPLE_MS 227.515
+2026-10-21T04:51:02.5163916Z Synthetic security foundations: 35 named checks passed; synthetic feasibility only.

@@ -1,0 +1,294 @@
+{
+  "metadata": {
+    "scope": "Disposable local combined-tree preflight only; not actual integration, human approval or merge authorization",
+    "createdAt": "2026-10-21T04:35:18.109Z",
+    "baseline": "5d10299cc0aa6f93b4f2861bf1bdd5167cbfba09",
+    "baselineTree": "4307d814c88604c0bb79188417d9a80d1d1f11e8",
+    "pr57": "f4fbede5088eaae0147ee912499089b623ebc267",
+    "pr58": "2665712449b38813e91a18d256fa693ab318d406",
+    "localMergeCommit": "340bf3f87ec5892310f4abfe8d195b3b40d36fbf",
+    "orderedParents": [
+      "2665712449b38813e91a18d256fa693ab318d406",
+      "f4fbede5088eaae0147ee912499089b623ebc267"
+    ],
+    "combinedTree": "acc28e09ca81b8151e47029109b88c3b3175b6fa",
+    "mergeStrategy": "ort",
+    "conflicts": false,
+    "combinedChangedPaths": 20,
+    "sourceBlobs": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "83481c3e83eba95416ed90f7949cae1f690f2c25",
+        "combinedBlob": "83481c3e83eba95416ed90f7949cae1f690f2c25"
+      },
+      {
+        "path": "bun.lock",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "2f80238cf634973fa251c25650d2d370ef9819d4",
+        "combinedBlob": "2f80238cf634973fa251c25650d2d370ef9819d4"
+      },
+      {
+        "path": "docs/06_planning/S2A_SYNTHETIC_FOUNDATIONS_20261021.md",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "43b8a86f444ba85ad20c8911f66720dba03cb0b8",
+        "combinedBlob": "43b8a86f444ba85ad20c8911f66720dba03cb0b8"
+      },
+      {
+        "path": "docs/07_verification/LOCAL_WORKFLOW_CORRECTIONS_20261021.md",
+        "sourceCommit": "f4fbede5088eaae0147ee912499089b623ebc267",
+        "sourceBlob": "a78f2c31697f536ba94a352f3717881295374677",
+        "combinedBlob": "a78f2c31697f536ba94a352f3717881295374677"
+      },
+      {
+        "path": "docs/08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "2572b951c6d7f243f8d1e46122c9ffc465d95365",
+        "combinedBlob": "2572b951c6d7f243f8d1e46122c9ffc465d95365"
+      },
+      {
+        "path": "package-lock.json",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47",
+        "combinedBlob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47"
+      },
+      {
+        "path": "package.json",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "9f170dcdaea67600d94acd6492e1f80d85626011",
+        "combinedBlob": "9f170dcdaea67600d94acd6492e1f80d85626011"
+      },
+      {
+        "path": "scripts/testDiscoveryQuestionnaireUi.ts",
+        "sourceCommit": "f4fbede5088eaae0147ee912499089b623ebc267",
+        "sourceBlob": "08be0a8d63e0cea3eb5c56bf08f4e4b7585b1773",
+        "combinedBlob": "08be0a8d63e0cea3eb5c56bf08f4e4b7585b1773"
+      },
+      {
+        "path": "scripts/testSyntheticSecurityFoundations.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "c9f988aa5af259a0943cc9ec0f3e248398dd8219",
+        "combinedBlob": "c9f988aa5af259a0943cc9ec0f3e248398dd8219"
+      },
+      {
+        "path": "server/security/syntheticFoundations/audit.mjs",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "0664b39e51dded6275944c497729d6fc4b65387c",
+        "combinedBlob": "0664b39e51dded6275944c497729d6fc4b65387c"
+      },
+      {
+        "path": "server/security/syntheticFoundations/audit.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "bcf415bcebfaede90e16e70d4e6437311853846a",
+        "combinedBlob": "bcf415bcebfaede90e16e70d4e6437311853846a"
+      },
+      {
+        "path": "server/security/syntheticFoundations/boundedVerifier.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "950bf55d66d06224d490866f00d3d7d3f731b20c",
+        "combinedBlob": "950bf55d66d06224d490866f00d3d7d3f731b20c"
+      },
+      {
+        "path": "server/security/syntheticFoundations/contracts.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "968912d3d4f4a1c8bde93cf2c65c6dae70d4cfce",
+        "combinedBlob": "968912d3d4f4a1c8bde93cf2c65c6dae70d4cfce"
+      },
+      {
+        "path": "server/security/syntheticFoundations/index.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "d51440737e35f928031bb4ba760bc3cb9f2944a9",
+        "combinedBlob": "d51440737e35f928031bb4ba760bc3cb9f2944a9"
+      },
+      {
+        "path": "server/security/syntheticFoundations/policy.mjs",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "9680f96ec25736f1c8b9fa5f6efc9bf14395d9ce",
+        "combinedBlob": "9680f96ec25736f1c8b9fa5f6efc9bf14395d9ce"
+      },
+      {
+        "path": "server/security/syntheticFoundations/policy.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "610f8b062b30d6289ee94228b265e638ee61d454",
+        "combinedBlob": "610f8b062b30d6289ee94228b265e638ee61d454"
+      },
+      {
+        "path": "server/security/syntheticFoundations/privateStore.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "49d526b3b79afa780e60a9e82c973f01b694ae7d",
+        "combinedBlob": "49d526b3b79afa780e60a9e82c973f01b694ae7d"
+      },
+      {
+        "path": "server/security/syntheticFoundations/privateStoreWorker.mjs",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "612ca2840edefd1a1c581b207db37056d3cb7add",
+        "combinedBlob": "612ca2840edefd1a1c581b207db37056d3cb7add"
+      },
+      {
+        "path": "server/security/syntheticFoundations/sessions.ts",
+        "sourceCommit": "2665712449b38813e91a18d256fa693ab318d406",
+        "sourceBlob": "448731561272eac4521812f83153d7f2da33ee0c",
+        "combinedBlob": "448731561272eac4521812f83153d7f2da33ee0c"
+      },
+      {
+        "path": "src/components/QuestionnaireView.tsx",
+        "sourceCommit": "f4fbede5088eaae0147ee912499089b623ebc267",
+        "sourceBlob": "d71cc56e61c7ccb1d85a7953418fa1106ac62c38",
+        "combinedBlob": "d71cc56e61c7ccb1d85a7953418fa1106ac62c38"
+      }
+    ],
+    "dependencyQualification": "Physical retained node_modules copied from dmk-fast-b-bun after failed Windows install; not a fresh clean npm/Bun installation",
+    "dependencySource": "<USER_PROFILE>/AppData/Local/Temp/dmk-fast-b-bun/node_modules",
+    "rootJunctionUsed": false,
+    "productionStateUsed": false
+  },
+  "result": {
+    "scope": "Disposable local combined-tree preflight only; no actual integration or merge authorization",
+    "localMergeCommit": "340bf3f87ec5892310f4abfe8d195b3b40d36fbf",
+    "combinedTree": "acc28e09ca81b8151e47029109b88c3b3175b6fa",
+    "orderedParents": [
+      "2665712449b38813e91a18d256fa693ab318d406",
+      "f4fbede5088eaae0147ee912499089b623ebc267"
+    ],
+    "qualification": "Assembled physical retained dependencies; failed Windows installers and setup attempts remain retained; no clean-install claim",
+    "matchedRequired": 323,
+    "matchedOptional": 6,
+    "lockProblems": [],
+    "sourceStable": true,
+    "sourceStatus": "",
+    "results": [
+      {
+        "name": "quality-final",
+        "command": "npm run ci:quality",
+        "startedAt": "2026-10-21T04:42:46.002Z",
+        "completedAt": "2026-10-21T04:43:06.409Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "quality-final.log"
+      },
+      {
+        "name": "native-focused-final",
+        "command": "node --import tsx scripts/testSyntheticSecurityFoundations.ts",
+        "startedAt": "2026-10-21T04:43:06.410Z",
+        "completedAt": "2026-10-21T04:43:10.619Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "native-focused-final.log"
+      },
+      {
+        "name": "controlled-docs-final",
+        "command": "npm run ci:controlled-docs",
+        "startedAt": "2026-10-21T04:43:10.619Z",
+        "completedAt": "2026-10-21T04:43:58.903Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "controlled-docs-final.log"
+      },
+      {
+        "name": "complete-regression-final",
+        "command": "npm run ci:regression",
+        "startedAt": "2026-10-21T04:43:58.904Z",
+        "completedAt": "2026-10-21T04:49:35.418Z",
+        "exitCode": 0,
+        "signal": null,
+        "log": "complete-regression-final.log"
+      }
+    ],
+    "regression": {
+      "timestamp": "2026-10-21T04:49:35.366Z",
+      "suites": {
+        "total": 71,
+        "passed": 71,
+        "failed": 0,
+        "skipped": 0
+      },
+      "assertions": {
+        "total": 1904,
+        "passed": 1904,
+        "failed": 0,
+        "skipped": 0
+      },
+      "native": {
+        "suite": "scripts/testSyntheticSecurityFoundations.ts",
+        "exitCode": 0,
+        "status": "PASSED",
+        "passed": 35,
+        "failed": 0,
+        "skipped": 0,
+        "log": "scripts_testSyntheticSecurityFoundations.log",
+        "changedEvidence": []
+      },
+      "questionnaire": {
+        "suite": "scripts/testDiscoveryQuestionnaireUi.ts",
+        "exitCode": 0,
+        "status": "PASSED",
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0,
+        "log": "scripts_testDiscoveryQuestionnaireUi.log",
+        "changedEvidence": []
+      }
+    }
+  },
+  "dependencySetup": {
+    "repair": {
+      "scope": "Dependency fixture repair only; no source or lockfile edits",
+      "originalFailure": "Bun retained tree omitted nested optional @esbuild/win32-x64 0.28.2, causing tsx host0.28.2 to resolve root binary0.25.12",
+      "repair": "Copied the exact locked physical optional platform package from the already qualified C checkout; no installer success inferred",
+      "source": "<USER_PROFILE>/.codex/worktrees/fasttrack-product-workflow/docmonstakrakin-version-sync/node_modules/tsx/node_modules/@esbuild/win32-x64",
+      "hostVersion": "0.28.2",
+      "platformVersion": "0.28.2",
+      "lockedVersion": "0.28.2",
+      "binarySha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+      "retainedOriginalGateFailures": [
+        "quality.log",
+        "native-focused.log",
+        "controlled-docs.log",
+        "complete-regression.log"
+      ]
+    },
+    "qualification": {
+      "qualification": "Ordinary-token disposable combined-tree preflight; allowlisted environment; assembled retained-package runtime, not clean installer proof",
+      "variableNames": [
+        "ALLUSERSPROFILE",
+        "APPDATA",
+        "CI",
+        "ComSpec",
+        "GEMINI_API_KEY",
+        "HOMEDRIVE",
+        "HOMEPATH",
+        "LOCALAPPDATA",
+        "NUMBER_OF_PROCESSORS",
+        "OS",
+        "PATHEXT",
+        "PROCESSOR_ARCHITECTURE",
+        "PROCESSOR_IDENTIFIER",
+        "PSModulePath",
+        "Path",
+        "ProgramData",
+        "ProgramFiles",
+        "ProgramFiles(x86)",
+        "ProgramW6432",
+        "SystemRoot",
+        "TEMP",
+        "TMP",
+        "USERDOMAIN",
+        "USERNAME",
+        "USERPROFILE",
+        "windir"
+      ],
+      "CI": true,
+      "GEMINI_API_KEY": "empty",
+      "matchedRequired": 323,
+      "matchedOptional": 6,
+      "lockProblems": []
+    },
+    "totalInstalledPathsMatched": 329,
+    "required": 323,
+    "optional": 6,
+    "missingRequired": 0,
+    "mismatched": 0,
+    "absentOptional": 102
+  },
+  "note": "Local preflight only. Later PR58 changes are CI/handoff/evidence only; neither source candidate is integrated into master."
+}

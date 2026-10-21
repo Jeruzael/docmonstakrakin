@@ -1,0 +1,234 @@
+===== clone.log (failed setup/partial attempt; not final acceptance) =====
+Cloning into '<USER_PROFILE>/AppData/Local/Temp/dmk-combined-5758'...
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+
+===== quality.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:quality
+
+> docmonstakrakin@0.0.0 ci:quality
+> npm run wbs:check && npm run lint && npm run build
+
+
+> docmonstakrakin@0.0.0 wbs:check
+> tsx scripts/renderWbs.ts --check
+
+X [ERROR] Cannot start service: Host version "0.28.2" does not match binary version "0.25.12"
+
+1 error
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [TransformError]: The service was stopped
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:1001:38
+    at responseCallbacks.<computed> (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:886:9)
+    at Socket.afterClose (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:877:28)
+    at Socket.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v22.21.1
+
+===== native-focused.log (failed setup/partial attempt; not final acceptance) =====
+$ node --import tsx scripts/testSyntheticSecurityFoundations.ts
+X [ERROR] Cannot start service: Host version "0.28.2" does not match binary version "0.25.12"
+
+1 error
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [TransformError]: The service was stopped
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:1001:38
+    at responseCallbacks.<computed> (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:886:9)
+    at Socket.afterClose (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:877:28)
+    at Socket.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v22.21.1
+
+===== controlled-docs.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:controlled-docs
+
+> docmonstakrakin@0.0.0 ci:controlled-docs
+> npm run ci:prepare && npm run test:controlled-docs
+
+
+> docmonstakrakin@0.0.0 ci:prepare
+> tsx scripts/prepareCiRuntime.ts
+
+X [ERROR] Cannot start service: Host version "0.28.2" does not match binary version "0.25.12"
+
+1 error
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [TransformError]: The service was stopped
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:1001:38
+    at responseCallbacks.<computed> (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:886:9)
+    at Socket.afterClose (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:877:28)
+    at Socket.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v22.21.1
+
+===== complete-regression.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:regression
+
+> docmonstakrakin@0.0.0 ci:regression
+> npm run ci:prepare && npm run test:complete
+
+
+> docmonstakrakin@0.0.0 ci:prepare
+> tsx scripts/prepareCiRuntime.ts
+
+X [ERROR] Cannot start service: Host version "0.28.2" does not match binary version "0.25.12"
+
+1 error
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [TransformError]: The service was stopped
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:1001:38
+    at responseCallbacks.<computed> (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:886:9)
+    at Socket.afterClose (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\node_modules\esbuild\lib\main.js:877:28)
+    at Socket.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v22.21.1
+
+===== quality-retry.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:quality
+
+> docmonstakrakin@0.0.0 ci:quality
+> npm run wbs:check && npm run lint && npm run build
+
+
+> docmonstakrakin@0.0.0 wbs:check
+> tsx scripts/renderWbs.ts --check
+
+✓ [PASS] MASTER_WBS.md is 100% synchronized with MASTER_WBS.yaml (zero drift).
+
+> docmonstakrakin@0.0.0 lint
+> tsc --noEmit
+
+server.ts(65,29): error TS2307: Cannot find module '@google/genai' or its corresponding type declarations.
+
+===== native-focused-retry.log (failed setup/partial attempt; not final acceptance) =====
+$ node --import tsx scripts/testSyntheticSecurityFoundations.ts
+PASS default factory remains inert and denies even with ambient opt-in text
+PASS development deadline metadata is exact and unknown activation options reject
+PASS pure policy fails closed for malformed authority snapshots and effects
+PASS audit canonicalization is recursive and rejects ambiguous data
+PASS hostile verifiers reject before allocating native work
+PASS two active and four queued admit six of ten without a hidden queue
+PASS active abort retains admission until native completion and queued abort removes work
+PASS queued timeout and native failure release only their own budgets
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+[Error: EPERM: operation not permitted, rmdir '<USER_PROFILE>\AppData\Local\Packages\sandbox.{3a7a8acc-6387-4c9d-9ec7-76ca77b4cd98}\AC\Temp\dmk-s2a-synthetic-17mDZz'] {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'rmdir',
+  path: '<USER_PROFILE>\\AppData\\Local\\Packages\\sandbox.{3a7a8acc-6387-4c9d-9ec7-76ca77b4cd98}\\AC\\Temp\\dmk-s2a-synthetic-17mDZz'
+}
+
+Node.js v22.21.1
+
+===== controlled-docs-retry.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:controlled-docs
+
+> docmonstakrakin@0.0.0 ci:controlled-docs
+> npm run ci:prepare && npm run test:controlled-docs
+
+
+> docmonstakrakin@0.0.0 ci:prepare
+> tsx scripts/prepareCiRuntime.ts
+
+[prepareCiRuntime] Synthetic CI runtime initialized:
+  Path:           <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\.local\project-state.json
+  stateVersion:   1
+  auditCount:     0
+  snapshot SHA:   355979A8DCCF594684CAE4C9B40B757EB3EB8B2614F2828D7DF812A33D90C8E8
+  transactions:   0 active
+
+> docmonstakrakin@0.0.0 test:controlled-docs
+> tsx scripts/testControlledDocs.ts
+
+node:internal/modules/cjs/loader:1383
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'debug'
+Require stack:
+- <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\finalhandler\index.js
+- <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\express\lib\application.js
+- <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\express\lib\express.js
+    at node:internal/modules/cjs/loader:1383:15
+    at nextResolveSimple (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\dist\register-OY9cqBEN.cjs:10:1006)
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\dist\register-OY9cqBEN.cjs:9:4959
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\dist\register-OY9cqBEN.cjs:9:4261
+    at resolveTsPaths (<USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\dist\register-OY9cqBEN.cjs:10:759)
+    at <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\node_modules\tsx\dist\register-OY9cqBEN.cjs:10:1199
+    at j._resolveFilename (file:///<USER_PROFILE>/AppData/Local/Temp/dmk-combined-5758/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:17957)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '<USER_PROFILE>\\AppData\\Local\\Temp\\dmk-combined-5758\\node_modules\\finalhandler\\index.js',
+    '<USER_PROFILE>\\AppData\\Local\\Temp\\dmk-combined-5758\\node_modules\\express\\lib\\application.js',
+    '<USER_PROFILE>\\AppData\\Local\\Temp\\dmk-combined-5758\\node_modules\\express\\lib\\express.js'
+  ]
+}
+
+Node.js v22.21.1
+
+===== complete-regression-retry.log (failed setup/partial attempt; not final acceptance) =====
+$ npm run ci:regression
+
+> docmonstakrakin@0.0.0 ci:regression
+> npm run ci:prepare && npm run test:complete
+
+
+> docmonstakrakin@0.0.0 ci:prepare
+> tsx scripts/prepareCiRuntime.ts
+
+[prepareCiRuntime] Synthetic CI runtime initialized:
+  Path:           <USER_PROFILE>\AppData\Local\Temp\dmk-combined-5758\.local\project-state.json
+  stateVersion:   1
+  auditCount:     0
+  snapshot SHA:   355979A8DCCF594684CAE4C9B40B757EB3EB8B2614F2828D7DF812A33D90C8E8
+  transactions:   0 active
+
+> docmonstakrakin@0.0.0 test:complete
+> tsx scripts/runCompleteRegression.ts
+
+PASSED scripts/runAutomatedQa.ts: 11 passed, 0 failed, 0 skipped
+FAILED scripts/testAccountProvisioning.ts: 0 passed, 1 failed, 0 skipped
+PASSED scripts/testAuditValidation.ts: 0 passed, 0 failed, 0 skipped
+PASSED scripts/testCanonicalLifecycle.ts: 16 passed, 0 failed, 0 skipped
+FAILED scripts/testCanonicalReconciliation.ts: 0 passed, 1 failed, 0 skipped
+FAILED scripts/testControlledDocVersionSync.ts: 0 passed, 45 failed, 0 skipped
+FAILED scripts/testControlledDocs.ts: 0 passed, 1 failed, 0 skipped
+FAILED scripts/testControlledDocsApi.ts: 0 passed, 1 failed, 0 skipped
+PASSED scripts/testControlledDocsClient.ts: 27 passed, 0 failed, 0 skipped
+FAILED scripts/testControlledDocsPersistence.ts: 6 passed, 1 failed, 0 skipped
+FAILED scripts/testControlledDocsRecovery.ts: 64 passed, 5 failed, 0 skipped
+PASSED scripts/testControlledDocsRegistry.ts: 22 passed, 0 failed, 0 skipped
+FAILED scripts/testControlledDocsTransaction.ts: 10 passed, 30 failed, 0 skipped
+PASSED scripts/testControlledDocsValidator.ts: 35 passed, 0 failed, 0 skipped
+FAILED scripts/testControlledDocsViewComponent.ts: 0 passed, 7 failed, 0 skipped
+FAILED scripts/testControlledDocsWorkspaceTabs.ts: 0 passed, 1 failed, 0 skipped
+PASSED scripts/testCryptoDemon.ts: 14 passed, 0 failed, 0 skipped
+FAILED scripts/testCryptoDemonIntegration.ts: 1 passed, 1 failed, 0 skipped

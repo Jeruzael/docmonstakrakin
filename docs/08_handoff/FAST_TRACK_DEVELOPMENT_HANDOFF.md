@@ -2,6 +2,8 @@
 
 Snapshot: 2026-10-21. This file describes development candidates and existing boundaries. It conveys no new merge permission, WBS signature, identity appointment, grant or production activation authority. Recheck GitHub before relying on a recorded PR state.
 
+Final review/integration checkpoint: [FAST_TRACK_FINAL_GATE_20261021.md](../07_verification/FAST_TRACK_FINAL_GATE_20261021.md). It includes committed public evidence, the successful configured Windows npm/Bun qualification, the unresolved short-name TEMP limitation, the combined **71-suite / 1,904-check** preflight, actual merge status and the next human decisions. Neither candidate is integrated into master. A local retained-package preflight is distinct from clean installation and actual master integration.
+
 ## Start here
 
 Verified current master is **`5d10299cc0aa6f93b4f2861bf1bdd5167cbfba09`**. PR #56 integrated reviewed HEAD `e7f094a20ce8a6d992b69e7c6768d4109944d020`; the merge tree is `4307d814c88604c0bb79188417d9a80d1d1f11e8`. Independent `jianzhihuoxin` approval at 2026-10-21T02:17:28Z preceded the agent-invoked ordinary GitHub merge under explicit operator authorization at 02:41:28Z. The account recorded by GitHub is Jeruzael. This is not a claim of a manual human merge or cryptographic governance approval.
@@ -17,12 +19,12 @@ The fast-track instruction authorizes one disconnected S2-A foundations candidat
 | PR #34 | Open, unapplied; HEAD `5912185a005df3e0469dd46392d7d0dbb0378b68` | Proposed DMK-209–214 registration; no merge/apply authority |
 | PR #52 | Separate archival draft; HEAD `89b1527f75dfdd69a3e49bda752b64d4edd70a54` | Historical closure candidate; do not alter automatically |
 | PR #56 | Merged and post-merge verified | Vite 6.4.4 correction; preserve original evidence |
-| [PR #57](https://github.com/Jeruzael/docmonstakrakin/pull/57) local workflow | Draft; `codex/local-workflow-corrections`, signed HEAD `f4fbede5088eaae0147ee912499089b623ebc267`; human review requested from `jianzhihuoxin` | `LOCAL_WORKFLOW_CORRECTIONS_20261021.md` |
-| [PR #58](https://github.com/Jeruzael/docmonstakrakin/pull/58) synthetic foundations | Draft; `codex/s2a-synthetic-foundations`; signed code/evidence commit `c83a5398042c15d8bdf8cc177b60765ec2147d96`, followed only by this publication checkpoint | `S2A_SYNTHETIC_FOUNDATIONS_20261021.md` |
+| [PR #57](https://github.com/Jeruzael/docmonstakrakin/pull/57) local workflow | Ready for formal review, unmerged; `codex/local-workflow-corrections`, unchanged signed HEAD `f4fbede5088eaae0147ee912499089b623ebc267`; `jianzhihuoxin` requested, no actual review recorded at this checkpoint | `LOCAL_WORKFLOW_CORRECTIONS_20261021.md` |
+| [PR #58](https://github.com/Jeruzael/docmonstakrakin/pull/58) synthetic foundations | Ready, unmerged; `codex/s2a-synthetic-foundations`; runtime/test/dependency source remains identical to `2665712449b38813e91a18d256fa693ab318d406`; later commits add Windows qualification and public handoff evidence; final changed HEAD requires fresh checks and renewed review | `FAST_TRACK_FINAL_GATE_20261021.md` |
 
 Publication checkpoint: PR #57 is published; [workflow 39539280382](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39539280382) passed all three jobs on its exact HEAD. Quality & Build `119023051806`, Controlled Docs `119023052000`, and Complete Regression `119023052201` report **70/70 suites and 1,869/1,869 checks**, zero failures/skips; controlled documents 40/40 core, 29/29 additional and 11/11 focused (332 assertions), state unchanged. The generated test-merge tree equals the signed candidate tree. Human review is requested and no actual review was recorded at this snapshot.
 
-PR #58 is published as the single foundations draft. The code/evidence commit's signature is GitHub-valid; its eleven tested source files are unchanged by this documentation checkpoint. This file cannot predeclare its own future CI result: inspect [PR #58 checks](https://github.com/Jeruzael/docmonstakrakin/pull/58/checks) and the PR verification record for the latest exact signed HEAD, all three required jobs, Linux fresh installation/provenance and the separately attributable human review request/actual review. Neither new candidate has merge authorization. After fetching, `git rev-parse origin/master origin/codex/local-workflow-corrections origin/codex/s2a-synthetic-foundations` resolves current exact tips; compare them with GitHub rather than assuming this dated snapshot is still current.
+PR #58 remains the single foundations candidate and has left draft state. Its eleven runtime/test source files and dependency versions remain unchanged; the final gate adds one Windows job beside the three original Linux jobs. This file cannot predeclare its own future CI result: inspect [PR #58 checks](https://github.com/Jeruzael/docmonstakrakin/pull/58/checks) and its verification record for the latest exact signed HEAD, all three required jobs plus Windows qualification, and separately attributable review request/actual review. Neither new candidate has merge authorization. After fetching, `git rev-parse origin/master origin/codex/local-workflow-corrections origin/codex/s2a-synthetic-foundations` resolves current exact tips; compare them with GitHub rather than assuming this dated snapshot is still current.
 
 ## Implemented, tested and blocked
 
@@ -75,6 +77,8 @@ Synthetic KDF parameters are 32768 KiB, t3, p1, 32-byte hash and 16 random salt 
 
 Observed Windows prebuild SHA-256 values: SQLite `e21e5efd71fba66578e95b62554d9028064a80dafd7221bf8a8ef155de8d240a`; Argon2 `7d1716c8eafe32d54a12af5c0d3024cd715a7e1fdc8092eea84fd369d267075c`. Recompute actual loaded binary paths/digests on every target; a build log alone does not establish what the loader imported. Fresh Linux npm installation and exact-head CI are required separately.
 
+The final gate subsequently qualified fresh npm and frozen Bun installations on GitHub's already provisioned Windows2022 SDK image, with the same actual native binary digests and 35/35 checks for each install. The operator host remains missing its SDK. The hosted fixture needs an explicitly unaliased, job-owned TEMP/TMP: default `RUNNER~1` and native-expanded parent paths disagree under the source's strict canonical check. No path check was relaxed. Bun's existing blocked `protobufjs` postinstall remains a disclosed default-trust qualifier; its result is not all-dependency-lifecycle proof. See the committed gate record and logs, not an inaccessible Codex temporary directory, for exact evidence.
+
 The original operator checkout has a node_modules junction with stale Vite 6.4.3/source-map-js 1.2.1. It was deliberately untouched. Do not run npm ci through that junction or stop operator services without separate maintenance authorization.
 
 ## Reproducible setup and verification
@@ -85,11 +89,17 @@ Windows PowerShell, after independently provisioning the supported Node/native p
 
 ```powershell
 $ErrorActionPreference = 'Stop'
-git clone https://github.com/Jeruzael/docmonstakrakin.git dmk-check
+git -c core.autocrlf=false clone https://github.com/Jeruzael/docmonstakrakin.git dmk-check
 if ($LASTEXITCODE -ne 0) { throw 'Clone failed; stop here.' }
 Set-Location dmk-check
 git switch --track origin/codex/s2a-synthetic-foundations
 if ($LASTEXITCODE -ne 0) { throw 'Branch selection failed; stop here.' }
+$taskFixtureTemp = Join-Path (Get-Location).Path '.synthetic-fixture-temp'
+New-Item -ItemType Directory -Path $taskFixtureTemp -Force | Out-Null
+$env:TEMP = $taskFixtureTemp
+$env:TMP = $taskFixtureTemp
+node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; if(fs.realpathSync(os.tmpdir()) !== await fs.promises.realpath(os.tmpdir())) process.exit(1);"
+if ($LASTEXITCODE -ne 0) { throw 'Select an unaliased disposable temporary parent; do not weaken path checks.' }
 npm.cmd ci
 if ($LASTEXITCODE -ne 0) { throw 'Clean installation failed; do not continue using retained files.' }
 npx.cmd playwright install chromium
@@ -139,7 +149,7 @@ Before a merge, verify actual GitHub review against the exact signed HEAD and al
 | --- | --- | --- | --- |
 | 1. Review the disconnected foundations candidate | Existing single-PR development exception still valid; final signed HEAD and all required checks | Inspect clock/audit failure composition, lifecycle bounds, native provenance and fixture-only separation; actual human security review, then separate operator integration decision | No production activation; review request is not approval |
 | 2. Review and integrate local workflow correction | Final signed candidate, full CI and actual human approval | Confirm three fixes and preserved reviewer gates; separate operator merge; actual new-master CI | No automatic merge authorization from this handoff |
-| 3. Qualify clean Windows native installation | Separate operator approval for required SDK/toolchain provisioning | Fresh normal npm/Bun installs, actual binary provenance and negative/runtime suites; preserve failed installer evidence | Tested Node 22 x64, Python/C++/Windows SDK |
+| 3. Decide Windows portability and installer constraints | Review final hosted qualification and retained default-TEMP failure | Accept the documented SDK/unaliased-TEMP/default-Bun-trust scope, or separately authorize a narrow consistent-canonicalization candidate with alias/symlink/cleanup negatives | Operator host SDK provisioning remains separately authorized; no silent path-check relaxation |
 | 4. Triage residual editor TAB/ADS hypothesis | Independent bounded security-investigation authority | Inert source/platform evidence first; establish legality/parsing/reachability before any new finding or remediation scope | Vite remains 6.4.4; no live exploit or unrelated upgrade |
 | 5. Ratify operational WBS authority and custody | Competent charter humans explicitly decide roles, independence, policy epochs, custody/recovery | Attributable appointments/acceptances and approved public decision evidence; no agent-appointed signers | Existing charter, R13/R14 and offline-envelope records |
 | 6. Implement authenticated acquisition candidate | Accepted human trust/custody decisions and separate exact scope | Provenance, trusted time/revocation/checkpoint acquisition; reject stale/untrusted inputs; independent review | Task 5; no synthetic authority presented as production |
