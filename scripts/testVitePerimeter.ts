@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+import vm from 'node:vm';
 import type {AddressInfo} from 'node:net';
 import {createServer,preview,type InlineConfig} from 'vite';
 
@@ -16,10 +19,109 @@ const previousWatchFlag=process.env.DISABLE_HMR;
 process.env.DISABLE_HMR='true';
 let passed=0,failed=0;
 async function check(name:string,fn:()=>Promise<void>){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+String(e));}}
-const request=(port:number,headers:Record<string,string>)=>new Promise<number>((resolve,reject)=>{
-  const req=http.get({host:'127.0.0.1',port,path:'/',headers:{Host:`127.0.0.1:${port}`,...headers}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode!));});req.on('error',reject);
+const request=(port:number,headers:Record<string,string>,target='/')=>new Promise<number>((resolve,reject)=>{
+  const req=http.get({host:'127.0.0.1',port,path:target,headers:{Host:`127.0.0.1:${port}`,...headers}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode!));});req.on('error',reject);
 });
+
+// Characterize the delivered Vite editor boundary, not a separately installed
+// launch-editor. Only its bundled middleware/parser/launcher block is evaluated.
+// Chunk names change between patches; ambiguous/missing boundaries fail closed.
+function bundledEditorSource(){
+  const chunks=path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')),'dist/node/chunks');
+  const start='var guessExports = guess.exports;';
+  const end='var launchEditorMiddleware$1 =';
+  const matches=fs.readdirSync(chunks).filter(name=>name.endsWith('.js')).map(name=>fs.readFileSync(path.join(chunks,name),'utf8')).filter(source=>source.includes('function launchEditor('));
+  assert.equal(matches.length,1,'Expected one bundled editor implementation');
+  const source=matches[0];
+  assert.equal(source.split(start).length,2,'Editor block start must be unique');
+  assert.equal(source.split(end).length,2,'Editor block end must be unique');
+  const from=source.indexOf(start)+start.length,to=source.indexOf(end);
+  assert(to>from);
+  return source.slice(from,to);
+}
+
+type EditorFixture={platform:'win32'|'linux';file:string;existing:string[];editor?:string[];wsl?:boolean};
+function inertEditor(source:string,fixture:EditorFixture){
+  const windows=fixture.platform==='win32';
+  const cwd=windows?'C:\\workspace':fixture.wsl?'/mnt/c/project':'/workspace';
+  const nativePath=windows?path.win32:path.posix;
+  const fixturePath={...nativePath,resolve:(...parts:string[])=>nativePath.resolve(cwd,...parts),relative:(from:string,to:string)=>nativePath.relative(from||cwd,to)};
+  const checked:string[]=[],errors:string[]=[];
+  const calls:{kind:string;command:string;args:string[]}[]=[];
+  const child={on(){return child;},kill(){throw new Error('Unexpected editor reuse');}};
+  // No real filesystem, editor discovery, environment, process API or require is
+  // exposed to the evaluated block. Both subprocess sinks only record arguments.
+  const record=(kind:string,command:string,args:string[]=[])=>{calls.push({kind,command,args:Array.from(args)});return child;};
+  let ended=0;
+  const context={
+    require$$0$2:fixturePath,
+    require$$0$4:{existsSync:(file:string)=>{checked.push(file);return fixture.existing.includes(fixturePath.resolve(file));}},
+    require$$0$5:{fileURLToPath:(url:string)=>fileURLToPath(url,{windows})},
+    require$$2:{release:()=>fixture.wsl?'synthetic-Microsoft':'synthetic-native'},
+    require$$2$1:{exec:(command:string)=>record('exec',command),spawn:(command:string,args:string[])=>record('spawn',command,args)},
+    guessExports:()=>fixture.editor??['code.cmd'],
+    picocolorsExports:{red:(value:string)=>value},console:{log(){}},URL,
+    process:{platform:fixture.platform,env:{},cwd:()=>cwd},
+    fixtureRoot:cwd,
+    fixtureError:(_file:string,error:string)=>errors.push(error),
+    fixtureRequest:{url:'/__open-in-editor?file='+encodeURIComponent(fixture.file)},
+    fixtureResponse:{statusCode:200,end(){ended++;}},
+  };
+  vm.runInNewContext(source+'\nlaunchEditorMiddleware("fixture",fixtureRoot,fixtureError)(fixtureRequest,fixtureResponse);',context,{timeout:1000,contextCodeGeneration:{strings:false,wasm:false}});
+  assert.equal(ended,1,'Middleware must complete its response');
+  return {checked,errors,calls};
+}
 try{
+  let editorSource='';
+  await check('Installed Vite editor fixture acquisition is unambiguous',async()=>{editorSource=bundledEditorSource();});
+  await check('GHSA-587h normalizes Windows paths after positional suffix removal',async()=>{
+    for(const file of ['C:\\workspace\\ghost%DMK_SYNTHETIC%\\..:7:3','file:///C:/workspace/ghost%25DMK_SYNTHETIC%25/..:7:3']){
+      const result=inertEditor(editorSource,{platform:'win32',file,existing:['C:\\workspace']});
+      assert.deepEqual(result.checked,['C:\\workspace']);
+      assert.deepEqual(result.calls,[{kind:'exec',command:'code.cmd -r -g C:\\workspace:7:3',args:[]}]);
+      assert.deepEqual(result.errors,[]);
+    }
+  });
+  for(const [label,file] of [
+    ['percent','C:\\workspace\\percent%DMK_SYNTHETIC%.txt'],
+    ['carriage return','C:\\workspace\\file:stream\rmarker'],
+    ['line feed','C:\\workspace\\file:stream\nmarker'],
+  ])await check('GHSA-698v rejects Windows '+label+' arguments before subprocess dispatch',async()=>{
+    const result=inertEditor(editorSource,{platform:'win32',file,existing:[file]});
+    assert.equal(result.checked.length,1);
+    assert.deepEqual(result.calls,[]);
+    assert.equal(result.errors.length,1);
+  });
+  await check('Windows UNC and device paths reject before filesystem or subprocess access',async()=>{
+    for(const file of ['\\\\server\\share\\fixture.txt','\\\\?\\C:\\workspace\\fixture.txt']){
+      const result=inertEditor(editorSource,{platform:'win32',file,existing:[file]});
+      assert.deepEqual(result.checked,[]);assert.deepEqual(result.calls,[]);assert.equal(result.errors.length,1);
+    }
+  });
+  await check('GHSA-r825 WSL filenames remain positional for affected editor families',async()=>{
+    for(const [editor,suffix,want] of [
+      ['vim','-fixture.txt',['./-fixture.txt']],
+      ['vim','+fixture.txt:7:3',['+call cursor(7, 3)','./+fixture.txt']],
+      ['emacs','+fixture.txt:7:3',['+7:3','./+fixture.txt']],
+      ['notepad++.exe','-fixture.txt:7:3',['-n7','-c3','./-fixture.txt']],
+    ] as const){
+      const result=inertEditor(editorSource,{platform:'linux',wsl:true,file:'/mnt/c/project/'+suffix,existing:['/mnt/c/project/-fixture.txt','/mnt/c/project/+fixture.txt'],editor:[editor]});
+      assert.deepEqual(result.calls,[{kind:'spawn',command:editor,args:Array.from(want)}]);assert.deepEqual(result.errors,[]);
+    }
+  });
+  await check('Ordinary Windows routing names, spaces and editor positions remain compatible',async()=>{
+    const file='C:\\workspace\\route space\\(group)\\[slug]\\$page+@.tsx';
+    const result=inertEditor(editorSource,{platform:'win32',file:file+':12:4',existing:[file],editor:['C:\\Program Files\\Editor\\code.exe','--wait']});
+    assert.deepEqual(result.calls,[{kind:'exec',command:'"C:\\Program Files\\Editor\\code.exe" --wait -r -g "C:\\workspace\\route space\\(group)\\[slug]\\$page+@.tsx:12:4"',args:[]}]);assert.deepEqual(result.errors,[]);
+  });
+  await check('Ordinary POSIX file URLs, editor arguments and positions remain compatible',async()=>{
+    const result=inertEditor(editorSource,{platform:'linux',file:'file:///workspace/route%20space/(group)/[slug]/$page+@.tsx:12:4',existing:['/workspace/route space/(group)/[slug]/$page+@.tsx'],editor:['code','--wait']});
+    assert.deepEqual(result.calls,[{kind:'spawn',command:'code',args:['--wait','-r','-g','/workspace/route space/(group)/[slug]/$page+@.tsx:12:4']}]);assert.deepEqual(result.errors,[]);
+  });
+  await check('Nonexistent editor targets never dispatch a subprocess',async()=>{
+    const result=inertEditor(editorSource,{platform:'win32',file:'C:\\workspace\\absent.txt',existing:[]});
+    assert.deepEqual(result.calls,[]);assert.deepEqual(result.errors,[]);
+  });
   for(const kind of ['dev','preview'] as const){
     await check(kind+' defaults to loopback and enforces actual Host/Origin boundary',async()=>{
       const options:InlineConfig={root,logLevel:'silent',...(kind==='dev'?{server:{port:0}}:{build:{outDir:out},preview:{port:0}})};
@@ -35,6 +137,14 @@ try{
         assert.equal(await request(address.port,{Origin:'null'}),403);
         assert.equal(await request(address.port,{'Sec-Fetch-Site':'cross-site'}),403);
         assert.equal(await request(address.port,{'X-Forwarded-Host':'localhost'}),403);
+        if(kind==='dev'){
+          // Missing file means no editor can launch. No-Origin local ingress is
+          // allowed (500 for missing query), not authenticated or repaired here.
+          assert.equal(await request(address.port,{},'/__open-in-editor'),500);
+          const inertTarget='/__open-in-editor?file='+encodeURIComponent(path.join(out,'nonexistent-editor-fixture.txt'));
+          assert.equal(await request(address.port,{Origin:'https://attacker.example'},inertTarget),403);
+          assert.equal(await request(address.port,{Host:`attacker.example:${address.port}`},inertTarget),403);
+        }
       }finally{await server.close();}
     });
     for(const host of ['0.0.0.0','::','192.0.2.1',true])await check(kind+' rejects CLI-equivalent host override '+host,async()=>{
