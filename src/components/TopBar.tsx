@@ -199,12 +199,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* User Pill */}
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+        {/* Local mode is not an authenticated person. */}
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200" title="Reviewer identity is shown separately">
           <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-semibold text-xs border border-emerald-200">
-            JD
+            LW
           </div>
-          <span className="text-xs font-medium text-slate-700 hidden sm:inline">Gio</span>
+          <span className="text-xs font-medium text-slate-700 hidden sm:inline">Local workspace</span>
         </div>
       </div>
     </header>

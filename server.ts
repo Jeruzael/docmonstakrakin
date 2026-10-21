@@ -102,6 +102,7 @@ import {
   executeReleaseSignoff,
 } from './server/release/releaseGateEvaluator.ts';
 import { ProjectStore } from './server/projectStore.ts';
+import { proposeRequirementWork } from './server/workTracking/requirementWork.ts';
 import { projectQuestionCatalog } from './server/projectQueries.ts';
 import {
   generateReconciliationPlan,
@@ -524,7 +525,13 @@ async function startServer() {
     const active = filterQuestionsForProject(questions, project);
     const activeIds = new Set(active.filter(q => q.state === 'ANSWERED').map(q => q.id));
     const retained = (store.requirements[project.id] || []).filter(r => r.source.type !== 'questionnaire_answer' || (r.source.id !== questionId && activeIds.has(r.source.id)));
-    derived.requirements.forEach(r => r.standardLinks = applicableStandardLinks(r.standardLinks, project));
+    derived.requirements.forEach(r => {
+      r.standardLinks = applicableStandardLinks(r.standardLinks, project);
+      // Re-answering changes proposed requirement content, not existing task commitments.
+      // Preserve only real reciprocal links to tasks already recorded by the server.
+      const previous=(store.requirements[project.id] || []).find(old=>old.id===r.id);
+      r.workItems=(previous?.workItems || []).filter(id=>(store.workItems[project.id] || []).some(work=>work.id===id && work.requirements.includes(r.id)));
+    });
     store.requirements[project.id] = [...retained, ...derived.requirements];
     store.features[project.id] = [...(store.features[project.id] || []).filter(f => !derived.features.some(n => n.id === f.id)), ...derived.features];
     store.questions[project.id] = questions;
@@ -785,6 +792,29 @@ async function startServer() {
     const { itemId, status, checklistIndex, checklistDone } = req.body || {};
     const project = store.projects.find(p => p.id === req.params.id);
     if (!project) return res.status(404).json({error:'Project not found'});
+    if (req.body?.operation !== undefined) {
+      if (req.body.operation !== 'DERIVE_REQUIREMENT' || Object.keys(req.body).some(key=>!['operation','requirementId','expectedStateVersion'].includes(key)) ||
+        typeof req.body.requirementId !== 'string' || !Number.isSafeInteger(req.body.expectedStateVersion)) return res.status(422).json({error:'Invalid requirement work derivation'});
+      // Repository-owned work remains governed by canonical WBS registration.
+      if (project.id === 'PRJ-DOCMONSTAKRAKIN') return res.status(409).json({error:'CANONICAL_WBS_STATUS_OWNED'});
+      if (req.body.expectedStateVersion !== project.stateVersion) return res.status(409).json({error:'PROJECT_STATE_STALE'});
+      const requirement=(store.requirements[project.id] || []).find(r=>r.id===req.body.requirementId);
+      if (!requirement) return res.status(404).json({error:'Requirement not found'});
+      const candidate=proposeRequirementWork(project,requirement,new Date().toISOString());
+      const items=store.workItems[project.id] ||= [];
+      const existing=items.find(item=>item.id===candidate.id);
+      if (existing) {
+        if (existing.requirements.length !== 1 || existing.requirements[0] !== requirement.id || !requirement.workItems.includes(existing.id)) return res.status(409).json({error:'WORK_DERIVATION_LINK_CONFLICT'});
+        return res.json({created:false,workItem:existing});
+      }
+      items.push(candidate);
+      requirement.workItems=[...new Set([...requirement.workItems,candidate.id])];
+      requirement.updatedAt=candidate.updatedAt;
+      project.stateVersion++;
+      project.updatedAt=candidate.updatedAt;
+      store.addAuditEvent(project.id,'Developer','REQUIREMENT_WORK_PROPOSED',candidate.id,'Explicit requirement work derivation',{requirementId:requirement.id});
+      return res.status(201).json({created:true,workItem:candidate});
+    }
     if (typeof itemId !== 'string' || (status === undefined && checklistIndex === undefined) ||
       (checklistDone !== undefined && checklistIndex === undefined)) return res.status(422).json({error:'Invalid work item update'});
     let verifiedBy;

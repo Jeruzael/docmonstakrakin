@@ -15,7 +15,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
-import { WorkItem, WorkItemStatus, RiskLevel } from '../types';
+import { WorkItem, WorkItemStatus, RiskLevel, Requirement } from '../types';
 
 interface CanonicalWbsItemSummary {
   id: string;
@@ -66,6 +66,8 @@ interface WorkViewProps {
   workItems?: WorkItem[];
   onUpdateWorkItem: (itemId: string, status?: WorkItemStatus, checklistIdx?: number, done?: boolean) => Promise<void>;
   selectedItemId?: string;
+  requirements?: Requirement[];
+  onDeriveRequirementWork?: (requirementId:string)=>Promise<void>;
 }
 
 export const WorkView: React.FC<WorkViewProps> = ({
@@ -73,6 +75,8 @@ export const WorkView: React.FC<WorkViewProps> = ({
   workItems = [],
   onUpdateWorkItem,
   selectedItemId,
+  requirements = [],
+  onDeriveRequirementWork,
 }) => {
   const [viewMode, setViewMode] = useState<'BOARD' | 'WBS' | 'BACKLOG' | 'SPRINT' | 'CHECKLIST'>('BOARD');
   const [activeItemId, setActiveItemId] = useState<string | null>(selectedItemId || null);
@@ -81,6 +85,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const pending = useRef(false);
+  const [requirementToPlan,setRequirementToPlan]=useState('');
 
   // Canonical WBS and Reconciliation state (DMK-205)
   const [wbsItems, setWbsItems] = useState<CanonicalWbsItemSummary[]>([]);
@@ -349,6 +354,24 @@ export const WorkView: React.FC<WorkViewProps> = ({
         </div>
       </div>
 
+      {onDeriveRequirementWork && projectId !== 'PRJ-DOCMONSTAKRAKIN' && (
+        <form className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-3 items-end" onSubmit={async(event)=>{
+          event.preventDefault();if(pending.current || !requirementToPlan)return;
+          pending.current=true;setUpdating(true);setUpdateError(null);
+          try {await onDeriveRequirementWork(requirementToPlan);}catch(error){setUpdateError(error instanceof Error?error.message:'Task proposal failed');}
+          finally {pending.current=false;setUpdating(false);}
+        }}>
+          <label className="text-xs font-semibold flex-1">Requirement to plan
+            <select aria-label="Requirement to plan" className="block w-full mt-1 rounded border border-slate-300 p-2" value={requirementToPlan} onChange={event=>setRequirementToPlan(event.target.value)} disabled={updating}>
+              <option value="">Select a governing requirement</option>
+              {requirements.map(requirement=><option key={requirement.id} value={requirement.id}>{requirement.id}: {requirement.title}</option>)}
+            </select>
+          </label>
+          <button type="submit" disabled={!requirementToPlan || updating} className="px-3 py-2 rounded bg-blue-600 text-white text-xs disabled:opacity-50">Propose linked task</button>
+          <p className="text-xs text-slate-500 w-full">Creates proposed planning work only. Requirement approval, verification and release remain separate human gates.{requirements.length===0?' Answer discovery questions or add a requirement first.':''}</p>
+        </form>
+      )}
+
       {/* 1. Kanban Board View */}
       {viewMode === 'BOARD' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
@@ -375,8 +398,8 @@ export const WorkView: React.FC<WorkViewProps> = ({
                         onClick={() => setActiveItem(item)}
                         className="bg-white rounded-lg border border-slate-200 p-3 shadow-2xs hover:shadow-xs hover:border-slate-300 transition-all cursor-pointer space-y-2.5 group"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <span title={item.id} className="truncate font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
                             {item.id}
                           </span>
                           <span
@@ -874,6 +897,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
             <div>
               <label className="text-slate-500 font-semibold block mb-1">Update Execution Status:</label>
               <select
+                aria-label="Work item status"
                 disabled={updating || activeItemCanonicalStatusOwned}
                 value={activeItem.status}
                 onChange={(e) => handleStatusChange(activeItem.id, e.target.value as WorkItemStatus)}

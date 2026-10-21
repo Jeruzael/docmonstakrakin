@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { randomBytes, scryptSync } from 'node:crypto';
 import express from 'express';
 import { chromium, type Page, type Route } from 'playwright';
-import { createServer } from 'vite';
+import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import { registerSignoffRoutes } from '../server/proposals/signoff.ts';
 import { digest } from '../server/proposals/review.ts';
 import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
@@ -20,8 +20,13 @@ console.log('================================================================\n'
 const root = process.cwd();
 let passedCount = 0;
 let failedCount = 0;
+const expectedScenarios='ABCDEFGHIJKLMNO'.split('');
+const observedScenarios=new Set<string>();
 
 function pass(name: string) {
+  const scenario=name[0];
+  assert(expectedScenarios.includes(scenario) && !observedScenarios.has(scenario),'Each declared scenario must complete exactly once');
+  observedScenarios.add(scenario);
   passedCount++;
   console.log(`PASS Scenario ${name}`);
 }
@@ -303,12 +308,7 @@ let browser: any;
 let viteServer: any;
 
 try {
-  viteServer = await createServer({
-    root,
-    server: { host: '127.0.0.1', port: 0 },
-    logLevel: 'error',
-  });
-  await viteServer.listen();
+  viteServer = await startIsolatedVite(root);
   const viteBase = viteServer.resolvedUrls!.local[0];
 
   const executable =
@@ -553,10 +553,9 @@ try {
   assert.equal(approvedSignoffCount, 0, 'APPROVED requirement must not show REQUEST SIGN-OFF in drawer');
 
 } catch (err) {
-  console.error('Browser testing error:', err);
+  fail('Browser harness did not complete',err);
 } finally {
-  if (browser) await browser.close();
-  if (viteServer) await viteServer.close();
+  try{if (browser) await browser.close();}finally{if (viteServer) await viteServer.close();}
 }
 
 // ---------------------------------------------------------------------------
@@ -629,10 +628,12 @@ try {
 // ---------------------------------------------------------------------------
 // Final Summary
 // ---------------------------------------------------------------------------
+const missingScenarios=expectedScenarios.filter(scenario=>!observedScenarios.has(scenario));
+if(missingScenarios.length)fail('Completeness',new Error(`Missing declared scenarios: ${missingScenarios.join(', ')}`));
 console.log('\n================================================================');
 console.log(`TOTAL SCENARIOS: 15`);
-console.log(`  Behavioral Verification (A-M, F, H): 13 / 13 PASS`);
-console.log(`  Scope-Isolation Checks (N, O):       2 / 2 PASS`);
+console.log(`  Behavioral Verification (A-M):       ${expectedScenarios.slice(0,13).filter(scenario=>observedScenarios.has(scenario)).length} / 13 passed`);
+console.log(`  Scope-Isolation Checks (N, O):       ${['N','O'].filter(scenario=>observedScenarios.has(scenario)).length} / 2 passed`);
 console.log(`  Total Passed:                        ${passedCount} / 15`);
 console.log(`  Total Failed:                        ${failedCount}`);
 console.log('================================================================');
