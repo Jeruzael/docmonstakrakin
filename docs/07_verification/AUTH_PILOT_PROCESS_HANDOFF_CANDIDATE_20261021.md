@@ -107,3 +107,24 @@ The fresh five-transfer observation used 693-byte proofs, p50 263.54 ms / p95
 267.47 ms; 51 real child processes were exercised. These synthetic observations
 do not establish operational budgets, child-tree peak memory or production capacity.
 This result-only addition follows the frozen checked tree. Original evidence is intact.
+
+## Final actual-master target reconciliation
+
+The preceding qualification was signed in normal merge
+`4f534959544a22325c06243b2f864a6b1e2230b4`, parents original recovery HEAD
+`50843a0b6edd468c254e1bd7a068161eb1f4f9d9` and verified `acdb3e2` master.
+PR #61 subsequently merged normally as actual master
+`59fea80b9374a7e90b0d4f855df6ede09aa350c8`, with identical candidate/merged
+tree and all four actual [post-merge jobs](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39605514442)
+passing (82 suites / 2,085 checks). That actual commit was normally merged here
+without conflicts. The combined workflow retains both governance56 and recovery24
+on Windows npm/Bun, all corrected lifecycle guards, and Linux recovery checks.
+
+The effective diff against `59fea80b9374a7e90b0d4f855df6ede09aa350c8` remains
+29 paths. All seven original recovery runtime/test files and twenty historical
+evidence files are byte-identical to `50843a0`; only CI composition and this
+additive record differ. No original source or evidence was discarded. PR #64
+must now target `master`, not its historical bookkeeping base. The final signed
+candidate and final combined CI are recorded in the PR; earlier 82/2,053 local
+results are not relabeled as results for this later tree. Normal guarded merge
+and actual post-merge checks remain necessary under the documented operator waiver.
