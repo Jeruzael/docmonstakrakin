@@ -1,0 +1,14 @@
+{
+  "kind": "observed_failed_CI_gate_not_a_passing_result",
+  "candidateHead": "0d8cca631e73f31f070ecbd3fd68e68b81af13a7",
+  "workflow": 39571259933,
+  "job": 119125727187,
+  "jobUrl": "https://github.com/Jeruzael/docmonstakrakin/actions/runs/39571259933/job/119125727187",
+  "node": "22.23.3",
+  "observedStatus": 431,
+  "oldTestExpectedStatus": 403,
+  "rootCause": "Node >=22.23.2 rejects excessive header count before Express middleware; initial test incorrectly required middleware status",
+  "correction": "accept ONLY native431 or middleware403 and assert entire authority state hash unchanged; native/application limits unchanged",
+  "source": "https://nodejs.org/en/blog/release/v22.23.2",
+  "claim": "Exact corrected-HEAD CI must pass independently; this initial failure is preserved"
+}
