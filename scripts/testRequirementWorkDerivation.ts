@@ -37,4 +37,19 @@ try {
   console.log('PASS derived work and links survive actual server restart');
   const guarded=fixture.bytes();assert.equal((await call('/api/projects/PRJ-DOCMONSTAKRAKIN/work-items',{operation:'DERIVE_REQUIREMENT',requirementId:requirement.id,expectedStateVersion:1})).status,409);assert.deepEqual(fixture.bytes(),guarded);
   console.log('PASS canonical self-project registration cannot be reached through ordinary requirement derivation');
+  const unicodeIds=['REQ-\ufffd','REQ-\ud800'],unicodeTasks:string[]=[];
+  for(const requirementId of unicodeIds){
+    const created=await call(base+'/requirements',{id:requirementId,title:'Synthetic Unicode identity',statement:'Distinct accepted requirement identity',acceptanceCriteria:['Keep the exact governing requirement identity']});
+    assert.equal(created.status,201);assert.equal(created.body.id,requirementId);
+    const version=(await call(base)).body.stateVersion;
+    const linked=await call(base+'/work-items',{operation:'DERIVE_REQUIREMENT',requirementId,expectedStateVersion:version});
+    assert.equal(linked.status,201,'Distinct accepted Unicode identities must each derive their own task');assert.equal(linked.body.workItem.status,'PROPOSED');
+    assert.deepEqual(linked.body.workItem.requirements,[requirementId]);assert.deepEqual(linked.body.workItem.tests,[]);assert.deepEqual(linked.body.workItem.evidence,[]);unicodeTasks.push(linked.body.workItem.id);
+  }
+  assert.equal(new Set(unicodeTasks).size,2);
+  const unicodeState=fixture.reopen();for(const [index,requirementId] of unicodeIds.entries())assert.deepEqual(unicodeState.state.requirements[id].find((item:any)=>item.id===requirementId).workItems,[unicodeTasks[index]]);
+  console.log('PASS distinct accepted replacement-character and unpaired-surrogate requirement IDs persist separate PROPOSED tasks and reciprocal links');
+  const unicodeBytes=fixture.bytes();assert.equal((await call(base+'/work-items',{itemId:unicodeTasks[1],status:'VERIFIED'})).status,401);assert.deepEqual(fixture.bytes(),unicodeBytes);
+  assert.deepEqual((await call(base+'/governance-policy')).body.requiredRoles,['Security Officer','Lead Architect']);
+  console.log('PASS Unicode-safe requirement derivation retains actual human verification denial and unchanged governance quorum');
 } finally {await fixture.close();}

@@ -3,7 +3,9 @@ import type {Project, Requirement, WorkItem} from '../../src/types.ts';
 
 /** A proposed task is planning context, never approval or verification evidence. */
 export function proposeRequirementWork(project:Project,requirement:Requirement,timestamp:string):WorkItem {
-  const digest=createHash('sha256').update(requirement.id).digest('hex');
+  // JSON string encoding preserves every accepted JS string identity, including
+  // escaped unpaired surrogates that raw UTF-8 would replace with U+FFFD.
+  const digest=createHash('sha256').update(JSON.stringify(requirement.id)).digest('hex');
   return {
     id:`WORK-REQ-${digest}`,type:'TASK',title:`Implement: ${requirement.title}`,
     description:requirement.statement,status:'PROPOSED',
