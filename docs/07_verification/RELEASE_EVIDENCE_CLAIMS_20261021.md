@@ -291,3 +291,22 @@ The operator explicitly waived ordinary development human code review and
 authorized normal merges for the completion campaign. Agent inspection and
 passing CI are not represented as human APPROVED review. The existing
 operational exclusions and actual post-merge verification remain in force.
+
+## Reports integration reconciliation — 2026-10-21
+
+Initial signed candidate `a072bcbf3839981f56c3e7f0787713cf43303277`
+passed all four jobs in
+[39609469433](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39609469433):
+84 suites / 2,130 checks, including 21 release-evidence cases. That result is
+preserved as qualification on the earlier `ef160d4` master.
+
+Verified master `9a0054cd7875cd836ffde990607bb0d788806707` then integrated
+PR #68. Its actual [post-merge CI](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39610190107)
+passed all four jobs, 85 suites / 2,134 checks. The branch incorporates that
+master through a normal signed merge, preserving the original candidate commit
+and all Reports evidence. There were no conflicts. The evaluator and 21-case
+test remain byte-identical to the earlier signed candidate; the effective diff
+against actual master remains the original three paths. Final exact-HEAD hosted
+CI must now exercise Reports browser/projection checks together with these
+release-evidence changes. No earlier isolated run is described as that combined
+result. Actual post-merge verification remains required after any integration.

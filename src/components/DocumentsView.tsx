@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText,
   Download,
@@ -28,8 +28,13 @@ import {
   ADR,
   ArchitectureComponent,
   ApprovalItem,
-  ReleaseAuditReport,
 } from '../types';
+import type {ReleaseAuditReport} from '../../server/release/releaseGateEvaluator';
+import {readReleaseReport, releaseReportMarkdown, requirementReferenceSummary, type ReportAvailability} from '../data/releaseReportProjection';
+
+const unavailableGateNames = ['Zero Unresolved Discovery Blockers', 'Core Requirements Verification',
+  'SecretStore Integration', 'Security Regression', 'Golden Reference Execution',
+  'Cryptographic Audit Ledger Integrity', 'Security Lead DoD Sign-off'];
 
 interface DocumentsViewProps {
   project: Project;
@@ -61,36 +66,57 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   >('PRD');
   const [viewMode, setViewMode] = useState<'RENDERED' | 'RAW'>('RENDERED');
   const [copied, setCopied] = useState(false);
-  const [releaseReport, setReleaseReport] = useState<ReleaseAuditReport | null>(null);
-  const [loadingReport, setLoadingReport] = useState(false);
+  const [reportRequest, setReportRequest] = useState(0);
+  const reportScope = JSON.stringify([project.id, project.stateVersion, canonicalReady, reportRequest]);
+  const currentReportScope = useRef(reportScope);
+  currentReportScope.current = reportScope;
+  const reportGeneration = useRef(0);
+  const [reportState, setReportState] = useState<{scope: string; status: ReportAvailability; report?: ReleaseAuditReport; message?: string}>({scope: '', status: 'UNAVAILABLE'});
+  const currentReportState = reportState.scope === reportScope && canonicalReady ? reportState : {status: 'UNAVAILABLE' as const, report: undefined, message: 'A current project snapshot is required.'};
+  const releaseReport = currentReportState.status === 'AVAILABLE' ? currentReportState.report! : null;
+  const loadingReport = currentReportState.status === 'LOADING';
   const [isSignoffModalOpen, setIsSignoffModalOpen] = useState(false);
   const [signoffActor, setSignoffActor] = useState('Security Lead (Gio)');
-  const [signoffNotes, setSignoffNotes] = useState(
-    'v0.1 Definition-of-Done verified: 7/7 release gates satisfied, 25/25 core capabilities active, audit ledger intact.'
-  );
+  const [signoffNotes, setSignoffNotes] = useState('');
   const [signoffError, setSignoffError] = useState<string | null>(null);
   const [signingOff, setSigningOff] = useState(false);
 
-  const fetchReleaseGates = useCallback(async () => {
-    try {
-      setLoadingReport(true);
-      const res = await fetch(`/api/projects/${project.id}/release/gates`);
-      if (res.ok) {
-        const data = await res.json();
-        setReleaseReport(data);
-      }
-    } catch (err) {
-      console.warn('Could not fetch release gates:', err);
-    } finally {
-      setLoadingReport(false);
+  useEffect(() => {
+    reportGeneration.current++;
+    if (selectedDoc !== 'RELEASE' || !canonicalReady) {
+      setReportState({scope: reportScope, status: 'UNAVAILABLE'});
+      return () => {reportGeneration.current++;};
     }
-  }, [project.id]);
+    const controller = new AbortController();
+    let active = true;
+    const publish = (next: Omit<typeof reportState, 'scope'>) => {
+      if (active && currentReportScope.current === reportScope) setReportState({...next, scope: reportScope});
+    };
+    publish({status: 'LOADING'});
+    void (async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/release/gates`, {signal: controller.signal});
+        if (!response.ok) {
+          publish({status: 'FAILED', message: `Release evaluation could not be loaded (HTTP ${response.status}).`});
+          return;
+        }
+        let data: unknown;
+        try {data = await response.json();}
+        catch {publish({status: 'MALFORMED', message: 'Release evaluation returned invalid JSON.'}); return;}
+        const report = readReleaseReport(data, project.id);
+        publish(report ? {status: 'AVAILABLE', report} : {status: 'MALFORMED', message: 'Release evaluation is incomplete, inconsistent or belongs to another project.'});
+      } catch {
+        if (!controller.signal.aborted) publish({status: 'FAILED', message: 'Release evaluation could not be reached.'});
+      }
+    })();
+    return () => {active = false; controller.abort(); reportGeneration.current++;};
+  }, [selectedDoc, project.id, reportScope, canonicalReady]);
 
   useEffect(() => {
-    if (selectedDoc === 'RELEASE') {
-      fetchReleaseGates();
-    }
-  }, [selectedDoc, fetchReleaseGates]);
+    setIsSignoffModalOpen(false);
+    setSignoffError(null);
+    setSigningOff(false);
+  }, [reportScope, selectedDoc]);
 
   useEffect(() => {
     if (!canonicalReady && isSignoffModalOpen) {
@@ -99,7 +125,10 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   }, [canonicalReady, isSignoffModalOpen]);
 
   const handleExecuteSignoff = async () => {
-    if (!canonicalReady) return;
+    if (!canonicalReady || !releaseReport?.releaseReady || releaseReport.signedOff) return;
+    const scope = reportScope;
+    const generation = reportGeneration.current;
+    const isCurrent = () => currentReportScope.current === scope && reportGeneration.current === generation;
     try {
       setSigningOff(true);
       setSignoffError(null);
@@ -113,20 +142,22 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
       });
 
       const data = await res.json();
+      if (!isCurrent()) return;
       if (!res.ok) {
         setSignoffError(data.error || 'Failed to record release sign-off');
         return;
       }
 
-      setReleaseReport(data.report);
+      const report = readReleaseReport(data.report, project.id);
+      setReportState(report ? {scope, status: 'AVAILABLE', report} : {scope, status: 'MALFORMED', message: 'Sign-off returned an invalid evaluation. Refresh the project before continuing.'});
       setIsSignoffModalOpen(false);
       if (onSignoffSuccess) {
         onSignoffSuccess();
       }
     } catch (err: any) {
-      setSignoffError(err.message || 'Network error during release sign-off');
+      if (isCurrent()) setSignoffError(err.message || 'Network error during release sign-off');
     } finally {
-      setSigningOff(false);
+      if (isCurrent()) setSigningOff(false);
     }
   };
 
@@ -135,60 +166,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
     const timestamp = new Date().toISOString();
 
     if (selectedDoc === 'RELEASE') {
-      const gates = releaseReport?.gates || [];
-      const caps = releaseReport?.capabilities || [];
-      const signed = releaseReport?.signedOff ?? (project.progress?.releaseReadiness === 100);
-
-      return `# Definition-of-Done (DoD) & Release Gate Evaluation Report
-**Project:** ${project.name} (${project.id})
-**Target Milestone:** v0.1 Local-First MVP
-**Projection Generated:** ${timestamp}
-**Governance:** SEC-CTRL-020 (Gate 7 Separation of Roles) / DMK-165
-**Audit Ledger Chain Integrity:** ${releaseReport?.auditChainIntegrity?.valid ? 'VERIFIED (0 breaks)' : 'CHECKING'}
-**Overall Release Status:** ${signed ? 'APPROVED & SIGNED OFF' : releaseReport?.releaseReady ? 'READY FOR SIGNOFF' : 'INCOMPLETE'}
-${releaseReport?.signoffDetails ? `**Signed Off By:** ${releaseReport.signoffDetails.actor} at ${releaseReport.signoffDetails.timestamp}\n**Audit Event:** \`${releaseReport.signoffDetails.auditEventId}\`` : ''}
-
----
-
-## 1. Release Gates Assessment (7 Formal Gates)
-
-${gates
-  .map(
-    (g) => `### Gate ${g.gateId}: ${g.name} [${g.code}]
-- **Status:** **${g.status}**
-- **Blocking:** ${g.blocking ? 'YES' : 'NO'}
-- **Details:** ${g.details}
-- **Evidence Links:** ${g.evidenceLinks.map((e) => `\`${e}\``).join(', ') || 'None'}
-`
-  )
-  .join('\n')}
-
----
-
-## 2. Core MVP Capabilities Matrix (25 Capabilities)
-Readiness: **${releaseReport?.capabilitiesSummary.percentage ?? 100}%** (${releaseReport?.capabilitiesSummary.verified ?? caps.length}/${caps.length || 25} Verified)
-
-| Capability ID | Title | WBS Ref | Status | Evidence Link |
-| :--- | :--- | :--- | :--- | :--- |
-${caps
-  .map(
-    (c) =>
-      `| \`${c.capabilityId}\` | ${c.title} | \`${c.referenceDmk}\` | **${c.status}** | \`${c.evidence}\` |`
-  )
-  .join('\n')}
-
----
-
-## 3. Cryptographic Verification & Audit Immutability
-- **Events Checked:** ${releaseReport?.auditChainIntegrity.eventsChecked ?? 'All'}
-- **Chain Breaks Detected:** ${releaseReport?.auditChainIntegrity.breaksCount ?? 0}
-- **Hash Algorithm:** SHA-256 (Canonical Field Normalization)
-- **Zero Plaintext Secrets:** Enforced via SecretStore OS keychain abstraction & redacting filter.
-- **Sandboxed Execution:** Enforced via strict shell-metacharacter filtering and path boundary clamps.
-
----
-*Notice: This document is a formal release artifact projected deterministically from the canonical state store.*
-`;
+      return releaseReportMarkdown(project, releaseReport, currentReportState.status, timestamp);
     }
 
     if (selectedDoc === 'PRD') {
@@ -196,7 +174,7 @@ ${caps
 **Project:** ${project.name}
 **Project ID:** ${project.id}
 **Projection Generated:** ${timestamp}
-**Canonical Hash:** #7f8a91c2b
+**Project State Version:** ${project.stateVersion}
 **Governance:** A-SSDLC Control Plane (NIST SSDF SP 800-218 v1.1)
 
 ---
@@ -207,12 +185,13 @@ ${project.description}
 - **Methodology:** ${project.deliveryMethod}
 - **Assurance Profiles:** ${project.profiles.join(', ')}
 - **Current Lifecycle Phase:** ${project.lifecyclePhase}
-- **Health Score:** ${project.healthScore} / 100
+- **Stored Planning Health Score:** ${project.healthScore} / 100 (does not establish verification or release approval)
 
 ---
 
 ## 2. Canonical Requirements Baseline
-Total Approved Requirements: ${requirements.length}
+Total Requirements: ${requirements.length}
+Approved Requirements: ${requirementReferenceSummary(requirements).approved}
 
 ${requirements
   .map(
@@ -258,6 +237,7 @@ ${rk.description}
     }
 
     if (selectedDoc === 'RTM') {
+      const summary = requirementReferenceSummary(requirements);
       return `# Requirements Traceability Matrix (RTM)
 **Project:** ${project.name}
 **Projection Generated:** ${timestamp}
@@ -275,9 +255,12 @@ ${requirements
   .join('\n')}
 
 ---
-### Verification Summary
-- **Verified Requirements:** ${requirements.filter((r) => r.status === 'APPROVED' || r.evidence.length > 0).length} / ${requirements.length}
-- **Open Gaps:** ${requirements.filter((r) => r.evidence.length === 0).length}
+### Lifecycle and Evidence Reference Summary
+- **Approved Requirements:** ${summary.approved} / ${summary.total}
+- **Requirements with Evidence References:** ${summary.withEvidenceReferences} / ${summary.total}
+- **Requirements without Evidence References:** ${summary.withoutEvidenceReferences} / ${summary.total}
+
+Approval is a lifecycle status. Evidence references do not establish authenticated evidence, a passing result or independent verification.
 `;
     }
 
@@ -454,24 +437,26 @@ ${components
                 </h2>
                 {releaseReport?.signedOff ? (
                   <span className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 rounded-full border border-emerald-200">
-                    RELEASE SIGNED OFF
+                    SIGNED OFF (SERVER-REPORTED)
                   </span>
                 ) : releaseReport?.releaseReady ? (
                   <span className="px-2 py-0.5 text-[11px] font-semibold bg-amber-100 text-amber-800 rounded-full border border-amber-200">
-                    READY FOR SIGNOFF
+                    READY FOR SIGNOFF (SERVER-REPORTED)
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-700 rounded-full border border-slate-200">
-                    EVALUATION IN PROGRESS
+                    {releaseReport ? 'INCOMPLETE (SERVER-REPORTED)' : loadingReport ? 'LOADING EVALUATION' : 'EVALUATION UNAVAILABLE'}
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500">
-                Governance Protocol: SEC-CTRL-020 (Gate 7 Separation of Technical Verification from Human Authorization).
+                Governance Protocol: SEC-CTRL-020. Server evaluation and human release authorization remain separate. This view does not independently authenticate evidence.
               </p>
             </div>
 
             <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setReportRequest(request => request + 1)} disabled={!canonicalReady || loadingReport || signingOff}
+                className="px-3 py-2 border rounded-lg text-xs disabled:opacity-40">Refresh evaluation</button>
               {releaseReport?.releaseReady && !releaseReport?.signedOff && (
                 <button
                   onClick={() => setIsSignoffModalOpen(true)}
@@ -486,7 +471,7 @@ ${components
               {releaseReport?.signedOff && (
                 <div className="text-right text-xs">
                   <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Signed by {releaseReport.signoffDetails?.actor}
+                    <CheckCircle2 className="w-4 h-4" /> {releaseReport.signoffDetails ? `Signed by ${releaseReport.signoffDetails.actor}` : 'Sign-off reported; signer details unavailable'}
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">
                     {releaseReport.signoffDetails?.timestamp?.slice(0, 19).replace('T', ' ')}
@@ -496,18 +481,22 @@ ${components
             </div>
           </div>
 
+          {!releaseReport && <div role="status" data-testid="release-evaluation-status" className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-950">
+            {loadingReport ? 'Loading current release evaluation…' : `Evaluation unavailable (${currentReportState.status.toLowerCase()}). ${currentReportState.message ?? 'Refresh evaluation to load the current project report.'}`}
+          </div>}
+
           {/* Key Metrics Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
               <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
-                Release Readiness
+                Reported Technical Gates
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-slate-900">
-                  {releaseReport?.signedOff ? 100 : project.progress?.releaseReadiness ?? 85}%
+                  {releaseReport ? `${releaseReport.gates.filter(gate => gate.gateId <= 6 && gate.status === 'PASSED').length} / 6` : 'UNAVAILABLE'}
                 </span>
                 <span className="text-xs text-slate-500">
-                  {releaseReport?.signedOff ? 'Fully signed off' : 'Technical gates verified'}
+                  {releaseReport ? 'reported passed; human approval is separate' : 'No current evaluation'}
                 </span>
               </div>
             </div>
@@ -518,9 +507,9 @@ ${components
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-slate-900">
-                  {releaseReport?.capabilitiesSummary?.verified ?? 25} / 25
+                  {releaseReport ? `${releaseReport.capabilitiesSummary.verified} / ${releaseReport.capabilitiesSummary.total}` : 'UNAVAILABLE'}
                 </span>
-                <span className="text-xs text-emerald-600 font-medium">100% Verified</span>
+                <span className="text-xs text-slate-500 font-medium">{releaseReport ? `${releaseReport.capabilitiesSummary.percentage}% reported VERIFIED` : 'No current evaluation'}</span>
               </div>
             </div>
 
@@ -529,9 +518,11 @@ ${components
                 Cryptographic Audit Ledger
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-emerald-700">0 Breaks</span>
+                <span className={`text-2xl font-bold ${releaseReport?.auditChainIntegrity.valid ? 'text-emerald-700' : 'text-slate-900'}`}>
+                  {releaseReport ? `${releaseReport.auditChainIntegrity.breaksCount} Breaks` : 'UNAVAILABLE'}
+                </span>
                 <span className="text-xs text-slate-500">
-                  SHA-256 state chain verified
+                  {releaseReport ? `${releaseReport.auditChainIntegrity.valid ? 'Valid' : 'Invalid'} chain reported; ${releaseReport.auditChainIntegrity.eventsChecked} events checked` : 'No current evaluation'}
                 </span>
               </div>
             </div>
@@ -543,21 +534,13 @@ ${components
               Release Gate Evaluations (7 Gates)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {(releaseReport?.gates || [
-                { gateId: 1, name: 'Zero Unresolved Discovery Blockers', status: 'PASSED', details: 'All blocking discovery questions resolved.', evidenceLinks: ['EV-104'] },
-                { gateId: 2, name: '100% Core Requirements Verification', status: 'PASSED', details: 'All core requirements verified with authenticated evidence.', evidenceLinks: ['EV-101', 'EV-105'] },
-                { gateId: 3, name: 'SecretStore Integration Complete', status: 'PASSED', details: 'OS keychain abstraction active with zero plaintext secrets.', evidenceLinks: ['EV-157', 'EV-158'] },
-                { gateId: 4, name: 'Security Regression Passing', status: 'PASSED', details: '41/41 automated attack vectors blocked.', evidenceLinks: ['EV-159'] },
-                { gateId: 5, name: 'Golden Reference Execution & Sealing', status: 'PASSED', details: 'Atlas Launch verified with sealed portable package roundtrip.', evidenceLinks: ['EV-156'] },
-                { gateId: 6, name: 'Cryptographic Audit Ledger Integrity', status: 'PASSED', details: 'All audit ledger records chain cleanly via SHA-256 state hashes.', evidenceLinks: ['EV-159'] },
-                { gateId: 7, name: 'Security Lead DoD Sign-off', status: releaseReport?.signedOff ? 'PASSED' : 'PENDING', details: releaseReport?.signedOff ? 'Sign-off recorded in immutable audit ledger.' : 'Pending authorized human sign-off execution.', evidenceLinks: releaseReport?.signedOff ? ['EV-165'] : [] },
-              ]).map((g: any) => (
+              {(releaseReport?.gates ?? unavailableGateNames.map((name, index) => ({gateId: index + 1, name, status: 'UNAVAILABLE', details: 'No current valid evaluation.', evidenceLinks: []}))).map((g) => (
                 <div
                   key={g.gateId}
                   className={`p-3.5 rounded-lg border flex items-start justify-between gap-3 ${
                     g.status === 'PASSED'
                       ? 'bg-emerald-50/40 border-emerald-200/70'
-                      : g.status === 'PENDING'
+                      : g.status === 'PENDING' || g.status === 'UNAVAILABLE'
                       ? 'bg-amber-50/30 border-amber-200/70'
                       : 'bg-rose-50/40 border-rose-200/70'
                   }`}
@@ -595,7 +578,7 @@ ${components
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                         : g.status === 'HUMAN_APPROVAL_REQUIRED'
                         ? 'bg-blue-100 text-blue-800 border-blue-200'
-                        : g.status === 'PENDING'
+                        : g.status === 'PENDING' || g.status === 'UNAVAILABLE'
                         ? 'bg-amber-100 text-amber-800 border-amber-200'
                         : 'bg-rose-100 text-rose-800 border-rose-200'
                     }`}
@@ -699,7 +682,7 @@ ${components
             <span className="font-bold text-slate-700">{selectedDoc}.md</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="font-mono text-[11px] hidden sm:inline">Rendered dynamically from canonical state hash</span>
+            <span className="font-mono text-[11px] hidden sm:inline">Project state version {project.stateVersion}</span>
             <div className="bg-slate-100 border border-slate-200 rounded-lg p-0.5 flex items-center text-xs">
               <button
                 type="button"
