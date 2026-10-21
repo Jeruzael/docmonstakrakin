@@ -1,0 +1,26 @@
+PASS recovery service factory is inactive by default and rejects path or store injection
+PASS default schema1 remains unchanged and cannot acquire transfer authority
+PASS explicit schema2 owns pinned storage and real Argon2 credential
+PASS raw transfer command cannot bypass manager reservation and nondeleting custody
+PASS signed but unapplied intent cannot acquire an ACTIVE store
+PASS canonical signature binds exact bytes root identity nonce generation and time
+PASS quiescence fences every old-worker read mutation acquisition and admin command
+PASS correctly signed wrong nonce generation owner and root cannot replace persisted admission
+PASS signing the same nonce with a shifted window cannot extend or replace prepared time
+PASS signed path outside original temp-parent domain never opens or deletes it
+PASS real process exit and successor claim preserve credentials and fence old sessions
+PASS two processes racing one transfer acquire exactly one owner and consumption
+PASS sequential transfers permit adjacent generations and subsequent owner restart
+PASS claim audit failure rolls back ledger lease generation and audit atomically
+PASS expired proof leaves quiesced authority denied without automatic restoration
+PASS real COMMIT before dropped worker reply retains root and fences uncertain old owner
+PASS seal failure after quiescence retains data and never revives prior manager
+PASS unresponsive fixture signer has a finite deadline without reactivating authority
+PASS bounded marker rejects oversized wrong truncated and hard-linked files
+PASS unknown schema and malformed consumed ledger fail without downgrade or claim
+PASS consumed ledger deletion and digest alteration cannot retain valid claim audit
+PASS receipt capacity rejects before quiescence without eviction or authority mutation
+PASS actual AuthPilot recovers across process exit with login policy credential CSRF and logout controls
+PASS five fixed-profile process transfers retain bounded receipts and audited generations
+RECOVERY_QUALIFICATION {"node":"v22.23.3","platform":"win32","arch":"x64","actualChildProcesses":51,"completedClaimLatencyMs":[347.85,348.25,353.39,329.07,321.63,331.26],"fixedFiveTransferProfile":[{"fromGeneration":1,"proofBytes":694,"latencyMs":348.25},{"fromGeneration":2,"proofBytes":694,"latencyMs":353.39},{"fromGeneration":3,"proofBytes":694,"latencyMs":329.07},{"fromGeneration":4,"proofBytes":694,"latencyMs":321.63},{"fromGeneration":5,"proofBytes":694,"latencyMs":331.26}],"p50Ms":331.26,"p95Ms":353.39,"parentPeakRssBytes":89915392,"parentCpuMicroseconds":{"user":546000,"system":625000},"measurements":"synthetic process-start claims; parent metrics exclude child-tree peaks and CPU; capacity performance unmeasured","profile":"DISCONNECTED_TEST_ONLY"}
+Auth pilot process recovery: 24/24 checks passed

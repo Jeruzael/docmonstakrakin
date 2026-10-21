@@ -1,0 +1,164 @@
+{
+  "kind": "DISCONNECTED_AUTH_PILOT_PROCESS_HANDOFF_CANDIDATE",
+  "recordedAt": "2026-10-21T09:38:26.685Z",
+  "masterBaseline": "148be8892b37aaf1944aca0c0671b6a948192f38",
+  "composedDependencyBase": "21287d672af5bb1b567fcf5e6cfa8d594a10e5d9",
+  "dependencyBranch": "codex/campaign-auth-recovery-base",
+  "candidateBranch": "codex/campaign-auth-recovery",
+  "candidateHead": "The SSH-signed Git commit containing this receipt; verify exact published SHA and GitHub signature independently.",
+  "scope": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "d9f8bf26e905a8f1ad90b6a51ecd6a2266997f1849dfc70f0d441c2bd6e7631c",
+      "gitBlob": "d85377facc3b06ad891c7aca28c43f9bf8291eb1"
+    },
+    {
+      "path": "server/security/authPilot/index.ts",
+      "sha256": "3a43aee5be4f1ef3fb41c94e394438c7baf455142ba09331ece891d2def6333a",
+      "gitBlob": "0bd9b7ff74610169f078ee4cce749aeafda31b39"
+    },
+    {
+      "path": "server/security/authPilot/fixtureRecovery.ts",
+      "sha256": "7a1b746c220fb59a300f699d968033ad908d390976fa175a898783c478101c22",
+      "gitBlob": "f260a74c7798352969f39acfbe758e4c509e7ba5"
+    },
+    {
+      "path": "server/security/syntheticFoundations/contracts.ts",
+      "sha256": "8fb2c9f5fb4a6b27114b4133706faa3859fff6bb7c4fc8eae1cf5768e8977332",
+      "gitBlob": "14bfe4d2bbad55b321e6c5990cce9a1b211bb1e3"
+    },
+    {
+      "path": "server/security/syntheticFoundations/ownedDirectory.mjs",
+      "sha256": "033ade0043c3ae3e74be22fbe12d55ce7e258f074361d6b4c56ec55abd9a71fb",
+      "gitBlob": "4f82b19e1c1774027d754ba4bf91b08c0f540113"
+    },
+    {
+      "path": "server/security/syntheticFoundations/privateStore.ts",
+      "sha256": "683592d5452bece806347b058d1dc61c30e0cf4426aaeb190eb676f81fd3f142",
+      "gitBlob": "209c509498a682936b6dfe01cd7cd9db8ebeac09"
+    },
+    {
+      "path": "server/security/syntheticFoundations/privateStoreWorker.mjs",
+      "sha256": "779d6e8a2372268c9dff38c51f835b7e5abef7dc1ec3f0defa02c4dc8a6497e1",
+      "gitBlob": "45de5f332dff29de81942200da15b36b6671efc3"
+    },
+    {
+      "path": "scripts/testAuthPilotRecovery.ts",
+      "sha256": "2c682e6117136ea58475f5b5b07fd0b40ecd70456e2e7e846b363175f8c1a45b",
+      "gitBlob": "a4c8d50bbefd0276f386103a2ff53f66b688ece8"
+    }
+  ],
+  "results": {
+    "node": "v22.23.3",
+    "platform": "win32-x64",
+    "native": 35,
+    "ownership": 7,
+    "pilot": 41,
+    "recovery": 24,
+    "quality": {
+      "wbs": true,
+      "typescript": true,
+      "productionBuild": true
+    },
+    "controlled": {
+      "core": 40,
+      "additional": 29,
+      "focusedSuites": 11,
+      "liveSnapshotMutation": "NONE"
+    },
+    "complete": {
+      "suites": {
+        "total": 76,
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0
+      },
+      "checks": {
+        "total": 1983,
+        "passed": 1983,
+        "failed": 0,
+        "skipped": 0
+      },
+      "changedEvidenceCount": 0
+    },
+    "npmAuditTotal": 0
+  },
+  "protectedBytes": [
+    {
+      "path": "docs/00_control/MASTER_WBS.yaml",
+      "baselineSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+      "currentSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "docs/00_control/MASTER_WBS.md",
+      "baselineSha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f",
+      "currentSha256": "0ae57b33099a05f7d78445cfbd888797babffef259e967c04c96179afa17ea8f",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "docs/WBS_AND_MASTER_TASK_LIST.md",
+      "baselineSha256": "72f4c78581861c02ae004112bd11f9a2b0df90a2c2cdf7ffc4306c4ff58ac055",
+      "currentSha256": "72f4c78581861c02ae004112bd11f9a2b0df90a2c2cdf7ffc4306c4ff58ac055",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "bootstrap/docmonstakrakin.self-bootstrap.json",
+      "baselineSha256": "4441cb647ba75a0b7cba1438281d2037fd4cf12507ceeaf6e4f4bcdc241f7d35",
+      "currentSha256": "4441cb647ba75a0b7cba1438281d2037fd4cf12507ceeaf6e4f4bcdc241f7d35",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "package.json",
+      "baselineSha256": "c1f32e484ce88cba53168fb92412669c634329a8a285cb69b8a0e124f4116cd8",
+      "currentSha256": "c1f32e484ce88cba53168fb92412669c634329a8a285cb69b8a0e124f4116cd8",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "package-lock.json",
+      "baselineSha256": "14fc25efb722971a956cec1c4ad2808fc09e8ac6ea745152b47fb105e0a21f65",
+      "currentSha256": "14fc25efb722971a956cec1c4ad2808fc09e8ac6ea745152b47fb105e0a21f65",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "bun.lock",
+      "baselineSha256": "7dfb09315ae8a4d48cfe37198202a7ea9246efe464478438713066a649b561ba",
+      "currentSha256": "7dfb09315ae8a4d48cfe37198202a7ea9246efe464478438713066a649b561ba",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "server.ts",
+      "baselineSha256": "c687987837d003adf9dce61730ecad56c60cfbf6871da54edc59931be788f0e3",
+      "currentSha256": "c687987837d003adf9dce61730ecad56c60cfbf6871da54edc59931be788f0e3",
+      "exactBytesEqual": true
+    },
+    {
+      "path": "server/security/apiRoutePolicy.ts",
+      "baselineSha256": "d0beb09d2068336bd1df10722e45da577ad11fac7a8a16c9297ae683e209d419",
+      "currentSha256": "d0beb09d2068336bd1df10722e45da577ad11fac7a8a16c9297ae683e209d419",
+      "exactBytesEqual": true
+    }
+  ],
+  "review": {
+    "agentReadOnly": "campaign_governance reported no new blocking contract/lifecycle issue on exact source blob IDs. This is not human approval.",
+    "humanApproval": "PENDING",
+    "githubExactHeadCI": "PENDING_PUBLICATION"
+  },
+  "limits": {
+    "envelopeBytes": 8192,
+    "fieldCharacters": 2048,
+    "preparedLifetimeMs": 60000,
+    "retainedTransfers": 128,
+    "signerWaitMs": 2000,
+    "acceptance": "candidate TESTONLY constraints; no production budget ratification"
+  },
+  "remaining": [
+    "planned quiesced transfer only; arbitrary-crash recovery absent",
+    "no operational trust root/time/revocation/enrollment",
+    "no external audit/replay anti-rollback anchor",
+    "no process-tree peak/capacity qualification",
+    "no production routes or domain cutover",
+    "actual master dependency integration plus normal reconciliation/CI/human review required"
+  ],
+  "mayActivateProduction": false
+}

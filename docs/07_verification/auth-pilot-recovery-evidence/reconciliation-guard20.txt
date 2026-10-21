@@ -1,0 +1,21 @@
+PASS actual Linux default blocked inventory is disclosed without granting lifecycle trust
+PASS actual Windows separators CRLF and UTF8 BOM remain compatible
+PASS blocked better-sqlite3 fails the actual Node command
+PASS blocked argon2 fails the actual Node command
+PASS blocked esbuild fails the actual Node command
+PASS valid non-native blocked scripts remain inert and are reported
+PASS empty whitespace and banner-only acquisition cannot pass
+PASS truncated package records missing hooks or missing footer fail closed
+PASS unknown output malformed versions paths and controls cannot masquerade as inventory
+PASS duplicate package records and unexpected lifecycle labels are rejected
+PASS malformed UTF8 and oversized inventories reject before acceptance
+PASS candidate byte and package admission limits are exact without truncation
+PASS ANSI wrappers and unsupported control transformations are rejected
+PASS unknown CLI options and missing guard modules return nonzero
+PASS native names cannot hide in Windows or nested package paths
+PASS actual aliased CLI entry cannot skip admission or native rejection
+PASS imported API stays inert instead of treating imports as CLI admission
+PASS provider failure is fatal even when its stdout resembles a valid inventory
+PASS real platform shell propagates guard rejection without a conditional test
+PASS real platform shell admits the disclosed default blocked inventory
+Bun lifecycle inventory: 20/20 checks passed

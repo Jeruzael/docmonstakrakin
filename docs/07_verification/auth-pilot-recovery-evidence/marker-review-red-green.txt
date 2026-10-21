@@ -1,0 +1,2 @@
+REVIEW_RED old bounded helper rejects high-bit marker: false (required true; actual false)
+REVIEW_GREEN final helper rejects identical high-bit fixture
