@@ -280,3 +280,20 @@ The operator explicitly waived the ordinary development human-review gate and
 authorized normal merges for this completion campaign. Agent inspection is not
 a GitHub human APPROVED review. This waiver does not establish operational
 governance authority, activate authentication or execute Gate 7.
+
+## Recovery integration checkpoint — 2026-10-21T13:34Z
+
+The original signed publication `2afe05e9506d2f25167c7dc6b8ae386c5935d48a`
+passed all four [candidate jobs](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39606641775),
+84 suites / 2,110 checks, Reports 11+14 and version-sync50. Those results remain
+attached to that exact HEAD. PR #64 then integrated as actual master
+`ef160d4dea3122309687b1f44bb8972c07e879a5`; actual
+[push CI 39608076350](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39608076350)
+passed four jobs and 83 suites / 2,109 checks. Its signed merge tree and original
+recovery evidence were independently verified.
+
+This branch normally merges that actual master without conflicts, rebasing or
+force push. The six implementation/test/README paths are unchanged from `2afe05e`;
+only this additive record changes. Effective scope remains seven paths. The new
+signed combined HEAD requires fresh CI including recovery24 and the Reports
+browser/version-sync suites. No prior run substitutes for that qualification.

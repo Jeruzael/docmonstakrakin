@@ -1,0 +1,2 @@
+REVIEW_RED prior <= comparison rejects legitimate 1-to-2 then2-to-3 ledger
+REVIEW_GREEN final >=1 and non-overlap comparison accepts identical multi-entry SQLite fixture

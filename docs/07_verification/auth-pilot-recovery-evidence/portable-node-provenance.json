@@ -1,0 +1,6 @@
+{
+  "sha256": "9c9245166b4a8e182e0b797da9c20136117ff24368eaff1fec8343a123c8db0e",
+  "matchesExpected": true,
+  "signatureStatus": "Valid",
+  "signer": "CN=OpenJS Foundation, O=OpenJS Foundation, L=San Francisco, S=California, C=US"
+}
