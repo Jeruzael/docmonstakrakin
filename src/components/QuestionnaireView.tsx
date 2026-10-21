@@ -1,6 +1,6 @@
 import { calculateDiscoveryCoverage, isQuestionMandatory, wizardQuestionCoverage } from '../data/derivationEngine';
 import { normalizeTechChoice } from '../data/projectInitialization';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   HelpCircle,
   AlertOctagon,
@@ -69,6 +69,24 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
   const [isNaModalOpen, setIsNaModalOpen] = useState<boolean>(false);
   const [naJustification, setNaJustification] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const mounted = useRef(false);
+  const questionVisit = useRef(0);
+  const pendingSave = useRef<{
+    visit: number;
+    deadline?: ReturnType<typeof setTimeout>;
+    cancelWait?: () => void;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      const pending = pendingSave.current;
+      if (pending?.deadline !== undefined) clearTimeout(pending.deadline);
+      pending?.cancelWait?.();
+      pendingSave.current = null;
+    };
+  }, []);
 
   const coverage = calculateDiscoveryCoverage(questions, project);
   const wizardAnswers = wizardQuestionCoverage(project);
@@ -96,6 +114,9 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
   const activeIndex = Math.min(currentIndex, Math.max(0, filteredQuestions.length - 1));
   const activeQuestion = filteredQuestions[activeIndex];
+  useLayoutEffect(() => {
+    questionVisit.current += 1;
+  }, [project.id, activeQuestion?.id]);
   const technicalAnswer = activeQuestion?.answer;
   const savedTechChoice = activeQuestion?.answerType === 'TECH_DECISION' && technicalAnswer &&
     typeof technicalAnswer === 'object' && !Array.isArray(technicalAnswer)
@@ -110,8 +131,10 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
 
   // Sync component local state whenever activeQuestion changes
   useEffect(() => {
-    if (!activeQuestion) return;
     setValidationError(null);
+    setIsNaModalOpen(false);
+    setNaJustification('');
+    if (!activeQuestion) return;
     setCustomJustification(activeQuestion.justification || '');
     setCustomOptionInput('');
 
@@ -175,19 +198,47 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
         setTechMode(activeQuestion.state === 'DEFERRED' ? 'UNKNOWN' : 'USER_SPECIFIED');
       }
     }
-  }, [activeQuestion?.id]);
+  }, [project.id, activeQuestion?.id]);
 
   const handleSaveAnswer = async (answerPayload: any, customState: 'ANSWERED' | 'NOT_APPLICABLE' | 'DEFERRED' = 'ANSWERED', explicitJustification?: string) => {
-    if (!activeQuestion) return;
+    if (!activeQuestion || pendingSave.current) return false;
+    // Ref admission precedes React rendering, including same-turn preset clicks.
+    const pending: NonNullable<typeof pendingSave.current> = {visit: questionVisit.current};
+    pendingSave.current = pending;
+    const ownsFeedback = () => mounted.current && pendingSave.current === pending && questionVisit.current === pending.visit;
     setIsSaving(true);
     setValidationError(null);
     try {
       const justificationToRecord = explicitJustification || customJustification;
-      await onAnswerQuestion(activeQuestion.id, answerPayload, customState, justificationToRecord);
+      const acknowledged = await Promise.race([
+        onAnswerQuestion(activeQuestion.id, answerPayload, customState, justificationToRecord).then(() => true),
+        new Promise<boolean>((resolve, reject) => {
+          pending.cancelWait = () => resolve(false);
+          pending.deadline = setTimeout(() => reject(new Error(
+            'Could not confirm the answer save within 20 seconds. The server may still have saved it. Refresh and check this question before retrying.'
+          )), 20_000);
+        }),
+      ]);
+      return acknowledged && ownsFeedback();
     } catch (err: any) {
-      setValidationError(err.message || 'Failed to save answer');
+      if (ownsFeedback()) setValidationError(err.message || 'Failed to save answer');
+      return false;
     } finally {
-      setIsSaving(false);
+      if (pending.deadline !== undefined) clearTimeout(pending.deadline);
+      // Navigation invalidates feedback, but the owning request must still unlock.
+      if (pendingSave.current === pending) {
+        pendingSave.current = null;
+        if (mounted.current) setIsSaving(false);
+      }
+    }
+  };
+
+  const blockPendingEdit = (event: React.SyntheticEvent) => {
+    // A disabled fieldset does not disable clickable div options; capture also
+    // blocks their local setters before the next React render.
+    if (pendingSave.current) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   };
 
@@ -288,9 +339,10 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
       setValidationError('A specific architectural or scope justification is required to mark as NOT APPLICABLE.');
       return;
     }
-    await handleSaveAnswer('NOT_APPLICABLE', 'NOT_APPLICABLE', naJustification.trim());
-    setIsNaModalOpen(false);
-    setNaJustification('');
+    if (await handleSaveAnswer('NOT_APPLICABLE', 'NOT_APPLICABLE', naJustification.trim())) {
+      setIsNaModalOpen(false);
+      setNaJustification('');
+    }
   };
 
   const resolvedCount = coverage.domainSummaries.reduce((total, domain) => total + domain.resolved, 0);
@@ -488,6 +540,15 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
               )}
 
               {/* ANSWER TYPE RENDERERS */}
+              {isSaving && <p role="status" className="text-xs text-slate-600">An answer save is pending. You can navigate while it completes.</p>}
+              <fieldset
+                disabled={isSaving}
+                aria-busy={isSaving}
+                onClickCapture={blockPendingEdit}
+                onChangeCapture={blockPendingEdit}
+                onKeyDownCapture={blockPendingEdit}
+                className="min-w-0 space-y-6 border-0 p-0"
+              >
 
               {/* 1. MULTI_SELECT RENDERER */}
               {activeQuestion.answerType === 'MULTI_SELECT' && (
@@ -1219,6 +1280,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 />
               </div>
 
+              </fieldset>
               {/* Navigation Footer */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                 <button
@@ -1369,6 +1431,15 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
             <p className="text-xs text-slate-600 leading-relaxed">
               Marking a discovery question as NOT APPLICABLE requires an explicit architectural or scope justification. This justification is permanently recorded in the project provenance trail.
             </p>
+            {validationError && <p role="alert" className="text-xs text-red-700">{validationError}</p>}
+            <fieldset
+              disabled={isSaving}
+              aria-busy={isSaving}
+              onClickCapture={blockPendingEdit}
+              onChangeCapture={blockPendingEdit}
+              onKeyDownCapture={blockPendingEdit}
+              className="min-w-0 space-y-4 border-0 p-0"
+            >
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Scope Justification (Mandatory):</label>
               <textarea
@@ -1399,6 +1470,7 @@ export const QuestionnaireView: React.FC<QuestionnaireViewProps> = ({
                 Confirm Not Applicable
               </button>
             </div>
+            </fieldset>
           </div>
         </div>
       )}
