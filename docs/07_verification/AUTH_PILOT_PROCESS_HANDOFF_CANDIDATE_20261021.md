@@ -71,3 +71,39 @@ Actual master was independently rechecked as `3705f67b2be4c0506a0933ee6c8d6976b0
 The recovery branch normally signed-merged that base as `4443e3bf3e17ace5a4cfa6744a3a892d95017bce` (parents original candidate `ab20b3026fba1200d5acd54ab04c9efd0862ba14`, updated base `4293d071a300121d3787c356a6940df1bf9a4f22`). All seven original runtime/test source hashes still match the immutable original receipt exactly; only the workflow source hash changes. Windows retains both npm/Bun native35, pilot41, recovery24 and path7 calls; Linux retains npm/Bun native/recovery calls, Bun paths and complete regression; the campaign-base branch filter remains. The shared guard's **20/20** focused checks passed after reconciliation on the same portable Node22.23.3. No new local complete-regression pass is claimed for this changed CI tree. The additive reconciliation receipt records current source hashes and original decoded-log digests separately from the historical receipt.
 
 Fresh exact-HEAD hosted CI, signature verification and actual human review are required after this supplement's signed commit. Readiness for review does not make this bookkeeping base master integration. PR #59 alone was actually integrated at this checkpoint; PR #60, corrected #62 and #65 still require their respective actual protected merges and post-merge verification. Then normal master reconciliation/retargeting, current effective-diff inspection and fresh required CI/review must establish final eligibility. No runtime behavior, package/lockfile, canonical WBS, trust enrollment, route activation, human quorum, agents, Gate 7 or release is changed by this CI reconciliation.
+
+## Actual-master reconciliation preparation — 2026-10-21
+
+The integration owner has now independently verified actual master `acdb3e2c1057262612766d7d98ab91c32b3c084b`, the normal PR #60 merge following the product-recovery and regression-runner integrations. Its actual post-merge [CI run 39603324113](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39603324113) passed all four jobs and reported **81/81 suites, 2,029/2,029 checks**; the owner recorded that verification in [PR #60 comment 6316690483](https://github.com/Jeruzael/docmonstakrakin/pull/60#issuecomment-6316690483). These are the dependency's results, not fresh results for this recovery candidate. Earlier dependency-pending statements above remain historical descriptions of their checkpoints.
+
+The clean `codex/campaign-auth-recovery` checkout, its local branch and remote branch were all rechecked at `50843a0b6edd468c254e1bd7a068161eb1f4f9d9`. Existing PR #64 still targets the bookkeeping branch `codex/campaign-auth-recovery-base` at `4293d071a300121d3787c356a6940df1bf9a4f22`. Preparation used a normal `git merge --no-commit --no-ff acdb3e2c1057262612766d7d98ab91c32b3c084b` on the existing recovery branch. Its only conflict was two Windows CI insertion blocks. Resolution retains recovery24 after pilot41 for both npm and Bun, alongside native35/path7, Chromium acquisition, the strict fail-closed lifecycle guard, Linux recovery qualification, the integrated regression runner and all current master product changes. No runtime source conflict or behavioral rewrite was needed.
+
+The original recovery runtime/test sources, workflow and all twenty recovery evidence files remain unchanged from `50843a0`; only this existing verification document receives an additive reconciliation note. The effective recovery scope against actual master remains the same 29 paths. Original candidate receipts, RED/GREEN failures, old workflow hashes and hosted qualification history are preserved, rather than relabeled as validation of the newly composed tree.
+
+The integration owner separately verified historical approval review `5598436004` as **APPROVED** on exactly `50843a0b6edd468c254e1bd7a068161eb1f4f9d9` at `2026-10-21T10:39:44Z`. That approval remains attached to its original commit; it is not fresh approval of this changed tree. The operator has since explicitly waived ordinary independent human code review and personally changed repository settings. Current operator authorization and repository requirements govern subsequent engineering integration. This waiver does not acquire operational identity, root custody, trusted time, revocation policy, human quorum, Gate 7 or release authority.
+
+This is an uncommitted, unmerged preparation checkpoint. No new test, build or native/browser qualification was run during this merge, and PR #64 has not yet been retargeted to master. The integration owner retains signing, normal publication and master retargeting. PR #61's later candidate `03a1425` is still undergoing its own CI at this checkpoint; no integration or validation of that candidate is claimed here. Any further actual-master reconciliation must use a normal merge, preserve this evidence, inspect the final effective scope, and establish fresh final-tree checks, all required hosted jobs against the actual master target, and post-merge verification. No production authentication activation, real principals/grants/signers/roots, canonical WBS or receipt action, agent execution, Gate 7 ceremony or release promotion is included.
+
+## Actual local combined qualification — 2026-10-21T13:16:52Z
+
+The frozen staged tree `59e57051a7940220906b6eb2269245a07d26c957`, combining
+the original recovery HEAD with actual master `acdb3e2`, passed **82/82 suites,
+2,053/2,053 named checks**, zero failures/skips, WBS integrity, TypeScript and
+frontend/server production builds. The run began at 13:10:21.9678911Z and finished
+at 13:16:52.8360457Z using patched portable Node 22.23.3 and the retained task-owned
+dependency fixture. This is not a clean installation on the operator host.
+Recovery24, pilot41, native35/path7, product journey9, derivation9, creation14,
+runner12 and controlled40/29/11 (332 focused assertions) passed. The synthetic
+runtime snapshot remained `484dca9eba843e0a3be29049dce98c5784daf6dc72aa566a95760d3f368d7263`.
+All tracked bytes, index, HEAD and MERGE_HEAD matched before and after; manifest
+SHA-256 `09d7d5ffcd82219074f4eca73b4a6e443a6cac8569cb2e16b73d2f7ab0b269f6`.
+
+Ignored evidence directory: `runtime/pr64-reconciliation-59e5705-20261021T131021Z`.
+Full log SHA-256 `7413db755bf824da3e5e93ef382e5896b4ca21877f32bdb24f9bcedecf09ae83`;
+results `b681012eab5f400388e1e96d31d6e1329ff3022c6d71d58c0bf988f4dc444ffa`;
+quality `352dcd8c1b9c9aa8dcd47aef27da2d8855c98036109fcce78b09eb6164bae8df`;
+receipt `7d6fc00c56461d249487df423045a3b77c4be07f290cca605809e32f0554c918`.
+The fresh five-transfer observation used 693-byte proofs, p50 263.54 ms / p95
+267.47 ms; 51 real child processes were exercised. These synthetic observations
+do not establish operational budgets, child-tree peak memory or production capacity.
+This result-only addition follows the frozen checked tree. Original evidence is intact.
