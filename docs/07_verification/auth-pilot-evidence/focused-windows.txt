@@ -1,0 +1,41 @@
+PASS default factories remain inactive despite ambient enable text
+PASS unsafe options and non-disconnected authority reject
+PASS versioned owned store uses WAL FULL foreign keys and exact native provenance
+PASS only synthetic principals may be provisioned and passwords are bounded
+PASS HUMAN login issues opaque token and synchronizer proof
+PASS unknown identities wrong credentials AGENT and forged actor fail uniformly
+PASS hostile password types arrays prototype and excess fields reject before authority
+PASS server-owned handles reject forged resources and unregistered actions
+PASS policy changes fence existing sessions and explicit denial wins
+PASS CSRF is token-bound and rotation consumes old session exactly once
+PASS password change requires current secret and atomically revokes sibling sessions
+PASS offline synthetic reset fences all previous credentials and sessions
+PASS concurrent credential changes accept exactly one revision-guarded mutation
+PASS worker crash recovery retains principals audit and schema while fencing sessions
+PASS unsupported schema rejects recovery without automatic migration or downgrade
+PASS credential disable cannot be bypassed by old token or password
+PASS per-principal throttling includes valid and unknown accounts and survives worker restart
+PASS global loopback throttle rejects distinct-account flooding without growing unbounded state
+PASS concurrent login work is bounded and eventually releases capacity
+PASS audit-write failure rolls back session creation and reveals no token
+PASS credential audit failure atomically retains old verifier revision and sessions
+PASS hostile stored PHC cannot amplify native KDF parameters
+PASS idle and absolute expiration are inclusive and clock rollback cannot revive
+PASS strict flat JSON rejects duplicate escaped keys prototype nesting and malformed UTF8
+PASS actual trusted-fixture HTTPS login uses secure host-only HttpOnly Strict cookie
+PASS actual session endpoint returns only sanitized HUMAN identity and proof
+PASS actual Host Origin proxy and fetch-site mismatch fail closed
+PASS actual duplicated Cookie Origin Host and query secrets reject
+PASS actual header-count admission rejects excess headers before authority
+PASS actual JSON body duplicate keys oversized nested and wrong media type reject
+PASS actual session cookie duplication and forged CSRF cannot rotate or logout
+PASS actual rotation invalidates old cookie and logout clears replacement cookie
+PASS actual password endpoint verifies secret and revokes current cookie
+PASS actual pilot exposes no enrollment grant agent production or privileged routes
+AUTH_PILOT_MEASUREMENT {"node":"v22.21.1","platform":"win32","arch":"x64","profile":"7 sequential real Argon2id logins; fresh per-window admission; fixture SQLite WAL FULL","inputPasswordBytes":26,"runs":7,"p50Ms":159.82779999999912,"p95Ms":178.91970000000038,"minMs":136.3037000000004,"maxMs":178.91970000000038,"rssBefore":104574976,"rssAfter":102019072,"sampledPeakRss":138584064,"maxRssKiB":168420,"heapUsed":14392120,"eventLoopP95Ms":27.279359,"eventLoopMaxMs":38.371327,"cpuUserUs":547000,"cpuSystemUs":156000,"productionCapacityAccepted":false}
+PASS native login measurements use fixed reproducible single-concurrency profile
+PASS audits retain checked hash integrity without credentials PHC tokens or raw secrets
+PASS normal product entrypoints never import the disconnected authentication pilot
+PASS cutover inventory retains 69 product registrations and 14 blocked privileged registrations
+PASS close removes task-owned authority store and bars subsequent authentication
+Authentication pilot: 39 checks passed; disconnected synthetic qualification only

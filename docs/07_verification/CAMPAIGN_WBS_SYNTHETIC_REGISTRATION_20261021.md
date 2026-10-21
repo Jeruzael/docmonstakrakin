@@ -1,5 +1,15 @@
 # Workstream C — synthetic registration verification
 
+## Additive reconciliation checkpoint — 2026-10-21, 13:00 UTC
+
+The original candidate and its historical records below remain preserved. A normal signed merge `b30f652ffc5b0a83cfe7eb6cf523b3ceb418595e` combined original HEAD `b5fb3c41c309e36567b0838da9ce146e54b235a1` with verified product master21da1d5. Its tree `c81446ec9d7a9eb6dd76476791198c0b799fccbc` retained the original eight non-CI candidate blobs. The current candidate then normally merges verified master **`acdb3e2c1057262612766d7d98ab91c32b3c084b`**, which includes PR #67's fail-closed regression runner and PR #60's disconnected pilot. This second merge has no conflicts. Effective scope remains nine paths; this additive record is the only change to original non-CI candidate content. Production source does not import these TESTONLY modules.
+
+Actual master [CI39603324113](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39603324113) passed all four jobs and81/81 suites,2,029/2,029 named checks, controlled40/29/11(332), fresh Windows npm/Bun pilot41/native35/ownership7 and audit0. [PR #60 closure](https://github.com/Jeruzael/docmonstakrakin/pull/60#issuecomment-6316690483) records the exact merge/tree/signature and review waiver. Those baseline results do not substitute for this candidate's final-head CI.
+
+Fresh local verification of the first reconciliation used portable Node22.23.3 with retained task-owned dependencies: **56/56 focused synthetic checks**, WBS integrity, TypeScript and production build passed. Source/index tree stayed unchanged. Focused output SHA-256 is `05a3f35edb4b7a8153906a4da7eb4346834d98afd59551b2b1d4a5a752beaf3a`; quality output is `c5e8ee132a3e9731c4d000bebaf5a47a54c74fcb974f77c9312670798860d329`. The existing bundle warning remains. This run is not clean operator-host installation evidence and does not replace the original measured samples. Final signed HEAD, all four fresh hosted jobs and actual post-merge evidence must be inspected on [PR #61](https://github.com/Jeruzael/docmonstakrakin/pull/61).
+
+Original human reviews apply only to b5fb3c4. The operator later explicitly waived ordinary independent-human code review for unattended development; no new APPROVED review or operational ratification is claimed for a changed HEAD. The ordinary merge, exact signature/checks and actual post-merge verification remain required. `mayApply:false`, `operationalAuthority:false`, all TESTONLY fixture restrictions, historical/canonical WBS preservation, independent human operational quorum, privileged-route/agent denials, PR #34/#52, Gate7 and release remain unchanged.
+
 Starting master: `148be8892b37aaf1944aca0c0671b6a948192f38`. This is a non-activating code/test candidate under the Autonomous Completion Campaign. It is not a human appointment, policy ratification, operational registration receipt or production-readiness attestation.
 
 ## Exact candidate inventory

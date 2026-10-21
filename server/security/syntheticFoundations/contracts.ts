@@ -8,6 +8,8 @@ export type StoreCommand =
   | {command: 'createPrincipal'; id: string; kind: PrincipalKind; verifier?: string}
   | {command: 'getCredential' | 'disablePrincipal'; principalId: string}
   | {command: 'resetCredential'; principalId: string; verifier: string}
+  | {command: 'recordAuthFailure'; now: number}
+  | {command: 'changeOwnCredential'; digest: string; verifier: string; expectedCredentialRevision: number; now: number}
   | {command: 'registerResource'; id: string}
   | {command: 'setRule'; principalId: string; action: SyntheticAction; resourceId: string; effect: 'ALLOW' | 'DENY'}
   | {command: 'issueSession'; principalId: string; digest: string; now: number; expectedCredentialRevision?: number; expectedGeneration?: number}
