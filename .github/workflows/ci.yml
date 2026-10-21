@@ -53,12 +53,8 @@ jobs:
           "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({defaultTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
           if ($LASTEXITCODE -ne 0) { throw 'Default temporary-path inventory failed' }
-          # Use a job-owned, unaliased temporary parent. The fixture's strict
-          # canonical-path/ownership checks remain unchanged and mandatory.
-          $fixtureTemp = Join-Path $env:RUNNER_TEMP 'native-fixtures'
-          New-Item -ItemType Directory -Path $fixtureTemp -Force | Out-Null
-          "TEMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "TMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Exercise the runner's actual default TEMP (including RUNNER~1).
+          # Native canonicalization must agree without a TEMP override.
           Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
           node --version
           if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
@@ -95,6 +91,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           npm.cmd run ci:quality
           if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
           git diff --exit-code
@@ -126,6 +124,8 @@ jobs:
             }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            node --import tsx scripts/testSyntheticStorePaths.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }

@@ -6,6 +6,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {Worker} from 'node:worker_threads';
 import {SyntheticSecurityError, type StoreCommand} from './contracts.ts';
+import {canonicalDirectory, directoryIdentity, assertOwnedDirectory, assertOwnerMarker} from './ownedDirectory.mjs';
 
 const runFile = promisify(execFile);
 type Pending = {resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; worker: Worker};
@@ -21,12 +22,19 @@ export class PrivateSyntheticStore {
   private lifecycle?: Promise<void>;
   private stopping?: Promise<void>;
   private closePromise?: Promise<void>;
-  private constructor(readonly rootDirectory: string, private readonly owner: string) {}
+  private constructor(readonly rootDirectory: string, private readonly owner: string, private readonly parentDirectory: string, private readonly rootIdentity: string, private readonly parentIdentity: string) {}
   static async create(): Promise<PrivateSyntheticStore> {
     if (!['win32', 'linux'].includes(process.platform) || process.arch !== 'x64' || Number(process.versions.node.split('.')[0]) !== 22) throw new SyntheticSecurityError('STORE_PLATFORM_UNSUPPORTED');
-    const parent = await fs.realpath(os.tmpdir());
+    const parent = canonicalDirectory(os.tmpdir()), parentIdentity = directoryIdentity(parent);
+    // Preserve the lexical result of exclusive creation. Canonicalizing a
+    // substituted root here could adopt its junction target before pinning.
     const root = await fs.mkdtemp(path.join(parent, 'dmk-s2a-synthetic-'));
-    const store = new PrivateSyntheticStore(root, randomBytes(32).toString('hex'));
+    let rootIdentity: string;
+    try {
+      rootIdentity = directoryIdentity(root);
+      assertOwnedDirectory(root, parent, rootIdentity, parentIdentity);
+    } catch { throw new SyntheticSecurityError('STORE_PATH_INVALID'); }
+    const store = new PrivateSyntheticStore(root, randomBytes(32).toString('hex'), parent, rootIdentity, parentIdentity);
     try {
       if (process.platform === 'win32') {
         // Restrict only this newly-created disposable fixture. No account/ACL
@@ -42,14 +50,17 @@ export class PrivateSyntheticStore {
     } catch (error) {
       await store.terminate();
       // The generated absolute root is checked before any recursive cleanup.
-      if (path.dirname(root) === parent && path.basename(root).startsWith('dmk-s2a-synthetic-') && !(await fs.lstat(root)).isSymbolicLink()) await fs.rm(root, {recursive: true});
+      try {
+        assertOwnedDirectory(root, parent, rootIdentity, parentIdentity);
+        await fs.rm(root, {recursive: true});
+      } catch { /* Never delete a replaced or uncertain directory on failure. */ }
       throw new SyntheticSecurityError(error instanceof SyntheticSecurityError ? error.code : 'STORE_UNAVAILABLE');
     }
   }
   private async start(fresh = false) {
     if (this.stopping) await this.stopping;
     if (this.closed || this.closing) throw new SyntheticSecurityError('STORE_UNAVAILABLE');
-    const worker = new Worker(new URL('./privateStoreWorker.mjs', import.meta.url), {workerData: {rootDirectory: this.rootDirectory, owner: this.owner, fresh}, execArgv: []});
+    const worker = new Worker(new URL('./privateStoreWorker.mjs', import.meta.url), {workerData: {rootDirectory: this.rootDirectory, owner: this.owner, fresh, parentDirectory: this.parentDirectory, rootIdentity: this.rootIdentity, parentIdentity: this.parentIdentity}, execArgv: []});
     this.worker = worker;
     await new Promise<void>((resolve, reject) => {
       let ready = false;
@@ -143,8 +154,10 @@ export class PrivateSyntheticStore {
       try { if (preceding) await preceding; } catch { /* close still owns cleanup */ }
       try { if (this.available && this.pending.size === 0) await this.send({command: 'close'}); }
       finally { await this.stopWorker(); this.closed = true; }
-      const parent = await fs.realpath(os.tmpdir());
-      if (path.dirname(this.rootDirectory) !== parent || !/^dmk-s2a-synthetic-[A-Za-z0-9]+$/.test(path.basename(this.rootDirectory)) || (await fs.lstat(this.rootDirectory)).isSymbolicLink() || await fs.realpath(this.rootDirectory) !== this.rootDirectory || await fs.readFile(path.join(this.rootDirectory, '.synthetic-owner'), 'utf8') !== this.owner) throw new SyntheticSecurityError('STORE_CLEANUP_REFUSED');
+      try {
+        assertOwnedDirectory(this.rootDirectory, this.parentDirectory, this.rootIdentity, this.parentIdentity);
+        assertOwnerMarker(this.rootDirectory, this.owner);
+      } catch { throw new SyntheticSecurityError('STORE_CLEANUP_REFUSED'); }
       await fs.rm(this.rootDirectory, {recursive: true});
     })();
     return this.closePromise;
