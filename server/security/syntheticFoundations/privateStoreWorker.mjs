@@ -1,11 +1,11 @@
 import {parentPort, workerData} from 'node:worker_threads';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {auditHash, verifyAuditChain} from './audit.mjs';
 import {evaluateSyntheticPolicy, SYNTHETIC_ACTIONS} from './policy.mjs';
+import {assertOwnedDirectory, assertOwnerMarker} from './ownedDirectory.mjs';
 
 const require = createRequire(import.meta.url);
 const MAX_PRINCIPALS = 128, MAX_RESOURCES = 128, MAX_RULES = 512, MAX_SESSIONS = 256, MAX_AUDIT = 4096;
@@ -28,18 +28,17 @@ function verifier(value) {
   })) fail('STORE_INPUT_INVALID');
 }
 function validateRoot() {
-  exactKeys(workerData, ['rootDirectory', 'owner', 'fresh']);
+  try { exactKeys(workerData, ['rootDirectory', 'owner', 'fresh', 'parentDirectory', 'rootIdentity', 'parentIdentity']); }
+  catch { fail('STORE_PATH_INVALID'); }
   if (typeof workerData.rootDirectory !== 'string' || typeof workerData.owner !== 'string' || !/^[a-f0-9]{64}$/.test(workerData.owner) || typeof workerData.fresh !== 'boolean') fail('STORE_PATH_INVALID');
-  const realTemp = fs.realpathSync(os.tmpdir()), root = workerData.rootDirectory;
-  if (fs.realpathSync(root) !== root || path.dirname(root) !== realTemp || !/^dmk-s2a-synthetic-[A-Za-z0-9]+$/.test(path.basename(root)) || fs.lstatSync(root).isSymbolicLink()) fail('STORE_PATH_INVALID');
-  if (process.platform !== 'win32') {
-    const stat = fs.statSync(root);
-    if ((stat.mode & 0o777) !== 0o700 || stat.uid !== process.getuid()) fail('STORE_PATH_INVALID');
-  }
+  const root = workerData.rootDirectory;
+  try { assertOwnedDirectory(root, workerData.parentDirectory, workerData.rootIdentity, workerData.parentIdentity); }
+  catch { fail('STORE_PATH_INVALID'); }
   for (const name of fs.readdirSync(root)) {
-    if (!['.synthetic-owner', 'authority.sqlite', 'authority.sqlite-wal', 'authority.sqlite-shm'].includes(name) || !fs.lstatSync(path.join(root, name)).isFile() || fs.lstatSync(path.join(root, name)).isSymbolicLink()) fail('STORE_PATH_INVALID');
+    const stat = fs.lstatSync(path.join(root, name));
+    if (!['.synthetic-owner', 'authority.sqlite', 'authority.sqlite-wal', 'authority.sqlite-shm'].includes(name) || !stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) fail('STORE_PATH_INVALID');
   }
-  if (fs.readFileSync(path.join(root, '.synthetic-owner'), 'utf8') !== workerData.owner) fail('STORE_PATH_INVALID');
+  try { assertOwnerMarker(root, workerData.owner); } catch { fail('STORE_PATH_INVALID'); }
   return path.join(root, 'authority.sqlite');
 }
 function meta() { return db.prepare('SELECT generation,policyRevision,clockHighWater FROM metadata WHERE id=1').get(); }
