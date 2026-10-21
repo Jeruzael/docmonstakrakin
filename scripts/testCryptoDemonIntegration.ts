@@ -9,9 +9,11 @@ import { cryptoDemonDraft } from './fixtures/cryptoDemon.js';
 import { computeCanonicalStateHash, computeEnvelopeHash } from '../server/package/portablePackage.js';
 import {createChainedAuditEvent} from '../server/security/auditImmutability.js';
 import {verifyProposalRoundtrip} from './fixtures/proposalContractScenarios.js';
+import {createSyntheticServerPreload} from './fixtures/syntheticServerPreload.ts';
 
 const root = process.cwd();
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-crypto-'));
+const preload=createSyntheticServerPreload(dir);
 const evidenceDir = path.join(dir, 'test-evidence');
 fs.mkdirSync(evidenceDir);
 const retainedEvidencePath = path.join(root, 'docs/07_verification/cryptodemon-fixture-evidence.json');
@@ -26,7 +28,9 @@ let output = '';
 let cookie='';
 async function login(username:string){return api('/api/governance/session',{username,password:fixtureCredential});}
 async function start() {
-  child = spawn(process.execPath, ['--import', pathToFileURL(path.join(root, 'node_modules/tsx/dist/loader.mjs')).href, path.join(root, 'server.ts')], {cwd: dir, windowsHide: true, env: {...process.env, NODE_ENV: 'production', PORT: String(port), GEMINI_API_KEY: '', DMK_HUMAN_REVIEWERS: JSON.stringify({'Fixture Human': {id:'fixture-human',kind:'HUMAN',roles:['Security Officer','Lead Architect'],credentialVerifier}, 'Fixture Architect': {id:'fixture-architect',kind:'HUMAN',roles:['Lead Architect'],credentialVerifier}, 'Fixture Observer':{id:'fixture-observer',kind:'HUMAN',roles:[],credentialVerifier}, 'Fixture Agent':{id:'fixture-agent',kind:'AGENT',roles:['Security Officer'],credentialVerifier}})}, stdio: 'pipe'});
+  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:JSON.stringify({'Fixture Human': {id:'fixture-human',kind:'HUMAN',roles:['Security Officer','Lead Architect'],credentialVerifier}, 'Fixture Architect': {id:'fixture-architect',kind:'HUMAN',roles:['Lead Architect'],credentialVerifier}, 'Fixture Observer':{id:'fixture-observer',kind:'HUMAN',roles:[],credentialVerifier}, 'Fixture Agent':{id:'fixture-agent',kind:'AGENT',roles:['Security Officer'],credentialVerifier}})};
+  for(const name of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[name])env[name]=process.env[name];
+  child = spawn(process.execPath, ['--import', pathToFileURL(path.join(root, 'node_modules/tsx/dist/loader.mjs')).href,'--import',pathToFileURL(preload).href, path.join(root, 'server.ts')], {cwd: dir, windowsHide: true, env, stdio: 'pipe'});
   child.stdout?.on('data', b => output += b); child.stderr?.on('data', b => output += b);
   child.once('error',e=>output+=`Child startup error: ${e.message}`);
   const deadline=Date.now()+45000;

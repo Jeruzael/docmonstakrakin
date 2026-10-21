@@ -8,6 +8,7 @@ import {createServer} from 'node:net';
 import {ProjectStore} from '../../server/projectStore.ts';
 import {createProjectLoader,readProjectList} from '../../src/data/projectWorkspace.ts';
 import type {Project} from '../../src/types.ts';
+import {createSyntheticServerPreload} from './syntheticServerPreload.ts';
 
 export async function verifyProjectsWorkspaceHttp(projects:Project[]) {
   const root=process.cwd();
@@ -18,7 +19,10 @@ export async function verifyProjectsWorkspaceHttp(projects:Project[]) {
   for(const key of Object.keys(store)){const collection=(store as any)[key];if(collection && !Array.isArray(collection) && typeof collection==='object'){(store as any)[key]={};for(const project of projects)(store as any)[key][project.id]=[];}}
   fs.mkdirSync(path.join(dir,'.local'));const snapshot=path.join(dir,'.local/project-state.json');
   fs.writeFileSync(snapshot,JSON.stringify({schemaVersion:1,state:store}));const beforeBytes=fs.readFileSync(snapshot);
-  const child=spawn(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,path.join(root,'server.ts')],{cwd:dir,windowsHide:true,env:{...process.env,NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:'{}'},stdio:'pipe'});
+  const preload=createSyntheticServerPreload(dir);
+  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:'{}'};
+  for(const name of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[name])env[name]=process.env[name];
+  const child=spawn(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,'--import',pathToFileURL(preload).href,path.join(root,'server.ts')],{cwd:dir,windowsHide:true,env,stdio:'pipe'});
   let output='';child.stdout.on('data',data=>output+=data);child.stderr.on('data',data=>output+=data);child.on('error',e=>output+=e.message);
   const request:typeof fetch=(url,options)=>fetch(`http://127.0.0.1:${port}${url}`,options);
   try {

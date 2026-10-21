@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {chromium, type Page, type Route} from 'playwright';
-import {createServer} from 'vite';
+import {startIsolatedVite} from './fixtures/isolatedVite.ts';
 import {INITIAL_PROJECTS, INITIAL_WORK_ITEMS} from '../src/data/initialData.ts';
 import {createPortablePackage} from '../server/package/portablePackage.ts';
 import {startPackageFixture} from './fixtures/projectsWorkspaceUiServer.ts';
@@ -17,8 +17,7 @@ import {ProjectStore} from '../server/projectStore.ts';
 // Real App, real React children and CSS. Only the API boundary is controlled.
 // Vite serves source only; this harness never connects to the operator's server.
 const root=process.cwd();
-const vite=await createServer({root,server:{host:'127.0.0.1',port:0},logLevel:'error'});
-await vite.listen();
+const vite=await startIsolatedVite(root);
 const base=vite.resolvedUrls!.local[0];
 const executable=process.env.DMK_TEST_BROWSER || ['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
 const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
@@ -153,13 +152,13 @@ try {
   await test('W1 rejected WorkItem status and checklist retain canonical drawer values',async()=>{
     const f=await setup();try{await f.start();await f.page.getByRole('button',{name:/^Work Management/}).click();
       await f.page.getByText(INITIAL_WORK_ITEMS[0].title,{exact:true}).first().click();
-      const select=f.page.locator('select').last();const before=await select.inputValue();
+      const select=f.page.getByRole('combobox',{name:'Work item status'});const before=await select.inputValue();
       f.state.reject=true;await select.selectOption('VERIFIED');
       await f.page.getByRole('alert').filter({hasText:'Fixture rejected work update'}).waitFor();assert.equal(await select.inputValue(),before);
       const check=f.page.getByRole('checkbox').first();const checked=await check.isChecked();await check.click();
       await f.page.getByRole('alert').filter({hasText:'Fixture rejected work update'}).waitFor();assert.equal(await check.isChecked(),checked);
       f.state.reject=false;await select.selectOption('IN_PROGRESS');
-      await f.page.waitForFunction(()=>document.querySelector('select')?.value==='IN_PROGRESS');
+      await f.page.waitForFunction(()=>document.querySelector<HTMLSelectElement>('select[aria-label="Work item status"]')?.value==='IN_PROGRESS');
       assert.equal(await f.page.locator('h2').filter({hasText:INITIAL_WORK_ITEMS[0].title}).count(),1);
       await check.click();await f.page.waitForFunction(expected=>(document.querySelector('input[type=checkbox]') as HTMLInputElement)?.checked===expected,!checked);
       assert.equal(await check.isChecked(),!checked);
