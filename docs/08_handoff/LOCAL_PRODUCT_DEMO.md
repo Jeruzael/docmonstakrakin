@@ -1,5 +1,7 @@
 # Deterministic local product demo
 
+**Current integration checkpoint (2026-10-21):** this product journey is now on master through PR #66, exact post-merge verified commit `21da1d5bebaecf58b5037c255561c8b8315b429d`. [Actual master CI](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39598218255) passed all four jobs and79/79suites, including the nine-check product journey. A normal checkout of that commit can run the commands below. The original recovery-branch instructions are retained as historical context; they no longer mean the product changes are absent from master. See the [continuation handoff](FAST_TRACK_DEVELOPMENT_HANDOFF.md) and [complete remaining task ledger](../06_planning/FOUR_HOUR_COMPLETION_LEDGER_20261021.md) for current limitations and subsequent integration evidence.
+
 Run this guide from the **new master-targeted recovery PR** branch
 `codex/pr63-master-integration`, or from master only after that PR's actual
 merge and post-merge CI have been verified. The old PR #63 merged into a feature
