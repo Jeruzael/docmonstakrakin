@@ -4,13 +4,15 @@ import path from 'node:path';
 import ts from 'typescript';
 import { chromium, type Page, type Route } from 'playwright';
 import { startIsolatedVite } from './fixtures/isolatedVite.ts';
-import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
+import { INITIAL_PROJECTS, INITIAL_QUESTIONS, INITIAL_REQUIREMENTS, INITIAL_WORK_ITEMS, INITIAL_AUDIT_EVENTS } from '../src/data/initialData.ts';
+import { evaluateReleaseGates, type ReleaseAuditReport } from '../server/release/releaseGateEvaluator.ts';
 import type {
   ControlledDocumentSummary,
   DocumentContentResponse,
   DocumentDiffResponse,
   DocumentValidationResponse,
   DocumentSaveResponse,
+  Project,
 } from '../src/types.ts';
 
 // Integration test for Controlled Document Project Version Synchronization
@@ -84,6 +86,24 @@ interface TestHarnessOptions {
   auditResponseOverride?: (projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>;
 }
 
+function syntheticReadyReport(project: Pick<Project, 'id' | 'name'>): ReleaseAuditReport {
+  const sourceId = 'PRJ-ATLAS-01';
+  // Use the real evaluator's complete seven-gate response with inert seed inputs.
+  // Only browser-fixture identity is remapped for the pre-existing stale-snapshot
+  // scenarios; this does not claim that the real DOCMONSTAKRAKIN project is ready.
+  const report = evaluateReleaseGates({
+    projects: structuredClone(INITIAL_PROJECTS),
+    questions: { [sourceId]: structuredClone(INITIAL_QUESTIONS) },
+    requirements: { [sourceId]: structuredClone(INITIAL_REQUIREMENTS) },
+    workItems: { [sourceId]: structuredClone(INITIAL_WORK_ITEMS) },
+    auditLogs: { [sourceId]: structuredClone(INITIAL_AUDIT_EVENTS) },
+    approvals: { [sourceId]: [] },
+  }, sourceId);
+  assert.equal(report.releaseReady, true, 'Synthetic Atlas input must allow the signoff-entry scenario');
+  assert.equal(report.signedOff, false, 'Synthetic fixture must not contain release approval');
+  return { ...report, projectId: project.id, projectName: project.name };
+}
+
 async function createHarness(options: TestHarnessOptions = {}) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultTimeout(8000);
@@ -140,13 +160,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let projectCHoldPromise: Promise<void> | null = null;
   const endpointFetchCounts: Record<string, number> = {};
   const signoffCalls: any[] = [];
-  let releaseGatesData = {
-    releaseReady: true,
-    signedOff: false,
-    capabilitiesSummary: { verified: 25 },
-    auditChainIntegrity: { valid: true },
-    gates: [],
-  };
+  let releaseGatesData: ReleaseAuditReport = syntheticReadyReport(projectAData);
 
   const projectAAuditLogs: any[] = [
     {
@@ -231,17 +245,24 @@ async function createHarness(options: TestHarnessOptions = {}) {
     if (url.endsWith('/release/signoff') && method === 'POST') {
       const body = route.request().postDataJSON();
       signoffCalls.push(body);
+      // This is a response mock only; stale-snapshot scenarios still require
+      // zero POST attempts and never execute the server's signoff writer.
+      const report: ReleaseAuditReport = {
+        ...structuredClone(releaseGatesData),
+        gates: releaseGatesData.gates.map((gate) => gate.gateId === 7
+          ? { ...gate, status: 'PASSED', details: 'Synthetic browser-only signoff response.' }
+          : structuredClone(gate)),
+        signedOff: true,
+        signoffDetails: {
+          actor: body.actor,
+          timestamp: new Date().toISOString(),
+          auditEventId: 'AUD-REL-001',
+        },
+      };
+      report.allGatesPassed = report.gates.every((gate) => gate.status === 'PASSED');
       return send({
         ok: true,
-        report: {
-          releaseReady: true,
-          signedOff: true,
-          signoffDetails: {
-            actor: body.actor,
-            timestamp: new Date().toISOString(),
-            auditEventId: 'AUD-REL-001',
-          },
-        },
+        report,
       });
     }
 
