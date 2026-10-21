@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - 'codex/campaign-*'
   push:
     branches:
       - master
@@ -53,12 +54,8 @@ jobs:
           "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({defaultTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
           if ($LASTEXITCODE -ne 0) { throw 'Default temporary-path inventory failed' }
-          # Use a job-owned, unaliased temporary parent. The fixture's strict
-          # canonical-path/ownership checks remain unchanged and mandatory.
-          $fixtureTemp = Join-Path $env:RUNNER_TEMP 'native-fixtures'
-          New-Item -ItemType Directory -Path $fixtureTemp -Force | Out-Null
-          "TEMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "TMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Exercise the runner's actual default TEMP (including RUNNER~1).
+          # Native canonicalization must agree without a TEMP override.
           Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
           node --version
           if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
@@ -91,10 +88,14 @@ jobs:
 
       - name: Qualify npm native runtime and existing quality gates
         run: |
+          node scripts/testBunLifecycleInventory.ts
+          if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard regression failed' }
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({fixtureTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
           if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
           npm.cmd run ci:quality
@@ -105,6 +106,9 @@ jobs:
       - name: Fresh frozen Bun install in a separate exact-checkout clone
         run: |
           $ErrorActionPreference = 'Stop'
+          $utf8 = [System.Text.UTF8Encoding]::new($false)
+          [Console]::OutputEncoding = $utf8
+          $OutputEncoding = $utf8
           $sha = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Checkout identity unavailable' }
           $clone = Join-Path $env:RUNNER_TEMP 'native-bun-checkout'
@@ -123,11 +127,12 @@ jobs:
             $trustExit = $LASTEXITCODE
             $untrusted | ForEach-Object { Write-Output $_ }
             if ($trustExit -ne 0) { throw 'Bun lifecycle trust inventory failed' }
-            if (($untrusted | Out-String) -match '(?i)\b(better-sqlite3|argon2|esbuild)\s*@') {
-              throw 'Required native dependency lifecycle was blocked'
-            }
+            $untrusted | node scripts/lib/bunLifecycleInventory.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory guard failed' }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            node --import tsx scripts/testSyntheticStorePaths.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
             git diff --exit-code
@@ -154,6 +159,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify fail-closed Bun lifecycle inventory guard
+        run: node scripts/testBunLifecycleInventory.ts
+
       - name: Verify WBS integrity
         run: npm run wbs:check
 
@@ -165,6 +173,25 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Fresh frozen Linux Bun native qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate=$(mktemp -d "$RUNNER_TEMP/native-linux-bun.XXXXXX")
+          sha=$(git rev-parse HEAD)
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$candidate"
+          git -C "$candidate" checkout --detach "$sha"
+          test ! -e "$candidate/node_modules"
+          cd "$candidate"
+          npx --yes --package=bun@1.4.2 -- bun --version
+          npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/native-linux-bun-cache"
+          untrusted=$(npx --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1)
+          printf '%s\n' "$untrusted"
+          printf '%s\n' "$untrusted" | node scripts/lib/bunLifecycleInventory.mjs
+          node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          git diff --exit-code
 
   controlled_docs:
     name: Controlled Docs

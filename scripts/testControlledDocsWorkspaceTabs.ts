@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page, type Route } from 'playwright';
-import { createServer } from 'vite';
+import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import { INITIAL_PROJECTS, INITIAL_WORK_ITEMS } from '../src/data/initialData.ts';
 
 console.log('================================================================');
@@ -36,12 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
 fs.writeFileSync(path.join(harnessDir, 'index.html'), harnessHtml, 'utf8');
 fs.writeFileSync(path.join(harnessDir, 'harness.tsx'), harnessTsx, 'utf8');
 
-const vite = await createServer({
-  root,
-  server: { host: '127.0.0.1', port: 0 },
-  logLevel: 'error',
-});
-await vite.listen();
+const vite = await startIsolatedVite(root);
 const base = vite.resolvedUrls!.local[0];
 const executable =
   process.env.DMK_TEST_BROWSER ||

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Page, type Route } from 'playwright';
-import { createServer } from 'vite';
+import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import type {
   ControlledDocumentSummary,
   DocumentContentResponse,
@@ -247,12 +247,7 @@ const SESSION_INFO: ReviewerSessionInfo = {
 };
 
 // Start Vite Server
-const vite = await createServer({
-  root,
-  server: { host: '127.0.0.1', port: 0 },
-  logLevel: 'error',
-});
-await vite.listen();
+const vite = await startIsolatedVite(root);
 const baseUrl = vite.resolvedUrls!.local[0] + 'runtime/dmk-195-task10/index.html';
 
 const executable =
