@@ -53,12 +53,8 @@ jobs:
           "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           node --input-type=module -e "import fs from 'node:fs'; import os from 'node:os'; console.log(JSON.stringify({defaultTemp:os.tmpdir(),sync:fs.realpathSync(os.tmpdir()),async:await fs.promises.realpath(os.tmpdir())}));"
           if ($LASTEXITCODE -ne 0) { throw 'Default temporary-path inventory failed' }
-          # Use a job-owned, unaliased temporary parent. The fixture's strict
-          # canonical-path/ownership checks remain unchanged and mandatory.
-          $fixtureTemp = Join-Path $env:RUNNER_TEMP 'native-fixtures'
-          New-Item -ItemType Directory -Path $fixtureTemp -Force | Out-Null
-          "TEMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "TMP=$fixtureTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Exercise the runner's actual default TEMP (including RUNNER~1).
+          # Native canonicalization must agree without a TEMP override.
           Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
           node --version
           if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
@@ -95,6 +91,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Fixture temporary-path inventory failed' }
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native foundations failed' }
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           npm.cmd run ci:quality
           if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
           git diff --exit-code
@@ -126,6 +124,8 @@ jobs:
             }
             node --import tsx scripts/testSyntheticSecurityFoundations.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native foundations failed' }
+            node --import tsx scripts/testSyntheticStorePaths.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
@@ -161,6 +161,28 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Fresh frozen Linux Bun native qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate=$(mktemp -d "$RUNNER_TEMP/native-linux-bun.XXXXXX")
+          sha=$(git rev-parse HEAD)
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$candidate"
+          git -C "$candidate" checkout --detach "$sha"
+          test ! -e "$candidate/node_modules"
+          cd "$candidate"
+          npx --yes --package=bun@1.4.2 -- bun --version
+          npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/native-linux-bun-cache"
+          untrusted=$(npx --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1)
+          printf '%s\n' "$untrusted"
+          if printf '%s\n' "$untrusted" | rg -i '\b(better-sqlite3|argon2|esbuild)\s*@'; then
+            echo 'Required native dependency lifecycle was blocked'
+            exit 1
+          fi
+          node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testSyntheticStorePaths.ts
+          git diff --exit-code
 
   controlled_docs:
     name: Controlled Docs
