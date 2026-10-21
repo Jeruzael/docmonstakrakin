@@ -30,9 +30,6 @@ jobs:
       GIT_CONFIG_COUNT: "1"
       GIT_CONFIG_KEY_0: core.autocrlf
       GIT_CONFIG_VALUE_0: "false"
-      NPM_CONFIG_CACHE: ${{ runner.temp }}/native-npm-cache
-      NPM_CONFIG_DEVDIR: ${{ runner.temp }}/native-node-headers
-      NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/native-empty.npmrc
     steps:
       - name: Checkout isolated candidate
         uses: actions/checkout@v4
@@ -49,7 +46,11 @@ jobs:
       - name: Record existing Windows toolchain
         run: |
           $ErrorActionPreference = 'Stop'
-          Set-Content -LiteralPath $env:NPM_CONFIG_USERCONFIG -Value ''
+          $userConfig = Join-Path $env:RUNNER_TEMP 'native-empty.npmrc'
+          Set-Content -LiteralPath $userConfig -Value ''
+          "NPM_CONFIG_USERCONFIG=$userConfig" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_CACHE=$env:RUNNER_TEMP/native-npm-cache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/native-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
           node --version
           if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
