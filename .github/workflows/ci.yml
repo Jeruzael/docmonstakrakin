@@ -97,6 +97,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testAuthPilot.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed disconnected authentication pilot failed' }
+          node --import tsx scripts/testSyntheticWbsRegistration.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
           npm.cmd run ci:quality
           if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
           git diff --exit-code
@@ -132,6 +134,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testAuthPilot.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed disconnected authentication pilot failed' }
+            node --import tsx scripts/testSyntheticWbsRegistration.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
