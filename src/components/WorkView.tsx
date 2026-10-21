@@ -874,6 +874,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
             <div>
               <label className="text-slate-500 font-semibold block mb-1">Update Execution Status:</label>
               <select
+                aria-label="Work item status"
                 disabled={updating || activeItemCanonicalStatusOwned}
                 value={activeItem.status}
                 onChange={(e) => handleStatusChange(activeItem.id, e.target.value as WorkItemStatus)}

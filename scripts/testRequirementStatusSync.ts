@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import type { Requirement, RequirementStatus } from '../src/types.js';
 import { generateUniqueRequirementId } from '../server/requirementId.ts';
+import {createSyntheticServerPreload} from './fixtures/syntheticServerPreload.ts';
 
 console.log('================================================================');
 console.log('   REQUIREMENT CANONICAL STATE SYNCHRONIZATION REGRESSION TEST');
@@ -15,24 +16,22 @@ console.log('================================================================\n'
 
 const root = process.cwd();
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmk-reqsync-'));
+const preload=createSyntheticServerPreload(dir);
 const port = 31989;
 const base = `http://127.0.0.1:${port}`;
 let child: ReturnType<typeof spawn>;
 let output = '';
 
 async function startServer() {
+  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:'{}'};
+  for(const name of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[name])env[name]=process.env[name];
   child = spawn(
     process.execPath,
-    ['--import', pathToFileURL(path.join(root, 'node_modules/tsx/dist/loader.mjs')).href, path.join(root, 'server.ts')],
+    ['--import', pathToFileURL(path.join(root, 'node_modules/tsx/dist/loader.mjs')).href,'--import',pathToFileURL(preload).href, path.join(root, 'server.ts')],
     {
       cwd: dir,
       windowsHide: true,
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        PORT: String(port),
-        GEMINI_API_KEY: '',
-      },
+      env,
       stdio: 'pipe',
     }
   );

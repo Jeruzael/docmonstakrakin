@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { chromium, type Page, type Route } from 'playwright';
-import { createServer } from 'vite';
+import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
 import type {
   ControlledDocumentSummary,
@@ -16,12 +16,7 @@ import type {
 // Integration test for Controlled Document Project Version Synchronization
 // Serves real App with real TopBar, ControlledDocsView, and Project State.
 const root = process.cwd();
-const vite = await createServer({
-  root,
-  server: { host: '127.0.0.1', port: 0 },
-  logLevel: 'error',
-});
-await vite.listen();
+const vite = await startIsolatedVite(root);
 const base = vite.resolvedUrls!.local[0];
 
 const executable =

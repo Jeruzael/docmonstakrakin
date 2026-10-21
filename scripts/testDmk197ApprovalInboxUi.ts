@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Route } from 'playwright';
-import { createServer } from 'vite';
+import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import { INITIAL_PROJECTS } from '../src/data/initialData.ts';
 import type { ApprovalItem } from '../src/types.ts';
 
@@ -26,12 +26,7 @@ function fail(name: string, err: any) {
 }
 
 const root = process.cwd();
-const vite = await createServer({
-  root,
-  server: { host: '127.0.0.1', port: 0 },
-  logLevel: 'error',
-});
-await vite.listen();
+const vite = await startIsolatedVite(root);
 const viteBase = vite.resolvedUrls!.local[0];
 
 const executable =
