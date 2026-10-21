@@ -28,6 +28,18 @@ export function assertOwnedDirectory(root, parent, rootIdentity, parentIdentity)
 
 export function assertOwnerMarker(root, owner) {
   const marker = path.join(root, '.synthetic-owner');
-  const stat = fs.lstatSync(marker);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || fs.readFileSync(marker, 'utf8') !== owner) throw Error('PRIVATE_PATH_INVALID');
+  if (typeof owner !== 'string' || !/^[a-f0-9]{64}$/.test(owner)) throw Error('PRIVATE_PATH_INVALID');
+  const valid = stat => stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n && stat.size === 64n && stat.ino !== 0n;
+  const before = fs.lstatSync(marker, {bigint: true});
+  if (!valid(before)) throw Error('PRIVATE_PATH_INVALID');
+  const fd = fs.openSync(marker, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+  try {
+    const opened = fs.fstatSync(fd, {bigint: true});
+    if (!valid(opened) || opened.dev !== before.dev || opened.ino !== before.ino) throw Error('PRIVATE_PATH_INVALID');
+    // The allocation and read are fixed, independent of a hostile marker size.
+    const bytes = Buffer.alloc(64);
+    if (fs.readSync(fd, bytes, 0, 64, 0) !== 64 || !bytes.equals(Buffer.from(owner, 'ascii'))) throw Error('PRIVATE_PATH_INVALID');
+    const after = fs.lstatSync(marker, {bigint: true}), final = fs.fstatSync(fd, {bigint: true});
+    if (![after, final].every(stat => valid(stat) && stat.dev === opened.dev && stat.ino === opened.ino)) throw Error('PRIVATE_PATH_INVALID');
+  } finally { fs.closeSync(fd); }
 }

@@ -1,0 +1,11 @@
+PASS creation admission rejects a substituted junction before provisioning its target
+PASS replacement directory with copied database and owner denies worker restart
+PASS cleanup refuses a substituted directory even when owner bytes match
+PASS junction or symlink substitution denies access and never deletes its target
+PASS database links reject before a new worker can open an external target
+PASS cleanup stays bound to its original parent after process TEMP changes
+ALIAS_HELPER_STARTED pwsh7
+ALIAS_HELPER_COMPLETE
+WINDOWS_ALIAS_PROFILE {"aliasDiffers":true,"defaultTemp":"C:\\Users\\HomePC\\AppData\\Local\\Temp\\DMK-S2~1","nativeTemp":"C:\\Users\\HomePC\\AppData\\Local\\Temp\\dmk-s2a-synthetic-Jvwqmm"}
+PASS actual native canonical TEMP supports available Windows 8dot3 aliases
+Synthetic store paths: 7 named checks passed; native compatibility only.

@@ -9,6 +9,8 @@ import {assertOwnedDirectory, assertOwnerMarker} from './ownedDirectory.mjs';
 
 const require = createRequire(import.meta.url);
 const MAX_PRINCIPALS = 128, MAX_RESOURCES = 128, MAX_RULES = 512, MAX_SESSIONS = 256, MAX_AUDIT = 4096;
+const MAX_TEST_TRANSFERS = 128, TEST_TRANSFER_TTL = 60_000;
+const recovery = workerData?.recovery;
 let db;
 let observedClockHighWater = 0;
 function fail(code) { const error = Error(code); error.code = code; throw error; }
@@ -28,8 +30,17 @@ function verifier(value) {
   })) fail('STORE_INPUT_INVALID');
 }
 function validateRoot() {
-  try { exactKeys(workerData, ['rootDirectory', 'owner', 'fresh', 'parentDirectory', 'rootIdentity', 'parentIdentity']); }
+  try { exactKeys(workerData, ['rootDirectory', 'owner', 'fresh', 'parentDirectory', 'rootIdentity', 'parentIdentity'], ['recovery']); }
   catch { fail('STORE_PATH_INVALID'); }
+  if (Object.hasOwn(workerData, 'recovery')) {
+    try {
+      exactKeys(recovery, ['rootKeySha256', 'authorityId'], ['claim']); digest(recovery.rootKeySha256); digest(recovery.authorityId);
+      if (Object.hasOwn(recovery, 'claim')) {
+        exactKeys(recovery.claim, ['transferDigest', 'fromGeneration', 'issuedAt', 'now']); digest(recovery.claim.transferDigest); revision(recovery.claim.fromGeneration); time(recovery.claim.issuedAt); time(recovery.claim.now);
+        if (workerData.fresh) fail('STORE_RECOVERY_INVALID');
+      }
+    } catch { fail('STORE_RECOVERY_INVALID'); }
+  }
   if (typeof workerData.rootDirectory !== 'string' || typeof workerData.owner !== 'string' || !/^[a-f0-9]{64}$/.test(workerData.owner) || typeof workerData.fresh !== 'boolean') fail('STORE_PATH_INVALID');
   const root = workerData.rootDirectory;
   try { assertOwnedDirectory(root, workerData.parentDirectory, workerData.rootIdentity, workerData.parentIdentity); }
@@ -42,6 +53,45 @@ function validateRoot() {
   return path.join(root, 'authority.sqlite');
 }
 function meta() { return db.prepare('SELECT generation,policyRevision,clockHighWater FROM metadata WHERE id=1').get(); }
+function testLease() {
+  const lease = db.prepare('SELECT * FROM test_authority WHERE id=1').get();
+  if (!lease || db.prepare('SELECT count(*) AS n FROM test_authority').get().n !== 1 || !/^[a-f0-9]{64}$/.test(lease.rootKeySha256) || !['ACTIVE', 'QUIESCED'].includes(lease.phase) ||
+      lease.phase === 'ACTIVE' && (!/^[a-f0-9]{64}$/.test(lease.authorityId) || lease.pendingTransferDigest !== null || lease.transferExpiresAt !== 0) ||
+      lease.phase === 'QUIESCED' && (lease.authorityId !== '' || !/^[a-f0-9]{64}$/.test(lease.pendingTransferDigest) || !Number.isSafeInteger(lease.transferExpiresAt) || lease.transferExpiresAt < 1)) fail('STORE_RECOVERY_INTEGRITY');
+  return lease;
+}
+function validateTestLedger(current, audit, lease) {
+  const count = db.prepare('SELECT count(*) AS n FROM test_transfers').get().n;
+  if (count > MAX_TEST_TRANSFERS) fail('STORE_RECOVERY_INTEGRITY');
+  const rows = db.prepare('SELECT * FROM test_transfers ORDER BY sequence').all();
+  let previousGeneration = 0, previousTime = 0, pending = null;
+  const claims = [];
+  for (const event of audit) {
+    if (!['TEST_TRANSFER_PREPARED', 'TEST_TRANSFER_CLAIMED'].includes(event.action)) continue;
+    if (!/^[a-f0-9]{64}$/.test(event.target) || !Number.isSafeInteger(event.timestamp) || event.timestamp < 1) fail('STORE_RECOVERY_INTEGRITY');
+    if (event.action === 'TEST_TRANSFER_PREPARED') {
+      if (pending) fail('STORE_RECOVERY_INTEGRITY');
+      pending = event;
+    } else {
+      if (!pending || pending.target !== event.target || event.timestamp < pending.timestamp) fail('STORE_RECOVERY_INTEGRITY');
+      claims.push(event); pending = null;
+    }
+  }
+  if (claims.length !== rows.length || (lease.phase === 'QUIESCED') !== !!pending || pending &&
+      (pending.target !== lease.pendingTransferDigest || pending.timestamp + TEST_TRANSFER_TTL !== lease.transferExpiresAt)) fail('STORE_RECOVERY_INTEGRITY');
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index];
+    if (row.sequence !== index + 1 || !/^[a-f0-9]{64}$/.test(row.transferDigest) || !Number.isSafeInteger(row.fromGeneration) ||
+        row.fromGeneration < 1 || row.fromGeneration < previousGeneration || row.toGeneration !== row.fromGeneration + 1 || row.toGeneration > current.generation ||
+        !Number.isSafeInteger(row.consumedAt) || row.consumedAt < previousTime || row.consumedAt > current.clockHighWater ||
+        row.transferDigest !== claims[index].target || row.consumedAt !== claims[index].timestamp) fail('STORE_RECOVERY_INTEGRITY');
+    previousGeneration = row.toGeneration; previousTime = row.consumedAt;
+  }
+}
+function requireTestOwner() {
+  const lease = testLease();
+  if (lease.rootKeySha256 !== recovery.rootKeySha256 || lease.phase !== 'ACTIVE' || lease.authorityId !== recovery.authorityId) fail('STORE_AUTHORITY_STALE');
+}
 // A denial may advance sanitized time metadata, never session activity/rights.
 // The worker also retains its greatest observation outside SQLite rollback:
 // failed audit/storage cannot rewind time and revive an expired session. The
@@ -87,12 +137,29 @@ function handle(message) {
     }
     case 'snapshot': {
       exactKeys(c, ['command']);
-      const state = Object.fromEntries(['metadata', 'principals', 'sessions', 'resources', 'rules', 'audit'].map(table => [table, db.prepare('SELECT * FROM ' + table + ' ORDER BY rowid').all()]));
+      const tables = ['metadata', 'principals', 'sessions', 'resources', 'rules', 'audit', ...(recovery ? ['test_authority', 'test_transfers'] : [])];
+      const state = Object.fromEntries(tables.map(table => [table, db.prepare('SELECT * FROM ' + table + ' ORDER BY rowid').all()]));
       const domainState = Object.fromEntries(['principals', 'sessions', 'resources', 'rules'].map(table => [table, state[table]]));
       return {...meta(), counts: Object.fromEntries(Object.entries(state).map(([key, rows]) => [key, rows.length])), stateHash: createHash('sha256').update(JSON.stringify(state)).digest('hex'), domainStateHash: createHash('sha256').update(JSON.stringify(domainState)).digest('hex')};
     }
     case 'audit': exactKeys(c, ['command']); return db.prepare('SELECT payload,hash FROM audit ORDER BY sequence').all().map(row => ({...JSON.parse(row.payload), hash: row.hash}));
-    case 'checkpoint': exactKeys(c, ['command']); db.pragma('wal_checkpoint(TRUNCATE)'); return true;
+    case 'checkpoint':
+      exactKeys(c, ['command']);
+      // Schema2 owns every RPC inside its lease transaction. SQLite checkpoint
+      // cannot run there; no separate racy check-then-checkpoint exception.
+      if (recovery) fail('STORE_RECOVERY_COMMAND_UNSUPPORTED');
+      db.pragma('wal_checkpoint(TRUNCATE)'); return true;
+    case 'prepareTestTransfer':
+      exactKeys(c, ['command', 'transferDigest', 'now']); digest(c.transferDigest); time(c.now);
+      if (!recovery) fail('STORE_RECOVERY_UNAVAILABLE');
+      return mutate(() => {
+        requireTestOwner(); if (!observeFixtureTime(c.now)) fail('STORE_CLOCK_ROLLBACK');
+        capacity('test_transfers', MAX_TEST_TRANSFERS);
+        if (db.prepare('SELECT 1 FROM test_transfers WHERE transferDigest=?').get(c.transferDigest)) fail('STORE_RECOVERY_REPLAY');
+        const generation = meta().generation;
+        db.prepare("UPDATE test_authority SET phase='QUIESCED',authorityId='',pendingTransferDigest=?,transferExpiresAt=? WHERE id=1").run(c.transferDigest, c.now + TEST_TRANSFER_TTL);
+        appendAudit('TEST_TRANSFER_PREPARED', c.transferDigest, 'SYNTHETIC_ONLY', c.now); return {generation};
+      });
     case 'createPrincipal':
       exactKeys(c, ['command', 'id', 'kind'], ['verifier']); id(c.id);
       if (!['HUMAN', 'AGENT'].includes(c.kind) || (c.kind === 'AGENT' && c.verifier !== undefined)) fail('STORE_INPUT_INVALID');
@@ -128,6 +195,7 @@ function handle(message) {
     case 'disablePrincipal':
       exactKeys(c, ['command', 'principalId']); id(c.principalId);
       return mutate(() => { if (!principal(c.principalId)) fail('PRINCIPAL_UNAVAILABLE'); db.prepare('UPDATE principals SET disabled=1 WHERE id=?').run(c.principalId); appendAudit('PRINCIPAL_DISABLED', c.principalId); return true; });
+    case 'resourceExists': exactKeys(c, ['command', 'id']); id(c.id); return !!db.prepare('SELECT id FROM resources WHERE id=?').get(c.id);
     case 'registerResource':
       exactKeys(c, ['command', 'id']); id(c.id);
       return mutate(() => { capacity('resources', MAX_RESOURCES); db.prepare('INSERT INTO resources(id) VALUES(?)').run(c.id); appendAudit('RESOURCE_REGISTERED', c.id); return true; });
@@ -199,7 +267,8 @@ try {
   if (db.prepare('SELECT sqlite_version() AS version').get().version !== '3.53.4') fail('STORE_DEPENDENCY_MISMATCH');
   if (db.pragma('quick_check', {simple: true}) !== 'ok') fail('STORE_INTEGRITY');
   const version = db.pragma('user_version', {simple: true});
-  if (existed && version !== 1 || !existed && version !== 0) fail('STORE_SCHEMA_UNSUPPORTED');
+  const expectedVersion = recovery ? 2 : 1;
+  if (existed && version !== expectedVersion || !existed && version !== 0) fail('STORE_SCHEMA_UNSUPPORTED');
   if (db.pragma('journal_mode=WAL', {simple: true}) !== 'wal') fail('STORE_CONFIGURATION');
   db.pragma('synchronous=FULL'); db.pragma('foreign_keys=ON'); db.pragma('trusted_schema=OFF');
   if (!existed) db.transaction(() => {
@@ -210,11 +279,38 @@ try {
       CREATE TABLE rules(principalId TEXT NOT NULL REFERENCES principals(id),action TEXT NOT NULL,resourceId TEXT NOT NULL REFERENCES resources(id),effect TEXT NOT NULL CHECK(effect IN ('ALLOW','DENY')),PRIMARY KEY(principalId,action,resourceId,effect));
       CREATE TABLE sessions(digest TEXT PRIMARY KEY,principalId TEXT NOT NULL REFERENCES principals(id),issuedAt INTEGER NOT NULL,lastSeenAt INTEGER NOT NULL,credentialRevision INTEGER NOT NULL,policyRevision INTEGER NOT NULL,generation INTEGER NOT NULL,revoked INTEGER NOT NULL CHECK(revoked IN (0,1)));
       CREATE TABLE audit(sequence INTEGER PRIMARY KEY,payload TEXT NOT NULL,hash TEXT NOT NULL);
-      PRAGMA user_version=1;`);
+      PRAGMA user_version=${expectedVersion};`);
+    if (recovery) {
+      db.exec(`CREATE TABLE test_authority(id INTEGER PRIMARY KEY CHECK(id=1),rootKeySha256 TEXT NOT NULL,authorityId TEXT NOT NULL,phase TEXT NOT NULL CHECK(phase IN ('ACTIVE','QUIESCED')),pendingTransferDigest TEXT,transferExpiresAt INTEGER NOT NULL);
+        CREATE TABLE test_transfers(sequence INTEGER PRIMARY KEY,transferDigest TEXT NOT NULL UNIQUE,fromGeneration INTEGER NOT NULL,toGeneration INTEGER NOT NULL,consumedAt INTEGER NOT NULL);`);
+      db.prepare("INSERT INTO test_authority VALUES(1,?,?,'ACTIVE',NULL,0)").run(recovery.rootKeySha256, recovery.authorityId);
+    }
   }).immediate();
+  if (recovery && db.prepare('SELECT count(*) AS n FROM audit').get().n > MAX_AUDIT) fail('STORE_RECOVERY_INTEGRITY');
   const ledger = handle({command: 'audit'});
   if (!verifyAuditChain(ledger)) fail('STORE_INTEGRITY');
-  mutate(() => { const current = meta(); if (!current || !Number.isSafeInteger(current.generation) || current.generation < 0 || current.generation >= Number.MAX_SAFE_INTEGER || !Number.isSafeInteger(current.policyRevision) || current.policyRevision < 1 || !Number.isSafeInteger(current.clockHighWater) || current.clockHighWater < 0 || current.clockHighWater > Number.MAX_SAFE_INTEGER - 1_800_000) fail('STORE_REVISION_INVALID'); db.prepare('UPDATE metadata SET generation=generation+1 WHERE id=1').run(); appendAudit('GENERATION_STARTED', 'fixture'); });
+  mutate(() => {
+    const current = meta();
+    if (!current || !Number.isSafeInteger(current.generation) || current.generation < 0 || current.generation >= Number.MAX_SAFE_INTEGER || !Number.isSafeInteger(current.policyRevision) || current.policyRevision < 1 || !Number.isSafeInteger(current.clockHighWater) || current.clockHighWater < 0 || current.clockHighWater > Number.MAX_SAFE_INTEGER - 1_800_000) fail('STORE_REVISION_INVALID');
+    if (recovery) {
+      const lease = testLease();
+      validateTestLedger(current, ledger, lease);
+      if (lease.rootKeySha256 !== recovery.rootKeySha256) fail('STORE_RECOVERY_ROOT_UNTRUSTED');
+      if (recovery.claim) {
+        const claim = recovery.claim;
+        if (lease.phase !== 'QUIESCED' || lease.pendingTransferDigest !== claim.transferDigest || claim.fromGeneration !== current.generation ||
+            claim.issuedAt + TEST_TRANSFER_TTL !== lease.transferExpiresAt || claim.now < claim.issuedAt || claim.now >= lease.transferExpiresAt ||
+            db.prepare('SELECT 1 FROM test_transfers WHERE transferDigest=?').get(claim.transferDigest)) fail('STORE_RECOVERY_CLAIM_INVALID');
+        if (!observeFixtureTime(claim.now)) fail('STORE_CLOCK_ROLLBACK');
+        capacity('test_transfers', MAX_TEST_TRANSFERS);
+        const previous = db.prepare('SELECT sequence FROM test_transfers ORDER BY sequence DESC LIMIT 1').get();
+        db.prepare('INSERT INTO test_transfers VALUES(?,?,?,?,?)').run((previous?.sequence ?? 0) + 1, claim.transferDigest, current.generation, current.generation + 1, claim.now);
+        db.prepare("UPDATE test_authority SET phase='ACTIVE',authorityId=?,pendingTransferDigest=NULL,transferExpiresAt=0 WHERE id=1").run(recovery.authorityId);
+        appendAudit('TEST_TRANSFER_CLAIMED', claim.transferDigest, 'SYNTHETIC_ONLY', claim.now);
+      } else requireTestOwner();
+    }
+    db.prepare('UPDATE metadata SET generation=generation+1 WHERE id=1').run(); appendAudit('GENERATION_STARTED', 'fixture');
+  });
   parentPort.postMessage({ready: true});
   parentPort.on('message', envelope => {
     let requestId;
@@ -224,9 +320,20 @@ try {
       if (!Number.isSafeInteger(requestId) || requestId < 1) fail('STORE_INPUT_INVALID');
       validateRoot();
       if (envelope.request?.command === 'close') {
-        exactKeys(envelope.request, ['command']); db.close(); parentPort.postMessage({requestId, value: true}); parentPort.close(); return;
+        exactKeys(envelope.request, ['command']);
+        // Connection close is always permitted, but stale/uncertain owners may
+        // never receive a cleanup permission for another process's root.
+        const value = recovery ? mutate(() => {
+          const lease = testLease();
+          return {mayRemoveRoot: lease.rootKeySha256 === recovery.rootKeySha256 && lease.phase === 'ACTIVE' && lease.authorityId === recovery.authorityId};
+        }) : true;
+        db.close(); parentPort.postMessage({requestId, value}); parentPort.close(); return;
       }
-      parentPort.postMessage({requestId, value: handle(envelope.request)});
+      // Lease acquisition/fencing and every read/mutation share one immediate
+      // SQLite transaction. A quiesced or superseded process cannot race a
+      // successor by checking ownership before (rather than inside) its work.
+      const value = recovery ? mutate(() => { requireTestOwner(); return handle(envelope.request); }) : handle(envelope.request);
+      parentPort.postMessage({requestId, value});
     } catch (error) {
       // Codes only: SQLite/native diagnostics may include sensitive input text.
       const code = typeof error?.code === 'string' && /^(STORE_[A-Z_]+|SQLITE_[A-Z_]+|PRINCIPAL_UNAVAILABLE|STALE_CREDENTIAL)$/.test(error.code) ? error.code : 'STORE_UNAVAILABLE';

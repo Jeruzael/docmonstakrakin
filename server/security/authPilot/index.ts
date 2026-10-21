@@ -3,11 +3,13 @@ import type {Decision, SessionPrincipal} from '../syntheticFoundations/contracts
 import type {PrivateSyntheticStore} from '../syntheticFoundations/privateStore.ts';
 import type {BoundedVerifier} from '../syntheticFoundations/boundedVerifier.ts';
 import type {SyntheticSessions} from '../syntheticFoundations/sessions.ts';
+import type {TestRoot} from './fixtureRecovery.ts';
 
 export const AUTH_PILOT_BOUNDS = Object.freeze({principalAttempts: 5, globalAttempts: 30, windowMs: 60_000, throttleKeys: 128, passwordBytes: 1024});
 export type ResourceHandle = Readonly<{kind: 'DISCONNECTED_RESOURCE'}>;
 export type PilotCapability = 'READ' | 'WRITE' | 'HUMAN_APPROVE';
 type Options = {enabled?: false} | {enabled: true; mode: 'DISCONNECTED_SYNTHETIC'; clock?: () => number};
+type RecoveryOptions = {enabled?: false} | {enabled: true; mode: 'DISCONNECTED_SYNTHETIC'; testRoot: TestRoot; transfer?: Buffer; clock?: () => number};
 type Login = {authenticated: false; limited: boolean} | {authenticated: true; token: string; csrf: string};
 export interface AuthPilot {
   enabled: true;
@@ -34,6 +36,8 @@ export interface AuthPilot {
     audit(): Promise<any[]>;
     snapshot(): Promise<any>;
     provenance(): Promise<any>;
+    /** Present only on explicit TESTONLY schema2 factories; never mounted in HTTP. */
+    prepareTestTransfer?(): Promise<Buffer>;
   };
 }
 const idValid = (value: unknown): value is string => typeof value === 'string' && /^fixture-[A-Za-z0-9][A-Za-z0-9_-]{0,55}$/.test(value);
@@ -49,14 +53,30 @@ export async function createAuthPilot(options: Options = {}): Promise<{enabled: 
     return {enabled: false};
   }
   if (options.mode !== 'DISCONNECTED_SYNTHETIC' || options.clock !== undefined && typeof options.clock !== 'function') throw Error('AUTH_PILOT_OPTIONS_INVALID');
+  return assembleAuthPilot(options.clock ?? Date.now);
+}
+
+/** Authenticates only a test-root-pinned minted store; no arbitrary path/store adapter. */
+export async function createRecoveryAuthPilot(options: RecoveryOptions = {}): Promise<{enabled: false} | AuthPilot> {
+  if (!options || Object.getPrototypeOf(options) !== Object.prototype || Object.keys(options).some(key => !['enabled', 'mode', 'clock', 'testRoot', 'transfer'].includes(key)) || options.enabled !== undefined && typeof options.enabled !== 'boolean') throw Error('AUTH_PILOT_OPTIONS_INVALID');
+  if (options.enabled !== true) {
+    if (Object.keys(options).some(key => key !== 'enabled')) throw Error('AUTH_PILOT_OPTIONS_INVALID');
+    return {enabled: false};
+  }
+  if (options.mode !== 'DISCONNECTED_SYNTHETIC' || options.clock !== undefined && typeof options.clock !== 'function' ||
+      !options.testRoot || !Buffer.isBuffer(options.testRoot.publicDer) || typeof options.testRoot.seal !== 'function' || options.transfer !== undefined && !Buffer.isBuffer(options.transfer)) throw Error('AUTH_PILOT_OPTIONS_INVALID');
+  return assembleAuthPilot(options.clock ?? Date.now, {root: options.testRoot, transfer: options.transfer});
+}
+
+async function assembleAuthPilot(clock: () => number, recovery?: {root: TestRoot; transfer?: Buffer}): Promise<AuthPilot> {
   const [{PrivateSyntheticStore}, {BoundedVerifier}, {SyntheticSessions, sessionDigest}, argon, {createRequire}] = await Promise.all([
     import('../syntheticFoundations/privateStore.ts'), import('../syntheticFoundations/boundedVerifier.ts'), import('../syntheticFoundations/sessions.ts'), import('argon2'), import('node:module'),
   ]);
   if (createRequire(import.meta.url)('argon2/package.json').version !== '0.45.1') throw Error('AUTH_PILOT_DEPENDENCY_MISMATCH');
   const verifier: BoundedVerifier = new BoundedVerifier(argon.default ?? argon);
   const dummy = await verifier.hash(randomBytes(32).toString('base64url'));
-  const store: PrivateSyntheticStore = await PrivateSyntheticStore.create();
-  const clock = options.clock ?? Date.now;
+  const store: PrivateSyntheticStore = recovery ? recovery.transfer ?
+    await PrivateSyntheticStore.acceptTestTransfer(recovery.transfer, recovery.root.publicDer, clock()) : await PrivateSyntheticStore.createRecoveryFixture(recovery.root) : await PrivateSyntheticStore.create();
   const sessions: SyntheticSessions = new SyntheticSessions(store, clock);
   const secret = randomBytes(32);
   const handles = new WeakMap<ResourceHandle, string>();
@@ -142,13 +162,14 @@ export async function createAuthPilot(options: Options = {}): Promise<{enabled: 
       rootDirectory: store.rootDirectory,
       async createHuman(id, password) { requireOpen(); requireId(id); const hash = await hashNew(password); requireOpen(); await store.execute({command: 'createPrincipal', id, kind: 'HUMAN', verifier: hash}); },
       async createAgent(id) { requireOpen(); requireId(id); await store.execute({command: 'createPrincipal', id, kind: 'AGENT'}); },
-      async resource(id) { requireOpen(); requireId(id); await store.execute({command: 'registerResource', id}); const handle: ResourceHandle = Object.freeze({kind: 'DISCONNECTED_RESOURCE'}); handles.set(handle, id); return handle; },
+      async resource(id) { requireOpen(); requireId(id); if (!recovery || !await store.execute({command: 'resourceExists', id})) await store.execute({command: 'registerResource', id}); const handle: ResourceHandle = Object.freeze({kind: 'DISCONNECTED_RESOURCE'}); handles.set(handle, id); return handle; },
       async rule(id, capability, resource, effect) { requireOpen(); requireId(id); const resourceId = handles.get(resource); if (!resourceId || !Object.hasOwn(actions, capability) || !['ALLOW', 'DENY'].includes(effect)) throw Error('AUTH_PILOT_FIXTURE_INVALID'); await store.execute({command: 'setRule', principalId: id, action: actions[capability], resourceId, effect}); },
       async reset(id, password) { requireOpen(); requireId(id); const hash = await hashNew(password); requireOpen(); await store.execute({command: 'resetCredential', principalId: id, verifier: hash}); },
       async disable(id) { requireOpen(); requireId(id); await store.execute({command: 'disablePrincipal', principalId: id}); },
       async restart() { requireOpen(); await store.restart(); },
       async terminate() { requireOpen(); await store.terminate(); },
       audit: () => store.execute({command: 'audit'}), snapshot: () => store.execute({command: 'snapshot'}), provenance: () => store.execute({command: 'info'}),
+      ...(recovery ? {async prepareTestTransfer() { requireOpen(); const time = now(); if (time === null) throw Error('AUTH_PILOT_CLOCK_INVALID'); return store.prepareTestTransfer(recovery.root, time); }} : {}),
     },
   };
 }

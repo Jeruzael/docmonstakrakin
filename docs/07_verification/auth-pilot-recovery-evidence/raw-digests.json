@@ -1,0 +1,103 @@
+{
+  "normalization": "UTF8, LF, trim trailing whitespace/blank EOF; checkout prefix becomes $CHECKOUT; strip terminal color. Raw hashes refer to untouched original task logs.",
+  "records": [
+    {
+      "source": "auth-recovery-red.log",
+      "target": "missing-feature-red.txt",
+      "rawBytes": 453,
+      "rawSha256": "f37246cbc7526877a72fa289b98b48b1a5ce864f01b34d7a7a4840df090ea707",
+      "publishedSha256": "301475adcd1886e662ac72bc4d5ca9777e2d2318efa03f0038df6f56675a5e74"
+    },
+    {
+      "source": "auth-recovery-first.log",
+      "target": "authoring-api-failure.txt",
+      "rawBytes": 697,
+      "rawSha256": "d3bb62da9977dd4bb5d353916c934a3adc7aaac69209d18073cdc3f70806f13c",
+      "publishedSha256": "7dd447491d1d4efb8867de41a9f6d0c571b9e57c48f7abbee6b7d0889a57b501"
+    },
+    {
+      "source": "auth-recovery-marker-review.log",
+      "target": "marker-review-red-green.txt",
+      "rawBytes": 154,
+      "rawSha256": "57bf98e6c33c4aa8a5e0e61ad5a66b0776641b6bc427c5c982ac949120bb9518",
+      "publishedSha256": "657bfbc6e673f3ff349fe2ec518106704dd8581dfb8e37e9d245404530a44e07"
+    },
+    {
+      "source": "auth-recovery-ledger-review.log",
+      "target": "ledger-review-red-green.txt",
+      "rawBytes": 172,
+      "rawSha256": "b90816bed305a134c280b3f2c4bd2e17fccefe0a93064f6fb1f35dd5f9b4a407",
+      "publishedSha256": "638ca5ef6a3ada97974cb2f5c1c19667223d903bfbc7544ec89b7efb8a282640"
+    },
+    {
+      "source": "auth-recovery-native35.log",
+      "target": "native35.txt",
+      "rawBytes": 3616,
+      "rawSha256": "212ab2493725810d93db78ff8d6c83e92f725b93fb9a1f3f474d4931db72f58e",
+      "publishedSha256": "4a3c4cdd61b60d12d7b93dd801ce69de2d4d77f5468deaacb23e25fdcc22aeda"
+    },
+    {
+      "source": "auth-recovery-paths7.log",
+      "target": "paths7.txt",
+      "rawBytes": 869,
+      "rawSha256": "0a646ae1babd441c04132bfc059a33f79c8f71f90b44a104dc61334f0b030211",
+      "publishedSha256": "cad83ccc4dcf9333a507b308acc45a1b60b7b82c6e611bee87b539809c429d9b"
+    },
+    {
+      "source": "auth-recovery-pilot41.log",
+      "target": "pilot41.txt",
+      "rawBytes": 4188,
+      "rawSha256": "ce9efe3169d8f163b8da129427fa4a3b1ea13d52303566223fbc49046e04efc1",
+      "publishedSha256": "cb2323f4463a8a25120d0afd499c4ff688b63efc6d6228cc2a1f5531e6a99caa"
+    },
+    {
+      "source": "auth-recovery-final-focused.log",
+      "target": "recovery24.txt",
+      "rawBytes": 2847,
+      "rawSha256": "9d192e423a17168de8ed1229e05e0217820ecfe4f0308c1b0335ae79a29b8e07",
+      "publishedSha256": "a82b0f002f000e785f9648c8c71ebbe4a7ef7206edefa85b73ad4e4a0043b699"
+    },
+    {
+      "source": "auth-recovery-quality.log",
+      "target": "quality.txt",
+      "rawBytes": 1234,
+      "rawSha256": "7f5cfdbe425c2219bfb49cacf5964d5478cc8b91316b5e8426b5063768519334",
+      "publishedSha256": "69a2b4546e6c11fd4b3ee15b1832e82694d374607accfd4bedfb4e95c1bb29d9"
+    },
+    {
+      "source": "auth-recovery-controlled.log",
+      "target": "controlled.txt",
+      "rawBytes": 7571,
+      "rawSha256": "241be011258fd00c286f77f64321e9073aff75cffb667e420bbc5926f61165cd",
+      "publishedSha256": "b75a2e7f67fb954cfa0ecc0de1c833449462410368231779e95754c146e48a82"
+    },
+    {
+      "source": "auth-recovery-node-provenance.json",
+      "target": "portable-node-provenance.json",
+      "rawBytes": 240,
+      "rawSha256": "4fcd89bc4222e3b22fc827d90f2d7a6b34fe0e87d2125d8c067ee2d83c464027",
+      "publishedSha256": "2d18961ada376ad4173410693a7476f1c37bf1c4f0553716eee253b4f1b7a883"
+    },
+    {
+      "source": "auth-recovery-complete.log",
+      "target": "complete.txt",
+      "rawBytes": 6615,
+      "rawSha256": "924f0e1a8089fa61a775a75a42846dd5befd92e06793bcf8999a423eb267943b",
+      "publishedSha256": "a227dfc034605a1f15643a40a0f0c4eb0301e1b09837741ecc8fcc1015ab8286"
+    },
+    {
+      "source": "runtime/rc-regression/results.json",
+      "target": "full-regression-summary.json",
+      "rawBytes": 19844,
+      "rawSha256": "0faa477e55d5cf6648aeb7fff09ed66c9ddf99781fcfc21f2c83db4f6f9894b3",
+      "publishedSha256": "1c74b2d117e52d6a3ca287ed8df82249a6f0db98d9833552a8d9f0ad07ffeb12"
+    },
+    {
+      "source": "auth-recovery-audit.json",
+      "target": "npm-audit.json",
+      "rawBytes": 365,
+      "rawSha256": "646ce2fa9d8d21b9674f96caada594d35cdba776e17acd9f50140cf0b70bbf43",
+      "publishedSha256": "646ce2fa9d8d21b9674f96caada594d35cdba776e17acd9f50140cf0b70bbf43"
+    }
+  ]
+}
