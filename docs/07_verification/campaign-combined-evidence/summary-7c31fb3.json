@@ -1,0 +1,59 @@
+{
+  "type": "SYNTHETIC_LOCAL_COMBINED_PREFLIGHT_ONLY",
+  "head": "7c31fb3b2899ba65c1551eb456df6d3fc526b5b1",
+  "tree": "1c3e8d304fde7c7ef24ab7935ac4caee6fbba292",
+  "baseline": "148be8892b37aaf1944aca0c0671b6a948192f38",
+  "candidateHeads": {
+    "C": "b5fb3c41c309e36567b0838da9ce146e54b235a1",
+    "recovery": "ab20b3026fba1200d5acd54ab04c9efd0862ba14",
+    "D": "b84f6440ef96a935b9959f73bba76abcc13d7165",
+    "isolation": "9f0a61c0694f059b8c541127a4afc9a6eade9be3",
+    "A": "fe638ab3b536324c4b9a6e5532db4446b42b870f",
+    "B": "65af90b57c84188b63809ee282d6f36fd72da88f"
+  },
+  "runtime": "official SHA/Authenticode-verified portable Node22.23.3 Windows x64",
+  "dependencies": "retained pinned packages via task-owned junction; NOT clean operator-host installation",
+  "startedAt": "2026-10-21T09:43:26.2316006Z",
+  "regressionCompletedAt": "2026-10-21T09:52:59.6615453Z",
+  "suites": {
+    "total": 81,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 2074,
+    "passed": 2074,
+    "failed": 0,
+    "skipped": 0
+  },
+  "controlled": {
+    "additional": 29,
+    "liveSnapshotMutation": "NONE",
+    "focusedSuites": 11,
+    "focusedAssertions": 332,
+    "core": 40
+  },
+  "sourceManifestBeforeSha256": "c2c07f8c5a80a92c68b402f1f6c4eaa426be1db40adb9635e75f8af4ab556871",
+  "sourceManifestAfterSha256": "c2c07f8c5a80a92c68b402f1f6c4eaa426be1db40adb9635e75f8af4ab556871",
+  "logs": [
+    {
+      "name": "quality",
+      "rawSha256": "84f4740eff84b13834e36e42c53defdfa8f5ab2cbe48496f57d2ae9fcc7aa86c",
+      "publishedSha256": "16b101ac1dd42aac4b8703c27e3a235f18c976f8a438ef7b74d739bd6639f0ca"
+    },
+    {
+      "name": "controlled-docs",
+      "rawSha256": "ce9ede80c49a41fb96e5fcd7003bc9206f0c00ff6aec88f0780bd8a4877e5b3a",
+      "publishedSha256": "cc75447df5e754727d7bd3c59da84bea19c1829db31f9a7d0fae4633fafbd5df"
+    },
+    {
+      "name": "regression",
+      "rawSha256": "11fe7b375a08051dc1275009dcd6b8950c98b7eeb6e05f7fe4628056d2164255",
+      "publishedSha256": "ecb617501d8021b9ee42968d4430a9880111a9657d24736fbd1433b8171a6be0"
+    }
+  ],
+  "qualification": "Application preflight passed. Does not execute the faulty Linux Bun workflow guard; NOT full CI qualification, post-merge evidence, human approval or production readiness. Separate correction pending.",
+  "mayApply": false,
+  "operationalAuthority": false
+}
