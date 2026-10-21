@@ -193,7 +193,7 @@ export const WorkView: React.FC<WorkViewProps> = ({
     { id: 'READY', label: 'Ready for Dev' },
     { id: 'IN_PROGRESS', label: 'In Progress' },
     { id: 'VERIFICATION', label: 'In Verification' },
-    { id: 'VERIFIED', label: 'Verified & Approved' },
+    { id: 'VERIFIED', label: 'Verified (technical)' },
   ];
 
   const update = async (itemId: string, status?: WorkItemStatus, idx?: number, done?: boolean) => {
@@ -306,6 +306,9 @@ export const WorkView: React.FC<WorkViewProps> = ({
             {wbsSupported
               ? 'Canonical WBS authority with governed runtime execution projection.'
               : 'Single WorkItem source of truth powering Kanban, WBS, Product Backlog, and Verification Checklists.'}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            VERIFIED records technical verification only. Human governance approval is separate.
           </p>
         </div>
 

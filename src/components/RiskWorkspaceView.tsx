@@ -12,16 +12,41 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Risk, Threat } from '../types';
+import { projectRiskDisplay } from '../data/riskDisplayProjection';
 
 interface RiskWorkspaceViewProps {
   risks?: Risk[];
   threats?: Threat[];
 }
 
+export const RiskFloorReference: React.FC = () => (
+  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs space-y-4 text-xs">
+    <h2 className="text-sm font-bold text-slate-900">A-SSDLC Mandatory Risk Floors (Section 15)</h2>
+    <p className="text-slate-600">Reference information: this catalog describes policy floors. It does not establish enforcement or applicability for the selected project.</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+      {[
+        { rule: 'Financial transaction processing', floor: 'HIGH minimum' },
+        { rule: 'Production secret access', floor: 'CRITICAL minimum' },
+        { rule: 'Autonomous production deployment', floor: 'CRITICAL minimum' },
+        { rule: 'Safety-critical action', floor: 'CRITICAL minimum' },
+        { rule: 'Privileged identity management', floor: 'HIGH minimum' },
+        { rule: 'Sensitive healthcare / HIPAA info', floor: 'HIGH minimum' },
+      ].map((reference) => (
+        <div key={reference.rule} className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 space-y-1">
+          <div className="font-bold text-slate-800">{reference.rule}</div>
+          <div className="text-slate-700 font-mono text-[11px] font-bold">{reference.floor}</div>
+          <span className="text-[10px] text-slate-500">Reference only · Project applicability unavailable</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export const RiskWorkspaceView: React.FC<RiskWorkspaceViewProps> = ({ risks = [], threats = [] }) => {
   const [activeTab, setActiveTab] = useState<'REGISTER' | 'THREATS' | 'FLOORS'>('REGISTER');
 
   const topRisk = risks[0];
+  const riskDisplay = projectRiskDisplay(topRisk);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -30,28 +55,28 @@ export const RiskWorkspaceView: React.FC<RiskWorkspaceViewProps> = ({ risks = []
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">A-SSDLC Risk Classification</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">v0.1 Rulebook</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stored Risk Record</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1 flex items-center gap-3">
-              <span>Overall Project Risk:</span>
-              <span className="text-red-700 bg-red-50 border border-red-200 text-sm px-2.5 py-0.5 rounded-full font-bold">
-                ● HIGH (Residual)
-              </span>
+              <span>{topRisk ? riskDisplay.title : 'No risk record is available.'}</span>
             </h1>
+            <p className="text-xs text-slate-600 mt-2">First stored risk record. This is a stored record summary.</p>
+            {topRisk && <p className="text-xs text-slate-600 mt-1">Displayed record: <strong>{riskDisplay.id}</strong></p>}
           </div>
 
           <div className="flex items-center gap-4 text-xs">
-            <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-center">
-              <span className="text-[10px] font-bold text-red-600 uppercase block">Inherent Risk</span>
-              <span className="text-2xl font-extrabold text-red-900 block mt-0.5">18 / 25</span>
-              <span className="text-[10px] font-semibold text-red-700">● CRITICAL</span>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+              <span className="text-[10px] font-bold text-slate-600 uppercase block">Inherent Risk</span>
+              <span className="text-2xl font-extrabold text-slate-900 block mt-0.5">{riskDisplay.inherentScore}</span>
+              <span className="text-[10px] font-semibold text-slate-700">{riskDisplay.inherentLevel}</span>
+              <span className="text-[10px] text-slate-600 block">Likelihood {riskDisplay.inherentLikelihood} · Impact {riskDisplay.inherentImpact}</span>
             </div>
             <div className="text-slate-300 font-bold text-lg">→</div>
-            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-center">
-              <span className="text-[10px] font-bold text-amber-600 uppercase block">Residual Risk</span>
-              <span className="text-2xl font-extrabold text-amber-900 block mt-0.5">10 / 25</span>
-              <span className="text-[10px] font-semibold text-amber-700">● HIGH</span>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+              <span className="text-[10px] font-bold text-slate-600 uppercase block">Residual Risk</span>
+              <span className="text-2xl font-extrabold text-slate-900 block mt-0.5">{riskDisplay.residualScore}</span>
+              <span className="text-[10px] font-semibold text-slate-700">{riskDisplay.residualLevel}</span>
+              <span className="text-[10px] text-slate-600 block">Likelihood {riskDisplay.residualLikelihood} · Impact {riskDisplay.residualImpact}</span>
             </div>
           </div>
         </div>
@@ -59,27 +84,23 @@ export const RiskWorkspaceView: React.FC<RiskWorkspaceViewProps> = ({ risks = []
         {/* Contributing Drivers */}
         <div>
           <span className="text-xs font-semibold text-slate-600 block mb-2">
-            Deterministic Contributing Drivers:
+            Stored Risk Contributors:
           </span>
           <div className="flex flex-wrap gap-2">
-            {[
-              { label: 'Public API Exposure', delta: '+3' },
-              { label: 'Financial / Transaction Data', delta: '+4' },
-              { label: 'User & Machine Authentication', delta: '+2' },
-              { label: 'Agent Tool & Shell Capabilities', delta: '+3' },
-              { label: 'Production Credential Access', delta: '+5' },
-            ].map((d, idx) => (
+            {riskDisplay.drivers.map((driver, idx) => (
               <span
                 key={idx}
                 className="px-3 py-1 bg-slate-50 border border-slate-200 text-slate-800 rounded-lg text-xs font-medium flex items-center gap-1.5"
               >
-                <span>{d.label}</span>
-                <span className="font-mono font-bold text-red-600 bg-red-50 px-1 py-0.2 rounded text-[10px]">
-                  {d.delta}
-                </span>
+                <span>{driver}</span>
               </span>
             ))}
+            {riskDisplay.drivers.length === 0 && <span className="text-xs text-slate-500">Unavailable</span>}
           </div>
+        </div>
+        <div className="text-xs text-slate-600 space-y-1">
+          <p>Stored floor flag: {riskDisplay.floorFlag}{riskDisplay.floorReason !== undefined && <> — {riskDisplay.floorReason}</>}</p>
+          <p>A stored floor flag does not establish enforcement.</p>
         </div>
       </div>
 
@@ -135,42 +156,39 @@ export const RiskWorkspaceView: React.FC<RiskWorkspaceViewProps> = ({ risks = []
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {risks.map((risk) => (
-                  <tr key={risk.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-700">{risk.id}</td>
+                {risks.map((risk, index) => {
+                  const display = projectRiskDisplay(risk);
+                  return <tr key={`${display.id}-${index}`} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-700">{display.id}</td>
                     <td className="py-3.5 px-4 max-w-sm">
-                      <div className="font-bold text-slate-900">{risk.title}</div>
-                      <div className="text-slate-500 text-[11px] mt-0.5">{risk.description}</div>
+                      <div className="font-bold text-slate-900">{display.title}</div>
+                      <div className="text-slate-500 text-[11px] mt-0.5">{display.description}</div>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{risk.inherentLikelihood} / 5</td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{risk.inherentImpact} / 5</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{display.inherentLikelihood}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{display.inherentImpact}</td>
                     <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-slate-900">{risk.inherentScore}</span>{' '}
-                      <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.2 rounded border border-red-100 ml-1">
-                        {risk.inherentLevel}
+                      <span className="font-mono font-bold text-slate-900">{display.inherentScore}</span>{' '}
+                      <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200 ml-1">
+                        {display.inherentLevel}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                          risk.residualLevel === 'HIGH'
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        }`}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-50 text-slate-800 border-slate-200"
                       >
-                        ● {risk.residualLevel} ({risk.residualScore})
+                        {display.residualLevel} ({display.residualScore})
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="px-2 py-0.5 rounded bg-slate-100 font-semibold text-slate-700 text-[10px]">
-                        {risk.treatment}
+                        {display.treatment}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[11px] text-purple-700">
-                      {risk.controls.join(', ')}
+                      {display.controls.length ? display.controls.join(', ') : 'Unavailable'}
                     </td>
-                  </tr>
-                ))}
+                  </tr>;
+                })}
               </tbody>
             </table>
           </div>
@@ -238,35 +256,7 @@ export const RiskWorkspaceView: React.FC<RiskWorkspaceViewProps> = ({ risks = []
       )}
 
       {/* Tab Content: Mandatory Risk Floors */}
-      {activeTab === 'FLOORS' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs space-y-4 text-xs">
-          <h2 className="text-sm font-bold text-slate-900">A-SSDLC Mandatory Risk Floors (Section 15)</h2>
-          <p className="text-slate-600">
-            Certain project capabilities automatically enforce minimum risk classifications that cannot be manually reduced by users without recorded risk acceptance.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            {[
-              { rule: 'Financial transaction processing', floor: 'HIGH minimum', status: 'ACTIVE in OmniPay' },
-              { rule: 'Production secret access', floor: 'CRITICAL minimum', status: 'ACTIVE in Atlas' },
-              { rule: 'Autonomous production deployment', floor: 'CRITICAL minimum', status: 'BLOCKED' },
-              { rule: 'Safety-critical action', floor: 'CRITICAL minimum', status: 'NOT_TRIGGERED' },
-              { rule: 'Privileged identity management', floor: 'HIGH minimum', status: 'ACTIVE in Atlas' },
-              { rule: 'Sensitive healthcare / HIPAA info', floor: 'HIGH minimum', status: 'NOT_TRIGGERED' },
-            ].map((rf, idx) => (
-              <div key={idx} className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-800">{rf.rule}</div>
-                  <div className="text-red-700 font-mono text-[11px] font-bold mt-0.5">{rf.floor}</div>
-                </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 bg-slate-200 text-slate-700 rounded">
-                  {rf.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {activeTab === 'FLOORS' && <RiskFloorReference />}
     </div>
   );
 };
