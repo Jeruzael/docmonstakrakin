@@ -1,5 +1,13 @@
 # Deterministic local product demo
 
+Run this guide from the **new master-targeted recovery PR** branch
+`codex/pr63-master-integration`, or from master only after that PR's actual
+merge and post-merge CI have been verified. The old PR #63 merged into a feature
+branch; its closed state alone does not put these commands on master. Check
+`git branch --show-current` and `git rev-parse HEAD` before running. The current
+recovery baseline is `b4004c167e5a377a324f7eaa21f877d3d71ae33d`; the recovery
+preserves its ownership, CI-guard, security-store and isolated-fixture protections.
+
 Use the committed dependencies under Node 22 x64. Install from the committed
 lockfile in a disposable checkout using the supported Windows/Linux instructions
 in `FAST_TRACK_DEVELOPMENT_HANDOFF.md`; this guide does not repair the operator's

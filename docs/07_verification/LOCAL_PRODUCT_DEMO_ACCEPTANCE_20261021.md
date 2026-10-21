@@ -1,5 +1,41 @@
 # Local product journey and disconnected document creation candidate
 
+## Master-target recovery checkpoint
+
+PR #63's closed/merged state does not mean its product changes reached master.
+Its actual merge `b8ed1570def5d6d97111ca342445458cfcba68e7` targeted
+`codex/campaign-test-fixture-isolation` after PR #62 had already merged.
+The preserved reviewed source is being integrated through a **new master-targeted
+PR** on `codex/pr63-master-integration`, based on that exact merge and a normal
+merge of verified master `b4004c167e5a377a324f7eaa21f877d3d71ae33d`.
+The effective product scope stays the same 22 paths; master security-store,
+ownership, lifecycle-guard and fixture-isolation protections must remain intact.
+
+Actual master CI [39588743220](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39588743220)
+passed all four jobs with **75 suites / 1,937 reported checks**, controlled
+40/29/11(332), audit0 and the real corrected Bun guard on Windows/Linux.
+These are baseline results, not recovery-candidate or post-product-merge evidence.
+The new signed HEAD requires fresh four-job CI and independent exact-HEAD human
+approval; its actual master merge then requires separate post-merge verification.
+Historical measurements and original failures below remain unchanged.
+
+Local recovery qualification: the first frozen prepared tree
+`66beb6c9d6c36f1a11b760dc939ebbdaeaef406b` passed WBS/TypeScript/build and
+controlled40/29/11, but full regression reported **78/79 suites and
+1,971/1,972 checks**. Existing version-sync Scenario23 timed out after8 seconds
+waiting for the unconditional project-selector button during initial App bootstrap,
+before any save/navigation action; its other49 scenarios passed. Tracked-source
+manifests matched before/after (`0158f7ba5720256296bab6b03abfe0aa25021519fdb8c9ded7309f7121eb7cde`).
+An ignored temporary diagnostic copy retained all50 assertions and the same8-second
+timeout, adding only error/network observation; it passed50/50 without reproducing
+the bootstrap failure. Vite websocket warnings also appeared in that passing run.
+The cause remains unconfirmed; no timeout, assertion or tracked implementation was
+changed to force a pass. The original test remains byte-identical to verified
+master (SHA256 `08fb54a3587650db0d272060c5962ea2dbf7c06326fb265b7c9041dcb7338af3`).
+Retain this initial failure and diagnostic qualification alongside subsequent
+original-suite and exact-HEAD hosted results; a passing retry is not a claimed
+source-code fix or evidence that the initial failure never occurred.
+
 Baseline: `148be8892b37aaf1944aca0c0671b6a948192f38` (PR #58 integration).
 This Workstream D candidate contains product planning changes and synthetic tests.
 It does not activate authentication, trust roots, WBS registration, agents or release.
