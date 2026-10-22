@@ -22,6 +22,11 @@ async function check(name:string,fn:()=>Promise<void>){try{await fn();passed++;c
 const request=(port:number,headers:Record<string,string>,target='/')=>new Promise<number>((resolve,reject)=>{
   const req=http.get({host:'127.0.0.1',port,path:target,headers:{Host:`127.0.0.1:${port}`,...headers}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode!));});req.on('error',reject);
 });
+const fixtureResponse=(port:number,target:string)=>new Promise<{status:number;body:string}>((resolve,reject)=>{
+  const req=http.get({host:'127.0.0.1',port,path:target,headers:{Host:`127.0.0.1:${port}`}},res=>{
+    let body='';res.setEncoding('utf8');res.on('data',chunk=>{body+=chunk;});res.on('end',()=>resolve({status:res.statusCode!,body}));
+  });req.on('error',reject);
+});
 
 // Characterize the delivered Vite editor boundary, not a separately installed
 // launch-editor. Only its bundled middleware/parser/launcher block is evaluated.
@@ -122,6 +127,65 @@ try{
     const result=inertEditor(editorSource,{platform:'win32',file:'C:\\workspace\\absent.txt',existing:[]});
     assert.deepEqual(result.calls,[]);assert.deepEqual(result.errors,[]);
   });
+  // Every file in this workspace is a synthetic marker. Never probe an actual
+  // operator authority, encrypted store, snapshot, key or backup directory.
+  const privateDirectories=['.security','.security-backups','.local','.secrets','.docmonstakrakin'];
+  const privateFiles=['authority.sqlite','authority.sqlite-wal','authority.sqlite-shm','backup.bak','fixture.key','.machine_token'];
+  fs.writeFileSync(path.join(out,'ordinary.txt'),'SYNTHETIC_PUBLIC_CONTROL');
+  fs.writeFileSync(path.join(out,'.security-notes.txt'),'SYNTHETIC_SIMILAR_NAME_CONTROL');
+  fs.writeFileSync(path.join(out,'.env'),'DMK_SYNTHETIC_MARKER=SYNTHETIC_PRIVATE_FIXTURE');
+  fs.writeFileSync(path.join(out,'fixture.pem'),'SYNTHETIC_PRIVATE_FIXTURE');
+  fs.writeFileSync(path.join(out,'custom-denied.txt'),'SYNTHETIC_PRIVATE_FIXTURE');
+  fs.mkdirSync(path.join(out,'public'));
+  fs.writeFileSync(path.join(out,'public','ordinary-public.txt'),'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+  fs.writeFileSync(path.join(out,'ordinary-public.txt'),'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+  for(const directory of privateDirectories){
+    fs.mkdirSync(path.join(out,directory));
+    fs.mkdirSync(path.join(out,'public',directory));
+    for(const filename of privateFiles){
+      fs.writeFileSync(path.join(out,directory,filename),'SYNTHETIC_PRIVATE_FIXTURE');
+      fs.writeFileSync(path.join(out,'public',directory,filename),'SYNTHETIC_PRIVATE_FIXTURE');
+    }
+  }
+  fs.symlinkSync(path.join(out,'.security'),path.join(out,'public','opaque-directory'),process.platform==='win32'?'junction':'dir');
+  for(const mode of ['standalone','middleware','preview'] as const){
+    await check(mode+' rejects private state raw, filesystem, static and aliased assets',async()=>{
+      const options:InlineConfig={root:out,configFile:path.join(root,'vite.config.ts'),logLevel:'silent',appType:'custom',
+        resolve:{alias:Object.fromEntries(privateDirectories.map((directory,index)=>['/opaque-private-'+index,path.join(out,directory)]))},
+        server:{port:0,fs:{deny:['**/custom-denied.txt']},...(mode==='middleware'?{middlewareMode:true}:{})},build:{outDir:out},preview:{port:0}};
+      const vite=mode==='preview'?await preview(options):await createServer(options);
+      let listener:http.Server|undefined;
+      try{
+        if(mode==='middleware'){
+          listener=http.createServer((req,res)=>(vite as Awaited<ReturnType<typeof createServer>>).middlewares(req,res,()=>{res.statusCode=404;res.end();}));
+          await new Promise<void>(resolve=>listener!.listen(0,'127.0.0.1',resolve));
+        }else if(mode==='standalone')await (vite as Awaited<ReturnType<typeof createServer>>).listen();
+        const port=((listener??vite.httpServer)!.address() as AddressInfo).port;
+        const ordinary=await fixtureResponse(port,'/ordinary.txt?note=.security');
+        assert.equal(ordinary.status,200);assert.equal(ordinary.body,'SYNTHETIC_PUBLIC_CONTROL');
+        assert.equal((await fixtureResponse(port,'/ordinary-public.txt')).body,'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+        if(mode!=='preview'){
+          assert.match((await fixtureResponse(port,'/.security-notes.txt?raw')).body,/SYNTHETIC_SIMILAR_NAME_CONTROL/);
+        }
+        for(const [index,directory] of privateDirectories.entries())for(const filename of privateFiles){
+          const absolute=path.join(out,directory,filename).replaceAll('\\','/');
+          const targets=[`/${directory}/${filename}?raw`,`/@fs/${absolute}?raw`,`/${directory}/${filename}`,`/${directory}/${filename}?url&import`,
+            `/${directory.replace('.','%2e')}/${filename}?raw`,`/${directory.toUpperCase()}/${filename}?raw`];
+          if(mode!=='preview')targets.push(`/opaque-private-${index}/${filename}?raw`,`/opaque-private-${index}/${filename}?url&import`);
+          for(const target of targets){
+            const response=await fixtureResponse(port,target);
+            assert.equal(response.status,403,target);assert.equal(response.body.includes('SYNTHETIC_PRIVATE_FIXTURE'),false,target);
+          }
+        }
+        const linked=await fixtureResponse(port,`${mode==='preview'?'/public':''}/opaque-directory/authority.sqlite`);
+        assert.equal(linked.status,403,'public directory link to private state');assert.equal(linked.body.includes('SYNTHETIC_PRIVATE_FIXTURE'),false);
+        if(mode!=='preview')for(const target of ['/.env?raw','/fixture.pem?raw','/custom-denied.txt?raw'])assert.equal((await fixtureResponse(port,target)).status,403,target);
+      }finally{
+        if(listener)await new Promise<void>(resolve=>listener!.close(()=>resolve()));
+        await vite.close();
+      }
+    });
+  }
   for(const kind of ['dev','preview'] as const){
     await check(kind+' defaults to loopback and enforces actual Host/Origin boundary',async()=>{
       const options:InlineConfig={root,logLevel:'silent',...(kind==='dev'?{server:{port:0}}:{build:{outDir:out},preview:{port:0}})};
