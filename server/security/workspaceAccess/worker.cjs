@@ -207,15 +207,20 @@ function command(c) {
     case 'admitLogin': {
       exact(c, ['command', 'key', 'now']); if (typeof c.key !== 'string' || !c.key || Buffer.byteLength(c.key) > 256) fail('WORKSPACE_INPUT_INVALID'); now(c.now);
       return transaction(() => {
-        initialized(); clock(c.now); const expired = db.prepare('DELETE FROM throttle WHERE windowStart<=?').run(c.now - 60_000).changes; if (expired) event('THROTTLE_WINDOWS_RECLAIMED', '', c.now);
-        const key = hash(c.key.toLowerCase()), keys = [key, 'global']; let allowed = true;
-        for (const k of keys) {
-          let row = db.prepare('SELECT * FROM throttle WHERE key=?').get(k);
-          if (!row) { capacity('throttle', MAX.throttle); db.prepare('INSERT INTO throttle VALUES(?,?,0)').run(k, c.now); row = { attempts: 0 }; }
-          if (row.attempts >= (k === 'global' ? 30 : 5)) allowed = false;
-          db.prepare('UPDATE throttle SET attempts=min(attempts+1,31) WHERE key=?').run(k);
+        // Public rate counters are bounded mutable state, not retained authority
+        // history. Unauthenticated retries cannot append critical audit records.
+        // transaction() still refuses admission when that audit is already full.
+        initialized(); clock(c.now); db.prepare('DELETE FROM throttle WHERE windowStart<=?').run(c.now - 60_000);
+        let global = db.prepare('SELECT attempts FROM throttle WHERE key=?').get('global');
+        if (!global) { capacity('throttle', MAX.throttle); db.prepare('INSERT INTO throttle VALUES(?,?,0)').run('global', c.now); global = { attempts: 0 }; }
+        if (global.attempts >= 30) {
+          db.prepare('UPDATE throttle SET attempts=min(attempts+1,31) WHERE key=?').run('global'); return false;
         }
-        event(allowed ? 'LOGIN_ATTEMPT_ADMITTED' : 'LOGIN_ATTEMPT_THROTTLED', '', c.now); return allowed;
+        // Check the global cap before allocating a previously unseen account.
+        const key = hash(c.key.toLowerCase()); let row = db.prepare('SELECT attempts FROM throttle WHERE key=?').get(key);
+        if (!row) { capacity('throttle', MAX.throttle); db.prepare('INSERT INTO throttle VALUES(?,?,0)').run(key, c.now); row = { attempts: 0 }; }
+        db.prepare('UPDATE throttle SET attempts=min(attempts+1,31) WHERE key=? OR key=?').run(key, 'global');
+        return row.attempts < 5;
       });
     }
     case 'issue': {
