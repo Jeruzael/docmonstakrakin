@@ -3,9 +3,13 @@ import fs from 'node:fs';
 import {build} from 'esbuild';
 import {chromium, type Page} from 'playwright';
 import {INITIAL_PROJECTS, INITIAL_REQUIREMENTS} from '../src/data/initialData.ts';
+import {evaluateReleaseGates} from '../server/release/releaseGateEvaluator.ts';
+import {createChainedAuditEvent} from '../server/security/auditImmutability.ts';
+import {readReleaseReport} from '../src/data/releaseReportProjection.ts';
+import type {WorkItem} from '../src/types.ts';
 
 // Real React component, effects, rendering and export handlers. HTTP responses
-// are fixture-only; the final lifecycle case holds a denied signoff response.
+// are fixture-only; the final lifecycle case rejects a forged signoff claim.
 // No server, credential, successful mutation or application store exists.
 const bundle = await build({
   stdin: {resolveDir: process.cwd(), loader: 'tsx', contents: `
@@ -13,14 +17,10 @@ const bundle = await build({
     import {createRoot} from 'react-dom/client';
     import {DocumentsView} from './src/components/DocumentsView.tsx';
     const pending = [];
-    const deniedSignoffs = [];
     const mutationAttempts = [];
     window.fetch = (url, options) => {
       if (options?.method && options.method !== 'GET') {
         mutationAttempts.push({url, method: options.method});
-        if (window.reportFixture.allowDeniedSignoff && options.method === 'POST' && url === '/api/projects/PRJ-REPORT-A/release/signoff') {
-          return new Promise(resolve => deniedSignoffs.push(resolve));
-        }
         throw new Error('No mutation permitted');
       }
       if (!/^\\/api\\/projects\\/PRJ-REPORT-[AB]\\/release\\/gates$/.test(url)) throw new Error('Unexpected fixture URL: ' + url);
@@ -28,12 +28,11 @@ const bundle = await build({
       return new Promise((resolve, reject) => pending.push({url, resolve, reject}));
     };
     window.reportFixture = {
-      pending, deniedSignoffs, mutationAttempts, allowDeniedSignoff: false, copied: '', downloads: [],
+      pending, mutationAttempts, copied: '', downloads: [],
       settle(index, body, status = 200) {
         pending[index].resolve({ok: status >= 200 && status < 300, status, json: async () => body});
       },
       invalidJson(index) {pending[index].resolve({ok: true, json: async () => {throw new SyntaxError('invalid JSON');}});},
-      denySignoff(index) {deniedSignoffs[index]({ok: false, status: 403, json: async () => ({error: 'Synthetic denial; no action executed'})});},
       mount(input) {
         function Harness() {
           const [props, setProps] = useState(input);
@@ -55,15 +54,23 @@ const projectA = {...structuredClone(INITIAL_PROJECTS[0]), id: 'PRJ-REPORT-A', n
   progress: {...INITIAL_PROJECTS[0].progress, releaseReadiness: 100}};
 const projectB = {...structuredClone(projectA), id: 'PRJ-REPORT-B', name: 'Report B'};
 const requirement = structuredClone(INITIAL_REQUIREMENTS[0]);
-function report(projectId = projectA.id) {
-  return {projectId, projectName: projectId === projectA.id ? 'Report A' : 'Report B', timestamp: '2026-10-21T12:00:00Z',
-    targetMilestone: 'v0.1 Local-First MVP', allGatesPassed: false, releaseReady: false, signedOff: false,
-    gates: Array.from({length: 7}, (_, index) => ({gateId: index + 1, code: `GATE-${index + 1}`, name: `Reported gate ${index + 1}`,
-      status: index === 6 ? 'HUMAN_APPROVAL_REQUIRED' : index === 0 || index === 5 ? 'FAILED' : 'PASSED',
-      details: `Fixture ${projectId} gate ${index + 1}`, blocking: true, evidenceLinks: []})),
-    capabilities: [{capabilityId: 1, title: 'First capability', referenceDmk: 'DMK-017', status: 'VERIFIED', evidence: 'EV-TEST'},
-      {capabilityId: 2, title: 'Second capability', referenceDmk: 'DMK-020', status: 'IMPLEMENTED', evidence: ''}],
-    capabilitiesSummary: {total: 2, verified: 1, percentage: 50}, auditChainIntegrity: {valid: false, breaksCount: 1, eventsChecked: 3}};
+function report(projectId = projectA.id, stateVersion = 1) {
+  const project = {...structuredClone(projectId === projectA.id ? projectA : projectB), stateVersion,
+    readinessContext: {version: 'LOCAL_RELEASE_SCOPE/1' as const, id: 'RSC-REPORT-FIXTURE', revision: 1,
+      targetRelease: projectA.targetRelease, workItemIds: ['DMK-017', 'DMK-020'], commitSha: 'a'.repeat(40),
+      buildRevision: 'synthetic-build', environment: 'SYNTHETIC_ONLY', updatedAt: '2026-10-21T12:00:00Z',
+      updatedBy: {identityId: 'synthetic-local-author', name: 'Synthetic local author', roleSource: 'LOCAL_SERVER_ROSTER' as const}}};
+  const first = createChainedAuditEvent({id: 'AUD-REPORT-1', actor: 'Synthetic fixture', action: 'FIXTURE', target: projectId});
+  const second = createChainedAuditEvent({id: 'AUD-REPORT-2', actor: 'Synthetic fixture', action: 'FIXTURE', target: projectId, previousEvent: first});
+  const third = createChainedAuditEvent({id: 'AUD-REPORT-3', actor: 'Synthetic fixture', action: 'FIXTURE', target: projectId, previousEvent: second});
+  const result = evaluateReleaseGates({projects: [project], questions: {[projectId]: []}, requirements: {[projectId]: []},
+    workItems: {[projectId]: [{id: 'DMK-017', status: 'VERIFIED', evidence: ['UNTRUSTED-REF']},
+      {id: 'DMK-020', status: 'VERIFICATION', evidence: []}] as WorkItem[]}, approvals: {[projectId]: []},
+    auditLogs: {[projectId]: [{...third, stateHash: '0'.repeat(64)}, second, first]}}, projectId);
+  for (const gate of result.gates) gate.details = `Fixture ${projectId} gate ${gate.gateId}. ${gate.details}`;
+  assert(readReleaseReport(result, projectId), 'Fixture must match the actual current evaluator DTO');
+  assert.equal(result.releaseReady, false); assert.equal(result.productionEvidence.trustedProductionEvidence, false);
+  return result;
 }
 const executable = process.env.DMK_TEST_BROWSER || ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(file => fs.existsSync(file));
@@ -74,7 +81,7 @@ const settle = async (page: Page, index: number, body: unknown, status = 200) =>
   await page.evaluate(({index, body, status}) => (window as any).reportFixture.settle(index, body, status), {index, body, status});
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 };
-async function fixture(run: (page: Page) => Promise<void>, requirements: unknown[] = [], expectsSyntheticDenial = false) {
+async function fixture(run: (page: Page) => Promise<void>, requirements: unknown[] = []) {
   const page = await browser.newPage(); page.setDefaultTimeout(3000);
   const errors: string[] = [], requests: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -88,8 +95,7 @@ async function fixture(run: (page: Page) => Promise<void>, requirements: unknown
     await run(page);
     assert.deepEqual(errors, [], 'No browser rendering errors');
     assert.deepEqual(requests, [], 'No network or mutation request escaped the read-only fixture');
-    assert.deepEqual(await page.evaluate(() => (window as any).reportFixture.mutationAttempts), expectsSyntheticDenial
-      ? [{url: '/api/projects/PRJ-REPORT-A/release/signoff', method: 'POST'}] : [], 'Read-only navigation must not attempt a mutation');
+    assert.deepEqual(await page.evaluate(() => (window as any).reportFixture.mutationAttempts), [], 'Read-only navigation and unavailable authority must not attempt a mutation');
   } finally {await page.close();}
 }
 async function test(name: string, run: () => Promise<void>) {
@@ -119,10 +125,13 @@ try {
     assert.match(await page.evaluate(() => (window as any).reportFixture.downloads[0].text()), /UNAVAILABLE/);
     assert.equal(await page.getByRole('button', {name: 'Execute v0.1 DoD Sign-Off', exact: true}).count(), 0);
   }));
-  await test('R3 actual incomplete report controls capability totals and audit failure in UI/export', () => fixture(async page => {
+  await test('R3 actual scoped report retains all 25 capabilities and never upgrades local labels to verification', () => fixture(async page => {
     await openRelease(page); await settle(page, 0, report());
     const markdown = await raw(page);
-    assert.match(markdown, /50%/); assert.match(markdown, /1\/2/);
+    assert.match(markdown, /0%/); assert.match(markdown, /0\/25 VERIFIED/);
+    assert.match(markdown, /Release Scope:\*\* BOUND/); assert.match(markdown, /IMPLEMENTED/); assert.match(markdown, /OUT_OF_SCOPE/);
+    assert.match(markdown, /Production evidence acquisition remains UNAVAILABLE/);
+    assert.match(markdown, /HUMAN_APPROVAL_REQUIRED/);
     assert.match(markdown, /\*\*Chain Breaks Detected:\*\* 1/);
     assert.equal(await page.getByText('100% Verified', {exact: true}).count(), 0);
     assert.equal(await page.getByText('0 Breaks', {exact: true}).count(), 0);
@@ -143,8 +152,10 @@ try {
     assert(!(await raw(page)).includes('Fixture PRJ-REPORT-A gate 1'));
     assert.match(await raw(page), /LOADING|UNAVAILABLE/);
   }));
-  await test('R6 malformed or wrong-project report cannot render release success', () => fixture(async page => {
-    await openRelease(page); await settle(page, 0, {...report(projectB.id), signedOff: true});
+  await test('R6 otherwise valid wrong-project report cannot render release success', () => fixture(async page => {
+    const wrongProject = report(projectB.id);
+    assert.equal(readReleaseReport(wrongProject, projectA.id), null);
+    await openRelease(page); await settle(page, 0, wrongProject);
     assert.match(await raw(page), /UNAVAILABLE/);
     assert(!(await raw(page)).includes('APPROVED & SIGNED OFF'));
   }));
@@ -201,7 +212,7 @@ try {
     await openRelease(page);
     await page.evaluate(project => (window as any).reportFixture.update({project}), {...projectA, stateVersion: 2});
     await page.waitForFunction(() => (window as any).reportFixture.pending.length === 2);
-    const newer = report(); newer.gates[0].details = 'Current snapshot response';
+    const newer = report(projectA.id, 2); newer.gates[0].details = 'Current snapshot response';
     await settle(page, 1, newer); await settle(page, 0, report());
     assert.match(await raw(page), /Current snapshot response/);
     assert(!(await raw(page)).includes('Fixture PRJ-REPORT-A gate 1'));
@@ -217,27 +228,28 @@ try {
     assert.match(await raw(page), /New A request/);
     assert(!(await raw(page)).includes('Fixture PRJ-REPORT-A gate 1'));
   }));
-  await test('R14 document-tab invalidation clears pending denied signoff UI without accepting stale response', () => fixture(async page => {
+  await test('R14 forged readiness cannot authorize signoff and tab invalidation rejects the stale evaluation without POST', () => fixture(async page => {
     await openRelease(page);
-    const ready = report(); ready.releaseReady = true;
-    ready.gates = ready.gates.map(gate => gate.gateId <= 6 ? {...gate, status: 'PASSED'} : gate);
-    ready.auditChainIntegrity = {valid: true, breaksCount: 0, eventsChecked: 3};
-    await settle(page, 0, ready);
-    await page.evaluate(() => {(window as any).reportFixture.allowDeniedSignoff = true;});
-    await page.getByRole('button', {name: 'Execute v0.1 DoD Sign-Off', exact: true}).click();
-    await page.getByRole('button', {name: 'Authorize & Seal v0.1 Release', exact: true}).click();
-    await page.waitForFunction(() => (window as any).reportFixture.deniedSignoffs.length === 1);
-    // The existing modal does not trap keyboard focus. Exercise the actual
-    // background-tab keyboard event while only a mocked denial is outstanding.
-    await page.getByRole('button', {name: 'Product Requirements (PRD)', exact: true}).press('Enter');
-    await page.getByRole('button', {name: 'Release Gates & DoD (REL)', exact: true}).press('Enter');
+    const forged = report(); forged.releaseReady = true;
+    forged.gates = forged.gates.map(gate => gate.gateId <= 6 ? {...gate, status: 'PASSED'} : gate);
+    assert.equal(readReleaseReport(forged, projectA.id), null, 'No accepted production authority variant exists');
+    await settle(page, 0, forged);
+    assert.match(await raw(page), /UNAVAILABLE \(MALFORMED\)/);
+    assert.equal(await page.getByRole('button', {name: 'Execute v0.1 DoD Sign-Off', exact: true}).count(), 0);
+    assert.equal(await page.getByRole('button', {name: 'Authorize & Seal v0.1 Release', exact: true}).count(), 0);
+    await page.getByRole('button', {name: 'Refresh evaluation', exact: true}).click();
     await page.waitForFunction(() => (window as any).reportFixture.pending.length === 2);
-    await settle(page, 1, ready);
-    await page.evaluate(() => (window as any).reportFixture.denySignoff(0));
+    await page.getByRole('button', {name: 'Product Requirements (PRD)', exact: true}).click();
+    await page.getByRole('button', {name: 'Release Gates & DoD (REL)', exact: true}).click();
+    await page.waitForFunction(() => (window as any).reportFixture.pending.length === 3);
+    const current = report(); current.gates[0].details = 'Current tab evaluation';
+    await settle(page, 2, current); await settle(page, 1, forged);
+    assert.match(await raw(page), /Current tab evaluation/);
     assert.equal(await page.getByRole('button', {name: 'Refresh evaluation', exact: true}).isDisabled(), false, 'Invalidated request must not leave the current UI permanently busy');
     assert.equal(await page.getByRole('button', {name: 'Recording Ceremony...', exact: true}).count(), 0);
     assert(!(await raw(page)).includes('SIGNED OFF (SERVER-REPORTED)'));
-  }, [], true));
+    assert.equal(await page.getByRole('button', {name: 'Execute v0.1 DoD Sign-Off', exact: true}).count(), 0);
+  }));
 } finally {await browser.close();}
 console.log(`Reports truthfulness: ${passed} passed, ${failed} failed`);
 if (failed) process.exitCode = 1;
