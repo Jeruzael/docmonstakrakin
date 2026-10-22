@@ -7,6 +7,13 @@ workflow and disposable demo need no Gemini or other external-provider key.
 Live provider calls are a separate capability; no credential setup is part of
 this quick start.
 
+The 2026-10-22 local-MVP work is a **candidate pending parent integration and
+validation**. It adds ordinary-project managed documents, local human verification
+sessions and reviewer-setup guidance. Use the [normal-checkout reproducibility
+guide](docs/08_handoff/LOCAL_MVP_REPRODUCIBILITY_20261022.md) to distinguish expected
+behavior from recorded results. This documentation update claims no new clean
+install, normal-checkout startup or end-to-end package result.
+
 ## Install in a fresh checkout
 
 Use the committed lockfile in a disposable checkout with no existing
@@ -21,6 +28,10 @@ SDK on Windows, or build tools on Linux. Windows ownership tests also use
 PowerShell 7.
 
 ```text
+node --version
+npm --version
+git rev-parse --show-toplevel
+git rev-parse HEAD
 npm ci --foreground-scripts
 npm audit --json
 ```
@@ -56,19 +67,71 @@ editing and expected denials; the
 records what the journey proves. Follow the current integration checkpoint in
 the developer handoff when reading historical branch instructions in these records.
 
-For ordinary development against a deliberately selected local workspace:
+Run from the deliberately selected checkout root. For development in PowerShell:
 
-```text
+```powershell
+$env:NODE_ENV = 'development'
 npm run dev
 ```
 
-The default address is `http://127.0.0.1:3000`. Normal startup uses that checkout's
-local project state and initializes its SecretStore; it is not the disposable
-demo. Use the demo above for first-run exploration. The optional configuration
-names are documented in [.env.example](.env.example); no `.env.local` file or
-external-provider credential is required for the local journey. `npm run build`
-produces the UI and bundled server; `npm start` runs that build locally. This is
-not a remote-deployment procedure.
+In a POSIX shell:
+
+```sh
+NODE_ENV=development npm run dev
+```
+
+To build and serve the built static UI, in PowerShell:
+
+```powershell
+npm run build
+$env:NODE_ENV = 'production'
+npm start
+```
+
+In a POSIX shell:
+
+```sh
+npm run build
+NODE_ENV=production npm start
+```
+
+`NODE_ENV=production` selects the built `dist` UI; the `start` script does not set
+it. Both modes remain a local loopback service with the existing partial
+authorization boundary. Open [the default local address](http://127.0.0.1:3000).
+`HOST` accepts only `127.0.0.1`; `PORT` is an integer from 1 through 65535.
+Restart from the same checkout root: state and the built UI use the process
+working directory.
+
+[.env.example](.env.example) lists configuration names. Normal startup reads the
+process environment; copying this reference to `.env` or `.env.local` does not
+configure the server. No environment file or provider credential is needed for
+the ordinary local journey. The [reviewer setup guide](docs/07_verification/REVIEWER_SESSION_SETUP.md)
+describes operator-owned roster configuration without enrolling people or
+providing credentials.
+
+## Persistence and recovery
+
+Normal startup reads `.local/project-state.json` when present and initializes
+the private SecretStore. Successful project mutations atomically persist project
+collections and audit there. Candidate managed documents keep content, digest,
+metadata and replay history in the same snapshot. Existing filesystem document
+transactions use `.local/document-transactions/`; `.local/project-state.write.lock`
+coordinates snapshot writers.
+
+The default private SecretStore uses `.secrets/store.enc`, `.secrets/store.salt`
+and `.secrets/.machine_token`; an older installation may also have
+`.docmonstakrakin/.machine_token`. Keep private state and recovery material out
+of source control and shared logs. Project packages exclude those secrets and
+authenticated reviewer login sessions. Restart preserves persisted project data and clears
+in-memory reviewer sessions, so reviewers sign in again.
+
+On corrupt state, a stale snapshot, an unknown transaction outcome, a remaining
+writer lock or required document recovery, stop mutations and preserve the
+files and error for operator recovery. Do not delete snapshots, locks, journals,
+salts or machine tokens to force startup. An external snapshot edit requires a
+controlled restart after the operator establishes the authoritative state.
+`ci:prepare` and CI fixture flags must never initialize or repair an operator
+checkout; they can replace project state and clear test locks/journals.
 
 ## Verify in a disposable test checkout
 
@@ -105,16 +168,22 @@ operation is needed for this sequence.
 
 ## Current boundaries
 
-- Ordinary product routes retain their existing partial-containment policy:
-  45 legacy local unscoped registrations, 14 blocked privileged registrations,
-  seven specialized reviewer registrations and three reviewer-session registrations.
-  Loopback and Origin checks do not authenticate a user; keep this a local tool.
+- The route policy in `server/security/apiRoutePolicy.ts` is the source for
+  route classification. Legacy local project access remains partially contained;
+  loopback and Origin checks authenticate no user. Reviewer sessions gate selected
+  operations and grant no general project membership or privileged administration.
 - Authentication and governance development pilots are explicitly disconnected.
   Their tests and synthetic roles grant no real identity, permission or quorum.
   Live agent execution, Gate 7 authorization and release remain outside the demo.
-- Ordinary external-project document creation is unavailable. The separately
-  invoked [synthetic creation demo](scripts/demoSyntheticDocumentCreation.ts)
-  is described in the walkthrough and is not mounted by normal startup.
+- After candidate integration, ordinary managed-document creation/save requires a
+  configured HUMAN Security Officer or Lead Architect, a reason and confirmation.
+  Self-project filesystem documents retain their existing registry restrictions.
+  The [synthetic creation demo](scripts/demoSyntheticDocumentCreation.ts) remains a
+  separate fixture. Neither creation path grants governance approval or trust.
+- Candidate verification sessions bind exact task/build/evidence state and require
+  separate locally asserted persons with fresh human attestations. Package hashes
+  and local review approval confer no trusted production evidence or release
+  authority. See the reviewer setup and reproducibility guides for the boundaries.
 - Planning health, stored lifecycle status and evidence references are not
   authenticated acceptance. Release evaluation still has documented heuristics;
   viewing or exporting a report does not perform signoff or release a project.
