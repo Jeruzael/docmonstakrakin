@@ -50,7 +50,30 @@ These numeric limits are candidate implementation bounds, not ratified operation
 
 Only a frozen observation created by this module in the same process can be attached to an evaluator report. A `WeakSet` records object identity; serialization/import loses that identity. The evaluator rechecks every scope field and freshness before including an observation. Changing project, release, commit, build, environment, tasks, scope ID or scope revision fences it out. This is an application provenance guard, not a security boundary against compromised code in the same process.
 
-Server integration belongs to the parent change: construct the scope from current stored data with `evaluateReleaseScope`, authorize the project read, acquire using only a validated integer run ID, then call `evaluateReleaseGates(store, projectId, {ciObservation})`. Re-evaluation fences scope changes during network IO. Ordinary projects cannot borrow the self project's CI. This change does not add a route, enroll a provider, persist an acquired claim or execute CI.
+The bounded follow-up adds `registerGitHubCiRoutes(app, store, requireHuman)` in `server/release/githubCiRoutes.ts`. The parent mounts it after its authenticated project READ policy and registers the new API path in its route inventory. The route takes scope only from current stored data with `evaluateReleaseScope`, acquires using a validated integer run ID, then evaluates the report with the original branded object. Ordinary projects cannot borrow the self project's CI. The route neither enrolls a provider, persists acquired claims nor executes CI.
+
+### Read-only acquisition route and cache
+
+`GET /api/projects/:id/release/ci?runId=<positive-safe-integer>` requires the parent's human-session resolver as well as the already applied project READ policy. The route additionally rejects an agent identity. Its single query parameter is the canonical integer run ID; duplicate/extra query parameters, URL/token/commit claims, aliases, and request bodies cannot select provider authority. GET uses the existing read/session policy; it does not introduce a CSRF-protected write or a release approval operation.
+
+The response is `{observation, report, cache: {hit}}`, with `Cache-Control: no-store`. The report still has unavailable production evidence, false release readiness/signoff, and separately reported CI metadata. Statuses are explicit:
+
+| HTTP | Meaning |
+| --- | --- |
+| 200 | A valid technical `OBSERVED_SUCCESS` or `FAILED` acquisition/cache result; not release success |
+| 400 | Missing, invalid, duplicate or authority-selecting input |
+| 401/403 | Session/project policy denial; unsupported non-self projects are also denied |
+| 409 | Exact stored release scope changed while acquisition was awaited; result is discarded |
+| 412 | Current release scope is missing, invalid or ambiguous |
+| 422 | The provider response was acquired but rejected by the pinned metadata policy |
+| 429 | Another acquisition is in flight or the acquisition-start gap has not elapsed |
+| 503 | Acquisition is unavailable or an unexpected safe refusal occurred |
+
+A process-wide budget permits one acquisition in flight and at least ten seconds between acquisition starts, including separate router registrations. Matching fresh cache hits perform no network acquisition. The private insertion-ordered cache contains only same-process branded observations, has a hard limit of 128 entries and a five-minute lifetime, and purges expired objects on access/insertion. These are candidate implementation constraints, not ratified service capacity. All acquisition dispositions remain technical observations; no caller/imported object enters the cache. No public reset or injected provider-success seam exists.
+
+After the network await, the route re-evaluates every stored scope field and returns 409 before caching or reporting if the project/release/commit/build/environment/tasks/scope ID/revision changed or became unavailable. The returned `cachedObservation(projectId)` helper independently rebinds against the current scope and returns the most recently inserted matching fresh observation for normal release-gate reporting. Cache expiry/eviction means unavailable current observation, never inferred success. The cache concerns explicitly requested runs; it does not assert that a requested run is GitHub's newest run or provide a durable history/archive. Parent wiring can call `evaluateReleaseGates(store, id, {ciObservation: ciRoutes.cachedObservation(id)})` after its existing project-read authorization.
+
+Neither the route, getter nor cache modifies projects, tasks, approvals, audit records, authority data, trust roots or credentials. The parent's actual authentication, project authorization, route inventory and server wiring remain separate integration responsibilities; this module does not establish human identity custody or independent release authorization.
 
 The adapter uses the runtime's ordinary HTTPS/PKI validation and local clock. It does not pin a certificate, establish a new operational trust root, provide signed attestations or an independent trusted timestamp, inspect workflow contents/runner integrity, download logs/artifacts, verify individual test assertions, or prove requirement authorization. GitHub account/repository/workflow compromise and local runtime/clock compromise remain outside this observation's assurance. Build revision, environment, release and task list are explicit **local bindings**; GitHub's run metadata binds the reported jobs to the commit and attempt. CI metadata never supplies independent human approval, a secret sweep, production security evidence or Gate 7.
 
@@ -89,3 +112,5 @@ git diff --check
 ```
 
 These cover 11 operational tests, 11 CI acquisition/integration tests (with mismatch mutations and a real eight-second deadline fixture), 30 release-gate checks, 5 isolated HTTP harness cases, 21 evidence-claims tests and 12 report-projection tests. The isolated HTTP harness is not a production-authentication test. Full regression, browser, native qualification, actual operator acceptance and release execution are not run by this bounded change; their previous baseline results are not relabeled as candidate results.
+
+The read-only route follow-up adds `node --import tsx scripts/testGitHubCiRoutes.ts`. Its unavailable stub first produced **0 passed, 9 failed**; the implemented route passes all **9** HTTP cases. They exercise real Express, local HTTP and the real acquisition adapter with inert global-fetch transport fixtures, preserving the adapter's object branding. Cases cover authenticated reads without state mutation, anonymous/agent/project denial including cached reads, caller input refusal, scope availability/ambiguity, global single-flight, acquisition gaps versus cache hits, changes during await, cache expiry/rebinding, and honest failed/unavailable/rejected responses. The test identity and project authorization middleware are explicitly synthetic; this is not a real account enrollment, production authentication or independent human approval test. No GitHub network, authority store, credentials or audit writer are used by the route tests. The final pure route/evaluator/claims/projection subset passed 9/11/21/12 named cases, TypeScript exited 0, and diff checks exited 0. Original red output remains at `runtime/operational-release-evidence/ci-routes-red.log`.
