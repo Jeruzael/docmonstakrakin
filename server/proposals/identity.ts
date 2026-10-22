@@ -3,24 +3,81 @@ import type {Express, Request, Response} from 'express';
 
 export type ReviewerIdentity = {id:string; name:string; roles:string[]; kind:'HUMAN'|'AGENT'; roleSource:'LOCAL_SERVER_ROSTER'};
 
-/** Safely parses the DMK_HUMAN_REVIEWERS environment variable, falling back to empty roster on invalid JSON. */
-function parseConfiguredReviewers(raw?: string): Record<string, any> {
-  if (!raw || !raw.trim()) return {};
+const quorumRoles = ['Security Officer', 'Lead Architect'] as const;
+type ReviewerSetupStatus = {
+  state: 'not-configured' | 'malformed' | 'configured';
+  missingRoles: string[];
+  distinctHumanRoleCoverage: boolean;
+  verification: {
+    trust: 'LOCAL_ROSTER_ASSERTION';
+    validHumanPersonBindings: number;
+    missingHumanPersonBindings: boolean;
+    ambiguousAccountIds: boolean;
+    distinctPersonRoleCoverage: boolean;
+    distinctSubmitterCoverage: boolean;
+  };
+};
+
+/** Keep roster parsing separate from diagnostics so setup hints cannot grant authority. */
+function parseConfiguredReviewers(raw?: string): {configured: Record<string, any>; malformed: boolean} {
+  if (!raw || !raw.trim()) return {configured: {}, malformed: false};
   try {
     const parsed = JSON.parse(raw.trim());
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed;
+      return {configured: parsed, malformed: false};
     }
-    return {};
+    return {configured: {}, malformed: true};
   } catch {
     console.warn('[ReviewerIdentity] DMK_HUMAN_REVIEWERS contains invalid JSON. Defaulting to empty reviewer roster.');
-    return {};
+    return {configured: {}, malformed: true};
   }
+}
+
+/** Public aggregate configuration hints only: never return roster fields or values. */
+function reviewerSetup(configured: Record<string, any>, malformed: boolean): ReviewerSetupStatus {
+  const humans: {id: string; roles: string[]; personId?: unknown}[] = [];
+  const accountIds = new Map<string, number>();
+  for (const record of Object.values(configured)) {
+    if (record && typeof record.id === 'string') accountIds.set(record.id, (accountIds.get(record.id) || 0) + 1);
+  }
+  for (const [name, record] of Object.entries(configured)) {
+    if (!name.trim() || name.length > 128 || !record || typeof record !== 'object' || Array.isArray(record) ||
+      typeof record.id !== 'string' || !record.id.trim() || record.id.length > 128 ||
+      !Array.isArray(record.roles) || record.roles.some((role: unknown) => typeof role !== 'string') ||
+      !['HUMAN', 'AGENT'].includes(record.kind) ||
+      typeof record.credentialVerifier !== 'string' || !/^[a-f0-9]{32}:[a-f0-9]{64}$/.test(record.credentialVerifier)) {
+      malformed = true;
+      continue;
+    }
+    if (record.kind === 'HUMAN') humans.push(record);
+  }
+  const security = humans.filter(record => record.roles.includes(quorumRoles[0]));
+  const architects = humans.filter(record => record.roles.includes(quorumRoles[1]));
+  const validPerson = (personId: unknown): personId is string => typeof personId === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(personId);
+  const bound = humans.filter(record => validPerson(record.personId) && accountIds.get(record.id) === 1);
+  const rolePairs = bound.filter(record => record.roles.includes(quorumRoles[0])).flatMap(first =>
+    bound.filter(second => second.roles.includes(quorumRoles[1]) && first.personId !== second.personId).map(second => [first, second]));
+  return {
+    state: malformed ? 'malformed' : Object.keys(configured).length ? 'configured' : 'not-configured',
+    missingRoles: quorumRoles.filter(role => !humans.some(record => record.roles.includes(role))),
+    distinctHumanRoleCoverage: security.some(first => architects.some(second => first.id !== second.id)),
+    verification: {
+      trust: 'LOCAL_ROSTER_ASSERTION',
+      validHumanPersonBindings: bound.length,
+      missingHumanPersonBindings: humans.some(record => !validPerson(record.personId)),
+      ambiguousAccountIds: [...accountIds.values()].some(count => count > 1),
+      distinctPersonRoleCoverage: rolePairs.length > 0,
+      distinctSubmitterCoverage: rolePairs.some(([first, second]) => bound.some(third =>
+        third.roles.some(role => quorumRoles.includes(role as typeof quorumRoles[number])) &&
+        third.personId !== first.personId && third.personId !== second.personId)),
+    },
+  };
 }
 
 /** Local reviewer sessions. Only the operator-controlled roster can assign identity or roles. */
 export function installReviewerIdentity(app:Express) {
-  const configured = parseConfiguredReviewers(process.env.DMK_HUMAN_REVIEWERS);
+  const {configured, malformed} = parseConfiguredReviewers(process.env.DMK_HUMAN_REVIEWERS);
+  const setup = reviewerSetup(configured, malformed);
   const sessions = new Map<string,{identity:ReviewerIdentity;expires:number}>();
   const failures = new Map<string,{count:number;until:number}>();
   const cookieName = 'dmk_reviewer';
@@ -38,7 +95,7 @@ export function installReviewerIdentity(app:Express) {
     if (identity.kind!=='HUMAN' || !identity.roles.some(r=>['Security Officer','Lead Architect'].includes(r))) {res.status(403).json({error:'This identity has no human governance authority'});return;}
     return identity;
   };
-  app.get('/api/governance/session',(req,res)=>res.json({identity:get(req) || null}));
+  app.get('/api/governance/session',(req,res)=>res.json({identity:get(req) || null, setup}));
   app.post('/api/governance/session',(req,res)=>{
     if (!sameOrigin(req)) return res.status(403).json({error:'Cross-origin sign-in rejected'});
     const ip=req.ip || 'local'; const attempts=failures.get(ip);
