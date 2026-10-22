@@ -3,11 +3,12 @@ const { parentPort, workerData } = require('node:worker_threads');
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const { isDeepStrictEqual } = require('node:util');
 const boundary = require('./privateBoundary.cjs');
+const { PROJECT_ACTIONS, HUMAN_ROLES, SELF_PROJECT_ID, evaluateProjectAction, allowedProjectActions } = require('./projectPolicy.cjs');
 const MAX = { principals: 128, memberships: 512, sessions: 256, audit: 4096, throttle: 128, snapshot: 64 * 1024 * 1024 };
-const ACTIONS = ['project:read', 'project:write', 'project:review', 'project:export', 'project:import', 'project:create'];
-const ROLES = ['Security Officer', 'Lead Architect'];
+const ACTIONS = [...PROJECT_ACTIONS, 'project:create'];
+const ROLES = HUMAN_ROLES;
 const COLLECTIONS = ['managedDocuments', 'verificationSessions', 'verificationArchives', 'importSessions', 'questions', 'requirements', 'adrs', 'components', 'risks', 'threats', 'standards', 'workItems', 'evidence', 'auditLogs', 'overrides', 'approvals', 'agentRoles', 'agentRuns', 'features', 'derivations', 'documents'];
-const SELF = 'PRJ-DOCMONSTAKRAKIN';
+const SELF = SELF_PROJECT_ID;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SCHEMA = {
   metadata: 'CREATE TABLE metadata(id INTEGER PRIMARY KEY CHECK(id=1),initialized INTEGER NOT NULL,generation INTEGER NOT NULL,policyRevision INTEGER NOT NULL,snapshotRevision INTEGER NOT NULL,clockHighWater INTEGER NOT NULL,stateJson TEXT,provenance TEXT NOT NULL)',
@@ -108,20 +109,17 @@ function session(tokenDigest, at, touch = true) {
   return { principal: p, generation: m.generation, credentialRevision: p.credentialRevision, policyRevision: m.policyRevision, issuedAt: s.issuedAt, lastSeenAt: touch ? at : s.lastSeenAt };
 }
 function decision(tokenDigest, action, projectId, at) {
-  const m = meta(), s = session(tokenDigest, at), result = { allowed: false, reason: 'SESSION_INVALID', policyRevision: m.policyRevision, snapshotRevision: m.snapshotRevision };
+  const m = meta(), s = session(tokenDigest, at), result = { allowed: false, reason: 'SESSION_INVALID', allowedActions: [], policyRevision: m.policyRevision, snapshotRevision: m.snapshotRevision };
   if (!s) return result; result.principal = s.principal;
   if (!ACTIONS.includes(action)) { result.reason = 'UNSUPPORTED_ACTION'; return result; }
   if (action === 'project:create' || action === 'project:import' && projectId === undefined) { result.allowed = s.principal.canCreateProjects; result.reason = result.allowed ? 'ALLOWED' : 'CREATE_DENIED'; return result; }
   if (!projectId || !snapshotValue().state.projects.some(p => p.id === projectId)) { result.reason = 'RESOURCE_UNAVAILABLE'; return result; }
   const member = db.prepare('SELECT role,deniedActions FROM memberships WHERE projectId=? AND principalId=?').get(projectId, s.principal.id);
-  if (!member) { result.reason = 'MEMBERSHIP_REQUIRED'; return result; }
-  if (member.role === 'DENY' || JSON.parse(member.deniedActions).includes(action)) { result.reason = 'EXPLICIT_DENY'; return result; }
-  if (projectId === SELF && !['project:read', 'project:export'].includes(action)) { result.reason = 'CANONICAL_PROJECT_READ_ONLY'; return result; }
-  result.allowed = action === 'project:read' || action === 'project:export' && (member.role !== 'READER' || projectId === SELF) ||
-    action === 'project:write' && ['EDITOR', 'OWNER'].includes(member.role) ||
-    action === 'project:review' && ['EDITOR', 'OWNER'].includes(member.role) && s.principal.roles.some(r => ROLES.includes(r)) ||
-    action === 'project:import' && member.role === 'OWNER';
-  result.reason = result.allowed ? 'ALLOWED' : 'ACTION_DENIED'; return result;
+  const currentMembership = member && { ...member, deniedActions: JSON.parse(member.deniedActions) };
+  const policy = evaluateProjectAction(s.principal, currentMembership, action, projectId);
+  result.allowed = policy.allowed; result.reason = policy.reason;
+  if (policy.allowed) result.allowedActions = allowedProjectActions(s.principal, currentMembership, projectId);
+  return result;
 }
 function validateScope(before, after, action, projectId) {
   if (!['project:write', 'project:review', 'project:create', 'project:import', 'project:export'].includes(action)) fail('WORKSPACE_SCOPE_INVALID');
@@ -269,36 +267,15 @@ function command(c) {
     default: fail('WORKSPACE_COMMAND_UNSUPPORTED');
   }
 }
-function startup() {
-  const version = process.versions.node.split('.').map(Number);
-  if (!['win32', 'linux'].includes(process.platform) || process.arch !== 'x64' || version[0] !== 22 || version[1] < 23 || version[1] === 23 && version[2] < 3) fail('WORKSPACE_PLATFORM_UNSUPPORTED');
-  boundary.assertFiles(workerData); boundary.assertLock(workerData);
-  const file = path.join(workerData.root, 'authority.sqlite'), exists = fs.existsSync(file);
-  if (!exists && !workerData.initialize) fail('WORKSPACE_NOT_INITIALIZED');
-  const Sqlite = require('better-sqlite3'); db = new Sqlite(file, { timeout: 100, fileMustExist: exists });
-  if (require('better-sqlite3/package.json').version !== '13.0.3' || db.prepare('SELECT sqlite_version() AS version').get().version !== '3.53.4') fail('WORKSPACE_NATIVE_PROVENANCE_INVALID');
-  if (!exists && process.platform !== 'win32') fs.chmodSync(file, 0o600);
-  db.pragma('trusted_schema = OFF'); db.pragma('foreign_keys = ON');
-  if (exists && db.pragma('user_version', { simple: true }) !== 1) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
-  const validateSchema = () => {
-    for (const [table, sql] of Object.entries(SCHEMA)) if (db.prepare('SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=?').get(table)?.sql !== sql) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
-    if (db.prepare("SELECT name,type FROM sqlite_master WHERE sql IS NOT NULL").all().some(row => row.name !== 'sqlite_sequence' && (!Object.hasOwn(SCHEMA, row.name) || row.type !== 'table'))) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
-  };
-  if (exists) validateSchema(); // No persistent PRAGMA changes on unknown schema.
-  if (db.pragma('journal_mode = WAL', { simple: true }) !== 'wal') fail('WORKSPACE_STORAGE_UNAVAILABLE');
-  db.pragma('synchronous = FULL'); db.pragma('busy_timeout = 100'); db.pragma('max_page_count = 65536');
-  if (db.pragma('synchronous', { simple: true }) !== 2 || db.pragma('foreign_keys', { simple: true }) !== 1 || db.pragma('trusted_schema', { simple: true }) !== 0) fail('WORKSPACE_STORAGE_UNAVAILABLE');
-  if (!exists) {
-    db.exec('BEGIN IMMEDIATE;' + Object.values(SCHEMA).join(';') + ';PRAGMA user_version=1;');
-    db.prepare('INSERT INTO metadata VALUES(1,0,0,0,0,0,NULL,?)').run(JSON.stringify({ schema: 'WORKSPACE_AUTHORITY/1', node: process.versions.node, platform: process.platform, arch: process.arch,
-      sqlite: '3.53.4', betterSqlite3: '13.0.3', workspaceIdentity: workerData.workspaceIdentity, privateIdentity: workerData.rootIdentity, initialStateSha256: null }));
-    db.exec('COMMIT');
-  }
-  validateSchema();
+function validateStoredAuthority() {
+  if (db.pragma('user_version', { simple: true }) !== 1) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+  for (const [table, sql] of Object.entries(SCHEMA)) if (db.prepare('SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=?').get(table)?.sql !== sql) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+  if (db.prepare("SELECT name,type FROM sqlite_master WHERE sql IS NOT NULL").all().some(row => row.name !== 'sqlite_sequence' && (!Object.hasOwn(SCHEMA, row.name) || row.type !== 'table'))) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
   if (db.pragma('quick_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) fail('WORKSPACE_CORRUPT');
   const m = meta(), provenance = JSON.parse(m.provenance);
   if (count('metadata') !== 1 || provenance.workspaceIdentity !== workerData.workspaceIdentity || provenance.privateIdentity !== workerData.rootIdentity) fail('WORKSPACE_PATH_INVALID');
   for (const key of ['generation', 'policyRevision', 'snapshotRevision', 'clockHighWater']) integer(m[key]);
+  if (m.generation === Number.MAX_SAFE_INTEGER) fail('WORKSPACE_CORRUPT');
   if (![0, 1].includes(m.initialized) || (m.initialized === 0) !== (count('principals') === 0)) fail('WORKSPACE_CORRUPT');
   if (m.stateJson !== null) parseSnapshot(m.stateJson);
   for (const [table, maximum] of [['principals', 128], ['memberships', 512], ['sessions', 256], ['used_digests', 4096], ['operations', 4096], ['throttle', 128], ['audit', 4096]]) if (count(table) > maximum) fail('WORKSPACE_CORRUPT');
@@ -324,6 +301,42 @@ function startup() {
     if (typeof data.type !== 'string' || !/^[A-Z_]{1,64}$/.test(data.type)) fail('WORKSPACE_AUDIT_INVALID'); if (data.targetHash !== null) digest(data.targetHash);
     for (const key of ['at', 'generation', 'policyRevision', 'snapshotRevision']) integer(data[key]); previous = row.hash;
   }
+  capacity('audit', MAX.audit); // Startup must have room before any write admission.
+}
+function startup() {
+  const version = process.versions.node.split('.').map(Number);
+  if (!['win32', 'linux'].includes(process.platform) || process.arch !== 'x64' || version[0] !== 22 || version[1] < 23 || version[1] === 23 && version[2] < 3) fail('WORKSPACE_PLATFORM_UNSUPPORTED');
+  boundary.assertFiles(workerData); boundary.assertLock(workerData);
+  const file = path.join(workerData.root, 'authority.sqlite'), exists = fs.existsSync(file);
+  if (!exists && !workerData.initialize) fail('WORKSPACE_NOT_INITIALIZED');
+  const Sqlite = require('better-sqlite3');
+  const connect = readonly => {
+    db = new Sqlite(file, { timeout: 100, fileMustExist: exists, readonly });
+    if (require('better-sqlite3/package.json').version !== '13.0.3' || db.prepare('SELECT sqlite_version() AS version').get().version !== '3.53.4') fail('WORKSPACE_NATIVE_PROVENANCE_INVALID');
+    db.pragma('trusted_schema = OFF'); db.pragma('foreign_keys = ON'); db.pragma('synchronous = FULL'); db.pragma('busy_timeout = 100');
+  };
+  if (exists) {
+    // A rejected prepared/foreign/corrupt database must not be switched to WAL
+    // or acquire a generation. Readonly admission also rejects hot journals
+    // which cannot be examined without recovery; it never performs that repair.
+    const before = fs.lstatSync(file, { bigint: true }); connect(true);
+    validateStoredAuthority(); db.close(); db = undefined;
+    boundary.assertFiles(workerData); boundary.assertLock(workerData);
+    const after = fs.lstatSync(file, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs) fail('WORKSPACE_PATH_INVALID');
+    connect(false);
+  } else {
+    connect(false); if (process.platform !== 'win32') fs.chmodSync(file, 0o600);
+    db.exec('BEGIN IMMEDIATE;' + Object.values(SCHEMA).join(';') + ';PRAGMA user_version=1;');
+    db.prepare('INSERT INTO metadata VALUES(1,0,0,0,0,0,NULL,?)').run(JSON.stringify({ schema: 'WORKSPACE_AUTHORITY/1', node: process.versions.node, platform: process.platform, arch: process.arch,
+      sqlite: '3.53.4', betterSqlite3: '13.0.3', workspaceIdentity: workerData.workspaceIdentity, privateIdentity: workerData.rootIdentity, initialStateSha256: null }));
+    db.exec('COMMIT'); validateStoredAuthority();
+  }
+  // These writes occur only after complete authority admission. A later I/O or
+  // process failure is still an uncertain writer outcome, never an auto-retry.
+  if (db.pragma('journal_mode = WAL', { simple: true }) !== 'wal') fail('WORKSPACE_STORAGE_UNAVAILABLE');
+  db.pragma('max_page_count = 65536');
+  if (db.pragma('synchronous', { simple: true }) !== 2 || db.pragma('foreign_keys', { simple: true }) !== 1 || db.pragma('trusted_schema', { simple: true }) !== 0) fail('WORKSPACE_STORAGE_UNAVAILABLE');
   boundary.assertFiles(workerData);
   transaction(() => { db.prepare('UPDATE metadata SET generation=generation+1 WHERE id=1').run(); event('AUTHORITY_OPENED'); });
 }

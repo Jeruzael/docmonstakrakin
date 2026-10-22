@@ -219,5 +219,29 @@ if (api) {
     await bootstrap(store); await store.close(); const Sqlite = createRequire(import.meta.url)('better-sqlite3'), raw = new Sqlite(path.join(root, '.security/authority.sqlite'));
     raw.exec('CREATE TABLE unrecognized_authority(id TEXT)'); raw.close(); await reject(api.WorkspaceStore.open(root), 'WORKSPACE_SCHEMA_UNSUPPORTED');
   }));
+  await test('WS17 current allowedActions matches central enforcement without role inference or grant leakage', () => fixture(async ({ store }) => {
+    const digest = await bootstrap(store), before = await store.execute({ command: 'snapshot' });
+    const auth = (action = 'project:read', projectId = 'PRJ-A', tokenDigest = digest) => store.execute({ command: 'authorize', digest: tokenDigest, action, projectId, now: at });
+    const membership = (role: string, deniedActions: string[] = [], projectId = 'PRJ-A') => store.execute({ command: 'membership', projectId, principalId: 'synthetic-owner', role, deniedActions });
+    await membership('OWNER');
+    const owner = ['project:read', 'project:write', 'project:export', 'project:import'];
+    assert.deepEqual((await auth()).allowedActions, owner);
+    for (const action of ['project:read', 'project:write', 'project:review', 'project:export', 'project:import']) {
+      const result = await auth(action); assert.equal(result.allowed, owner.includes(action)); assert.deepEqual(result.allowedActions, result.allowed ? owner : []);
+    }
+    assert.deepEqual((await store.execute({ command: 'credential', name: 'synthetic-owner' })).principal.roles, []);
+    await membership('READER'); assert.deepEqual((await auth()).allowedActions, ['project:read']); assert.deepEqual((await auth('project:write')).allowedActions, []);
+    await membership('DENY'); assert.deepEqual((await auth()).allowedActions, []); assert.equal((await auth()).allowed, false);
+    await membership('OWNER', ['project:write', 'project:export']); assert.deepEqual((await auth()).allowedActions, ['project:read', 'project:import']);
+    await membership('OWNER', ['project:read']); assert.deepEqual((await auth()).allowedActions, []);
+    await membership('READER', [], 'PRJ-DOCMONSTAKRAKIN'); assert.deepEqual((await auth('project:read', 'PRJ-DOCMONSTAKRAKIN')).allowedActions, ['project:read', 'project:export']);
+    assert.deepEqual((await auth('project:write', 'PRJ-DOCMONSTAKRAKIN')).allowedActions, []);
+    await membership('READER', ['project:export'], 'PRJ-DOCMONSTAKRAKIN'); assert.deepEqual((await auth('project:read', 'PRJ-DOCMONSTAKRAKIN')).allowedActions, ['project:read']);
+    assert.deepEqual((await auth('project:read', 'PRJ-MISSING')).allowedActions, []);
+    assert.deepEqual((await auth('project:read', 'PRJ-B')).allowedActions, []);
+    assert.deepEqual((await auth('project:read', 'PRJ-A', 'f'.repeat(64))).allowedActions, []);
+    assert.deepEqual((await store.execute({ command: 'authorize', digest, action: 'project:create', now: at })).allowedActions, []);
+    assert.deepEqual(await store.execute({ command: 'snapshot' }), before);
+  }));
 }
 console.log(`Workspace store: ${passed} passed, ${failed} failed`); process.exitCode = failed ? 1 : 0;
