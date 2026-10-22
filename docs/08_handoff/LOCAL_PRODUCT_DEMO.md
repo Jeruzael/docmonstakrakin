@@ -1,14 +1,23 @@
 # Deterministic local product demo
 
+**2026-10-22 candidate scope:** ordinary managed documents, verification sessions
+and reviewer-setup guidance remain pending parent integration and validation.
+For normal-checkout startup, restart and package acceptance, use the
+[README](../../README.md) and [reproducibility candidate](LOCAL_MVP_REPRODUCIBILITY_20261022.md).
+This page describes the separate disposable demo. Its historical checks do not
+qualify the new normal-checkout journey or the three-person verification setup.
+
+## Historical demo checkpoint
+
 **Current integration checkpoint (2026-10-21):** this product journey is now on master through PR #66, exact post-merge verified commit `21da1d5bebaecf58b5037c255561c8b8315b429d`. [Actual master CI](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39598218255) passed all four jobs and79/79suites, including the nine-check product journey. A normal checkout of that commit can run the commands below. The original recovery-branch instructions are retained as historical context; they no longer mean the product changes are absent from master. See the [continuation handoff](FAST_TRACK_DEVELOPMENT_HANDOFF.md) and [complete remaining task ledger](../06_planning/FOUR_HOUR_COMPLETION_LEDGER_20261021.md) for current limitations and subsequent integration evidence.
 
-Run this guide from the **new master-targeted recovery PR** branch
-`codex/pr63-master-integration`, or from master only after that PR's actual
-merge and post-merge CI have been verified. The old PR #63 merged into a feature
-branch; its closed state alone does not put these commands on master. Check
-`git branch --show-current` and `git rev-parse HEAD` before running. The current
-recovery baseline is `b4004c167e5a377a324f7eaa21f877d3d71ae33d`; the recovery
-preserves its ownership, CI-guard, security-store and isolated-fixture protections.
+The earlier `codex/pr63-master-integration` recovery branch and baseline
+`b4004c167e5a377a324f7eaa21f877d3d71ae33d` are historical context, not current
+startup prerequisites. The old PR #63 feature-branch merge alone did not place
+its commands on master. Confirm the selected checkout and exact HEAD using the
+README before running; current candidate integration evidence belongs in the
+parent handoff. Ownership, CI-guard, security-store and fixture protections remain
+required.
 
 Use the committed dependencies under Node 22 x64. Install from the committed
 lockfile in a disposable checkout using the supported Windows/Linux instructions
@@ -23,8 +32,9 @@ node --import ./node_modules/tsx/dist/loader.mjs scripts/demoLocalProduct.ts
 
 Open the printed loopback URL. The command builds and serves the actual App using
 the actual server, with a fresh synthetic snapshot and no inherited credentials.
-The fixed synthetic login printed by the command exists only in this disposable
-process. It is neither a real identity nor independent human review.
+Use only the fixture session details printed by that isolated process, within
+its URL. No person, account or password values are supplied by this guide. The
+fixture session is neither a real identity nor independent human review.
 Inputs and acceptance outcomes are deterministic; real server-generated UUIDs,
 timestamps and audit digests vary between fresh runs and are never backdated.
 
@@ -61,23 +71,22 @@ regenerated from a normal Git checkout. The acceptance matrix is
 
 ## Separate inactive document creation pilot
 
-Ordinary external-project document creation is unavailable. The following
-explicit disconnected entrypoint exercises a new candidate without changing
-normal product routes or the canonical registry:
+The historical demo had no ordinary-project document creation. The 2026-10-22
+candidate adds managed Markdown/text creation and controlled saving in the
+ordinary project's atomic snapshot after integration. That path requires a
+configured HUMAN reviewer, reason and explicit confirmation and grants no
+governance approval or trust. Existing self-project filesystem registry/save
+restrictions remain in place. The following older synthetic entrypoint remains
+separate from those normal product routes:
 
 ```text
 node --import ./node_modules/tsx/dist/loader.mjs scripts/demoSyntheticDocumentCreation.ts
 ```
 
-Use its printed URL as `$demoBase` in a second PowerShell terminal:
-
-```powershell
-$login = @{ username='synthetic-author'; password='Synthetic-document-demo-only!' } | ConvertTo-Json
-Invoke-RestMethod "$demoBase/api/governance/session" -Method Post -ContentType 'application/json' -Body $login -SessionVariable demoSession
-$draft = @{ content="# Synthetic controlled plan`n`nFixture only.`n"; reason='Disconnected demo'; humanConfirmed=$true; expectedVersion=0; expectedDigest=$null } | ConvertTo-Json
-Invoke-RestMethod "$demoBase/api/product-demo/documents/create" -Method Post -ContentType 'application/json' -Body $draft -WebSession $demoSession
-Invoke-RestMethod "$demoBase/api/product-demo/documents" -WebSession $demoSession
-```
+Use only its printed temporary URL and fixture session context. Consult the
+fixture source for its isolated request contract; its fixture endpoint is not
+the ordinary managed-document API. Do not enroll an operator account or copy
+fixture credentials into normal startup to reproduce this pilot.
 
 The fixed external document, content and audit are committed atomically to a
 private synthetic state object. Repeating creation fails with 409. Caller paths,
@@ -87,3 +96,11 @@ Ctrl+C removes only its owned synthetic root.
 
 No demo activates authentication, real principals or grants, privileged routes,
 agent execution, canonical WBS changes, receipt consumption, Gate 7 or release.
+
+No install, demo, normal-checkout startup, browser, build or full regression was
+run for this documentation correction. Parent integration must record the
+actual HEAD, environment, commands and outcomes before publication. The new
+verification workflow requires operator-controlled person bindings and three
+distinct locally asserted people; the existing demo roster does not establish
+that setup. Local human attestations and package integrity provide no trusted
+production evidence.

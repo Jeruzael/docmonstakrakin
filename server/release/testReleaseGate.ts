@@ -98,12 +98,12 @@ async function runReleaseGateTests() {
   assert(report.gates.length === 7, 'Evaluates all 7 release gates');
   assert(report.gates[0].status === 'PASSED', 'Gate 1 (Zero Unresolved Blockers) PASSED');
   assert(report.gates[1].status === 'PASSED', 'Gate 2 (100% Core Requirements Verification) PASSED');
-  assert(report.gates[2].status === 'PASSED', 'Gate 3 (SecretStore Integration Complete) PASSED');
+  assert(report.gates[2].status === 'PENDING', 'Gate 3 requires authenticated production evidence beyond stored labels');
   assert(report.gates[3].status === 'PASSED', 'Gate 4 (Security Regression Suite) PASSED');
   assert(report.gates[4].status === 'PASSED', 'Gate 5 (Golden Reference Execution & Package) PASSED');
   assert(report.gates[5].status === 'PASSED', 'Gate 6 (Cryptographic Audit Ledger Integrity) PASSED');
   assert(report.gates[6].status === 'HUMAN_APPROVAL_REQUIRED' || report.gates[6].status === 'PENDING' || report.gates[6].status === 'PASSED', 'Gate 7 (Sign-off) in valid state');
-  assert(report.releaseReady === true, 'releaseReady is TRUE (prerequisites satisfied)');
+  assert(report.releaseReady === false, 'Stored fixture statuses do not establish production release readiness');
   assert(
     report.capabilitiesSummary.percentage >= 96,
     `Capabilities readiness meets MVP threshold (current: ${report.capabilitiesSummary.percentage}%)`
@@ -191,51 +191,54 @@ async function runReleaseGateTests() {
     'Audit chain validity reported as FALSE'
   );
 
-  // Test 6: Happy Path - Release Sign-Off Execution Ceremony
-  console.log('\n--- Test Suite 6: Release Sign-Off Execution Ceremony ---');
+  // A status-only fixture cannot exercise a real signoff ceremony. Preserve the
+  // old records and verify refusal has no lifecycle, audit or readiness effects.
+  console.log('\n--- Test Suite 6: Unauthenticated Production Evidence Denies Signoff ---');
   const cleanStore = createMockStore();
+  const cleanBefore=JSON.parse(JSON.stringify(cleanStore));
   const signoffResult = executeReleaseSignoff(
     cleanStore,
     'PRJ-ATLAS-01',
-    'Project Lead / Security Lead (Gio)',
-    'Formal v0.1 Definition-of-Done review certified; all 25 core capabilities verified across 7 release gates.'
+    'Synthetic fixture actor',
+    'Inert refusal test; no real release decision.'
   );
 
-  assert(signoffResult.success === true, 'Sign-off executes successfully on clean store');
+  assert(signoffResult.success === false, 'Sign-off refuses status-only fixtures');
   assert(
-    signoffResult.report.allGatesPassed === true,
-    'All 7 release gates report PASSED after sign-off'
+    signoffResult.report.allGatesPassed === false,
+    'All gates cannot pass without authenticated production evidence'
   );
   assert(
-    signoffResult.report.signedOff === true,
-    'signedOff state is TRUE'
+    signoffResult.report.signedOff === report.signedOff,
+    'Refusal does not invent a new signoff'
   );
   assert(
-    signoffResult.report.signoffDetails?.actor === 'Project Lead / Security Lead (Gio)',
-    'Sign-off actor accurately captured in report'
+    signoffResult.report.signoffDetails?.actor !== 'Synthetic fixture actor',
+    'Refusal does not record the requesting fixture actor as signer'
   );
 
   // Verify WorkItem DMK-165
   const dmk165 = cleanStore.workItems['PRJ-ATLAS-01'].find((w) => w.id === 'DMK-165');
-  assert(dmk165?.status === 'VERIFIED', 'WorkItem DMK-165 status transitioned to VERIFIED');
+  const originalDmk=cleanBefore.workItems['PRJ-ATLAS-01'].find((w:any)=>w.id==='DMK-165');
+  assert(dmk165?.status === originalDmk?.status, 'WorkItem DMK-165 status remains unchanged');
   assert(
-    dmk165?.evidence?.includes('EV-165') === true,
-    'WorkItem DMK-165 links to evidence EV-165'
+    JSON.stringify(dmk165?.evidence) === JSON.stringify(originalDmk?.evidence),
+    'Refusal does not manufacture evidence links'
   );
   assert(
-    dmk165?.checklist?.every((c) => c.done) === true,
-    'All DMK-165 checklist items marked done'
+    JSON.stringify(dmk165?.checklist) === JSON.stringify(originalDmk?.checklist),
+    'Refusal does not complete checklist items'
   );
 
   // Verify Project Release Readiness
   const updatedProject = cleanStore.projects.find((p) => p.id === 'PRJ-ATLAS-01');
   assert(
-    updatedProject?.progress?.releaseReadiness === 100,
-    'Project release readiness reached 100%'
+    updatedProject?.progress?.releaseReadiness === cleanBefore.projects.find((p:any)=>p.id==='PRJ-ATLAS-01')?.progress.releaseReadiness,
+    'Stored project release readiness remains unchanged'
   );
   assert(
-    updatedProject?.healthScore === 100,
-    'Project health score maintained at 100%'
+    updatedProject?.healthScore === cleanBefore.projects.find((p:any)=>p.id==='PRJ-ATLAS-01')?.healthScore,
+    'Stored planning health remains unchanged'
   );
 
   // Verify Audit Chain Preservation
@@ -248,8 +251,8 @@ async function runReleaseGateTests() {
     'Post-signoff audit chain maintains 100% cryptographic integrity (0 breaks)'
   );
   assert(
-    cleanStore.auditLogs['PRJ-ATLAS-01'][0].action === 'RELEASE_GATE_APPROVED',
-    'Newest audit event is RELEASE_GATE_APPROVED'
+    JSON.stringify(cleanStore)===JSON.stringify(cleanBefore),
+    'Refusal preserves the entire store and audit ledger byte-equivalent JSON'
   );
 
   // Summary

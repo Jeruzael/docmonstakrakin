@@ -113,10 +113,11 @@ test('C9 Gate2 identifies missing references separately from unapproved requirem
   assert.match(gate.details, /not APPROVED.*REQ-NOT-APPROVED/);
 });
 
-test('C10 Gate3 reports stored status rather than a secret sweep or active credential integration', () => {
+test('C10 Gate3 keeps satisfactory stored status pending without authenticated production acquisition', () => {
   const input = store(); input.workItems[projectId] = [item('DMK-157', 'APPROVED', ['MIGRATION-REF']), item('DMK-158', 'VERIFIED', ['KEY-REF'])];
   const gate = evaluateReleaseGates(input, projectId).gates[2];
-  assert.equal(gate.status, 'PASSED'); assert.deepEqual(gate.evidenceLinks, ['MIGRATION-REF', 'KEY-REF']);
+  assert.equal(gate.status, 'PENDING'); assert.deepEqual(gate.evidenceLinks, ['MIGRATION-REF', 'KEY-REF']);
+  assert.match(gate.details,/Authenticated production evidence acquisition is unavailable/);
   assert.match(gate.details, /DMK-157=APPROVED/); assert.match(gate.details, /DMK-158=VERIFIED/);
   assert.match(gate.details, /does not.*secret sweep/i);
   assert(!gate.details.includes('Zero plaintext secrets')); assert(!gate.details.includes('abstraction active'));
@@ -186,10 +187,10 @@ test('C15 audit-derived signoff identifies the actual event and preserves import
   assert.equal(evaluateReleaseGates(input, projectId).signedOff, false);
 });
 
-test('C16 legacy baseline remains compatible and read-only evaluation never mutates inputs', () => {
+test('C16 historical lifecycle labels remain readable but cannot open release, and evaluation is read-only', () => {
   const input = store(); const before = structuredClone(input);
   const report = evaluateReleaseGates(input, projectId);
-  assert.equal(report.releaseReady, true); assert.equal(report.signedOff, false);
+  assert.equal(report.releaseReady, false); assert.equal(report.signedOff, false);
   assert.deepEqual(report.capabilitiesSummary, {total: 25, verified: 25, percentage: 100});
   assert.deepEqual(input, before);
 });

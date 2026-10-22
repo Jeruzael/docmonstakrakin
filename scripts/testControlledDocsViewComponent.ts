@@ -507,7 +507,8 @@ try {
       await ctx.page.evaluate("window.__setProjectId('PRJ-ATLAS-01')");
       await ctx.page.waitForSelector('[data-testid="controlled-docs-empty"]', { timeout: 5000 });
       const text = await ctx.page.textContent('[data-testid="controlled-docs-empty"]');
-      assert(text?.includes('No Repository Documentation Available'), 'Empty state banner displayed');
+      assert(text?.includes('No project documents yet'), 'Ordinary project empty state banner displayed');
+      assert(await ctx.page.getByTestId('btn-create-document').isVisible(), 'Ordinary project exposes document creation');
       assert(text?.includes('PRJ-ATLAS-01'), 'Includes project ID in message');
     } finally {
       await ctx.close();
@@ -1158,7 +1159,7 @@ try {
       await ctx.page.waitForSelector('[data-testid="canonical-refresh-error"]');
       const errText = await ctx.page.textContent('[data-testid="canonical-refresh-error"]');
       assert(
-        errText?.includes('Document changed before save. Reload canonical state before editing again.'),
+        errText?.includes('Document changed or project state is stale. Reload canonical state before editing again.'),
         'Shows document changed message'
       );
 

@@ -1,5 +1,15 @@
 # Subscription-independent development handoff
 
+## Current continuation checkpoint — 2026-10-22
+
+Start with the [eight-task completion plan](../06_planning/LOCAL_MVP_COMPLETION_20261022.md), [integration evidence](../07_verification/LOCAL_MVP_INTEGRATION_20261022.md) and [normal-checkout runbook](LOCAL_MVP_REPRODUCIBILITY_20261022.md). The last fully verified master is `d503323aad1002f7325ba3a45faf4bee261686a9`, PR #79, actual [CI 39703341247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39703341247), four jobs successful and 94 suites / 2,258 reported checks. Earlier dated sections remain historical records; their old merge sequences and unavailable-feature claims are not current continuation instructions.
+
+The signed subsystem history is combined on [`codex/local-mvp-completion-20261022`](https://github.com/Jeruzael/docmonstakrakin/tree/codex/local-mvp-completion-20261022). Discovery measurement, reviewer diagnostics, verification sessions, ordinary managed documents and scoped local evidence are implemented; complete integrated qualification and publication are pending at this checkpoint. Observe actual GitHub HEAD/checks and update this additive record with real outcomes before claiming integration. Never substitute focused or candidate tests for actual post-merge CI.
+
+Next executable sequence: finish the real-server journey and restart/package checks; retain and fix genuine failures; run complete regression, WBS/controlled documents/TypeScript/build and four exact-HEAD CI jobs; perform only a normal expected-HEAD-guarded merge after fresh eligibility checks; verify actual master and all four post-merge jobs. Routine development approval is waived by the operator; do not invent a human review. Existing PRs #34/#52 are outside this workstream.
+
+No real roster or signer was created, production trust acquired, canonical WBS applied, governance receipt consumed, privileged route or live agent enabled, Gate 7 executed or release promoted. Local person bindings are assertions requiring operator verification; portable review history remains untrusted after import. Original workstation SDK/dependency limitations are preserved and distinguished from configured fresh CI installs.
+
 ## Publication preparation checkpoint — 2026-10-21, 15:18 UTC
 
 The last fully verified master is `a8decba9ee305f1d3bd8ec96b5f80837332f8d71`: PR #75 actual [CI39623054845](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39623054845) passed all four jobs, 90/90 suites and 2,193/2,193 reported checks; [closure](https://github.com/Jeruzael/docmonstakrakin/pull/75#issuecomment-6319503075). PR #76 was then normally merged at15:16:27Z as `f0845a48664b3df5e7e3d4141251e538cc465f33`, with exact candidate tree `49b9f9674b18698201b1acd1b2d45d89256d8844`, valid signature and three intended paths. Its actual [CI39624137247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39624137247) is pending at this checkpoint. The next merge waits for that actual result.

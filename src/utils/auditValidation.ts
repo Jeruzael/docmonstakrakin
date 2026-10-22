@@ -1,7 +1,17 @@
 import { isValidStateVersion } from './projectListReconciliation';
 import type { DocumentSaveResponse } from '../types';
+import type {ManagedDocumentCreateResponse} from '../managedDocumentTypes';
 
 const SHA256_REGEX = /^[0-9a-fA-F]{64}$/;
+
+export function isValidManagedDocumentCreateAcknowledgment(response:unknown,projectId:string):response is ManagedDocumentCreateResponse {
+  if(!response || typeof response!=='object' || Array.isArray(response))return false;
+  const r=response as Record<string,unknown>;
+  return r.success===true && r.projectId===projectId && typeof r.documentId==='string' && /^MDOC-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(r.documentId) &&
+    (r.path===`managed-documents/${r.documentId}.md` || r.path===`managed-documents/${r.documentId}.txt`) &&
+    !Object.hasOwn(r,'previousSha256') && typeof r.newSha256==='string' && SHA256_REGEX.test(r.newSha256) && isValidStateVersion(r.stateVersion) &&
+    typeof r.auditEventId==='string' && !!r.auditEventId && typeof r.timestamp==='string' && Number.isFinite(Date.parse(r.timestamp));
+}
 
 export function isValidSaveAcknowledgment(response: unknown): response is DocumentSaveResponse {
   if (!response || typeof response !== 'object' || Array.isArray(response)) return false;
@@ -29,7 +39,8 @@ export interface ExpectedAuditAcknowledgment {
   auditEventId: string;
   documentId: string;
   path: string;
-  previousSha256: string;
+  previousSha256?: string;
+  action?: 'DOCUMENT_UPDATED' | 'DOCUMENT_CREATED';
   newSha256: string;
   timestamp: string;
   stateVersion: number;
@@ -54,13 +65,15 @@ export function validateAuditAcknowledgment(
   const e = event as Record<string, any>;
 
   if (e.id !== expected.auditEventId) return false;
-  if (e.action !== 'DOCUMENT_UPDATED') return false;
+  if (e.action !== (expected.action ?? 'DOCUMENT_UPDATED')) return false;
   if (e.target !== expected.documentId) return false;
   if (typeof e.timestamp !== 'string' || e.timestamp !== expected.timestamp) return false;
 
   if (!e.details || typeof e.details !== 'object') return false;
   if (typeof e.details.path !== 'string' || e.details.path !== expected.path) return false;
-  if (typeof e.details.previousSha256 !== 'string' || e.details.previousSha256 !== expected.previousSha256) return false;
+  if(expected.action==='DOCUMENT_CREATED') {
+    if(Object.hasOwn(e.details,'previousSha256') || expected.previousSha256!==undefined)return false;
+  } else if (typeof e.details.previousSha256 !== 'string' || e.details.previousSha256 !== expected.previousSha256) return false;
   if (typeof e.details.newSha256 !== 'string' || e.details.newSha256 !== expected.newSha256) return false;
 
   return true;
@@ -152,6 +165,7 @@ export function combineRequiredAuditAcks(
     } else {
       if (
         existing.documentId !== ack.documentId ||
+        (existing.action ?? 'DOCUMENT_UPDATED') !== (ack.action ?? 'DOCUMENT_UPDATED') ||
         existing.path !== ack.path ||
         existing.previousSha256 !== ack.previousSha256 ||
         existing.newSha256 !== ack.newSha256 ||

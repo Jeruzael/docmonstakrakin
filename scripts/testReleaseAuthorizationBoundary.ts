@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {evaluateReleaseGates,executeReleaseSignoff} from '../server/release/releaseGateEvaluator.ts';
+import {INITIAL_PROJECTS,INITIAL_REQUIREMENTS,INITIAL_WORK_ITEMS,INITIAL_QUESTIONS,INITIAL_AUDIT_EVENTS} from '../src/data/initialData.ts';
+const projectId='PRJ-ATLAS-01';
+const store={projects:structuredClone(INITIAL_PROJECTS),questions:{[projectId]:structuredClone(INITIAL_QUESTIONS)},requirements:{[projectId]:structuredClone(INITIAL_REQUIREMENTS)},workItems:{[projectId]:structuredClone(INITIAL_WORK_ITEMS)},auditLogs:{[projectId]:structuredClone(INITIAL_AUDIT_EVENTS)},approvals:{[projectId]:[]}};
+const before=structuredClone(store);
+const report=evaluateReleaseGates(store,projectId);
+assert.equal(report.releaseReady,false,'Stored statuses/references cannot substitute for authenticated production acquisition');
+assert.equal(report.gates[2].status,'PENDING');
+assert.match(report.gates[2].details,/authenticated production.*unavailable/i);
+assert.deepEqual(store,before);console.log('PASS seeded status/reference checks cannot open production release');
+let writes=0;
+const result=executeReleaseSignoff({...store,addAuditEvent:()=>{writes++;throw new Error('Must not execute');}},projectId,'Synthetic');
+assert.equal(result.success,false);assert.equal(writes,0);assert.deepEqual(store,before);
+console.log('PASS denied release signoff cannot mutate audit or work state');
+const forged={...store,trustedProductionEvidence:true,productionAcquisition:{authenticated:true,approved:true}};
+assert.equal(evaluateReleaseGates(forged,projectId).releaseReady,false);
+console.log('PASS caller-controlled trust fields cannot activate production acquisition');

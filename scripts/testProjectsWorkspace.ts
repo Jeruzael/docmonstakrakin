@@ -30,7 +30,7 @@ const props={projects,activeProjectId:'A',loading:false,error:'',onSelectProject
 await test('multiple canonical projects and explicit active identity render with metadata',()=>{
   const html=renderToStaticMarkup(React.createElement(ProjectsView,props));
   for(const p of projects)assert(html.includes(p.id)&&html.includes(p.name));
-  assert(html.includes('Active project'));assert(html.includes('DISCOVERY'));assert(html.includes('Health: 0%'));
+  assert(html.includes('Active project'));assert(html.includes('DISCOVERY'));assert(!html.includes('Health: 0%'));assert(html.includes('Health requires current discovery and evidence inputs'));
 });
 await test('zero-project workspace offers explicit creation; missing metadata stays absent',()=>{
   const empty=renderToStaticMarkup(React.createElement(ProjectsView,{...props,projects:[]}));assert(empty.includes('No projects yet'));assert(empty.includes('Create New Project'));

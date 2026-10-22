@@ -17,6 +17,10 @@ import type {
   DerivationRecord,
 } from '../../src/types.js';
 import { verifyAuditLedgerChain, GENESIS_AUDIT_HASH } from '../security/auditImmutability.js';
+import type { ProjectManagedDocument } from '../../src/managedDocumentTypes.js';
+import { validateProjectManagedDocuments } from '../docs/projectManagedDocuments.ts';
+import type { VerificationArchive } from '../../src/verificationTypes.ts';
+import { assertVerificationArchiveRetention, cloneVerificationArchive } from '../verification/service.ts';
 
 /**
  * REQ-DATA-004: Standalone Portable Project Package Envelope
@@ -59,6 +63,10 @@ export interface DocmonstakrakinPackageKnowledge {
   features?: Feature[];
   derivations?: DerivationRecord[];
   importSessions?: import('../../src/proposalTypes.js').ImportSession[];
+  /** Optional content only; carries no imported human governance authority. */
+  managedDocuments?: ProjectManagedDocument[];
+  /** Historical local assertions only; import must never materialize active review authority. */
+  verificationHistory?: VerificationArchive[];
 }
 
 export interface DocmonstakrakinPackageSeal {
@@ -142,6 +150,18 @@ export function computeEnvelopeHash(
   return crypto.createHash('sha256').update(payload, 'utf-8').digest('hex');
 }
 
+/** Public envelope hashes cannot authorize malformed history or cross-project identity claims. */
+function portableVerificationHistory(records: unknown, projectId: unknown): VerificationArchive[] {
+  if (typeof projectId !== 'string' || !/^PRJ-[A-Za-z0-9_-]+$/.test(projectId) ||
+    !Array.isArray(records) || records.length > 100 || records.some(record => !record || record.sourceProjectId !== projectId)) {
+    throw new Error('Invalid verification history: exact source project binding is required');
+  }
+  const archives = records as VerificationArchive[];
+  assertVerificationArchiveRetention(archives);
+  // Return detached, strictly validated records rather than caller-owned nested attachment objects.
+  return archives.map(archive => cloneVerificationArchive(archive.sessions, projectId));
+}
+
 /**
  * Creates a cryptographically sealed .docmonstakrakin portable package from raw project state.
  */
@@ -166,9 +186,16 @@ export function createPortablePackage(params: {
   features?: Feature[];
   derivations?: DerivationRecord[];
   importSessions?: import('../../src/proposalTypes.js').ImportSession[];
+  managedDocuments?: ProjectManagedDocument[];
+  verificationHistory?: VerificationArchive[];
 }): DocmonstakrakinPackage {
   const exportedAt = new Date().toISOString();
   const actor = params.actor || 'docmonstakrakin A-SSDLC Control Plane';
+  if (params.managedDocuments !== undefined) {
+    validateProjectManagedDocuments(params.managedDocuments, params.project.id);
+  }
+  const verificationHistory = params.verificationHistory === undefined
+    ? undefined : portableVerificationHistory(params.verificationHistory, params.project.id);
 
   const manifest: DocmonstakrakinPackageManifest = {
     magic: DOCMONSTAKRAKIN_PACKAGE_MAGIC,
@@ -198,6 +225,9 @@ export function createPortablePackage(params: {
     ...(params.features ? {features: params.features} : {}),
     ...(params.derivations ? {derivations: params.derivations} : {}),
     ...(params.importSessions ? {importSessions: params.importSessions} : {}),
+    // Omit absent collections so older packages retain their exact hash input.
+    ...(params.managedDocuments !== undefined ? {managedDocuments: structuredClone(params.managedDocuments)} : {}),
+    ...(verificationHistory !== undefined ? {verificationHistory} : {}),
   };
 
   // Ensure audit events are ordered chronologically (oldest to newest)
@@ -290,6 +320,20 @@ export function verifyPortablePackage(pkg: any): PackageVerificationResult {
   for (const key of ['questions','requirements','risks','threats','standards','workItems','evidence','adrs','components','overrides','approvals','agentRoles','agentRuns','features','derivations','importSessions']) {
     const collection=pkg.knowledge?.[key];
     if (collection !== undefined && (!Array.isArray(collection) || collection.some((item:any)=>!item || typeof item!=='object' || Array.isArray(item) || typeof item.id!=='string'))) errors.push(`Invalid knowledge collection: ${key}`);
+  }
+  if (pkg.knowledge && Object.hasOwn(pkg.knowledge, 'managedDocuments')) {
+    try {
+      validateProjectManagedDocuments(pkg.knowledge.managedDocuments, projectId);
+    } catch {
+      errors.push('Invalid managed document collection: content, digest, project binding, or server-owned metadata failed validation');
+    }
+  }
+  if (pkg.knowledge && Object.hasOwn(pkg.knowledge, 'verificationHistory')) {
+    try {
+      portableVerificationHistory(pkg.knowledge.verificationHistory, projectId);
+    } catch {
+      errors.push('Invalid verification history: schema, exact project binding, digests, local identity claims, authority flags, or retained limits failed validation');
+    }
   }
 
   // 3. Verify Seal Presence

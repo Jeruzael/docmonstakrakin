@@ -14,10 +14,11 @@ import type {
   DetectedEol,
 } from '../types.js';
 import { isValidStateVersion } from '../utils/projectListReconciliation.js';
+import type { ManagedDocumentCreateInput, ManagedDocumentCreateResponse, ManagedDocumentSaveInput, ManagedDocumentContentResponse } from '../managedDocumentTypes.js';
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
-type Channel = 'list' | 'content' | 'diff' | 'validate' | 'save' | 'session';
+type Channel = 'list' | 'content' | 'diff' | 'validate' | 'save' | 'session' | 'create' | 'project';
 
 const VALID_KINDS = new Set([
   'CONTROL',
@@ -201,6 +202,8 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
     validate: 0,
     save: 0,
     session: 0,
+    create: 0,
+    project: 0,
   };
 
   const controllers: Partial<Record<Channel, AbortController>> = {};
@@ -314,9 +317,15 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
     loadDocumentContent: async (
       projectId: string,
       documentId: string
-    ): Promise<DocumentContentResponse> => {
+    ): Promise<ManagedDocumentContentResponse> => {
       const url = `/api/projects/${encodeURIComponent(projectId)}/docs/${encodeURIComponent(documentId)}`;
-      return executeChannel('content', url, { method: 'GET' }, validateDocumentContentResponse);
+      return executeChannel('content', url, { method: 'GET' }, (data: any) => {
+        const result = validateDocumentContentResponse(data);
+        if ((documentId.startsWith('MDOC-') || data.document.managed === true) && (data.projectId !== projectId || data.document.id !== documentId || !isValidStateVersion(data.stateVersion))) {
+          throw new Error('Invalid managed document content response.');
+        }
+        return result as ManagedDocumentContentResponse;
+      });
     },
 
     requestDiff: async (
@@ -361,7 +370,7 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
       );
     },
 
-    requestSave: async (input: DocumentSaveInput): Promise<DocumentSaveResponse> => {
+    requestSave: async (input: ManagedDocumentSaveInput): Promise<DocumentSaveResponse> => {
       const url = `/api/projects/${encodeURIComponent(input.projectId)}/docs/${encodeURIComponent(input.documentId)}/save`;
       return executeChannel(
         'save',
@@ -374,11 +383,44 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
             baseSha256: input.baseSha256,
             reason: input.reason,
             humanConfirmed: input.humanConfirmed,
+            ...(input.expectedStateVersion !== undefined ? { expectedStateVersion: input.expectedStateVersion } : {}),
+            ...(input.requestId !== undefined ? { requestId: input.requestId } : {}),
           }),
         },
-        validateDocumentSaveResponse
+        (data: any) => {
+          if (!input.documentId.startsWith('MDOC-')) return validateDocumentSaveResponse(data);
+          try {
+            const result = validateDocumentSaveResponse(data);
+            if (result.documentId !== input.documentId || result.previousSha256 !== input.baseSha256.toLowerCase() ||
+              result.stateVersion !== input.expectedStateVersion! + 1 ||
+              ![`managed-documents/${input.documentId}.md`, `managed-documents/${input.documentId}.txt`].includes(result.path)) throw new Error();
+            return result;
+          } catch { throw new Error('Invalid managed document save response.'); }
+        }
       );
     },
+
+    requestCreate: async (input: ManagedDocumentCreateInput): Promise<ManagedDocumentCreateResponse> => {
+      const { projectId, ...body } = input;
+      return executeChannel('create', `/api/projects/${encodeURIComponent(projectId)}/docs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }, (data: any) => {
+        try {
+          validateDocumentSaveResponse({ ...data, previousSha256: data?.newSha256 });
+          if (data.projectId !== projectId || data.stateVersion !== input.expectedStateVersion + 1 ||
+            !/^MDOC-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.documentId) ||
+            data.path !== `managed-documents/${data.documentId}.${input.format === 'MARKDOWN' ? 'md' : 'txt'}`) throw new Error();
+        } catch { throw new Error('Invalid managed document create response.'); }
+        return data as ManagedDocumentCreateResponse;
+      });
+    },
+
+    loadProjectStateVersion: async (projectId: string): Promise<number> => executeChannel(
+      'project', `/api/projects/${encodeURIComponent(projectId)}`, { method: 'GET' }, (data: any) => {
+        if (!data || data.id !== projectId || !isValidStateVersion(data.stateVersion)) throw new Error('Invalid project version response.');
+        return data.stateVersion;
+      }
+    ),
 
     loadGovernanceSession: async (): Promise<ReviewerSessionInfo | null> => {
       const url = '/api/governance/session';

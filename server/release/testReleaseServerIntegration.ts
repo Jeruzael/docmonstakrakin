@@ -1,6 +1,8 @@
 /**
  * Server Integration Tests for DMK-165 / SEC-CTRL-020
  * Verifies GET /api/projects/:id/release/gates and POST /api/projects/:id/release/signoff
+ * through an isolated evaluator-response harness. Production reviewer authentication
+ * is covered separately; actor text here never establishes human authorization.
  */
 
 import assert from 'node:assert';
@@ -145,6 +147,7 @@ async function runTests() {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 
   try {
+    const initialState = JSON.stringify(store);
     // Test 1: GET /api/projects/:id/release/gates returns 7 gates and 25 capabilities
     console.log('[Test 1] Querying /api/projects/PRJ-ATLAS-01/release/gates...');
     const res1 = await request(server, {
@@ -154,9 +157,12 @@ async function runTests() {
     assert.strictEqual(res1.statusCode, 200);
     assert.strictEqual(res1.body.gates.length, 7);
     assert.strictEqual(res1.body.capabilities.length, 25);
-    assert.strictEqual(res1.body.releaseReady, true);
+    assert.strictEqual(res1.body.releaseReady, false);
+    assert.strictEqual(res1.body.allGatesPassed, false);
+    assert.strictEqual(res1.body.gates.find((gate: any) => gate.gateId === 3).status, 'PENDING');
     assert.strictEqual(res1.body.signedOff, false);
-    console.log('✓ GET release gates returned valid 7-gate baseline report.');
+    assert.strictEqual(JSON.stringify(store), initialState, 'Gate evaluation must not mutate the stored-status fixture');
+    console.log('✓ GET returned 7 gates and 25 capabilities without promoting stored statuses to production readiness.');
 
     // Test 2: POST /api/projects/:id/release/signoff without actor is rejected (400)
     console.log('[Test 2] Attempting sign-off without actor...');
@@ -171,7 +177,8 @@ async function runTests() {
     );
     assert.strictEqual(res2.statusCode, 400);
     assert.ok(res2.body.error.includes('Actor required'));
-    console.log('✓ Anonymous sign-off correctly rejected with HTTP 400.');
+    assert.strictEqual(JSON.stringify(store), initialState, 'Missing-actor refusal must preserve project and audit state');
+    console.log('✓ Missing-actor request correctly rejected with HTTP 400 and no state changes.');
 
     // Test 3: POST /api/projects/:id/release/signoff with failed gates is rejected (412)
     console.log('[Test 3] Attempting sign-off when a blocker question exists...');
@@ -184,6 +191,7 @@ async function runTests() {
       profiles: ['API_BACKEND'],
       dependencies: [],
     } as any);
+    const blockedState = JSON.stringify(store);
 
     const res3 = await request(
       server,
@@ -195,14 +203,17 @@ async function runTests() {
       { actor: 'Lead Architect', notes: 'Should fail' }
     );
     assert.strictEqual(res3.statusCode, 412);
-    assert.ok(res3.body.error.includes('prerequisite gates failed'));
+    assert.ok(res3.body.error.includes('GATE-01-BLOCKERS'));
+    assert.strictEqual(res3.body.report.gates.find((gate: any) => gate.gateId === 1).status, 'FAILED');
+    assert.strictEqual(JSON.stringify(store), blockedState, 'Failed prerequisite gates must not mutate lifecycle or audit state');
     console.log('✓ Premature sign-off correctly rejected with HTTP 412 Precondition Failed.');
 
-    // Remove blocker question for happy path
+    // Removing this blocker does not provide the missing authenticated production evidence.
     store.questions['PRJ-ATLAS-01'].pop();
+    assert.strictEqual(JSON.stringify(store), initialState);
 
-    // Test 4: POST /api/projects/:id/release/signoff executes ceremony successfully
-    console.log('[Test 4] Executing legitimate release sign-off ceremony...');
+    // Test 4: Stored statuses and an actor string cannot execute a release ceremony.
+    console.log('[Test 4] Attempting sign-off with a stored-status fixture...');
     const res4 = await request(
       server,
       {
@@ -211,33 +222,40 @@ async function runTests() {
         headers: { 'Content-Type': 'application/json' },
       },
       {
-        actor: 'Security Lead (Gio)',
-        notes: 'Official v0.1 Definition-of-Done verified and signed off.',
+        actor: 'Synthetic fixture actor',
+        notes: 'Inert refusal test; no real release decision.',
       }
     );
-    assert.strictEqual(res4.statusCode, 200);
-    assert.strictEqual(res4.body.report.allGatesPassed, true);
-    assert.strictEqual(res4.body.report.signedOff, true);
-    assert.strictEqual(res4.body.auditEvent.action, 'RELEASE_GATE_APPROVED');
-    assert.strictEqual(res4.body.auditEvent.target, 'DMK-165');
-    console.log('✓ Sign-off ceremony executed cleanly with HTTP 200.');
+    assert.strictEqual(res4.statusCode, 412);
+    assert.ok(res4.body.error.includes('GATE-03-SECRETS'));
+    assert.strictEqual(res4.body.report.releaseReady, false);
+    assert.strictEqual(res4.body.report.allGatesPassed, false);
+    assert.strictEqual(res4.body.report.signedOff, false);
+    assert.strictEqual(res4.body.report.signoffDetails, undefined);
+    assert.strictEqual(res4.body.auditEvent, undefined);
+    assert.strictEqual(JSON.stringify(store), initialState, 'Status-only signoff refusal must preserve every project, work-item, approval and audit byte');
+    console.log('✓ Status-only sign-off returned HTTP 412 without recording approval or changing state.');
 
-    // Test 5: GET /api/projects/:id/release/gates reflects signed-off state
-    console.log('[Test 5] Querying release gates after sign-off...');
+    // Test 5: GET after refusal still reports the original unsigned state.
+    console.log('[Test 5] Querying release gates after refused sign-off...');
     const res5 = await request(server, {
       method: 'GET',
       path: '/api/projects/PRJ-ATLAS-01/release/gates',
     });
     assert.strictEqual(res5.statusCode, 200);
-    assert.strictEqual(res5.body.allGatesPassed, true);
-    assert.strictEqual(res5.body.signedOff, true);
-    assert.strictEqual(res5.body.gates[6].status, 'PASSED');
-    assert.strictEqual(res5.body.signoffDetails.actor, 'Security Lead (Gio)');
-    console.log('✓ Release gates correctly reflect signed-off state and auditor identity.');
+    assert.strictEqual(res5.body.releaseReady, false);
+    assert.strictEqual(res5.body.allGatesPassed, false);
+    assert.strictEqual(res5.body.signedOff, false);
+    assert.strictEqual(res5.body.gates.find((gate: any) => gate.gateId === 3).status, 'PENDING');
+    assert.strictEqual(res5.body.gates[6].status, 'HUMAN_APPROVAL_REQUIRED');
+    assert.strictEqual(res5.body.signoffDetails, undefined);
+    assert.deepStrictEqual(res5.body.gates.map((gate: any) => [gate.gateId, gate.status]), res1.body.gates.map((gate: any) => [gate.gateId, gate.status]));
+    assert.strictEqual(JSON.stringify(store), initialState, 'A refused ceremony and subsequent reads must leave the complete fixture unchanged');
+    console.log('✓ Subsequent GET remains unsigned, requires human approval, and preserves all stored state.');
 
     console.log('\n=== ALL 5/5 RELEASE SERVER INTEGRATION TESTS PASSED ===');
   } finally {
-    server.close();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 }
 

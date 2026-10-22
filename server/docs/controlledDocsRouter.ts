@@ -22,6 +22,7 @@ import {
   DocumentTransactionCoordinator,
 } from './controlledDocsTransaction.ts';
 import { assertDocumentTransactionsUnlocked } from './controlledDocsRecovery.ts';
+import { createProjectManagedDocumentsRouter } from './projectManagedDocuments.ts';
 import { projectSnapshotDigest } from '../projectPersistence.ts';
 
 export interface DocumentSaveResponse {
@@ -56,6 +57,7 @@ export function createControlledDocsRouter(
   workspaceRoot: string = process.cwd()
 ): Router {
   const router = express.Router();
+  router.use(createProjectManagedDocumentsRouter(store, requireHuman));
 
   // -------------------------------------------------------------------------
   // GET /:id/docs - Catalog listing

@@ -207,7 +207,8 @@ try {
           await unknown(f.page);
           await f.page.evaluate(bob => {(window as any).coherence.identity = bob;}, bob);
           await panel(f.page).getByRole('button', {name: 'Refresh', exact: true}).evaluate(button => (button as HTMLButtonElement).click());
-          await settle(f.page);
+          // Header confirmation precedes the approval view's full identity read.
+          await panel(f.page).getByText('Authenticated Human Reviewer: Fixture Bob (FIXTURE-BOB)', {exact: true}).waitFor();
           assert.match(await panel(f.page).innerText(), /Fixture Bob.*FIXTURE-BOB/);
           assert.equal(await consent.isChecked(), false); assert(await submit.isDisabled());
         }
