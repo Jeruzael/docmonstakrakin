@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {isValidManagedDocumentCreateAcknowledgment, validateAuditAcknowledgment, isValidSaveAcknowledgment,combineRequiredAuditAcks} from '../src/utils/auditValidation.ts';
+const id='MDOC-12345678-1234-4234-9234-123456789abc';
+const ack={success:true,projectId:'SYNTHETIC',documentId:id,path:`managed-documents/${id}.md`,newSha256:'a'.repeat(64),stateVersion:3,auditEventId:'AUD-SYNTHETIC',timestamp:'2026-10-22T00:00:00Z'};
+assert(isValidManagedDocumentCreateAcknowledgment(ack,'SYNTHETIC'));
+for(const invalid of [{...ack,projectId:'OTHER'},{...ack,stateVersion:NaN},{...ack,path:'../outside.md'},{...ack,previousSha256:'b'.repeat(64)},{...ack,newSha256:'invalid'}])assert(!isValidManagedDocumentCreateAcknowledgment(invalid,'SYNTHETIC'));
+console.log('PASS creation acknowledgments bind project virtual path digest and safe version');
+const expected={...ack,action:'DOCUMENT_CREATED' as const};
+const event={id:ack.auditEventId,action:'DOCUMENT_CREATED',target:id,timestamp:ack.timestamp,details:{path:ack.path,newSha256:ack.newSha256}};
+assert(validateAuditAcknowledgment(event,expected));
+for(const invalid of [{...event,action:'DOCUMENT_UPDATED'},{...event,target:'OTHER'},{...event,details:{...event.details,newSha256:'b'.repeat(64)}},{...event,details:{...event.details,previousSha256:'b'.repeat(64)}}])assert(!validateAuditAcknowledgment(invalid,expected));
+console.log('PASS creation audit cannot be substituted by update or altered content');
+assert(!isValidSaveAcknowledgment(ack));
+assert(!validateAuditAcknowledgment(event,{...expected,action:undefined,previousSha256:'b'.repeat(64)}));
+console.log('PASS legacy update validation still requires prior digest and update action');
+assert.equal(combineRequiredAuditAcks([expected],[{...expected,action:'DOCUMENT_UPDATED'}]).valid,false);
+assert.equal(combineRequiredAuditAcks([{...expected,action:undefined}],[{...expected,action:'DOCUMENT_UPDATED'}]).valid,true);
+console.log('PASS acknowledgement folding rejects conflicting actions and preserves legacy update default');

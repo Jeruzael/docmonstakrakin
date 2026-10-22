@@ -8,7 +8,7 @@ const emptyDraft = (): Draft => ({maturity: '', sourceControl: '', workItemIds: 
 const maturities = ['GREENFIELD', 'EXISTING_PROJECT', 'MIGRATION', 'EXTENSION'];
 class ReadinessResponseError extends Error {constructor(readonly status: number) {super('Unsuccessful readiness response');}}
 
-async function decode(response: Response): Promise<ProjectReadinessResponse> {
+export async function decodeProjectReadinessResponse(response: Response): Promise<ProjectReadinessResponse> {
   if (!response.ok) throw new ReadinessResponseError(response.status);
   const body = await response.json() as ProjectReadinessResponse;
   if (!body || typeof body !== 'object' || !readinessText(body.projectId) || !Number.isSafeInteger(body.stateVersion) || body.stateVersion < 0 ||
@@ -44,7 +44,7 @@ async function request(url: string, controller: AbortController, init: RequestIn
   let abort!: () => void;
   const interrupted = new Promise<never>((_, reject) => {abort = () => reject(new Error('Readiness request interrupted')); controller.signal.addEventListener('abort', abort, {once: true}); if (controller.signal.aborted) abort();});
   const deadline = setTimeout(() => controller.abort(), 20_000);
-  try {return await Promise.race([fetch(url, {...init, credentials: 'same-origin', signal: controller.signal}).then(decode), interrupted]);}
+  try {return await Promise.race([fetch(url, {...init, credentials: 'same-origin', signal: controller.signal}).then(decodeProjectReadinessResponse), interrupted]);}
   finally {clearTimeout(deadline); controller.signal.removeEventListener('abort', abort);}
 }
 

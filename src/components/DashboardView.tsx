@@ -18,12 +18,13 @@ import { Project, RecommendedNextAction, AuditEvent, Risk, Question } from '../t
 import { projectRiskDisplay } from '../data/riskDisplayProjection';
 import { projectHealthProjection } from '../data/projectHealthProjection';
 
-interface DashboardViewProps {
+export interface DashboardViewProps {
   project: Project;
   nextAction: RecommendedNextAction;
   recentAudits?: AuditEvent[];
   risks?: Risk[];
   questions?: Question[];
+  releaseHealth?: import('../releaseScopeTypes').ReleaseHealthSummary;
   onNavigate: (view: string, targetId?: string) => void;
   onOpenOverrideModal: (gateName: string) => void;
 }
@@ -34,10 +35,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   recentAudits = [],
   risks = [],
   questions,
+  releaseHealth,
   onNavigate,
   onOpenOverrideModal,
 }) => {
-  const health=projectHealthProjection(project,questions);
+  const health=projectHealthProjection(project,questions,releaseHealth);
   const unresolvedBlockers=health.gates?.blockers || [];
   const gateCount=health.gates?.total;
   const discovery=health.discovery;
@@ -137,6 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="text-[11px] text-slate-500 pb-3 space-y-1"><p>{discovery ? `${discovery.numerator} / ${discovery.denominator} required decisions resolved or not applicable.` : 'Discovery inputs unavailable.'}</p><p className="font-mono">{discovery?.version ?? health.version}</p><p>{discovery?.formula}</p><p>Release scope and evidence are separate. Discovery coverage does not establish verification, compliance or release approval.</p></div>
+          {health.releaseScope && <details className="pb-3 text-[11px] text-slate-600"><summary className="cursor-pointer">Inspect current-release inputs ({health.releaseScope.count} tasks)</summary><p className="mt-2">{health.releaseScope.id} · revision {health.releaseScope.revision} · {health.releaseScope.targetRelease}</p><p className="break-all">Commit {health.releaseScope.commitSha} · build {health.releaseScope.buildRevision} · environment {health.releaseScope.environment}</p><p>{health.releaseScope.workItemIds.join(', ')}</p><p>Local evidence: {releaseHealth?.localEvidence.formula} · LOCAL_RELEASE_HEALTH/1</p><p>Unselected future work is excluded. Local roster assertions and human attestations do not establish production trust.</p></details>}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span>A-SSDLC Phase: <strong className="text-slate-700">{project.lifecyclePhase}</strong></span>
             <button

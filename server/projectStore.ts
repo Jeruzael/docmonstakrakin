@@ -37,12 +37,14 @@ import type {
 } from '../src/types.ts';
 import type { ControlledDocumentReference } from '../src/data/selfBootstrapContract.ts';
 import type { ImportSession } from '../src/proposalTypes.ts';
+import type { ProjectManagedDocuments } from '../src/managedDocumentTypes.ts';
 
 /**
  * Canonical in-memory project store for docmonstakrakin.
  * Houses all multi-project collections, audit events, and controlled document references.
  */
 export class ProjectStore {
+  managedDocuments: ProjectManagedDocuments = {};
   importSessions: Record<string, ImportSession[]> = {};
   projects: Project[] = [...INITIAL_PROJECTS];
   questions: Record<string, Question[]> = {

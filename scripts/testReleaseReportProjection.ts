@@ -93,6 +93,7 @@ test('P11 PRD exposes actual lifecycle counts without fabricated hash or compute
   assert(!html.includes('canonical state hash'), 'Rendering does not compute a canonical hash');
   assert.match(html, /Total Requirements: 2/);
   assert.match(html, /Approved Requirements: 1/);
-  assert.match(html, /Stored Planning Health Score/);
+  assert.doesNotMatch(html, /Stored Planning Health Score/);
+  assert.match(html, /discovery.*evidence/i);
 });
 console.log(`Release report projection: ${passed} passed`);

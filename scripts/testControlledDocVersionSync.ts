@@ -99,9 +99,11 @@ function syntheticReadyReport(project: Pick<Project, 'id' | 'name'>): ReleaseAud
     auditLogs: { [sourceId]: structuredClone(INITIAL_AUDIT_EVENTS) },
     approvals: { [sourceId]: [] },
   }, sourceId);
-  assert.equal(report.releaseReady, true, 'Synthetic Atlas input must allow the signoff-entry scenario');
+  assert.equal(report.releaseReady, false, 'Stored Atlas input must fail closed without authenticated production acquisition');
   assert.equal(report.signedOff, false, 'Synthetic fixture must not contain release approval');
-  return { ...report, projectId: project.id, projectName: project.name };
+  // Inert transport mock solely for stale-snapshot/signoff UI scenarios. This
+  // fixture-only status overrides no runtime policy or production authority.
+  return { ...report, releaseReady:true, gates:report.gates.map(gate=>gate.gateId===3?{...gate,status:'PASSED',details:'INERT TEST TRANSPORT: ready-modal scenario only.'}:gate),projectId: project.id, projectName: project.name };
 }
 
 async function createHarness(options: TestHarnessOptions = {}) {

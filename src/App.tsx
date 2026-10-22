@@ -1,4 +1,7 @@
 import { ReviewerSession } from './components/ReviewerSession';
+import {ScopedDashboardView} from './components/ScopedDashboardView';
+import {ProjectReadinessSetup} from './components/ProjectReadinessSetup';
+import type {ManagedDocumentCreateResponse} from './managedDocumentTypes';
 import { LocalContainmentNotice } from './components/LocalContainmentNotice';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar, NavView } from './components/Sidebar';
@@ -56,6 +59,7 @@ import {
   reconcileAuditEvents,
   combineRequiredAuditAcks,
   isValidSaveAcknowledgment,
+  isValidManagedDocumentCreateAcknowledgment,
 } from './utils/auditValidation';
 import {
   reconcileProjectList,
@@ -319,11 +323,11 @@ export default function App() {
     void performAuditRefresh(projId, nextSeq);
   }, [performAuditRefresh]);
 
-  const handleControlledDocumentCommitted = useCallback((projectId: string, saveResponse: DocumentSaveResponse) => {
+  const handleControlledDocumentCommitted = useCallback((projectId: string, saveResponse: DocumentSaveResponse | ManagedDocumentCreateResponse, action:'DOCUMENT_UPDATED'|'DOCUMENT_CREATED'='DOCUMENT_UPDATED') => {
     if (
       !projectId ||
       typeof projectId !== 'string' ||
-      !isValidSaveAcknowledgment(saveResponse)
+      !(action==='DOCUMENT_CREATED' ? isValidManagedDocumentCreateAcknowledgment(saveResponse,projectId) : isValidSaveAcknowledgment(saveResponse))
     ) {
       return;
     }
@@ -367,7 +371,8 @@ export default function App() {
         auditEventId: saveResponse.auditEventId,
         documentId: saveResponse.documentId,
         path: saveResponse.path,
-        previousSha256: saveResponse.previousSha256,
+        previousSha256: 'previousSha256' in saveResponse ? saveResponse.previousSha256 : undefined,
+        action,
         newSha256: saveResponse.newSha256,
         timestamp: saveResponse.timestamp,
         stateVersion: nextVersion,
@@ -470,6 +475,19 @@ export default function App() {
       onError:message=>{setLoadError(message);setProjectLoading(false);},
     });
   },[getRequiredAcksForProject]);
+
+  const handleProjectMutationAcknowledged = useCallback((projectId:string,stateVersion:number) => {
+    if(!projectId || !isValidStateVersion(stateVersion))return;
+    confirmedVersionsRef.current[projectId]=Math.max(confirmedVersionsRef.current[projectId]??0,stateVersion);
+    acceptedProjectVersionFloorsRef.current[projectId]=Math.max(acceptedProjectVersionFloorsRef.current[projectId]??0,stateVersion);
+    if((acceptedCanonicalSnapshotVersionsRef.current[projectId]??-1)<stateVersion){
+      const warning='Project state snapshot is older than the confirmed version. Retry to refresh.';
+      projectSnapshotStaleIssuesRef.current[projectId]=warning;
+      if(selectedProjectRef.current===projectId)setActiveSnapshotStaleWarning(warning);
+    }
+    // A mutation acknowledgement establishes a version floor, never a complete snapshot.
+    return fetchProjectData(projectId);
+  },[fetchProjectData]);
 
   const handleSelectProject = useCallback((id:string, replaceBaseline=false, syncHistory: 'push' | 'replace' | 'none' = 'push') => {
     if (syncHistory !== 'none') {
@@ -1036,7 +1054,7 @@ export default function App() {
           )}
           {projectMounted && projectLoading && <p role="status" className="mb-4 text-sm text-slate-600">Refreshing selected project…</p>}
           {currentView === 'projects' ? (
-            <ProjectsView
+            <><ProjectsView
               projects={projects}
               activeProjectId={activeProjectId}
               loading={projectsLoading}
@@ -1046,7 +1064,7 @@ export default function App() {
               onCreateProject={handleOpenCreateWizard}
               onRetry={() => void handleRefreshProjectList()}
               onRefreshProjects={handleRefreshProjectList}
-            />
+            />{currentProject && projectReady && currentProject.id!=='PRJ-DOCMONSTAKRAKIN' && <div className="mt-6"><ProjectReadinessSetup project={currentProject} sessionRevision={reviewerDisplay.revision} canEdit={reviewerDisplay.phase==='confirmed'} onChanged={handleProjectMutationAcknowledged}/></div>}</>
           ) : projectsLoading && projects.length===0 ? (
             <p role="status">Loading projects…</p>
           ) : projectsError && projects.length===0 ? (
@@ -1109,7 +1127,9 @@ export default function App() {
           ) : !projectMounted ? <p role="status">{loadError ? 'Select another project or retry to continue.' : 'Loading selected project…'}</p> : (
             <div key={currentProject.id} inert={!projectReady && isCanonicalMutationView} hidden={Boolean(loadError)} aria-busy={projectLoading} data-project-scope={currentProject.id}>
               {currentView === 'overview' && (
-            <DashboardView
+            <ScopedDashboardView
+              sessionRevision={reviewerDisplay.revision}
+              canInspect={projectReady && reviewerDisplay.phase==='confirmed'}
               project={currentProject}
               nextAction={nextAction}
               questions={questions}
@@ -1249,10 +1269,11 @@ export default function App() {
 
           {currentView === 'documents' && (
             <ControlledDocsView
-              key={`controlled-docs-${currentProject.id}`}
+              key={`controlled-docs-${currentProject.id}-${reviewerDisplay.revision}`}
               projectId={currentProject.id}
               canonicalReady={projectReady}
               onSaveCommitted={handleControlledDocumentCommitted}
+              onDocumentCreated={(projectId,result)=>{handleControlledDocumentCommitted(projectId,result,'DOCUMENT_CREATED');void fetchProjectData(projectId);}}
               dynamicProjectionsProps={{
                 project: currentProject,
                 canonicalReady: projectReady,

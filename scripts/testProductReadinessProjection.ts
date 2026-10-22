@@ -7,6 +7,7 @@ import {INITIAL_PROJECTS,INITIAL_NEXT_ACTION,INITIAL_QUESTIONS} from '../src/dat
 import {DISCOVERY_QUESTION_CATALOG} from '../src/data/discoveryCatalog.ts';
 import {projectHealthProjection} from '../src/data/projectHealthProjection.ts';
 import type {Question} from '../src/types.ts';
+import {releaseHealthProjection} from '../src/data/releaseHealthProjection.ts';
 
 const project={...structuredClone(INITIAL_PROJECTS[0]),progress:{...INITIAL_PROJECTS[0].progress,requirementsReadiness:0,releaseReadiness:0}};
 const html=renderToStaticMarkup(React.createElement(DashboardView,{project,nextAction:INITIAL_NEXT_ACTION,questions:INITIAL_QUESTIONS,onNavigate:()=>{},onOpenOverrideModal:()=>{}}));
@@ -71,5 +72,12 @@ check('legacy recommendation without a target cannot crash the dashboard or navi
  const props={project:fresh,nextAction,questions:[],onNavigate:(...args:any[])=>calls.push(args),onOpenOverrideModal:()=>{}};
  const page=renderToStaticMarkup(React.createElement(DashboardView,props));assert(page.includes('Review'));
  buttons(DashboardView(props)).find(b=>buttonText(b).includes('Review next action'))!.props.onClick();assert.equal(calls[0][0],'discovery');
+});
+check('scoped dashboard exposes lifecycle denominator and local evidence without promoting production trust',()=>{
+ const p={...fresh,readinessContext:{version:'LOCAL_RELEASE_SCOPE/1' as const,id:'RSC-synthetic',revision:1,targetRelease:fresh.targetRelease,workItemIds:['TASK-ONE'],commitSha:'a'.repeat(40),buildRevision:'synthetic-build',environment:'synthetic-offline',updatedAt:'2026-10-22T00:00:00Z',updatedBy:{identityId:'synthetic',name:'Synthetic',roleSource:'LOCAL_SERVER_ROSTER' as const}}};
+ const observation={reviews:[],eligibleSessionIds:[],trust:'LOCAL_ROSTER_ASSERTION_AND_HUMAN_ATTESTATION' as const,trustedProductionEvidence:false as const};
+ const summary=releaseHealthProjection(p,[{id:'TASK-ONE',status:'VERIFICATION'},{id:'FUTURE',status:'BACKLOG'}] as any,[{projectId:p.id,workItemId:'TASK-ONE',commitSha:p.readinessContext.commitSha,buildRevision:p.readinessContext.buildRevision,environment:p.readinessContext.environment,observation}]);
+ const health=projectHealthProjection(p,[],summary);assert.equal(health.dimensions[0].value,'1 / 1 recorded');assert.equal(health.dimensions[1].value,'0 / 1 locally reviewed');assert.equal(health.dimensions[2].value,'Unavailable');assert.equal(health.dimensions[3].value,'Unavailable');assert.equal(health.releaseScope?.count,1);
+ const stale=projectHealthProjection({...p,targetRelease:'different'},[],summary);assert.equal(stale.dimensions[0].value,'Unavailable');
 });
 process.exitCode=failures?1:0;

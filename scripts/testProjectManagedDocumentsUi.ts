@@ -28,7 +28,8 @@ function Harness(){
 createRoot(document.getElementById('root')).render(<Harness/>);
 `);
 const vite=await startIsolatedVite(process.cwd());
-const browser=await chromium.launch({headless:true});
+const executablePath=process.env.DMK_TEST_BROWSER || ['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(file=>fs.existsSync(file));
+const browser=await chromium.launch({headless:true,executablePath});
 const page=await browser.newPage();
 const documentId='MDOC-00000000-0000-4000-8000-000000000001';
 let content='# Design\n\nDraft content.\n';

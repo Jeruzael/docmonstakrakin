@@ -487,6 +487,7 @@ async function startServer() {
     store.agentRoles[newId] = [];
     store.agentRuns[newId] = [];
     store.documents[newId] = [];
+    store.managedDocuments[newId] = [];
     store.risks[newId][0].inherentScore = newProject.computedRisk!.score;
     store.risks[newId][0].inherentLevel = newProject.computedRisk!.level;
     store.risks[newId][0].drivers = newProject.computedRisk!.drivers;
@@ -1110,6 +1111,7 @@ async function startServer() {
         overrides: store.overrides[projectId] || [],
         approvals: store.approvals[projectId] || [],
         importSessions: store.importSessions[projectId] || [],
+        managedDocuments: projectId==='PRJ-DOCMONSTAKRAKIN' ? undefined : (store.managedDocuments[projectId] || []),
         features: store.features[projectId] || [],
         derivations: store.derivations[projectId] || [],
         agentRoles: store.agentRoles[projectId] || [],
@@ -1229,6 +1231,7 @@ async function startServer() {
       store.agentRoles[targetProjectId] = pkg.knowledge.agentRoles || [];
       store.agentRuns[targetProjectId] = pkg.knowledge.agentRuns || [];
       store.documents[targetProjectId] = [];
+      store.managedDocuments[targetProjectId] = structuredClone(pkg.knowledge.managedDocuments || []);
 
       // Restore audit ledger (reversed back to store format: newest first)
       const restoredAudit = pkg.auditLedger ? [...pkg.auditLedger].reverse() : [];

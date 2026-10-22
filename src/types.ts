@@ -133,6 +133,7 @@ export interface ProductBaseline {
 }
 
 export interface Project {
+  readinessContext?: import('./releaseScopeTypes').ReleaseScopeContext;
   maturity?: 'GREENFIELD' | 'EXISTING_PROJECT' | 'MIGRATION' | 'EXTENSION';
   assuranceInputs?: AssuranceInputs;
   computedRisk?: { score: number; level: RiskLevel; drivers: string[] };

@@ -184,8 +184,8 @@ export function evaluateReleaseGates(
     gateId: 3,
     code: 'GATE-03-SECRETS',
     name: 'Secret Store Integration Complete (DMK-157 & DMK-158)',
-    status: gate3Passed ? 'PASSED' : 'FAILED',
-    details: `Stored work-item status check: DMK-157=${dmk157?.status ?? 'MISSING'}; DMK-158=${dmk158?.status ?? 'MISSING'}. Both must be VERIFIED or APPROVED. This evaluation does not inspect credential storage, run rotation, or perform a secret sweep.`,
+    status: gate3Passed ? 'PENDING' : 'FAILED',
+    details: `Stored work-item status check: DMK-157=${dmk157?.status ?? 'MISSING'}; DMK-158=${dmk158?.status ?? 'MISSING'}. Both must be VERIFIED or APPROVED. This evaluation does not inspect credential storage, run rotation, or perform a secret sweep. Authenticated production evidence acquisition is unavailable; stored status/reference checks and local human attestations cannot satisfy this gate.`,
     blocking: true,
     evidenceLinks: [...evidenceReferences(dmk157?.evidence), ...evidenceReferences(dmk158?.evidence)],
   });
@@ -360,11 +360,11 @@ export function executeReleaseSignoff(
   // 1. Initial Gate Evaluation
   const initialReport = evaluateReleaseGates(store, projectId);
   if (!initialReport.releaseReady) {
-    const failedGates = initialReport.gates.filter((g) => g.status === 'FAILED');
+    const failedGates = initialReport.gates.filter((g) => g.gateId<=6 && g.status !== 'PASSED');
     return {
       success: false,
       report: initialReport,
-      error: `Cannot sign off release: ${failedGates.length} prerequisite gates failed (${failedGates.map((g) => g.code).join(', ')}).`,
+      error: `Cannot sign off release: ${failedGates.length} prerequisite gates are not satisfied (${failedGates.map((g) => g.code).join(', ')}).`,
     };
   }
 
