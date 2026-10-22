@@ -59,8 +59,8 @@ import {
   filterQuestionsForProject,
   calculateDiscoveryCoverage,
   deriveArtifactsFromAnswer,
-  wizardQuestionCoverage,
 } from './src/data/derivationEngine.ts';
+import { discoveryGateProjection } from './src/data/discoveryGates.ts';
 import { compileContextPackage } from './src/data/contextPackageCompiler.ts';
 import { GoogleGenAI } from '@google/genai';
 import {
@@ -404,13 +404,14 @@ async function startServer() {
       updatedAt: new Date().toISOString(),
       repoPath: body.repoPath || '/workspace/project',
       repoStatus: 'CLEAN',
-      healthScore: 70,
+      // Legacy wire fields only; measured views use explicit read-only projections.
+      healthScore: 0,
       progress: {
         requirementsReadiness: 0,
         architectureReadiness: 0,
         implementation: 0,
         verification: 0,
-        securityAssurance: 40,
+        securityAssurance: 0,
         releaseReadiness: 0,
       },
       productBaseline: body.productBaseline,
@@ -1002,8 +1003,8 @@ async function startServer() {
     const project = store.projects.find(p=>p.id===req.params.id);
     if (!project) return res.status(404).json({error:'Project not found'});
     const questions = filterQuestionsForProject(projectQuestionCatalog(store.questions[project.id] || []), project);
-    const covered = wizardQuestionCoverage(project);
-    const blockers = questions.filter((q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED' && !covered[q.id]);
+    const gates=discoveryGateProjection(project,questions);
+    const blockers=gates.blockers;
 
     if (blockers.length > 0) {
       const topBlocker = blockers[0];
@@ -1018,6 +1019,7 @@ async function startServer() {
       });
     }
 
+    if(gates.metadata.length>0){const first=gates.metadata[0];return res.json({id:`RNA-${first.id}`,title:first.title,actionType:'COMPLETE_REVIEW',reason:first.reason,targetEntityId:first.id,blocks:['PHASE_ARCHITECTURE'],severity:'HIGH'});}
     const work = (store.workItems[project.id] || []).find(w=>['PROPOSED','READY','IN_PROGRESS'].includes(w.status));
     res.json({id:`RNA-${project.id}`,title:work ? `Review ${work.title}` : 'Review project discovery coverage',actionType:'COMPLETE_REVIEW',reason:'Select the next project-specific task after reviewing open discovery and architecture decisions.',targetEntityId:work?.id || project.id,blocks:[],severity:'MEDIUM'});
   });

@@ -66,7 +66,7 @@ export function ProjectsView({projects,activeProjectId,loading,error,unavailable
           {project.description && <p className="text-sm text-slate-600 whitespace-pre-wrap break-words">{project.description}</p>}
           <div className="flex flex-wrap gap-2">{[...(project.profiles||[]),...(project.specializedProfiles||[])].map(profile=><span key={profile} className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[11px] text-slate-600">{profile}</span>)}</div>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3 text-xs">{metadata.map(([label,value])=><div key={label}><dt className="text-slate-400">{label}</dt><dd className="text-slate-700 break-words mt-1">{value}</dd></div>)}</dl>
-          {(typeof project.healthScore==='number' || typeof project.progress?.requirementsReadiness==='number') && <div className="flex flex-wrap gap-4 text-xs text-slate-600">{typeof project.healthScore==='number' && <span>Health: {project.healthScore}%</span>}{typeof project.progress?.requirementsReadiness==='number' && <span>Requirements readiness: {project.progress.requirementsReadiness}%</span>}</div>}
+          <p className="text-xs text-slate-600">Health requires current discovery and evidence inputs. Open the dashboard to inspect the calculation.</p>
           <div className="pt-3 border-t border-slate-100"><button className={`${button} text-emerald-700`} onClick={()=>onSelectProject(project.id)}>Open Project<ArrowRight className="w-3.5 h-3.5"/></button></div>
         </article>;
       })}

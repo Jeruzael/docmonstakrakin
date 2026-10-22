@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Project, RecommendedNextAction, AuditEvent, Risk, Question } from '../types';
 import { projectRiskDisplay } from '../data/riskDisplayProjection';
+import { projectHealthProjection } from '../data/projectHealthProjection';
 
 interface DashboardViewProps {
   project: Project;
@@ -32,13 +33,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   nextAction,
   recentAudits = [],
   risks = [],
-  questions = [],
+  questions,
   onNavigate,
   onOpenOverrideModal,
 }) => {
-  const unresolvedBlockers = (questions || []).filter(
-    (q) => q.importance === 'BLOCKING' && q.state === 'UNRESOLVED'
-  );
+  const health=projectHealthProjection(project,questions);
+  const unresolvedBlockers=health.gates?.blockers || [];
+  const gateCount=health.gates?.total;
+  const discovery=health.discovery;
+  const nextTarget=typeof nextAction.targetEntityId==='string' && nextAction.targetEntityId.trim() ? nextAction.targetEntityId : undefined;
 
   const topRisk = (risks || []).find((r) => r?.inherentLevel === 'CRITICAL') || (risks || [])[0];
   const riskDisplay = projectRiskDisplay(topRisk);
@@ -55,7 +58,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </h1>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {unresolvedBlockers.length>0 || project.progress.requirementsReadiness<100 ? 'Discovery incomplete' : 'Review gates remain separate'}
+                {health.gates && (health.gates.total>0 || !health.gates.coverage.isComplete) ? 'Discovery incomplete' : 'Review gates remain separate'}
               </span>
             </div>
             <p className="text-xs md:text-sm text-slate-500 mt-1 font-medium">
@@ -94,7 +97,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className="text-sm font-bold text-slate-900">Project Health & Dimensions</h2>
             </div>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-              Planning projection
+              Health: {health.status}
             </span>
           </div>
 
@@ -111,7 +114,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 />
                 <path
                   className="text-emerald-500 transition-all duration-1000 ease-out"
-                  strokeDasharray={`${project.healthScore}, 100`}
+                  strokeDasharray={`${discovery?.percentage ?? 0}, 100`}
                   strokeWidth="3.5"
                   strokeLinecap="round"
                   stroke="currentColor"
@@ -121,57 +124,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </svg>
               <div className="absolute flex flex-col items-center justify-center text-center">
                 <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {project.healthScore}%
+                  {discovery ? `${discovery.percentage}%` : '—'}
                 </span>
-                <span className="text-[10px] text-slate-400 font-semibold uppercase">Stored planning score</span>
+                <span className="text-[10px] text-slate-500 font-semibold uppercase">Discovery coverage</span>
               </div>
             </div>
 
             {/* Underlying Dimension Bars */}
             <div className="flex-1 w-full space-y-2.5 text-xs">
-              <div>
-                <div className="flex justify-between text-slate-600 mb-1">
-                  <span>Implementation</span>
-                  <span className="font-semibold text-slate-900">{project.progress.implementation}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${project.progress.implementation}%` }}></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-slate-600 mb-1">
-                  <span>Verification Evidence</span>
-                  <span className="font-semibold text-slate-900">{project.progress.verification}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${project.progress.verification}%` }}></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-slate-600 mb-1">
-                  <span>Security Assurance</span>
-                  <span className="font-semibold text-slate-900">{project.progress.securityAssurance}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${project.progress.securityAssurance}%` }}></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-slate-600 mb-1">
-                  <span>Release Readiness</span>
-                  <span className="font-semibold text-slate-900">{project.progress.releaseReadiness}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${project.progress.releaseReadiness}%` }}></div>
-                </div>
-              </div>
+              {health.dimensions.map(dimension=><div key={dimension.label} title={dimension.reason}><div className="flex justify-between text-slate-600 mb-1 gap-3"><span>{dimension.label}</span><span className="font-semibold text-slate-700">{dimension.value}</span></div></div>)}
             </div>
           </div>
 
-          <p className="text-[11px] text-slate-500 pb-3">Stored planning data does not establish verification, compliance or release approval.</p>
+          <div className="text-[11px] text-slate-500 pb-3 space-y-1"><p>{discovery ? `${discovery.numerator} / ${discovery.denominator} required decisions resolved or not applicable.` : 'Discovery inputs unavailable.'}</p><p className="font-mono">{discovery?.version ?? health.version}</p><p>{discovery?.formula}</p><p>Release scope and evidence are separate. Discovery coverage does not establish verification, compliance or release approval.</p></div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span>A-SSDLC Phase: <strong className="text-slate-700">{project.lifecyclePhase}</strong></span>
             <button
@@ -194,7 +159,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </span>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-700/50">
-                CRITICAL GATE
+                {nextAction.severity} priority
               </span>
             </div>
 
@@ -218,13 +183,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="pt-5 mt-4 border-t border-slate-700/80 flex items-center justify-between">
             <span className="text-[11px] text-slate-400">
-              Evaluated deterministically from active blockers & risk floors.
+              Evaluated from applicable discovery gates and current project work.
             </span>
             <button
-              onClick={() => onNavigate('requirements')}
+              onClick={() => !nextTarget || nextAction.actionType==='RESOLVE_BLOCKER' || nextTarget===project.id ? onNavigate('discovery',nextTarget===project.id?questions?.[0]?.id:nextTarget) : nextTarget.startsWith('PROJECT-') ? onNavigate('projects') : onNavigate('work',nextTarget)}
               className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md"
             >
-              <span>Resolve in Discovery</span>
+              <span>{nextAction.actionType==='RESOLVE_BLOCKER'?'Resolve in Discovery':nextTarget?.startsWith('PROJECT-')?'Review project setup':'Review next action'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -304,7 +269,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-2">
               <AlertOctagon className="w-4 h-4 text-red-500" />
               <h2 className="text-sm font-bold text-slate-900">
-                Phase Transition Gates ({unresolvedBlockers.length} Blockers)
+                Phase Transition Gates ({gateCount ?? 'Unavailable'} Blockers)
               </h2>
             </div>
             <span className="text-[11px] text-slate-400 font-medium">Architecture Gate</span>
@@ -335,7 +300,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
-                    onClick={() => onNavigate('requirements', blocker.id)}
+                    onClick={() => onNavigate('discovery', blocker.id)}
                     className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors"
                   >
                     Resolve
@@ -351,10 +316,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ))}
 
-            {unresolvedBlockers.length === 0 && (
+            {health.gates && health.gates.metadata.length>0 && <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900"><strong>Project setup decisions</strong>{health.gates.metadata.map(item=><p key={item.id} className="mt-2">{item.title}: {item.reason}</p>)}<button className="mt-2 underline" onClick={()=>onNavigate('projects')}>Inspect project setup</button></div>}
+            {gateCount === 0 && (
               <div className="py-6 text-center text-xs text-slate-500">
                 <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                All discovery blockers are resolved! Phase ready for advance.
+                No open required discovery gates. Technical and human review gates remain separate.
               </div>
             )}
           </div>
@@ -362,7 +328,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="pt-2 flex items-center justify-between text-xs text-slate-500">
             <span>Override events are permanently audited</span>
             <button
-              onClick={() => onNavigate('requirements')}
+              onClick={() => onNavigate('discovery',questions?.[0]?.id)}
               className="text-emerald-700 font-semibold hover:underline"
             >
               Open Adaptive Questionnaire →

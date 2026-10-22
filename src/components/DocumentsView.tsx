@@ -185,7 +185,7 @@ ${project.description}
 - **Methodology:** ${project.deliveryMethod}
 - **Assurance Profiles:** ${project.profiles.join(', ')}
 - **Current Lifecycle Phase:** ${project.lifecyclePhase}
-- **Stored Planning Health Score:** ${project.healthScore} / 100 (does not establish verification or release approval)
+- **Project Health:** Unavailable in this report; inspect current dashboard discovery and evidence inputs. Stored planning scores do not establish verification or release approval.
 
 ---
 

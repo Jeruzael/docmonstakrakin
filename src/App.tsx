@@ -1117,6 +1117,7 @@ export default function App() {
               recentAudits={auditLogs}
               onNavigate={(view, targetId) => {
                 if (view === 'discovery') {
+                  setRequirementsSubTab('discovery');
                   setSelectedQuestionId(targetId);
                   setCurrentView('requirements' as any);
                 } else if (view === 'requirements') {
