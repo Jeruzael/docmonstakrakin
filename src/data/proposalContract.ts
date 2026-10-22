@@ -41,7 +41,14 @@ export function normalizeProposalChange(raw:any,version:'1.0'|'1.1',index:number
   for(const key of ['title','details'])text(content[key],version==='1.1'?`proposed.${key}`:key);
   for(const key of ['acceptanceCriteria','requirements','features','assumptions'])if(content[key]!==undefined){
     if(!Array.isArray(content[key]))fail('SCHEMA_ERROR',version==='1.1'?`proposed.${key}`:key,'Expected string array.');
-    content[key].forEach((v:any,i:number)=>text(v,`${version==='1.1'?'proposed.':''}${key}[${i}]`));
+    content[key].forEach((v:any,i:number)=>{
+      const field=`${version==='1.1'?'proposed.':''}${key}[${i}]`;
+      if(typeof v!=='string'){
+        const received=v===null?'null':Array.isArray(v)?'array':typeof v;
+        fail('SCHEMA_ERROR',field,`Expected a string in ${key}; received ${received}.${key==='acceptanceCriteria'?' Write each acceptance criterion as one plain-text string, including any test steps and expected result.':''}`);
+      }
+      text(v,field);
+    });
   }
   let target;
   if(raw.action==='MODIFY'){
