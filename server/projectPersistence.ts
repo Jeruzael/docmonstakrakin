@@ -16,7 +16,7 @@ export interface ProjectPersistenceHooks {
 export function classifyProjectRequestMode(req: { method?: string; baseUrl?: string; path?: string }): ProjectPersistenceMode {
   if (req.method === 'POST') {
     const fullPath = `${req.baseUrl ?? ''}${req.path ?? ''}`.replace(/\/+/g, '/');
-    if (/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)$/.test(fullPath)) {
+    if (/^\/api\/projects\/[^/]+\/docs\/[^/]+\/(diff|validate)\/?$/i.test(fullPath)) {
       return 'READ_ONLY';
     }
   }

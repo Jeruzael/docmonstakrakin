@@ -65,6 +65,10 @@ async function runTests() {
   // 1. UNIT TESTS: classifyProjectRequestMode contract (A - H)
   // ============================================================
   console.log('\n[Group 1] Unit tests for classifyProjectRequestMode:');
+  for(const suffix of ['diff/','validate/','DIFF','VaLiDaTe/']){
+    assert.equal(classifyProjectRequestMode({method:'POST',baseUrl:'/API/PROJECTS',path:`/synthetic/docs/MDOC-synthetic/${suffix}`}), 'READ_ONLY');
+    console.log(`  PASS read-only document alias ${suffix}`);passed++;
+  }
 
   // A. POST diff => READ_ONLY
   {
