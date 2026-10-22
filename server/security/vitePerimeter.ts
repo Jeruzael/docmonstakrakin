@@ -10,6 +10,9 @@ export const PRIVATE_WORKSPACE_FS_DENY=privateDirectories.map(directory=>`**/${d
 // Keep the pinned Vite defaults as well as every caller-configured denial.
 export const WORKSPACE_VITE_FS_DENY=['.env','.env.*','*.{crt,pem}','**/.git/**',...PRIVATE_WORKSPACE_FS_DENY];
 const privatePath=(value:string)=>value.replaceAll('\\','/').split('/').some(segment=>privateNames.has(segment.replace(/[. ]+$/,'').toLowerCase()));
+// Resolved Vite aliases include filesystem URL IDs, not just native paths.
+// In particular /@vite/client resolves to /@fs/<installed client.mjs>.
+const fileCandidate=(value:string)=>value.startsWith('/@fs/')?value.slice(5):value;
 
 /** Covers publicDir (which bypasses fs.deny), aliases and directory links too. */
 function privateFileBoundary(config:ResolvedConfig,roots:string[],aliases=config.resolve.alias){
@@ -22,11 +25,12 @@ function privateFileBoundary(config:ResolvedConfig,roots:string[],aliases=config
     try{pathname=(req.url??'').split('?')[0].split('/').map(segment=>decodeURIComponent(segment)).join('/');}
     catch{return reject();}
     if(privatePath(pathname))return reject();
-    const candidates=pathname.startsWith('/@fs/')?[pathname.slice(5)]:roots.map(root=>path.resolve(root,'.'+pathname));
+    const candidates=pathname.startsWith('/@fs/')?[fileCandidate(pathname)]:roots.map(root=>path.resolve(root,'.'+pathname));
     for(const alias of aliases){
       if(typeof alias.find==='string'?pathname.startsWith(alias.find):alias.find.test(pathname)){
         const resolved=pathname.replace(alias.find,alias.replacement);
-        if(path.isAbsolute(resolved))candidates.push(resolved);
+        const candidate=fileCandidate(resolved);
+        if(path.isAbsolute(candidate))candidates.push(candidate);
       }
     }
     for(const candidate of candidates){
