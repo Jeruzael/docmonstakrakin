@@ -66,20 +66,26 @@ try{
   await check('Actual application binds only IPv4 loopback',()=>assert.equal(app.binding().address,'127.0.0.1'));
   await check('Every actual API registration has exactly one explicit route policy',async()=>{
     const {API_ROUTE_POLICIES}=await import('../server/security/apiRoutePolicy.ts');
-    const registered:string[]=[];
-    for(const file of ['server.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts']){
+    const registrations=new Map<string,string[]>();
+    for(const file of ['server.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts','server/verification/routes.ts','server/readiness/routes.ts']){
       for(const m of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:app|router)\.(get|post|patch|delete|put)\(\s*['"]([^'"]+)['"]/g)){
-        const p=(file.includes('controlledDocsRouter')?'/api/projects':'')+m[2];if(p.startsWith('/api/'))registered.push(m[1].toUpperCase()+' '+p);
+        const p=(['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].includes(file)?'/api/projects':'')+m[2];if(p.startsWith('/api/')){const key=m[1].toUpperCase()+' '+p;registrations.set(key,[...(registrations.get(key)||[]),file]);}
       }
     }
-    assert.equal(registered.length,69);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
-    assert.equal(new Set(registered).size,registered.length);
+    const sharedDocumentDispatch=new Set(['GET /api/projects/:id/docs','GET /api/projects/:id/docs/:documentId','POST /api/projects/:id/docs/:documentId/diff','POST /api/projects/:id/docs/:documentId/validate','POST /api/projects/:id/docs/:documentId/save']);
+    for(const [key,files] of registrations){if(files.length>1){assert(sharedDocumentDispatch.has(key),`Unexpected duplicate route ${key}`);assert.deepEqual(files.sort(),['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].sort());}}
+    const registered=[...registrations.keys()];
+    assert.equal(registered.length,78);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
+    assert.equal(new Set(API_ROUTE_POLICIES.map(route=>route.method+' '+route.path)).size,registered.length);
     const {resolveLocalNetworkConfig}=await import('../server/security/localPerimeter.ts');
     assert.deepEqual(resolveLocalNetworkConfig({}),{host:'127.0.0.1',port:3000});
   });
   await check('Same-origin health and ordinary local development remain functional',async()=>{
     assert.equal((await app.request('/api/health','GET',{Origin:`http://127.0.0.1:${app.port}`})).status,200);
     assert.equal((await app.request('/api/projects')).status,200);
+  });
+  await check('New evidence, document-create and readiness endpoints require configured human authority',async()=>{
+    for(const [method,path] of [['GET','/verification-sessions'],['POST','/verification-sessions'],['GET','/verification-sessions/unknown'],['PATCH','/verification-sessions/unknown'],['POST','/verification-sessions/unknown/submit'],['POST','/verification-sessions/unknown/decisions'],['POST','/docs'],['GET','/readiness'],['POST','/readiness']])assert.equal((await app.request('/api/projects/PRJ-ATLAS-01'+path,method)).status,401,method+' '+path);
   });
   for(const [label,headers] of [
     ['DNS rebinding Host',{Host:`attacker.example:${app.port}`}],

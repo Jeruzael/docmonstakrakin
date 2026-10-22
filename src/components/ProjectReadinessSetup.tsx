@@ -27,12 +27,18 @@ export async function decodeProjectReadinessResponse(response: Response): Promis
     summary.localEvidence.trust !== 'LOCAL_ROSTER_ASSERTION_AND_HUMAN_ATTESTATION' ||
     summary.securityAssurance?.status !== 'Unavailable' || summary.productionRelease?.status !== 'Unavailable') throw new Error('Invalid readiness summary');
   const scope = summary.scope, local = summary.localEvidence;
+  if([summary.reason,summary.lifecycle.source,local.formula,local.reason,summary.securityAssurance.reason,summary.productionRelease.reason].some(value=>typeof value!=='string'||value.length>4000))throw new Error('Invalid readiness explanatory text');
   if (local.total !== (scope?.count ?? null) || !Array.isArray(local.reviewedWorkItemIds) ||
     local.reviewedWorkItemIds.some(id => !scope?.workItemIds.includes(id)) || new Set(local.reviewedWorkItemIds).size !== local.reviewedWorkItemIds.length ||
     local.reviewedCount !== local.reviewedWorkItemIds.length ||
     (scope && (!body.readinessContext || scope.targetRelease !== body.targetRelease ||
       JSON.stringify({...scope, count: undefined}) !== JSON.stringify({...body.readinessContext, count: undefined}))) ||
     (summary.lifecycle.status === 'Available' && (!scope || Object.values(summary.lifecycle.counts).reduce((sum, count) => sum + count, 0) !== scope.count))) throw new Error('Inconsistent readiness summary');
+  if(summary.lifecycle.status==='Available' && scope){
+    const counts=Object.fromEntries(READINESS_WORK_STATUSES.map(status=>[status,0]));
+    for(const id of scope.workItemIds){const matches=body.workItems.filter(item=>item.id===id);if(matches.length!==1)throw new Error('Scoped work is missing');counts[matches[0].status]++;}
+    if(READINESS_WORK_STATUSES.some(status=>counts[status]!==summary.lifecycle.counts[status]))throw new Error('Scoped lifecycle counts disagree with work data');
+  }
   if (local.status === 'Available'
     ? !scope || summary.lifecycle.status !== 'Available' || local.percentage !== Math.round(100 * local.reviewedCount / scope.count) ||
       summary.status !== (local.reviewedCount === scope.count ? 'Local evidence reviewed' : 'Local evidence pending')
@@ -40,7 +46,7 @@ export async function decodeProjectReadinessResponse(response: Response): Promis
   return body;
 }
 
-async function request(url: string, controller: AbortController, init: RequestInit = {}): Promise<ProjectReadinessResponse> {
+export async function requestProjectReadiness(url: string, controller: AbortController, init: RequestInit = {}): Promise<ProjectReadinessResponse> {
   let abort!: () => void;
   const interrupted = new Promise<never>((_, reject) => {abort = () => reject(new Error('Readiness request interrupted')); controller.signal.addEventListener('abort', abort, {once: true}); if (controller.signal.aborted) abort();});
   const deadline = setTimeout(() => controller.abort(), 20_000);
@@ -80,7 +86,7 @@ export function ProjectReadinessSetup({project, onChanged, sessionRevision = 0, 
   }
   async function load() {
     const operation = begin('load'); if (!operation) return;
-    try {const body = await request(url, operation.controller); if (!current(operation)) return; if (body.projectId !== project.id) throw new Error('Wrong project response'); accept(body);}
+    try {const body = await requestProjectReadiness(url, operation.controller); if (!current(operation)) return; if (body.projectId !== project.id) throw new Error('Wrong project response'); accept(body);}
     catch (cause) {
       if (!current(operation)) return;
       setNeedsReload(true);
@@ -111,7 +117,7 @@ export function ProjectReadinessSetup({project, onChanged, sessionRevision = 0, 
     const operation = begin('save'); if (!operation) return;
     const body: ProjectReadinessRequest = {expectedStateVersion: observation.stateVersion, maturity: draft.maturity as ProjectReadinessRequest['maturity'], sourceControl: draft.sourceControl, ...(scope ? {scope} : {})};
     try {
-      const saved = await request(url, operation.controller, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+      const saved = await requestProjectReadiness(url, operation.controller, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
       if (!current(operation)) return;
       if (saved.projectId !== project.id || saved.stateVersion !== observation.stateVersion + 1 || saved.targetRelease !== observation.targetRelease || saved.maturity !== draft.maturity || saved.sourceControl !== draft.sourceControl ||
         (scope && (!saved.readinessContext || JSON.stringify(saved.readinessContext.workItemIds) !== JSON.stringify(scope.workItemIds) || saved.readinessContext.targetRelease !== scope.targetRelease ||

@@ -543,8 +543,8 @@ try {
   // Project A draft must be absent
   assert.equal(await page.locator('textarea').count(), 0, 'Textarea must not exist for empty Project B');
 
-  // Project B has empty repository: "No Repository Documentation Available"
-  await page.getByText('No Repository Documentation Available').waitFor();
+  // Ordinary Project B has no managed documents yet.
+  await page.getByText('No project documents yet', {exact:true}).waitFor();
   pass('Test 11J: Project Switch Clears Repository State (Draft cleared, tab reset to Repository, empty state shown)');
 
   // =========================================================================

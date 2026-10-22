@@ -42,8 +42,10 @@ For each subsystem: inspect existing contracts; write and observe focused failur
 
 ## Operational decisions still not represented by code completion
 
+Real person appointment/enrollment, production trust/acquisition/custody, canonical WBS application/receipt consumption, privileged activation, live agents, Gate 7 and release promotion remain separately attributable decisions. The operator authorized autonomous engineering choices; no agent review or synthetic assertion is recorded as human ratification.
+
 ## 2026-10-22 integration approach
 
 Independently reviewed subsystem commits will be combined in one signed local-MVP integration candidate, then qualified together with the complete regression, browser journeys and four hosted CI jobs. This verifies interactions before master integration and avoids treating individually green subsystem checks as a completed user journey. The first dashboard full-run attempt was stopped after a genuine render failure; its partial logs remain preserved and the correction has a failing-before/passing-after regression.
 
-Real person appointment/enrollment, production trust/acquisition/custody, canonical WBS application/receipt consumption, privileged activation, live agents, Gate 7 and release promotion remain separately attributable decisions. The operator authorized autonomous engineering choices; no agent review or synthetic assertion is recorded as human ratification.
+The integrated local candidate has passed all 20 selected focused scripts and the 52-check actual-server perimeter. Complete real-server journey, final full regression and hosted integration evidence remain pending at this checkpoint; checkboxes represent completion after those qualifications, not implementation alone.

@@ -1,6 +1,7 @@
 import { ReviewerSession } from './components/ReviewerSession';
 import {ScopedDashboardView} from './components/ScopedDashboardView';
 import {ProjectReadinessSetup} from './components/ProjectReadinessSetup';
+import {VerificationPanel} from './components/VerificationPanel';
 import type {ManagedDocumentCreateResponse} from './managedDocumentTypes';
 import { LocalContainmentNotice } from './components/LocalContainmentNotice';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -1244,13 +1245,13 @@ export default function App() {
           )}
 
           {currentView === 'evidence' && (
-            <EvidenceView
+            <><VerificationPanel key={`verification-${currentProject.id}-${reviewerDisplay.revision}`} projectId={currentProject.id} workItems={workItems} onChanged={handleProjectMutationAcknowledged}/><EvidenceView
               evidenceList={evidenceList}
               auditLogs={auditLogs}
               auditSyncStatus={auditSyncStatus}
               auditSyncError={auditSyncError}
               onRetryAuditRefresh={handleRetryAuditRefresh}
-            />
+            /></>
           )}
 
           {currentView === 'compiler' && (

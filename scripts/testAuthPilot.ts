@@ -209,11 +209,11 @@ try {
   });
   await check('audits retain checked hash integrity without credentials PHC tokens or raw secrets', async () => { const audit = await pilot.fixtures.audit(); assert.equal(verifyAuditChain(audit), true); assert.ok(audit.some(event => event.action === 'AUTHENTICATION_FAILED')); assert.ok(audit.some(event => event.action === 'CREDENTIAL_CHANGED')); const serialized = JSON.stringify(audit); assert.equal(serialized.includes(password), false); assert.equal(serialized.includes(replacement), false); assert.equal(serialized.includes('$argon2'), false); assert.equal(serialized.includes(cookie.split('=')[1]), false); });
   await check('normal product entrypoints never import the disconnected authentication pilot', async () => { for (const entry of ['server.ts', 'src/App.tsx']) assert.doesNotMatch(await fs.readFile(entry, 'utf8'), /authPilot|startDisconnectedAuthPilot/); });
-  await check('cutover inventory retains 69 product registrations and 14 blocked privileged registrations', () => {
-    assert.equal(API_ROUTE_POLICIES.length, 69);
+  await check('cutover inventory has 78 product registrations and retains all 14 blocked privileged registrations', () => {
+    assert.equal(API_ROUTE_POLICIES.length, 78);
     assert.equal(API_ROUTE_POLICIES.filter(route => route.access.startsWith('BLOCKED_')).length, 14);
     assert.equal(API_ROUTE_POLICIES.filter(route => route.access === 'LEGACY_LOCAL_UNSCOPED').length, 45);
-    assert.equal(API_ROUTE_POLICIES.filter(route => route.access === 'SPECIALIZED_REVIEWER').length, 7);
+    assert.equal(API_ROUTE_POLICIES.filter(route => route.access === 'SPECIALIZED_REVIEWER').length, 16);
     assert.equal(API_ROUTE_POLICIES.filter(route => route.access === 'REVIEWER_SESSION').length, 3);
   });
 } finally {

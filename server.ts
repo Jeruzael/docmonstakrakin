@@ -8,6 +8,11 @@ import { parseRequirementStatusRequest, validateRequirementTransition, REQUIREME
 import { registerProposalRoutes } from './server/proposals/review.ts';
 import { registerSignoffRoutes } from './server/proposals/signoff.ts';
 import { installReviewerIdentity } from './server/proposals/identity.ts';
+import {registerVerificationRoutes} from './server/verification/routes.ts';
+import {projectVerificationEvidence,cloneVerificationArchive} from './server/verification/service.ts';
+import {assertVerificationStoreRetention} from './server/verification/retention.ts';
+import {VerificationError} from './server/verification/errors.ts';
+import {registerProjectReadinessRoutes} from './server/readiness/routes.ts';
 import { installProjectPersistence } from './server/projectPersistence.ts';
 import { recoverDocumentTransactions } from './server/docs/controlledDocsRecovery.ts';
 import { createControlledDocsRouter } from './server/docs/controlledDocsRouter.ts';
@@ -151,6 +156,8 @@ async function startServer() {
     next();
   });
   installProjectPersistence(app, store);
+  registerVerificationRoutes(app,store,reviewerAuth.requireHuman);
+  registerProjectReadinessRoutes(app,store,reviewerAuth.requireHuman,(projectId,current)=>projectVerificationEvidence(store,projectId,current));
   registerSignoffRoutes(app, store, reviewerAuth);
   app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman));
   registerProposalRoutes(app, store, reviewerAuth);
@@ -488,6 +495,8 @@ async function startServer() {
     store.agentRuns[newId] = [];
     store.documents[newId] = [];
     store.managedDocuments[newId] = [];
+    store.verificationSessions[newId] = [];
+    store.verificationArchives[newId] = [];
     store.risks[newId][0].inherentScore = newProject.computedRisk!.score;
     store.risks[newId][0].inherentLevel = newProject.computedRisk!.level;
     store.risks[newId][0].drivers = newProject.computedRisk!.drivers;
@@ -1112,6 +1121,7 @@ async function startServer() {
         approvals: store.approvals[projectId] || [],
         importSessions: store.importSessions[projectId] || [],
         managedDocuments: projectId==='PRJ-DOCMONSTAKRAKIN' ? undefined : (store.managedDocuments[projectId] || []),
+        verificationHistory: [...(store.verificationArchives[projectId] || []),...((store.verificationSessions[projectId] || []).length?[cloneVerificationArchive(store.verificationSessions[projectId],projectId)]:[])],
         features: store.features[projectId] || [],
         derivations: store.derivations[projectId] || [],
         agentRoles: store.agentRoles[projectId] || [],
@@ -1144,7 +1154,7 @@ async function startServer() {
       res.json(pkg);
     } catch (err: any) {
       console.error('[PackageExport] Error generating package:', err);
-      res.status(500).json({ error: 'Failed to generate package', details: err.message });
+      res.status(err instanceof VerificationError?err.status:500).json({ error: 'Failed to generate package', details: err.message });
     }
   });
 
@@ -1190,6 +1200,8 @@ async function startServer() {
       const incomingProject = structuredClone(pkg.knowledge.project);
       incomingProject.technicalBaseline = normalizeTechnicalBaseline(incomingProject.technicalBaseline);
       const targetProjectId = incomingProject.id;
+      const verificationHistory=structuredClone(pkg.knowledge.verificationHistory || []);
+      assertVerificationStoreRetention({verificationSessions:{...store.verificationSessions,[targetProjectId]:[]},verificationArchives:{...store.verificationArchives,[targetProjectId]:verificationHistory}});
 
       const existingIndex = store.projects.findIndex((p) => p.id === targetProjectId);
       if (existingIndex !== -1 && !overwrite) {
@@ -1232,6 +1244,9 @@ async function startServer() {
       store.agentRuns[targetProjectId] = pkg.knowledge.agentRuns || [];
       store.documents[targetProjectId] = [];
       store.managedDocuments[targetProjectId] = structuredClone(pkg.knowledge.managedDocuments || []);
+      // Imported roster assertions remain historical context. Never restore active review authority.
+      store.verificationSessions[targetProjectId] = [];
+      store.verificationArchives[targetProjectId] = verificationHistory;
 
       // Restore audit ledger (reversed back to store format: newest first)
       const restoredAudit = pkg.auditLedger ? [...pkg.auditLedger].reverse() : [];
@@ -1267,7 +1282,7 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('[PackageImport] Error importing package:', err);
-      res.status(500).json({ error: 'Failed to import package', details: err.message });
+      res.status(err instanceof VerificationError?err.status:500).json({ error: 'Failed to import package', details: err.message });
     }
   });
 

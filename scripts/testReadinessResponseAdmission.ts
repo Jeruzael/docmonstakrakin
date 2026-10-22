@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {decodeProjectReadinessResponse} from '../src/components/ProjectReadinessSetup.tsx';
+import {releaseHealthProjection} from '../src/data/releaseHealthProjection.ts';
+const scope={version:'LOCAL_RELEASE_SCOPE/1' as const,id:'RSC-fixture',revision:1,targetRelease:'synthetic',workItemIds:['TASK-ONE'],commitSha:'a'.repeat(40),buildRevision:'fixture',environment:'offline',updatedAt:'2026-10-22T00:00:00Z',updatedBy:{identityId:'fixture',name:'Fixture',roleSource:'LOCAL_SERVER_ROSTER' as const}};
+const project={id:'PRJ-SYNTHETIC',stateVersion:1,targetRelease:'synthetic',readinessContext:scope} as any;
+const workItems=[{id:'TASK-ONE',title:'Fixture',status:'READY'}] as any;
+const observation={reviews:[],eligibleSessionIds:[],trust:'LOCAL_ROSTER_ASSERTION_AND_HUMAN_ATTESTATION' as const,trustedProductionEvidence:false as const};
+const summary=releaseHealthProjection(project,workItems,[{projectId:project.id,workItemId:'TASK-ONE',commitSha:scope.commitSha,buildRevision:scope.buildRevision,environment:scope.environment,observation}]);
+const body={projectId:project.id,stateVersion:1,maturity:null,sourceControl:null,targetRelease:project.targetRelease,readinessContext:scope,workItems,summary};
+const decode=(value:any)=>decodeProjectReadinessResponse(new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json'}}));
+assert.deepEqual(await decode(body),body);console.log('PASS genuine scope-bound local response is admitted');
+await assert.rejects(()=>decode({...body,summary:{...summary,localEvidence:{...summary.localEvidence,formula:{unsafe:true}}}}));
+console.log('PASS object-valued rendered formula cannot crash a dashboard');
+await assert.rejects(()=>decode({...body,summary:{...summary,lifecycle:{...summary.lifecycle,counts:{...summary.lifecycle.counts,READY:0,VERIFIED:1}}}}));
+console.log('PASS lifecycle counts must match exact scoped returned work status');
+await assert.rejects(()=>decode({...body,workItems:[]}));
+console.log('PASS missing scoped work cannot manufacture available measurements');

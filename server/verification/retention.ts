@@ -29,6 +29,10 @@ export function assertVerificationRetention(store:Pick<ProjectStore,'verificatio
     const batches=archives[projectId]??[];
     if(!Array.isArray(batches))throw new VerificationError(409,'Invalid retained verification archive batches; preserve state for recovery');
     totalBatches+=batches.length;if(totalBatches>100)exceeded('maximum 100 archive batches across projects');
+    // Portable export preserves these batches and appends one batch for all active
+    // sessions. Reserve it during admission so a valid store stays exportable under
+    // the existing 100-batch field limit, without coalescing or discarding history.
+    if(batches.length+(sessions.length>0?1:0)>100)exceeded('maximum 100 portable history batches per project, including one reserved for active sessions');
     let archiveOverhead=0;
     for(const archive of batches) {
       if(!archive||archive.schemaVersion!==1||archive.trust!=='UNTRUSTED_IMPORTED_HISTORY'||archive.activeReviewAuthority!==false||archive.trustedProductionEvidence!==false||!Array.isArray(archive.sessions))throw new VerificationError(409,'Invalid untrusted verification history; preserve state for recovery');

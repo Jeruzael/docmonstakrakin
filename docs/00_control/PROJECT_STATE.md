@@ -1,5 +1,13 @@
 # docmonstakrakin current project state
 
+## 2026-10-22 — Eight-workstream local-MVP integration candidate
+
+The last fully verified master is `d503323aad1002f7325ba3a45faf4bee261686a9` (PR #79; actual [CI 39703341247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39703341247): four jobs successful, 94 suites / 2,258 reported checks). GitHub master was independently reconfirmed at this baseline before the current integration. The [current implementation and evidence record](../07_verification/LOCAL_MVP_INTEGRATION_20261022.md) supersedes the execution instructions in older dated checkpoints, while preserving them verbatim below.
+
+The candidate combines calculated discovery/gates, safe reviewer diagnostics, exact task/build-bound verification, ordinary-project managed documents, explicit current-release scope and reproducibility guidance. Focused checks and the actual-server perimeter pass; complete journey, final full regression and exact candidate/actual merge CI remain separate required evidence. The engineering task list is [the local completion plan](../06_planning/LOCAL_MVP_COMPLETION_20261022.md), not a canonical WBS registration or completion receipt.
+
+The operator waived routine development approvals. No agent test or assessment is represented as human approval, real-person independence or operational trust. Canonical WBS/history, quorum, all 14 privileged-route denials, disabled live agents, PRs #34/#52, Gate 7 and release restrictions remain unchanged. Local reviewed evidence cannot satisfy authenticated production acquisition; release remains blocked.
+
 ## 2026-10-20 — Bounded proof-resource candidate authorized; human compatibility review required
 
 The operator subsequently authorized one verifier-resource/performance code/test draft from reverified master `2af6637aa639c18e31795355d68b1454be22f389`, limited to eight paths. [Candidate evidence, resource/compatibility limits and retained closure checkpoint](../07_verification/WBS_CONTINUITY_RESOURCE_BOUNDS_CANDIDATE.md) distinguish implementation authority from operational ratification. Prefix digests retain exact old-serializer SHA-256; consumed-ID storage preserves the unchanged v2 PRE-consumption contract. Four proposed numerical admission limits require explicit human acceptance. No production capacity or full-audit linearity is claimed.
