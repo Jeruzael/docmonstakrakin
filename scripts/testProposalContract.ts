@@ -30,4 +30,45 @@ test('compiler emits v1.1 scoped manifest with reference-only features and prove
  for(const required of ['schema_version 1.1','EDITABLE CANONICAL ARTIFACTS','REFERENCE CONTEXT','proposal_id','target.artifact_id','Never construct or infer a modification target'])assert(ctx.compiledPrompt.includes(required));
  assert(!ctx.compiledPrompt.includes('"id": "Stable identifier"'));assert(!ctx.editableArtifacts?.some(a=>a.artifact_id==='IMPORT-REFERENCE'));
 });
+test('compiler output examples demonstrate importable text criteria in every scoping mode',()=>{
+ for(const mode of ['SUMMARY','TASK_CONTEXT','FULL_BASELINE'] as const){
+  const ctx=compileContextPackage({project:cryptoDemonProject,role:'Developer',mode});
+  const contract=ctx.compiledPrompt.split('=== MANDATORY AGENT OUTPUT CONTRACT ===')[1].split('=== LEAST-CONTEXT OMISSION REPORT ===')[0];
+  const sample=JSON.parse(contract.slice(contract.indexOf('\n{')).trim());
+  const criteria=sample.proposed_changes[0].proposed.acceptanceCriteria;
+  assert(Array.isArray(criteria)&&criteria.length>0,'The example must demonstrate at least one text criterion, rather than an ambiguous empty array.');
+  assert(criteria.every((entry:unknown)=>typeof entry==='string'&&entry.trim().length>0));
+  const normalized=normalizeProposalChange(sample.proposed_changes[0],sample.schema_version,0);
+  assert.deepEqual(normalized.acceptanceCriteria,criteria);
+ }
+});
+test('non-string proposal array entries report their expected type without changing input',()=>{
+ for(const version of ['1.0','1.1'] as const)for(const field of ['acceptanceCriteria','requirements','features','assumptions'])for(const value of [{id:'AC-01',description:'Persist a valid request.',test:'Submit a valid request.',expectedResult:'The request is listed.'},null,42,false,[]]){
+  const content={...proposed,[field]:[value]};
+  const wire=version==='1.1'?{...create,proposed:content}:{type:'WORK_ITEM',id:'external-work',action:'CREATE',...content};
+  const original=structuredClone(wire);
+  assert.throws(()=>normalizeProposalChange(wire,version,2),(e:ProposalValidationError)=>{
+   const diagnostic=e.toJSON();
+   assert.equal(diagnostic.code,'SCHEMA_ERROR');
+   assert.equal(diagnostic.path,`proposed_changes[2].${version==='1.1'?'proposed.':''}${field}[0]`);
+   assert.match(diagnostic.message,new RegExp(`Expected a string in ${field}; received `));
+   assert(Object.values(diagnostic).every(v=>typeof v==='string'));
+   return true;
+  });
+  assert.deepEqual(wire,original);
+ }
+});
+test('plain-text work criteria retain IDs test steps and expected results verbatim',()=>{
+ const criteria=['AC-01: Save a valid request. Test: Submit a valid category and description. Expected result: HTTP 201 and a persisted request.','AC-02: List a saved request. Test: Retrieve the request list. Expected result: The saved identifier is present.'];
+ const wire={...create,artifact_type:'WORK_ITEM',action:'MODIFY',target:{artifact_id:'WORK-A',artifact_type:'WORK_ITEM'},proposed:{...proposed,acceptanceCriteria:criteria,requirements:['REQ-A'],features:[],assumptions:['Storage remains an open decision.']}};
+ const original=structuredClone(wire);
+ const normalized=normalizeProposalChange(wire,'1.1',0);
+ assert.deepEqual(normalized.acceptanceCriteria,criteria);
+ assert.deepEqual(normalized.target,{artifactId:'WORK-A',artifactType:'WORK_ITEM'});
+ assert.deepEqual(wire,original);
+});
+test('empty optional arrays stay valid while blank text entries still fail',()=>{
+ assert.deepEqual(normalizeProposalChange({...create,proposed:{...proposed,acceptanceCriteria:[],requirements:[],features:[],assumptions:[]}},'1.1',0).acceptanceCriteria,[]);
+ assert.throws(()=>normalizeProposalChange({...create,proposed:{...proposed,acceptanceCriteria:['   ']}},'1.1',0),(e:ProposalValidationError)=>e.code==='SCHEMA_ERROR'&&e.path==='proposed_changes[0].proposed.acceptanceCriteria[0]');
+});
 process.exitCode=failures?1:0;
