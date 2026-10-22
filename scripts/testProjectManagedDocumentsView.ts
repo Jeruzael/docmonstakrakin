@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {ControlledDocsView} from '../src/components/ControlledDocsView.tsx';
+const ordinary=renderToStaticMarkup(React.createElement(ControlledDocsView,{projectId:'PRJ-ORDINARY'}));
+assert.ok(ordinary.includes('data-testid="btn-create-document"'),'ordinary projects need an accessible create-document entry point');
+assert.ok(ordinary.includes('Create document'));
+const canonical=renderToStaticMarkup(React.createElement(ControlledDocsView,{projectId:'PRJ-DOCMONSTAKRAKIN'}));
+assert.ok(!canonical.includes('data-testid="btn-create-document"'),'canonical self-project cannot create managed documents');
+const stale=renderToStaticMarkup(React.createElement(ControlledDocsView,{projectId:'PRJ-ORDINARY',canonicalReady:false}));
+assert.ok(/data-testid="btn-create-document"[^>]*disabled/.test(stale),'stale project state must disable creation');
+console.log('PASS managed-document create entry is ordinary-project scoped and canonical-readiness gated');

@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {createControlledDocsLoader} from '../src/data/controlledDocsClient.ts';
+const hash='a'.repeat(64), id='MDOC-00000000-0000-4000-8000-000000000001';
+const response={success:true,projectId:'PRJ-A',documentId:id,path:`managed-documents/${id}.md`,newSha256:hash,stateVersion:8,auditEventId:'AUD-fixture',timestamp:'2026-10-22T00:00:00.000Z'};
+const input={projectId:'PRJ-A',title:'Design notes',kind:'ARCHITECTURE' as const,format:'MARKDOWN' as const,content:'# Draft\n',expectedStateVersion:7,reason:'Record draft',humanConfirmed:true,requestId:'00000000-0000-4000-8000-000000000002'};
+let captured:any;
+const loader=createControlledDocsLoader(async(url,init)=>{captured={url,init};return Response.json(response,{status:201});});
+assert.equal(typeof (loader as any).requestCreate,'function','loader must expose the ordinary-project creation operation');
+const created=await loader.requestCreate(input);
+assert.equal(created.projectId,'PRJ-A');assert.equal(captured.url,'/api/projects/PRJ-A/docs');assert.equal(captured.init.credentials,'same-origin');
+const payload=JSON.parse(captured.init.body);assert.equal(payload.expectedStateVersion,7);assert.equal(payload.requestId,input.requestId);assert.equal(payload.projectId,undefined);assert.equal(payload.path,undefined);assert.equal(payload.actor,undefined);
+await loader.requestSave({projectId:'PRJ-A',documentId:id,candidateContent:'# Revised\n',baseSha256:hash,reason:'Revise',humanConfirmed:true,expectedStateVersion:8,requestId:input.requestId}).catch(()=>{});
+const saved=JSON.parse(captured.init.body);assert.equal(saved.expectedStateVersion,8);assert.equal(saved.requestId,input.requestId);
+const foreign=createControlledDocsLoader(async()=>Response.json({...response,projectId:'PRJ-B'}));
+await assert.rejects(()=>foreign.requestCreate(input),/Invalid managed document create response/);
+for(const malformed of [{documentId:'DOC-CTRL-002'},{path:'docs/00_control/PROJECT_STATE.md'},{stateVersion:7},{stateVersion:9}]) {
+  const broken=createControlledDocsLoader(async()=>Response.json({...response,...malformed}));
+  await assert.rejects(()=>broken.requestCreate(input),/Invalid managed document create response/);
+}
+const mismatchedSave=createControlledDocsLoader(async()=>Response.json({...response,documentId:id,previousSha256:hash,stateVersion:10}));
+await assert.rejects(()=>mismatchedSave.requestSave({projectId:'PRJ-A',documentId:id,candidateContent:'# Revised\n',baseSha256:hash,reason:'Revise',humanConfirmed:true,expectedStateVersion:8,requestId:input.requestId}),/Invalid managed document save response/);
+const project=createControlledDocsLoader(async()=>Response.json({id:'PRJ-A',stateVersion:7}));
+assert.equal(await project.loadProjectStateVersion('PRJ-A'),7);
+const wrongProject=createControlledDocsLoader(async()=>Response.json({id:'PRJ-B',stateVersion:7}));
+await assert.rejects(()=>wrongProject.loadProjectStateVersion('PRJ-A'),/Invalid project version response/);
+let release!: (value:Response)=>void;
+const stale=createControlledDocsLoader(async()=>new Promise<Response>(resolve=>release=resolve));
+const pending=stale.requestCreate(input);stale.invalidate();release(Response.json(response));
+await assert.rejects(()=>pending,(error:any)=>error.name==='AbortError');
+const content={document:{id,path:`managed-documents/${id}.md`,kind:'ARCHITECTURE',authority:'REFERENCE',editability:'CONTROLLED_EDIT',fileType:'MARKDOWN',title:'Design notes',managed:true,integrityStatus:'MATCH',currentSha256:hash},content:'# Draft\n',rawSha256:hash,eol:'LF',sizeBytes:8,projectId:'PRJ-B',stateVersion:8};
+const foreignContent=createControlledDocsLoader(async()=>Response.json(content));
+await assert.rejects(()=>foreignContent.loadDocumentContent('PRJ-A',id),/Invalid managed document content response/);
+console.log('PASS managed-document client transport, exact acknowledgment, and stale-project invalidation');

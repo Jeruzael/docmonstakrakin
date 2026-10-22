@@ -17,6 +17,8 @@ import type {
   DerivationRecord,
 } from '../../src/types.js';
 import { verifyAuditLedgerChain, GENESIS_AUDIT_HASH } from '../security/auditImmutability.js';
+import type { ProjectManagedDocument } from '../../src/managedDocumentTypes.js';
+import { validateProjectManagedDocuments } from '../docs/projectManagedDocuments.ts';
 
 /**
  * REQ-DATA-004: Standalone Portable Project Package Envelope
@@ -59,6 +61,8 @@ export interface DocmonstakrakinPackageKnowledge {
   features?: Feature[];
   derivations?: DerivationRecord[];
   importSessions?: import('../../src/proposalTypes.js').ImportSession[];
+  /** Optional content only; carries no imported human governance authority. */
+  managedDocuments?: ProjectManagedDocument[];
 }
 
 export interface DocmonstakrakinPackageSeal {
@@ -166,9 +170,13 @@ export function createPortablePackage(params: {
   features?: Feature[];
   derivations?: DerivationRecord[];
   importSessions?: import('../../src/proposalTypes.js').ImportSession[];
+  managedDocuments?: ProjectManagedDocument[];
 }): DocmonstakrakinPackage {
   const exportedAt = new Date().toISOString();
   const actor = params.actor || 'docmonstakrakin A-SSDLC Control Plane';
+  if (params.managedDocuments !== undefined) {
+    validateProjectManagedDocuments(params.managedDocuments, params.project.id);
+  }
 
   const manifest: DocmonstakrakinPackageManifest = {
     magic: DOCMONSTAKRAKIN_PACKAGE_MAGIC,
@@ -198,6 +206,8 @@ export function createPortablePackage(params: {
     ...(params.features ? {features: params.features} : {}),
     ...(params.derivations ? {derivations: params.derivations} : {}),
     ...(params.importSessions ? {importSessions: params.importSessions} : {}),
+    // Omit absent collections so older packages retain their exact hash input.
+    ...(params.managedDocuments !== undefined ? {managedDocuments: structuredClone(params.managedDocuments)} : {}),
   };
 
   // Ensure audit events are ordered chronologically (oldest to newest)
@@ -290,6 +300,13 @@ export function verifyPortablePackage(pkg: any): PackageVerificationResult {
   for (const key of ['questions','requirements','risks','threats','standards','workItems','evidence','adrs','components','overrides','approvals','agentRoles','agentRuns','features','derivations','importSessions']) {
     const collection=pkg.knowledge?.[key];
     if (collection !== undefined && (!Array.isArray(collection) || collection.some((item:any)=>!item || typeof item!=='object' || Array.isArray(item) || typeof item.id!=='string'))) errors.push(`Invalid knowledge collection: ${key}`);
+  }
+  if (pkg.knowledge && Object.hasOwn(pkg.knowledge, 'managedDocuments')) {
+    try {
+      validateProjectManagedDocuments(pkg.knowledge.managedDocuments, projectId);
+    } catch {
+      errors.push('Invalid managed document collection: content, digest, project binding, or server-owned metadata failed validation');
+    }
   }
 
   // 3. Verify Seal Presence

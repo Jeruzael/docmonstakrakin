@@ -4,7 +4,7 @@
  * Enforces secure markdown rendering, lockfile conventions, and hardened 6-step edit workflow.
  */
 
-import { useState, useEffect, useMemo, useCallback, type ComponentProps, type FC } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ComponentProps, type FC } from 'react';
 import {
   Search,
   Edit3,
@@ -32,6 +32,7 @@ import type {
 import { createControlledDocsLoader } from '../data/controlledDocsClient.js';
 import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 import { DocumentsView } from './DocumentsView';
+import type { ManagedDocumentContentResponse, ManagedDocumentCreateResponse } from '../managedDocumentTypes.js';
 
 type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
 
@@ -41,6 +42,7 @@ export interface ControlledDocsViewProps {
   loader?: ReturnType<typeof createControlledDocsLoader>;
   dynamicProjectionsProps?: DynamicProjectionsProps;
   onSaveCommitted?: (projectId: string, result: DocumentSaveResponse) => void;
+  onDocumentCreated?: (projectId: string, result: ManagedDocumentCreateResponse) => void;
 }
 
 export type DocsWorkspaceTab = 'REPOSITORY' | 'PROJECTIONS';
@@ -59,6 +61,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   loader,
   dynamicProjectionsProps,
   onSaveCommitted,
+  onDocumentCreated,
 }) => {
   // Stable API loader
   const api = useMemo(() => loader ?? createControlledDocsLoader(), [loader]);
@@ -74,7 +77,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
   // Content & View State
-  const [contentResponse, setContentResponse] = useState<DocumentContentResponse | null>(null);
+  const [contentResponse, setContentResponse] = useState<ManagedDocumentContentResponse | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const [isRawMode, setIsRawMode] = useState(false);
@@ -110,19 +113,55 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   const [canonicalRefreshError, setCanonicalRefreshError] = useState<string | null>(null);
   const [uncertainSaveNotice, setUncertainSaveNotice] = useState<string | null>(null);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createFormat, setCreateFormat] = useState<'MARKDOWN' | 'TEXT'>('MARKDOWN');
+  const [createKind, setCreateKind] = useState<'PRODUCT' | 'REQUIREMENTS' | 'ARCHITECTURE' | 'SECURITY' | 'VERIFICATION' | 'OPERATIONS'>('PRODUCT');
+  const [createContent, setCreateContent] = useState('');
+  const [createReason, setCreateReason] = useState('');
+  const [createConfirmed, setCreateConfirmed] = useState(false);
+  const [createVersion, setCreateVersion] = useState<number | null>(null);
+  const [createRequestId, setCreateRequestId] = useState('');
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createContextLoading, setCreateContextLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createRecoveryRequired, setCreateRecoveryRequired] = useState(false);
+  const [createdNotice, setCreatedNotice] = useState<string | null>(null);
+
+  // Update refs during render, before effects invalidate network channels. This
+  // also protects callers that supply a loader which ignores AbortSignal.
+  const projectRef = useRef(projectId);
+  const selectedRef = useRef(selectedDocId);
+  const lifecycleRef = useRef(0);
+  const selectionEpochRef = useRef(0);
+  if (projectRef.current !== projectId) lifecycleRef.current++;
+  if (selectedRef.current !== selectedDocId) selectionEpochRef.current++;
+  projectRef.current = projectId;
+  selectedRef.current = selectedDocId;
+  const captureContext = (documentId?: string | null) => {
+    const epoch = lifecycleRef.current;
+    const selectionEpoch = selectionEpochRef.current;
+    return () => epoch === lifecycleRef.current && projectRef.current === projectId &&
+      (documentId === undefined || (selectedRef.current === documentId && selectionEpoch === selectionEpochRef.current));
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      lifecycleRef.current++;
       api.invalidate();
     };
   }, [api]);
 
   // Load document list whenever projectId changes
   const refreshDocumentList = useCallback(async () => {
+    const epoch = lifecycleRef.current;
+    const current = () => projectRef.current === projectId && lifecycleRef.current === epoch;
     setLoadingList(true);
     setListError(null);
     try {
       const list = await api.loadDocumentList(projectId);
+      if (!current()) return;
       setDocuments(list);
       if (list.length > 0) {
         setSelectedDocId((prev) => (prev && list.some((d) => d.id === prev) ? prev : list[0].id));
@@ -130,11 +169,12 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         setSelectedDocId(null);
       }
     } catch (err: any) {
+      if (!current()) return;
       if (err.name !== 'AbortError') {
         setListError(err.message || 'Failed to load document catalog.');
       }
     } finally {
-      setLoadingList(false);
+      if (current()) setLoadingList(false);
     }
   }, [api, projectId]);
 
@@ -150,8 +190,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     setBaseSha256('');
     setDiffResponse(null);
     setDiffError(null);
+    setDiffLoading(false);
     setValidationResponse(null);
     setValidationError(null);
+    setValidationLoading(false);
     setSaveSuccess(null);
     setSaveError(null);
     setSaveReason('');
@@ -162,11 +204,27 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     setCanonicalRefreshRequired(false);
     setCanonicalRefreshError(null);
     setUncertainSaveNotice(null);
+    setCreateOpen(false);
+    setCreateBusy(false);
+    setCreateContextLoading(false);
+    setCreateTitle('');
+    setCreateContent('');
+    setCreateReason('');
+    setCreateConfirmed(false);
+    setCreateVersion(null);
+    setCreateRequestId('');
+    setCreateError(null);
+    setCreateRecoveryRequired(false);
+    setCreatedNotice(null);
+    setIsSaving(false);
     refreshDocumentList();
   }, [projectId, refreshDocumentList, api]);
 
   // Selected document content loader and synchronous selection reset (Section 10)
   useEffect(() => {
+    setDiffLoading(false);
+    setValidationLoading(false);
+    setSessionLoading(false);
     if (!selectedDocId) {
       setContentResponse(null);
       setContentError(null);
@@ -268,11 +326,13 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   // Context-neutral canonical refresh helper (Section 5)
   const performCanonicalRefresh = useCallback(
     async (docId: string): Promise<boolean> => {
+      const current = captureContext(docId);
       try {
         const [freshContent, freshList] = await Promise.all([
           api.loadDocumentContent(projectId, docId),
           api.loadDocumentList(projectId),
         ]);
+        if (!current()) return false;
         setContentResponse(freshContent);
         setDraftContent(freshContent.content);
         setBaseSha256(freshContent.rawSha256);
@@ -288,6 +348,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         setWorkflowStep('VIEW');
         return true;
       } catch {
+        if (!current()) return false;
         setCanonicalRefreshRequired(true);
         return false;
       }
@@ -328,18 +389,21 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   // Handle Preview Diff transition
   const handlePreviewDiff = async () => {
     if (!selectedDoc) return;
+    const current = captureContext(selectedDoc.id);
     setDiffLoading(true);
     setDiffError(null);
     try {
       const diff = await api.requestDiff(projectId, selectedDoc.id, draftContent, baseSha256);
+      if (!current()) return;
       setDiffResponse(diff);
       setWorkflowStep('PREVIEW_DIFF');
     } catch (err: any) {
+      if (!current()) return;
       if (err.name !== 'AbortError') {
         setDiffError(err.message || 'Failed to compute diff.');
       }
     } finally {
-      setDiffLoading(false);
+      if (current()) setDiffLoading(false);
     }
   };
 
@@ -348,23 +412,27 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     if (!selectedDoc || !diffResponse || diffResponse.isStale || !diffResponse.hasChanges) {
       return;
     }
+    const current = captureContext(selectedDoc.id);
     setValidationLoading(true);
     setValidationError(null);
     try {
       const val = await api.requestValidate(projectId, selectedDoc.id, draftContent);
+      if (!current()) return;
       setValidationResponse(val);
       setWorkflowStep('VALIDATE');
     } catch (err: any) {
+      if (!current()) return;
       if (err.name !== 'AbortError') {
         setValidationError(err.message || 'Validation request failed.');
       }
     } finally {
-      setValidationLoading(false);
+      if (current()) setValidationLoading(false);
     }
   };
 
   // Handle Proceed to Save (open modal and load session state)
   const handleOpenSaveModal = async () => {
+    const current = captureContext(selectedDocId);
     setSaveError(null);
     setSaveReason('');
     setHumanConfirmed(false);
@@ -375,11 +443,13 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
     try {
       const session = await api.loadGovernanceSession();
+      if (!current()) return;
       setReviewerSession(session);
     } catch {
+      if (!current()) return;
       setSessionError('Unable to load governance reviewer session.');
     } finally {
-      setSessionLoading(false);
+      if (current()) setSessionLoading(false);
     }
   };
 
@@ -399,6 +469,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     setIsSaving(true);
     setSaveError(null);
     setWorkflowStep('COORDINATED_COMMIT');
+    const current = captureContext(selectedDoc.id);
 
     let saveResp: DocumentSaveResponse | null = null;
     try {
@@ -409,7 +480,12 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         baseSha256,
         reason: saveReason.trim(),
         humanConfirmed: true,
+        ...(selectedDoc.id.startsWith('MDOC-') ? {
+          expectedStateVersion: contentResponse?.stateVersion,
+          requestId: crypto.randomUUID(),
+        } : {}),
       });
+      if (!current()) return;
 
       // Commit phase ends immediately when requestSave resolves (Section 2)
       setSaveSuccess(saveResp);
@@ -433,12 +509,14 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         }
       }
     } catch (err: any) {
+      if (!current()) return;
       setIsSaving(false);
-      const isUncertain = err.name === 'AbortError' || err.message?.includes('timed out');
+      const isUncertain = err.name === 'AbortError' || /timed out|Invalid managed document save response/.test(err.message ?? '');
       if (isUncertain) {
         setWorkflowStep('VIEW');
         setCanonicalRefreshRequired(true);
         const refreshed = await performCanonicalRefresh(selectedDoc.id);
+        if (!current()) return;
         if (refreshed) {
           setUncertainSaveNotice('Save outcome was uncertain; canonical state was reloaded.');
         } else {
@@ -448,11 +526,11 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
         return;
       }
 
-      const isDocStale = typeof err.message === 'string' && err.message.includes('DOCUMENT_STALE');
+      const isDocStale = typeof err.message === 'string' && /DOCUMENT_STALE|STALE_STATE|DOCUMENT_REQUEST_REPLAYED|Persisted state changed/.test(err.message);
       if (isDocStale) {
         setWorkflowStep('VIEW');
         setCanonicalRefreshRequired(true);
-        setCanonicalRefreshError('Document changed before save. Reload canonical state before editing again.');
+        setCanonicalRefreshError('Document changed or project state is stale. Reload canonical state before editing again.');
         return;
       }
 
@@ -463,17 +541,112 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
     // Step B: Canonical-refresh phase (separated from save)
     const refreshed = await performCanonicalRefresh(selectedDoc.id);
+    if (!current()) return;
     if (!refreshed) {
       setCanonicalRefreshRequired(true);
       setCanonicalRefreshError('Save succeeded, but canonical refresh failed.');
     }
   };
 
+  const loadCreateContext = async () => {
+    const current = captureContext();
+    setCreateContextLoading(true);
+    setCreateConfirmed(false);
+    setCreateVersion(null);
+    setReviewerSession(null);
+    try {
+      const [session, version] = await Promise.all([
+        api.loadGovernanceSession(), api.loadProjectStateVersion(projectId),
+      ]);
+      if (!current()) return;
+      setReviewerSession(session);
+      setCreateVersion(version);
+      setCreateRecoveryRequired(false);
+    } catch (err: any) {
+      if (current()) setCreateError(err.message || 'Unable to load reviewer session and project state.');
+    } finally { if (current()) setCreateContextLoading(false); }
+  };
+
+  const handleOpenCreate = () => {
+    setCreateOpen(true);
+    setCreateTitle('');
+    setCreateContent('');
+    setCreateReason('');
+    setCreateError(null);
+    setCreateRequestId(crypto.randomUUID());
+    void loadCreateContext();
+  };
+
+  const handleCreate = async () => {
+    if (!canonicalReady || createBusy || createContextLoading || createVersion === null || createRecoveryRequired || !createConfirmed ||
+      !reviewerSession?.roles.some(role => ['Security Officer', 'Lead Architect'].includes(role)) ||
+      !createTitle.trim() || !createContent.trim() || !createReason.trim()) return;
+    const current = captureContext();
+    setCreateBusy(true);
+    setCreateError(null);
+    try {
+      const result = await api.requestCreate({ projectId, title: createTitle.trim(), kind: createKind, format: createFormat,
+        content: createContent, expectedStateVersion: createVersion, reason: createReason.trim(), humanConfirmed: true, requestId: createRequestId });
+      if (!current()) return;
+      if (result.projectId !== projectId || result.stateVersion !== createVersion + 1) throw new Error('Creation acknowledgment is uncertain; reload before continuing.');
+      setCreateOpen(false);
+      setCreatedNotice(`Document created. Audit ID: ${result.auditEventId}. Creation confers no governance approval or trust.`);
+      try { onDocumentCreated?.(projectId, result); } catch (error) { console.error('ControlledDocsView: creation callback failed:', error); }
+      await refreshDocumentList();
+      if (!current()) return;
+      setSelectedDocId(result.documentId);
+    } catch (err: any) {
+      if (!current()) return;
+      const uncertain = err.name === 'AbortError' || /timed out|uncertain|Invalid managed document create response/.test(err.message ?? '');
+      const conflict = /STALE_STATE|DOCUMENT_TITLE_EXISTS|DOCUMENT_REQUEST_REPLAYED|Persisted state changed/.test(err.message ?? '');
+      setCreateError(uncertain
+        ? 'Creation outcome is uncertain. Reload the catalog and reviewer context before continuing; check whether the document already exists.'
+        : conflict ? 'Project changed or this request was already recorded. Your draft is preserved. Reload the catalog and reviewer context, then review it again.'
+        : err.message || 'Document creation failed. Your draft is preserved.');
+      if (uncertain || conflict) { setCreateRecoveryRequired(true); setCreateConfirmed(false); setCreateVersion(null); }
+    } finally { if (current()) setCreateBusy(false); }
+  };
+
+  const renderCreateControls = () => projectId === 'PRJ-DOCMONSTAKRAKIN' ? null : (
+    <div className="p-3 border-b border-slate-200 bg-slate-50 space-y-2">
+      <button data-testid="btn-create-document" disabled={!canonicalReady || workflowStep !== 'VIEW' || createBusy}
+        onClick={handleOpenCreate} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm disabled:opacity-40">Create document</button>
+      <span className="ml-3 text-xs text-slate-500">Project documents require a configured human reviewer. Saving adds no governance approval.</span>
+      {createdNotice && <p role="status" data-testid="document-created-notice" className="text-sm text-emerald-800">{createdNotice}</p>}
+      {createOpen && <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="create-document-title" className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+          <h3 id="create-document-title" className="font-bold text-lg">Create project document</h3>
+          <p className="text-sm text-slate-600">This draft stays in the project snapshot. Creation confers no governance approval or trust.</p>
+          <label className="block text-sm">Title<input data-testid="create-document-title" value={createTitle} maxLength={120} disabled={createBusy} onChange={e => { setCreateTitle(e.target.value); setCreateConfirmed(false); }} className="block w-full border rounded p-2" /></label>
+          <div className="flex gap-4">
+            <label className="text-sm">Kind<select aria-label="Document kind" value={createKind} disabled={createBusy} onChange={e => { setCreateKind(e.target.value as typeof createKind); setCreateConfirmed(false); }} className="block border rounded p-2">
+              {['PRODUCT','REQUIREMENTS','ARCHITECTURE','SECURITY','VERIFICATION','OPERATIONS'].map(kind => <option key={kind}>{kind}</option>)}
+            </select></label>
+            <label className="text-sm">Format<select aria-label="Document format" value={createFormat} disabled={createBusy} onChange={e => { setCreateFormat(e.target.value as typeof createFormat); setCreateConfirmed(false); }} className="block border rounded p-2"><option value="MARKDOWN">Markdown</option><option value="TEXT">Plain text</option></select></label>
+          </div>
+          <label className="block text-sm">Content<textarea data-testid="create-document-content" rows={8} value={createContent} maxLength={131072} disabled={createBusy} onChange={e => { setCreateContent(e.target.value); setCreateConfirmed(false); }} className="block w-full border rounded p-2 font-mono text-xs" /></label>
+          {createContent && <div data-testid="create-document-preview" className="border rounded p-3 max-h-48 overflow-auto">{createFormat === 'MARKDOWN' ? <MarkdownRenderer content={createContent} /> : <pre className="whitespace-pre-wrap text-xs">{createContent}</pre>}</div>}
+          <label className="block text-sm">Reason<input data-testid="create-document-reason" value={createReason} maxLength={500} disabled={createBusy} onChange={e => { setCreateReason(e.target.value); setCreateConfirmed(false); }} className="block w-full border rounded p-2" /></label>
+          <p data-testid="create-document-reviewer" className="text-sm text-slate-600">{createContextLoading ? 'Loading reviewer and project state…' : reviewerSession ? `Signed in as ${reviewerSession.name} (${reviewerSession.roles.join(', ')}). Project version: ${createVersion ?? 'reload required'}.` : 'Sign in through the configured reviewer session before creating a document.'}</p>
+          {createError && <p role="alert" data-testid="create-document-error" className="text-sm text-rose-700">{createError}</p>}
+          <label className="flex gap-2 text-sm"><input data-testid="create-document-confirmation" type="checkbox" checked={createConfirmed} disabled={createBusy || createContextLoading || createRecoveryRequired} onChange={e => setCreateConfirmed(e.target.checked)} />I reviewed this content and confirm creating it in this project.</label>
+          <div className="flex flex-wrap gap-3 justify-end">
+            <button disabled={createBusy} onClick={() => setCreateOpen(false)} className="border rounded px-3 py-2 text-sm">Cancel</button>
+            <button data-testid="btn-reload-create-context" disabled={createBusy || createContextLoading} onClick={async () => { const current = captureContext(); await refreshDocumentList(); if (current()) await loadCreateContext(); }} className="border rounded px-3 py-2 text-sm">Reload catalog and reviewer context</button>
+            <button data-testid="btn-confirm-create-document" onClick={handleCreate} disabled={!canonicalReady || createBusy || createContextLoading || createRecoveryRequired || createVersion === null || !createConfirmed || !createTitle.trim() || !createContent.trim() || !createReason.trim() || !reviewerSession?.roles.some(role => ['Security Officer','Lead Architect'].includes(role))} className="bg-emerald-600 text-white rounded px-3 py-2 text-sm disabled:opacity-40">{createBusy ? 'Creating…' : 'Confirm and create'}</button>
+          </div>
+        </div>
+      </div>}
+    </div>
+  );
+
   // Handle Reload Canonical Content from stale diff (Section 8)
   const handleReloadFromStaleDiff = async () => {
     if (!selectedDocId) return;
+    const current = captureContext(selectedDocId);
     setCanonicalRefreshError(null);
     const refreshed = await performCanonicalRefresh(selectedDocId);
+    if (!current()) return;
     if (!refreshed) {
       setCanonicalRefreshRequired(true);
       setCanonicalRefreshError('Canonical refresh failed. Reload the latest document before continuing.');
@@ -483,8 +656,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   // Handle Retry Canonical Refresh from banner (Section 4 & 9)
   const handleRetryCanonicalRefresh = async () => {
     if (!selectedDocId) return;
+    const current = captureContext(selectedDocId);
     const previousError = canonicalRefreshError;
     const refreshed = await performCanonicalRefresh(selectedDocId);
+    if (!current()) return;
     if (!refreshed) {
       setCanonicalRefreshRequired(true);
       setCanonicalRefreshError(previousError || 'Canonical refresh failed. Please try again.');
@@ -584,6 +759,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     if (!loadingList && !listError && documents.length === 0) {
       return (
         <div data-testid="repository-docs-shell" className="h-[calc(100vh-120px)] flex flex-col">
+          {renderCreateControls()}
           <div data-testid="controlled-docs-workspace" className="p-8 text-slate-700">
             <div
               data-testid="controlled-docs-empty"
@@ -591,11 +767,10 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
             >
               <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                No Repository Documentation Available
+                {projectId === 'PRJ-DOCMONSTAKRAKIN' ? 'No Repository Documentation Available' : 'No project documents yet'}
               </h3>
               <p className="text-sm text-slate-500">
-                Project <span className="font-mono text-slate-700">{projectId}</span> does not have a
-                repository-controlled documentation registry configured.
+                Project <span className="font-mono text-slate-700">{projectId}</span> has no documents in this catalog.
               </p>
             </div>
           </div>
@@ -605,6 +780,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
     return (
       <div data-testid="repository-docs-shell" className="h-[calc(100vh-120px)] flex flex-col">
+        {renderCreateControls()}
         <div
           data-testid="controlled-docs-workspace"
           className="flex flex-1 h-full bg-white text-slate-900 border border-slate-200 rounded-xl shadow-xs overflow-hidden"
