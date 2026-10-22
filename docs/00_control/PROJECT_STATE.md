@@ -1,5 +1,13 @@
 # docmonstakrakin current project state
 
+## 2026-10-22 — Local-MVP engineering integration closure
+
+PR #80 is normally merged at `7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`; valid signature, exact candidate/merged tree and all 84 intended paths verified. The [additive closure](../07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md) and [current handoff](../08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md) supersede older pending instructions while preserving their original evidence. Candidate and local complete runs passed 114 suites / 2,481 reported checks; actual post-merge qualification is recorded separately in the closure.
+
+Actual [post-merge CI39721949800](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39721949800) passed all four jobs on this exact master, **114/114 suites and2,481/2,481 reported checks**, zero failures/skips; controlled documents11/336,40/40 core,29/29 supplemental. Fresh configured Windows/Linux native installs and zero-audit evidence passed. Final documentation is published on `codex/local-mvp-closure-20261022` without another closure-only PR; this master remains the last fully verified runtime commit.
+
+All eight requested local engineering workstreams are implemented. This is not canonical WBS completion or production authorization: all 69 item states, historical receipts, original portfolio, human quorum, 14 privileged denials, disabled agents, PRs #34/#52, Gate 7 and release restrictions remain unchanged. Ordinary access stays local/unscoped, review-person bindings are local assertions, and production evidence acquisition is unavailable. Original operator clean-install support remains unqualified.
+
 ## 2026-10-22 — Eight-workstream local-MVP integration candidate
 
 The last fully verified master is `d503323aad1002f7325ba3a45faf4bee261686a9` (PR #79; actual [CI 39703341247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39703341247): four jobs successful, 94 suites / 2,258 reported checks). GitHub master was independently reconfirmed at this baseline before the current integration. The [current implementation and evidence record](../07_verification/LOCAL_MVP_INTEGRATION_20261022.md) supersedes the execution instructions in older dated checkpoints, while preserving them verbatim below.

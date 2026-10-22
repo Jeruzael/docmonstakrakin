@@ -1,7 +1,8 @@
 # Local reviewer session setup
 
-The 2026-10-22 reviewer-setup and verification changes are candidates pending
-parent integration and validation. This guide describes their configuration
+The 2026-10-22 reviewer-setup and verification changes are integrated through
+PR #80; see the [exact closure and qualifications](LOCAL_MVP_COMPLETION_CLOSURE_20261022.md).
+This guide describes their configuration
 contract. It enrolls no person, issues no credential and claims no human approval.
 Reviewer operations fail closed when the operator has not configured an eligible
 roster. Ordinary legacy project access retains its existing local partial
@@ -32,7 +33,7 @@ workflow and restart the server to refresh its in-memory roster snapshot.
 
 ## Verification person binding
 
-The candidate verification workflow also requires `personId` on each human
+The local verification workflow also requires `personId` on each human
 account used for verification. Its exact format is
 `/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/`; surrounding whitespace is invalid.
 It is an operator's **LOCAL_ROSTER_ASSERTION**, not identity enrollment, proof
@@ -51,7 +52,7 @@ independence. The workflow reports local human attestation and explicitly keeps
 
 ## Read-only setup guidance and sessions
 
-The candidate header exposes read-only aggregate setup guidance: absent or
+The header exposes read-only aggregate setup guidance: absent or
 malformed configuration, missing roles, ambiguous account IDs, missing person
 bindings and insufficient independent-person coverage. These diagnostics reveal
 no account names, person values, passwords or verifiers. They create no roster

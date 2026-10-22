@@ -7,12 +7,13 @@ workflow and disposable demo need no Gemini or other external-provider key.
 Live provider calls are a separate capability; no credential setup is part of
 this quick start.
 
-The 2026-10-22 local-MVP work is a **candidate pending parent integration and
-validation**. It adds ordinary-project managed documents, local human verification
-sessions and reviewer-setup guidance. Use the [normal-checkout reproducibility
-guide](docs/08_handoff/LOCAL_MVP_REPRODUCIBILITY_20261022.md) to distinguish expected
-behavior from recorded results. This documentation update claims no new clean
-install, normal-checkout startup or end-to-end package result.
+The 2026-10-22 local-MVP work is integrated through
+[PR #80](https://github.com/Jeruzael/docmonstakrakin/pull/80). It adds ordinary-project
+managed documents, local verification sessions, reviewer diagnostics and explicit
+scope-bound progress. The [actual integration closure](docs/07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md)
+records exact commits and execution results; the [normal-checkout runbook](docs/08_handoff/LOCAL_MVP_REPRODUCIBILITY_20261022.md)
+separates synthetic end-to-end and configured fresh CI qualification from the
+untouched original workstation. Production authorization remains incomplete.
 
 ## Install in a fresh checkout
 
@@ -113,7 +114,7 @@ providing credentials.
 
 Normal startup reads `.local/project-state.json` when present and initializes
 the private SecretStore. Successful project mutations atomically persist project
-collections and audit there. Candidate managed documents keep content, digest,
+collections and audit there. Managed documents keep content, digest,
 metadata and replay history in the same snapshot. Existing filesystem document
 transactions use `.local/document-transactions/`; `.local/project-state.write.lock`
 coordinates snapshot writers.

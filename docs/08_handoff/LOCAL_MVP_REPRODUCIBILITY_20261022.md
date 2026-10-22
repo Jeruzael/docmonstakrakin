@@ -1,11 +1,14 @@
-# Local-MVP normal-checkout reproducibility candidate — 2026-10-22
+# Local-MVP normal-checkout reproducibility — 2026-10-22
 
-This runbook describes expected behavior after parent integration. It is not a
-startup/install receipt, production security qualification, human approval or
-release decision. The parent must replace pending execution entries with the
-actual integrated HEAD, environment, commands and results. This subtask reviewed
-source and corrected documentation; it ran no installation, startup, browser,
-build, native-heavy or full regression command.
+The implementation is integrated through PR #80 at
+`7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`. See the
+[actual closure](../07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md) for
+candidate, local and actual-master execution evidence. The real App/API journey
+uses disposable state and synthetic person assertions; it is not an operator
+acceptance, production security qualification, human approval or release decision.
+Fresh configured hosted installations and retained local packages are distinct.
+The original documentation-only subtask ran no execution; the parent subsequently
+ran the integrated qualification recorded in the closure.
 
 ## Select the workspace
 
@@ -30,32 +33,33 @@ person-binding and independent-human policy.
 
 ## Expected ordinary-project journey
 
-Perform this after the parent has integrated the candidate routes, collections,
-UI and package import/export wiring. Use a dedicated ordinary test project with
+Use the integrated routes, collections, UI and package import/export wiring.
+Select a dedicated ordinary test project with
 non-sensitive content; do not modify the canonical self-project, WBS, history,
 receipts or release state.
 
 | Step | Expected behavior | Actual execution |
 | --- | --- | --- |
-| Start from the selected checkout root | Direct loopback service opens; no provider credential is required | Pending parent run |
-| Inspect reviewer setup and sign in through the header if authorized | Server-resolved human roles and setup guidance; no enrollment or default credentials | Pending parent run |
-| Create an ordinary project and one Markdown/text document | Server ID/virtual path, content digest, one state-version increment and audit; no governance approval | Pending parent run |
-| Edit, preview diff, validate and confirm save | Expected project version and previous digest must match; stale input requires reload/review | Pending parent run |
-| Stop cleanly and restart from the same checkout root | Saved content, digest, replay history and audit survive; the reviewer session requires sign-in again | Pending parent run |
-| Export the project package and verify it | Optional managed content and metadata participate in integrity; no private SecretStore or human session is included | Pending parent run |
-| Import through the integrated UI into an intended ordinary test context | Exact project-bound managed records survive the import contract; conflicting targets fail clearly | Pending parent run |
-| Inspect imported content, digest and replay history | Exact stored values match the export; package hashes confer no HUMAN authority or production trust | Pending parent run |
-| Exercise a verification draft and independent review when an operator-qualified setup exists | Exact task/build/environment/bundle digest, separate local person assertions, fresh confirmations and no release activation | Pending parent run |
+| Start from the selected checkout root | Direct loopback service opens; no provider credential is required | Actual production-mode App/server passed in owned disposable context; original operator checkout was not started or repaired |
+| Inspect reviewer setup and sign in through the header if authorized | Server-resolved human roles and setup guidance; no enrollment or default credentials | Passed with isolated synthetic author/SO/LA assertions; no real enrollment |
+| Create an ordinary project and one Markdown/text document | Server ID/virtual path, content digest, one state-version increment and audit; no governance approval | Actual App/API create and durable audit passed |
+| Edit, preview diff, validate and confirm save | Expected project version and previous digest must match; stale input requires reload/review | Actual App/API revision and focused CAS/stale-project checks passed |
+| Stop cleanly and restart from the same checkout root | Saved content, digest, replay history and audit survive; the reviewer session requires sign-in again | Actual owned-server restart preserved exact snapshot/document digests and expired the old session |
+| Export the project package and verify it | Optional managed content and metadata participate in integrity; no private SecretStore or human session is included | Actual export/integrity verification passed |
+| Import through the integrated UI into an intended ordinary test context | Exact project-bound managed records survive the import contract; conflicting targets fail clearly | Actual package engine/server import passed; not a claim of every import-modal interaction |
+| Inspect imported content, digest and replay history | Exact stored values match the export; package hashes confer no HUMAN authority or production trust | Managed bytes preserved; active verification cleared and history retained only as untrusted archives |
+| Exercise a verification draft and independent review when an operator-qualified setup exists | Exact task/build/environment/bundle digest, separate local person assertions, fresh confirmations and no release activation | Actual App submission and two separate synthetic-reviewer attestations passed; self/agent review and production signoff denied |
 
 Import follows the existing target project ID and explicit conflict handling.
-This candidate provides no cross-project remapping or hidden overwrite step.
+This implementation provides no cross-project remapping or hidden overwrite step.
 A separate ordinary test checkout may be used for import; select it intentionally
 and retain its own private state. Do not copy a running operator snapshot into
 it to bypass conflict handling.
 
 The package engine has focused unit coverage documented in
 [the managed-document implementation note](../07_verification/LOCAL_MVP_MANAGED_DOCUMENTS_20261022.md).
-Those checks do not constitute execution of the HTTP/UI journey above. A missing
+Those focused checks alone do not establish the HTTP/UI journey; the separate
+actual-server test above supplies that evidence within its stated limits. A missing
 managed-document field remains compatible with older packages. Imported records
 carry content integrity and replay metadata, never authority fields.
 

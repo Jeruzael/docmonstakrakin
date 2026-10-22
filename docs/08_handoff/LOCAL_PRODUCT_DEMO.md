@@ -1,7 +1,8 @@
 # Deterministic local product demo
 
-**2026-10-22 candidate scope:** ordinary managed documents, verification sessions
-and reviewer-setup guidance remain pending parent integration and validation.
+**2026-10-22 integrated scope:** ordinary managed documents, verification sessions
+and reviewer-setup guidance are merged through PR #80; see the
+[actual closure and qualifications](../07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md).
 For normal-checkout startup, restart and package acceptance, use the
 [README](../../README.md) and [reproducibility candidate](LOCAL_MVP_REPRODUCIBILITY_20261022.md).
 This page describes the separate disposable demo. Its historical checks do not
@@ -47,8 +48,10 @@ timestamps and audit digests vary between fresh runs and are never backdated.
    An unauthenticated **VERIFIED** update must fail; do not seek an override.
 4. Open **Prompt Compiler**, choose the linked task and inspect/copy its compiled
    context. This creates an offline handoff package, not an external model call.
-5. Inspect **Home** health dimensions. They are stored planning estimates, with
-   actual review and verification gates still pending.
+5. Inspect **Home** dimensions. Discovery completion is calculated from the
+   applicable gates. Implementation and local review counts require explicit
+   current-release scope; unavailable security/release dimensions remain explicit.
+   Local records do not establish production verification or release authority.
 6. Switch to **Synthetic controlled-document workspace**. In **Reports & Export**
    inspect the existing repository documents, edit the living project state,
    preview its diff and validate. A save needs the synthetic reviewer session,

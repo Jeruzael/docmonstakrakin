@@ -1,5 +1,7 @@
 # Local MVP integration evidence — 2026-10-22
 
+**Subsequent actual integration:** [PR #80](https://github.com/Jeruzael/docmonstakrakin/pull/80) merged as `7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`. The [final additive closure](LOCAL_MVP_COMPLETION_CLOSURE_20261022.md) records signed HEAD/tree, candidate/local/actual-master checks and remaining qualifications. Pending statements below preserve this document's pre-publication capture; they are superseded by that closure, not retroactively rewritten.
+
 Engineering baseline: `d503323aad1002f7325ba3a45faf4bee261686a9`, independently reconfirmed on GitHub before integration. The operator authorized autonomous engineering choices and eligible normal development merges. Agent assessments below are not human reviews, appointments, governance ratification, production authority or release approval.
 
 This is the integration record for the [eight workstreams](../06_planning/LOCAL_MVP_COMPLETION_20261022.md). The candidate branch is [`codex/local-mvp-completion-20261022`](https://github.com/Jeruzael/docmonstakrakin/tree/codex/local-mvp-completion-20261022). Actual published HEAD, hosted checks, merge and post-merge evidence must be recorded against their real identities. Nothing in this pre-publication checkpoint declares an unrun check successful.
