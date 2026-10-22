@@ -1,270 +1,108 @@
-/**
- * docmonstakrakin v0.1 Release Gate Evaluator (DMK-165 / SEC-CTRL-020)
- * Evaluates the 7 mandatory release gates defined in docs/07_verification/RELEASE_GATES.md
- * and Master Plan §68 (Definition of Done for MVP).
- */
+/** Release evaluation separates stored observations from authenticated authority. */
+import {GENESIS_AUDIT_HASH, verifyAuditLedgerChain} from '../security/auditImmutability.ts';
+import {isReleaseScopeContext, READINESS_WORK_STATUSES} from '../../src/data/releaseHealthProjection.ts';
+import type {Project, Question, Requirement, WorkItem, AuditEvent, ApprovalItem} from '../../src/types.ts';
+import {productionEvidenceUnavailable, type ProductionEvidenceUnavailable, type ReleaseEvaluationScope, type ReleaseScopeEvaluation} from './releaseEvidenceTypes.ts';
+import {GITHUB_CI_POLICY, isAcquiredGitHubCiObservation, type GitHubCiObservation} from './githubCiAcquisition.ts';
+export type {ReleaseEvaluationScope, ReleaseScopeEvaluation} from './releaseEvidenceTypes.ts';
 
-import { verifyAuditLedgerChain } from '../security/auditImmutability.ts';
-import type { Project, Question, Requirement, WorkItem, AuditEvent, ApprovalItem } from '../../src/types.ts';
-
-export interface ReleaseGateResult {
-  gateId: number;
-  code: string;
-  name: string;
-  status: 'PASSED' | 'FAILED' | 'PENDING' | 'HUMAN_APPROVAL_REQUIRED';
+export interface LocalGateCheck {
+  status: 'SATISFIED' | 'FAILED' | 'PENDING' | 'NOT_APPLICABLE';
+  subjectIds: string[];
   details: string;
-  blocking: boolean;
-  evidenceLinks: string[];
 }
-
+export interface ReleaseGateResult {
+  gateId: number; code: string; name: string;
+  status: 'PASSED' | 'FAILED' | 'PENDING' | 'HUMAN_APPROVAL_REQUIRED';
+  details: string; blocking: boolean; evidenceLinks: string[];
+  localCheck: LocalGateCheck;
+}
 export interface CapabilityAssessment {
-  capabilityId: number;
-  title: string;
-  referenceDmk: string;
-  status: 'VERIFIED' | 'IMPLEMENTED' | 'PENDING';
-  evidence: string;
+  capabilityId: number; title: string; referenceDmk: string;
+  status: 'VERIFIED' | 'IMPLEMENTED' | 'PENDING'; evidence: string;
+  applicability: 'IN_SCOPE' | 'OUT_OF_SCOPE' | 'UNAVAILABLE';
+  sourceWorkItemId: string | null; rationale: string;
 }
-
 export interface ReleaseAuditReport {
-  projectId: string;
-  projectName: string;
-  timestamp: string;
-  targetMilestone: string;
-  allGatesPassed: boolean;
-  gates: ReleaseGateResult[];
-  capabilitiesSummary: {
-    total: number;
-    verified: number;
-    percentage: number;
-  };
+  version: 'OPERATIONAL_RELEASE_EVALUATION/1';
+  projectId: string; projectName: string; timestamp: string; targetMilestone: string;
+  projectStateVersion: number | null;
+  evaluationScope: ReleaseScopeEvaluation;
+  productionEvidence: ProductionEvidenceUnavailable;
+  ciObservation?: GitHubCiObservation;
+  ciObservationRejection?: string;
+  allGatesPassed: boolean; gates: ReleaseGateResult[];
+  capabilitiesSummary: {total: number; verified: number; percentage: number};
   capabilities: CapabilityAssessment[];
-  auditChainIntegrity: {
-    valid: boolean;
-    breaksCount: number;
-    eventsChecked: number;
-  };
-  releaseReady: boolean;
-  signedOff: boolean;
-  signoffDetails?: {
-    actor: string;
-    timestamp: string;
-    auditEventId: string;
-  };
+  auditChainIntegrity: {valid: boolean; breaksCount: number; eventsChecked: number;
+    available: boolean; trust: 'LOCAL_STORED_BYTES_ONLY'};
+  releaseReady: boolean; signedOff: boolean;
+  localSignoffObservations: {auditEventIds: string[]; approvalIds: string[]; humanAuthorization: false};
+  signoffDetails?: {actor: string; timestamp: string; auditEventId: string};
+}
+export interface ProjectDataAccessor {
+  projects: Project[]; questions: Record<string, Question[]>;
+  requirements: Record<string, Requirement[]>; workItems: Record<string, WorkItem[]>;
+  auditLogs: Record<string, AuditEvent[]>; approvals: Record<string, ApprovalItem[]>;
+  addAuditEvent?: (projectId: string, actor: string, action: string, target: string, reason?: string, details?: any) => AuditEvent;
+}
+const evidenceReferences = (value: unknown): string[] => Array.isArray(value)
+  ? value.filter((reference): reference is string => typeof reference === 'string' && reference.trim().length > 0) : [];
+
+/** Bind only an unambiguous current project declaration and exact task rows. */
+export function evaluateReleaseScope(store: ProjectDataAccessor, projectId: string): ReleaseScopeEvaluation {
+  const projects = store.projects.filter(project => project.id === projectId);
+  if (projects.length !== 1) return {status: 'INVALID', scope: null, reason: 'Project is missing or ambiguous.'};
+  const project = projects[0], scope = project.readinessContext;
+  if (!scope) return {status: 'UNAVAILABLE', scope: null, reason: 'No current release scope is configured.'};
+  if (!isReleaseScopeContext(scope) || scope.targetRelease !== project.targetRelease)
+    return {status: 'INVALID', scope: null, reason: 'Release scope is malformed or differs from the project target release.'};
+  const rows = store.workItems[projectId];
+  if (!Array.isArray(rows)) return {status: 'INVALID', scope: null, reason: 'Current scoped work data is unavailable.'};
+  for (const id of scope.workItemIds) {
+    const matches = rows.filter(row => row?.id === id);
+    if (matches.length !== 1 || !READINESS_WORK_STATUSES.includes(matches[0].status))
+      return {status: 'INVALID', scope: null, reason: `Scoped task ${id} is missing, ambiguous or has an unknown lifecycle state.`};
+  }
+  return {status: 'BOUND', scope: {projectId, targetRelease: scope.targetRelease, workItemIds: [...scope.workItemIds],
+    commitSha: scope.commitSha, buildRevision: scope.buildRevision, environment: scope.environment, scopeId: scope.id, scopeRevision: scope.revision},
+    reason: 'Exact project, release, commit, build, environment and task declaration bound. The declaration itself does not authenticate evidence.'};
+}
+function sameScope(left: ReleaseEvaluationScope, right: ReleaseEvaluationScope): boolean {
+  return left.projectId === right.projectId && left.targetRelease === right.targetRelease && left.commitSha === right.commitSha &&
+    left.buildRevision === right.buildRevision && left.environment === right.environment && left.scopeId === right.scopeId &&
+    left.scopeRevision === right.scopeRevision && JSON.stringify(left.workItemIds) === JSON.stringify(right.workItemIds);
 }
 
-export const V01_CAPABILITIES: { id: number; title: string; dmk: string; evidence: string }[] = [
-  { id: 1, title: 'Create project with multiple profiles', dmk: 'DMK-017', evidence: 'EV-103' },
-  { id: 2, title: 'Run adaptive questionnaire with conditional branching', dmk: 'DMK-027', evidence: 'EV-104' },
-  { id: 3, title: 'Mark questions as blocking vs required', dmk: 'DMK-020', evidence: 'EV-104' },
-  { id: 4, title: 'Calculate requirements readiness score', dmk: 'DMK-024', evidence: 'EV-104' },
-  { id: 5, title: 'Generate requirements from approved answers', dmk: 'DMK-028', evidence: 'EV-104' },
-  { id: 6, title: 'Review and approve requirements baseline', dmk: 'DMK-031', evidence: 'EV-104' },
-  { id: 7, title: 'Compute inherent risk score (Likelihood x Impact)', dmk: 'DMK-036', evidence: 'EV-104' },
-  { id: 8, title: 'Enforce mandatory risk floor for dangerous capabilities', dmk: 'DMK-038', evidence: 'EV-104' },
-  { id: 9, title: 'Create and manage ADRs with status lifecycle', dmk: 'DMK-048', evidence: 'EV-104' },
-  { id: 10, title: 'Move project through 15-phase A-SSDLC state machine', dmk: 'DMK-033', evidence: 'EV-104' },
-  { id: 11, title: 'Enforce phase exit criteria using deterministic checks', dmk: 'DMK-035', evidence: 'EV-104' },
-  { id: 12, title: 'Record and enforce time-limited gate overrides', dmk: 'DMK-041', evidence: 'EV-104' },
-  { id: 13, title: 'View unified WorkItem model in Kanban, WBS, Backlog', dmk: 'DMK-085', evidence: 'EV-103' },
-  { id: 14, title: 'Compile scoped prompt with permissions & schema', dmk: 'DMK-067', evidence: 'EV-106' },
-  { id: 15, title: 'Send prompt to Gemini & validate structured JSON', dmk: 'DMK-079', evidence: 'EV-106' },
-  { id: 16, title: 'Run independent second-agent review on proposals', dmk: 'DMK-081', evidence: 'EV-106' },
-  { id: 17, title: 'Copy/paste manual offline prompt workflow', dmk: 'DMK-078', evidence: 'EV-106' },
-  { id: 18, title: 'Validate file access against path allow/deny masks', dmk: 'DMK-098', evidence: 'EV-159' },
-  { id: 19, title: 'Inspect local git status, log, and diff', dmk: 'DMK-105', evidence: 'EV-103' },
-  { id: 20, title: 'Confirm structured terminal command before execution', dmk: 'DMK-110', evidence: 'EV-159' },
-  { id: 21, title: 'Attach SHA-256 evidence before marking verified', dmk: 'DMK-114', evidence: 'EV-156' },
-  { id: 22, title: 'Append-only SHA-256 hash-chained audit ledger', dmk: 'DMK-120', evidence: 'EV-159' },
-  { id: 23, title: 'Browse pinned NIST SSDF and OWASP standards', dmk: 'DMK-055', evidence: 'EV-104' },
-  { id: 24, title: 'Check for standards updates & preview semantic diff', dmk: 'DMK-126', evidence: 'EV-104' },
-  { id: 25, title: 'Display deterministic recommended next action', dmk: 'DMK-139', evidence: 'EV-102' },
+export const V01_CAPABILITIES: { id: number; title: string; dmk: string }[] = [
+  { id: 1, title: 'Create project with multiple profiles', dmk: 'DMK-017' },
+  { id: 2, title: 'Run adaptive questionnaire with conditional branching', dmk: 'DMK-027' },
+  { id: 3, title: 'Mark questions as blocking vs required', dmk: 'DMK-020' },
+  { id: 4, title: 'Calculate requirements readiness score', dmk: 'DMK-024' },
+  { id: 5, title: 'Generate requirements from approved answers', dmk: 'DMK-028' },
+  { id: 6, title: 'Review and approve requirements baseline', dmk: 'DMK-031' },
+  { id: 7, title: 'Compute inherent risk score (Likelihood x Impact)', dmk: 'DMK-036' },
+  { id: 8, title: 'Enforce mandatory risk floor for dangerous capabilities', dmk: 'DMK-038' },
+  { id: 9, title: 'Create and manage ADRs with status lifecycle', dmk: 'DMK-048' },
+  { id: 10, title: 'Move project through 15-phase A-SSDLC state machine', dmk: 'DMK-033' },
+  { id: 11, title: 'Enforce phase exit criteria using deterministic checks', dmk: 'DMK-035' },
+  { id: 12, title: 'Record and enforce time-limited gate overrides', dmk: 'DMK-041' },
+  { id: 13, title: 'View unified WorkItem model in Kanban, WBS, Backlog', dmk: 'DMK-085' },
+  { id: 14, title: 'Compile scoped prompt with permissions & schema', dmk: 'DMK-067' },
+  { id: 15, title: 'Send prompt to Gemini & validate structured JSON', dmk: 'DMK-079' },
+  { id: 16, title: 'Run independent second-agent review on proposals', dmk: 'DMK-081' },
+  { id: 17, title: 'Copy/paste manual offline prompt workflow', dmk: 'DMK-078' },
+  { id: 18, title: 'Validate file access against path allow/deny masks', dmk: 'DMK-098' },
+  { id: 19, title: 'Inspect local git status, log, and diff', dmk: 'DMK-105' },
+  { id: 20, title: 'Confirm structured terminal command before execution', dmk: 'DMK-110' },
+  { id: 21, title: 'Attach SHA-256 evidence before marking verified', dmk: 'DMK-114' },
+  { id: 22, title: 'Append-only SHA-256 hash-chained audit ledger', dmk: 'DMK-120' },
+  { id: 23, title: 'Browse pinned NIST SSDF and OWASP standards', dmk: 'DMK-055' },
+  { id: 24, title: 'Check for standards updates & preview semantic diff', dmk: 'DMK-126' },
+  { id: 25, title: 'Display deterministic recommended next action', dmk: 'DMK-139' },
 ];
 
-export interface ProjectDataAccessor {
-  projects: Project[];
-  questions: Record<string, Question[]>;
-  requirements: Record<string, Requirement[]>;
-  workItems: Record<string, WorkItem[]>;
-  auditLogs: Record<string, AuditEvent[]>;
-  approvals: Record<string, ApprovalItem[]>;
-  addAuditEvent?: (
-    projectId: string,
-    actor: string,
-    action: string,
-    target: string,
-    reason?: string,
-    details?: any
-  ) => AuditEvent;
-}
-
-// Reference presence is not evidence authentication. Preserve supplied text and
-// order, but never replace absent or malformed references with catalog defaults.
-function evidenceReferences(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((reference): reference is string => typeof reference === 'string' && reference.trim().length > 0)
-    : [];
-}
-
-/**
- * Evaluates all 7 release gates deterministically for the given project.
- */
-export function evaluateReleaseGates(
-  store: ProjectDataAccessor,
-  projectId: string
-): ReleaseAuditReport {
-  const project = store.projects.find((p) => p.id === projectId) || {
-    id: projectId,
-    name: 'Unknown Project',
-    healthScore: 100,
-    progress: { releaseReadiness: 0 },
-  } as Project;
-
-  const questions = store.questions[projectId] || [];
-  const requirements = store.requirements[projectId] || [];
-  const workItems = store.workItems[projectId] || [];
-  const auditLogs = store.auditLogs[projectId] || [];
-  const approvals = store.approvals[projectId] || [];
-
-  const gates: ReleaseGateResult[] = [];
-
-  // Gate 1: Zero Unresolved Blocker Questions
-  const blockingQuestions = questions.filter(
-    (q) => q.importance === 'BLOCKING' || (q as any).urgency === 'CRITICAL' || (q as any).isBlocking === true
-  );
-  const unresolvedBlockers = blockingQuestions.filter((q) => q.state === 'UNRESOLVED');
-  const gate1Passed = unresolvedBlockers.length === 0;
-  const questionStates = ['UNRESOLVED', 'ANSWERED', 'DEFERRED', 'NOT_APPLICABLE'];
-  const blockingStateSummary = questionStates.map(state => `${state}=${blockingQuestions.filter(q => q.state === state).length}`).join('; ');
-  const otherBlockingStates = blockingQuestions.filter(q => !questionStates.includes(q.state)).length;
-  gates.push({
-    gateId: 1,
-    code: 'GATE-01-BLOCKERS',
-    name: 'Zero Unresolved Blocker Questions',
-    status: gate1Passed ? 'PASSED' : 'FAILED',
-    details: `Stored question-state check: ${blockingQuestions.length} blocking questions selected; ${blockingStateSummary}; OTHER_OR_MISSING=${otherBlockingStates}.`
-      + (unresolvedBlockers.length ? ` Unresolved question IDs: ${unresolvedBlockers.map(q => q.id).join(', ')}.` : '')
-      + ' This evaluation does not verify answers, applicability decisions, or formal acceptance of deferrals.',
-    blocking: true,
-    evidenceLinks: ['EV-104'],
-  });
-
-  // Gate 2: 100% Core Requirements Verification
-  const coreRequirements = requirements.filter(
-    (r) => r.priority === 'CRITICAL' || r.priority === 'HIGH'
-  );
-  // Preserve the existing priority/status policy. Authenticated evidence and the
-  // treatment of VERIFIED requirements still require the broader DMK-202 work.
-  const unapprovedCore = coreRequirements.filter(
-    (r) => r.status !== 'APPROVED'
-  );
-  const missingCoreReferences = coreRequirements.filter((r) => evidenceReferences(r.evidence).length === 0);
-  const gate2Passed = coreRequirements.length > 0 && unapprovedCore.length === 0 && missingCoreReferences.length === 0;
-  gates.push({
-    gateId: 2,
-    code: 'GATE-02-REQUIREMENTS',
-    name: '100% Core Requirements Verification',
-    status: gate2Passed ? 'PASSED' : 'FAILED',
-    details: (coreRequirements.length === 0
-      ? 'No CRITICAL or HIGH core requirements are available for the existing approval/reference check.'
-      : gate2Passed
-        ? `All ${coreRequirements.length} CRITICAL/HIGH core requirements are APPROVED and have evidence references.`
-        : `${coreRequirements.length} CRITICAL/HIGH core requirements checked: ${unapprovedCore.length} not APPROVED (${unapprovedCore.map((r) => r.id).join(', ') || 'none'}); ${missingCoreReferences.length} missing evidence references (${missingCoreReferences.map((r) => r.id).join(', ') || 'none'}).`)
-      + ' This evaluation does not authenticate evidence or inspect test results.',
-    blocking: true,
-    evidenceLinks: coreRequirements.flatMap((r) => evidenceReferences(r.evidence)),
-  });
-
-  // Gate 3: Secret Store Integration Complete (DMK-157)
-  const dmk157 = workItems.find((w) => w.id === 'DMK-157');
-  const dmk158 = workItems.find((w) => w.id === 'DMK-158');
-  const gate3Passed =
-    (dmk157?.status === 'VERIFIED' || dmk157?.status === 'APPROVED') &&
-    (dmk158?.status === 'VERIFIED' || dmk158?.status === 'APPROVED');
-  gates.push({
-    gateId: 3,
-    code: 'GATE-03-SECRETS',
-    name: 'Secret Store Integration Complete (DMK-157 & DMK-158)',
-    status: gate3Passed ? 'PENDING' : 'FAILED',
-    details: `Stored work-item status check: DMK-157=${dmk157?.status ?? 'MISSING'}; DMK-158=${dmk158?.status ?? 'MISSING'}. Both must be VERIFIED or APPROVED. This evaluation does not inspect credential storage, run rotation, or perform a secret sweep. Authenticated production evidence acquisition is unavailable; stored status/reference checks and local human attestations cannot satisfy this gate.`,
-    blocking: true,
-    evidenceLinks: [...evidenceReferences(dmk157?.evidence), ...evidenceReferences(dmk158?.evidence)],
-  });
-
-  // Gate 4: Security Regression Passing (DMK-159)
-  const dmk159 = workItems.find((w) => w.id === 'DMK-159');
-  const gate4Passed = dmk159?.status === 'VERIFIED';
-  gates.push({
-    gateId: 4,
-    code: 'GATE-04-SECURITY-REGRESSION',
-    name: 'Security Regression Passing (DMK-159)',
-    status: gate4Passed ? 'PASSED' : 'FAILED',
-    details: `Stored work-item status check: DMK-159=${dmk159?.status ?? 'MISSING'}; VERIFIED is required. This evaluation does not execute test suites or authenticate their results.`,
-    blocking: true,
-    evidenceLinks: evidenceReferences(dmk159?.evidence),
-  });
-
-  // Gate 5: Golden Reference Project Execution
-  const dmk156 = workItems.find((w) => w.id === 'DMK-156');
-  const gate5Passed =
-    project.id === 'PRJ-ATLAS-01' &&
-    requirements.length >= 4 &&
-    workItems.length >= 10 &&
-    dmk156?.status === 'VERIFIED';
-  gates.push({
-    gateId: 5,
-    code: 'GATE-05-GOLDEN-REFERENCE',
-    name: 'Golden Reference Project Execution & Package Sealing',
-    status: gate5Passed ? 'PASSED' : 'FAILED',
-    details: `Legacy reference-project check: project ${project.id} (requires PRJ-ATLAS-01); ${requirements.length} requirements (minimum 4); ${workItems.length} work items (minimum 10); DMK-156=${dmk156?.status ?? 'MISSING'} (requires VERIFIED). This evaluation does not execute or authenticate a package roundtrip.`,
-    blocking: true,
-    evidenceLinks: evidenceReferences(dmk156?.evidence),
-  });
-
-  // Gate 6: Cryptographic Audit Ledger Integrity
-  const auditVerification = verifyAuditLedgerChain(auditLogs, 'REVERSE_CHRONOLOGICAL');
-  const gate6Passed = auditVerification.valid && auditVerification.brokenIndex === undefined;
-  gates.push({
-    gateId: 6,
-    code: 'GATE-06-AUDIT-INTEGRITY',
-    name: 'Cryptographic Audit Ledger Integrity',
-    status: gate6Passed ? 'PASSED' : 'FAILED',
-    details: gate6Passed
-      ? `All ${auditLogs.length} audit ledger records chain cleanly via SHA-256 state hashes with 0 breaks detected.`
-      : `Audit ledger integrity compromised! ${auditVerification.error || `Chain break detected at index ${auditVerification.brokenIndex}`}`,
-    blocking: true,
-    evidenceLinks: ['EV-159'],
-  });
-
-  // Gate 7: Security Lead DoD Sign-off (DMK-165 / SEC-CTRL-020)
-  // SEC-CTRL-020 strictly requires genuine human authorization.
-  // Technical evidence (EV-165) proves technical verification, but human sign-off requires
-  // an explicit RELEASE_GATE_APPROVED or RELEASE_SIGNOFF audit record from an authorized human.
-    const importBoundary = auditLogs.findIndex(ev=>ev.action==='PACKAGE_IMPORTED');
-    const localAudit = importBoundary < 0 ? auditLogs : auditLogs.slice(0,importBoundary);
-    const signoffEvent = localAudit.find(
-    (ev) => ev.action === 'RELEASE_GATE_APPROVED' || ev.action === 'RELEASE_SIGNOFF_RECORDED'
-  );
-  const releaseApproval = approvals.find(
-    (a) => a.type === 'RELEASE_SIGNOFF' && a.status === 'APPROVED'
-  );
-  const gate7Passed = !!signoffEvent || !!releaseApproval;
-
-  gates.push({
-    gateId: 7,
-    code: 'GATE-07-RELEASE-SIGNOFF',
-    name: 'Security Lead DoD Sign-off (DMK-165)',
-    status: gate7Passed ? 'PASSED' : 'HUMAN_APPROVAL_REQUIRED',
-    details: signoffEvent
-      ? `Existing release sign-off audit event ${signoffEvent.id} (${signoffEvent.action}) recorded by ${signoffEvent.actor} at ${signoffEvent.timestamp}.`
-      : releaseApproval
-        ? `Existing approved release-signoff approval record ${releaseApproval.id}. No matching local sign-off audit event is present.`
-        : 'No local release sign-off audit event or approved release-signoff approval record is present. Gate 7 requires explicit human sign-off authorization per SEC-CTRL-020; technical gate and capability results are reported separately.',
-    blocking: true,
-    evidenceLinks: gate7Passed ? ['EV-165'] : [],
-  });
-
-  // Mapping from capability WBS item to implementing primary work item
-  const CAPABILITY_PRIMARY_ITEM_MAP: Record<string, string> = {
+const CAPABILITY_PRIMARY_ITEM_MAP: Record<string, string> = {
     'DMK-017': 'DMK-017',
     'DMK-027': 'DMK-020',
     'DMK-020': 'DMK-020',
@@ -292,197 +130,115 @@ export function evaluateReleaseGates(
     'DMK-139': 'DMK-042',
   };
 
-  // Evaluate Capabilities (25 Core Capabilities)
-  const capabilities: CapabilityAssessment[] = V01_CAPABILITIES.map((cap) => {
-    const directItem = workItems.find((w) => w.id === cap.dmk);
-    const primaryId = CAPABILITY_PRIMARY_ITEM_MAP[cap.dmk] || cap.dmk;
-    const primaryItem = directItem || workItems.find((w) => w.id === primaryId);
-    const status = primaryItem?.status === 'VERIFIED'
-      ? 'VERIFIED'
-      // canonical IMPLEMENTED / VERIFICATION_PENDING map to runtime VERIFICATION.
-      // Approval or a missing/early/unknown status does not establish implementation.
-      : primaryItem?.status === 'VERIFICATION' ? 'IMPLEMENTED' : 'PENDING';
-    return {
-      capabilityId: cap.id,
-      title: cap.title,
-      referenceDmk: cap.dmk,
-      status,
-      evidence: evidenceReferences(primaryItem?.evidence).join(', '),
-    };
+/** All seven gates and all catalog capabilities remain visible, including
+ * unbound/out-of-scope entries. No unavailable proof is silently waived. */
+export function evaluateReleaseGates(store: ProjectDataAccessor, projectId: string,
+  options: {ciObservation?: unknown} = {}): ReleaseAuditReport {
+  const project = store.projects.find(project => project.id === projectId);
+  const evaluationScope = evaluateReleaseScope(store, projectId), scope = evaluationScope.scope;
+  const questions = store.questions[projectId] || [], requirements = store.requirements[projectId] || [];
+  const allWorkItems = store.workItems[projectId] || [], auditLogs = store.auditLogs[projectId] || [], approvals = store.approvals[projectId] || [];
+  const workItems = scope ? allWorkItems.filter(item => scope.workItemIds.includes(item.id)) : [];
+  const productionEvidence = productionEvidenceUnavailable();
+  let ciObservation: GitHubCiObservation | undefined, ciObservationRejection: string | undefined;
+  if (options.ciObservation !== undefined) {
+    const candidate = options.ciObservation;
+    if (scope && isAcquiredGitHubCiObservation(candidate) && sameScope(candidate.scope, scope) &&
+      Date.now() - Date.parse(candidate.observedAt) >= -60000 && Date.now() - Date.parse(candidate.observedAt) <= GITHUB_CI_POLICY.observationMaxAgeMs)
+      ciObservation = candidate;
+    else ciObservationRejection = 'CI observation is not a fresh same-process acquisition for this exact current release scope. Imported/client claims cannot establish CI observations.';
+  }
+  const gates: ReleaseGateResult[] = [];
+  function gate(gateId: number, code: string, name: string, localCheck: LocalGateCheck, references: string[] = []) {
+    gates.push({gateId, code, name, status: localCheck.status === 'FAILED' ? 'FAILED' : 'PENDING', localCheck,
+      details: `${localCheck.details} ${scope ? '' : `${evaluationScope.reason} `}${productionEvidence.reason}`,
+      blocking: true, evidenceLinks: references});
+  }
+  const blockers = questions.filter(q => q.importance === 'BLOCKING' || q.blocking === true || (q as any).urgency === 'CRITICAL' || (q as any).isBlocking === true);
+  const unresolved = blockers.filter(q => q.state === 'UNRESOLVED');
+  const unknown = blockers.filter(q => !['UNRESOLVED', 'ANSWERED', 'DEFERRED', 'NOT_APPLICABLE'].includes(q.state));
+  const blockerSummary = blockers.map(q => `${q.id}=${q.state ?? 'MISSING'}`).join(', ') || 'none';
+  gate(1, 'GATE-01-BLOCKERS', 'Zero Unresolved Blocker Questions', {
+    status: unresolved.length || unknown.length ? 'FAILED' : !Array.isArray(store.questions[projectId]) || !scope ? 'PENDING' : 'SATISFIED',
+    subjectIds: blockers.map(q => q.id),
+    details: `Stored project blocker observations: ${blockerSummary}. ${unresolved.length} unresolved; ${unknown.length} unknown or missing states. Answered labels, applicability decisions and deferrals do not authenticate answers or formal risk acceptance.`,
   });
-
-  const verifiedCount = capabilities.filter((c) => c.status === 'VERIFIED').length;
-  const capabilitiesPercentage = Math.round((verifiedCount / capabilities.length) * 100);
-
-  // Gates 1-6 are technical gates; Gate 7 is the signoff itself
-  const technicalGatesPassed = gates.slice(0, 6).every((g) => g.status === 'PASSED');
-  const allGatesPassed = gates.every((g) => g.status === 'PASSED');
-
-  return {
-    projectId,
-    projectName: project.name,
-    timestamp: new Date().toISOString(),
-    targetMilestone: 'v0.1 Local-First MVP',
-    allGatesPassed,
-    gates,
-    capabilitiesSummary: {
-      total: capabilities.length,
-      verified: verifiedCount,
-      percentage: capabilitiesPercentage,
-    },
-    capabilities,
-    auditChainIntegrity: {
-      valid: auditVerification.valid,
-      breaksCount: auditVerification.valid ? 0 : 1,
-      eventsChecked: auditLogs.length,
-    },
-    releaseReady: technicalGatesPassed,
-    signedOff: gate7Passed,
-    signoffDetails: signoffEvent
-      ? {
-          actor: signoffEvent.actor,
-          timestamp: signoffEvent.timestamp,
-          auditEventId: signoffEvent.id,
-        }
-      : undefined,
-  };
+  const core = requirements.filter(r => (r.priority === 'CRITICAL' || r.priority === 'HIGH') && (!scope ||
+    r.workItems?.some(id => scope.workItemIds.includes(id)) || workItems.some(item => item.requirements?.includes(r.id))));
+  const unapproved = core.filter(r => r.status !== 'APPROVED' && r.status !== 'VERIFIED');
+  const missingRefs = core.filter(r => !evidenceReferences(r.evidence).length);
+  const unlinkedCore = scope ? requirements.filter(r => (r.priority === 'CRITICAL' || r.priority === 'HIGH') && !core.includes(r)) : [];
+  gate(2, 'GATE-02-REQUIREMENTS', '100% Core Requirements Verification', {
+    status: unapproved.length || missingRefs.length ? 'FAILED' : !scope || !core.length || unlinkedCore.length ? 'PENDING' : 'SATISFIED',
+    subjectIds: core.map(r => r.id),
+    details: `Stored core requirement observations: ${core.map(r => `${r.id}=${r.status}`).join(', ') || 'none'}. Not APPROVED/VERIFIED: ${unapproved.map(r => r.id).join(', ') || 'none'}; missing evidence references: ${missingRefs.map(r => r.id).join(', ') || 'none'}. Unlinked project core requirements: ${unlinkedCore.map(r => r.id).join(', ') || 'none'}; these are not silently waived. References and lifecycle labels do not authenticate passing tests, requirement authorization or release coverage.`,
+  }, core.flatMap(r => evidenceReferences(r.evidence)));
+  function taskCheck(ids: string[], allowed: string[]): LocalGateCheck {
+    const rows = ids.map(id => workItems.find(item => item.id === id));
+    const selected = scope ? ids.filter(id => scope.workItemIds.includes(id)) : [];
+    const failed = rows.some(row => row && !allowed.includes(row.status));
+    return {status: failed ? 'FAILED' : !scope ? 'PENDING' : !selected.length ? 'NOT_APPLICABLE' : rows.some(row => !row) ? 'PENDING' : 'SATISFIED',
+      subjectIds: selected, details: `Stored scoped work-item observations: ${ids.map((id, index) => `${id}=${rows[index]?.status ?? 'OUT_OF_SCOPE_OR_UNAVAILABLE'}`).join('; ')}. Local satisfactory labels: ${allowed.join('/')}. Omitted gate subjects have no accepted applicability waiver. Lifecycle labels and references alone do not establish execution or authenticated evidence.`};
+  }
+  const secrets = taskCheck(['DMK-157', 'DMK-158'], ['VERIFIED', 'APPROVED']);
+  gate(3, 'GATE-03-SECRETS', 'Secret Store Integration Complete (DMK-157 & DMK-158)',
+    {...secrets, details: `${secrets.details} This evaluator does not inspect credential storage, run rotation or perform a secret sweep.`},
+    workItems.filter(item => ['DMK-157', 'DMK-158'].includes(item.id)).flatMap(item => evidenceReferences(item.evidence)));
+  const security = taskCheck(['DMK-159'], ['VERIFIED']);
+  if (scope?.workItemIds.includes('DMK-159') && ciObservation) {
+    security.status = ciObservation.status === 'FAILED' ? 'FAILED' : ciObservation.status === 'OBSERVED_SUCCESS' ? 'SATISFIED' : 'PENDING';
+    security.details += ` Read-only GitHub CI observation: ${ciObservation.status}, run ${ciObservation.runId}. ${ciObservation.reason} This does not authenticate test assertions, requirement review or production security controls.`;
+  }
+  gate(4, 'GATE-04-SECURITY-REGRESSION', 'Security Regression Passing (DMK-159)',
+    {...security, details: `${security.details} This evaluator does not execute test suites or infer their counts from stored status.`},
+    workItems.filter(item => item.id === 'DMK-159').flatMap(item => evidenceReferences(item.evidence)));
+  const golden = taskCheck(['DMK-156'], ['VERIFIED']);
+  gate(5, 'GATE-05-GOLDEN-REFERENCE', 'Golden Reference Project Execution & Package Sealing',
+    {...golden, details: `${golden.details} Project IDs and entity counts do not prove a reference journey or package roundtrip. No such execution is performed here.`},
+    workItems.filter(item => item.id === 'DMK-156').flatMap(item => evidenceReferences(item.evidence)));
+  // The general ledger reader tolerates legacy short hashes. Release observations
+  // require complete SHA-256 records and a local genesis before checking bytes.
+  const malformedHashes = auditLogs.some(event => !event || !/^[a-f0-9]{64}$/.test(event.stateHash) || !/^[a-f0-9]{64}$/.test(event.previousHash || ''));
+  const unknownAnchor = auditLogs.length > 0 && auditLogs[auditLogs.length - 1].previousHash !== GENESIS_AUDIT_HASH;
+  const auditVerification = malformedHashes || unknownAnchor ? {valid: false, error: 'Missing/malformed SHA-256 hashes or unbound local ledger genesis.'}
+    : verifyAuditLedgerChain(auditLogs, 'REVERSE_CHRONOLOGICAL');
+  gate(6, 'GATE-06-AUDIT-INTEGRITY', 'Cryptographic Audit Ledger Integrity', {
+    status: !auditVerification.valid ? 'FAILED' : !auditLogs.length ? 'PENDING' : 'SATISFIED',
+    subjectIds: auditLogs.map(event => event.id),
+    details: !auditVerification.valid ? `Local stored audit-byte verification failed: ${auditVerification.error}`
+      : auditLogs.length ? `${auditLogs.length} local stored audit records have consistent SHA-256 links. This does not authenticate their origin, completeness, human actors or release/build/task binding.`
+      : 'No audit ledger records are available. An empty sequence does not establish release integrity.',
+  });
+  const localSignoffObservations = {auditEventIds: auditLogs.filter(event => ['RELEASE_GATE_APPROVED', 'RELEASE_SIGNOFF_RECORDED'].includes(event.action)).map(event => event.id),
+    approvalIds: approvals.filter(approval => approval.type === 'RELEASE_SIGNOFF' && approval.status === 'APPROVED').map(approval => approval.id), humanAuthorization: false as const};
+  gates.push({gateId: 7, code: 'GATE-07-RELEASE-SIGNOFF', name: 'Security Lead DoD Sign-off (DMK-165)', status: 'HUMAN_APPROVAL_REQUIRED', blocking: true,
+    localCheck: {status: 'PENDING', subjectIds: ['DMK-165'], details: 'Independent human release authorization is unavailable.'},
+    details: `${localSignoffObservations.auditEventIds.length} local signoff audit records and ${localSignoffObservations.approvalIds.length} approved local records observed. These records, including imported archive records, do not authenticate an independent human decision for this exact release. Gate 7 requires separately authenticated human sign-off; no ceremony is executed by this evaluation.`, evidenceLinks: []});
+  const capabilities: CapabilityAssessment[] = V01_CAPABILITIES.map(cap => {
+    const primaryId = CAPABILITY_PRIMARY_ITEM_MAP[cap.dmk] || cap.dmk;
+    const applicable = scope && (scope.workItemIds.includes(cap.dmk) || scope.workItemIds.includes(primaryId));
+    const row = applicable ? workItems.find(item => item.id === cap.dmk) || workItems.find(item => item.id === primaryId) : undefined;
+    return {capabilityId: cap.id, title: cap.title, referenceDmk: cap.dmk,
+      status: row && ['VERIFIED', 'VERIFICATION'].includes(row.status) ? 'IMPLEMENTED' : 'PENDING',
+      evidence: evidenceReferences(row?.evidence).join(', '), applicability: !scope ? 'UNAVAILABLE' : applicable ? 'IN_SCOPE' : 'OUT_OF_SCOPE',
+      sourceWorkItemId: row?.id || null,
+      rationale: row ? `Scoped local lifecycle ${row.id}=${row.status}; references are untrusted observations. No authenticated capability verification was acquired.`
+        : !scope ? evaluationScope.reason : 'Capability task and its catalog alias are outside the declared scope. It remains visible and is not silently waived.'};
+  });
+  return {version: 'OPERATIONAL_RELEASE_EVALUATION/1', projectId, projectName: project?.name || 'Unknown Project',
+    timestamp: new Date().toISOString(), targetMilestone: project?.targetRelease || 'UNAVAILABLE', projectStateVersion: project?.stateVersion ?? null,
+    evaluationScope, productionEvidence, ...(ciObservation ? {ciObservation} : {}), ...(ciObservationRejection ? {ciObservationRejection} : {}),
+    allGatesPassed: false, gates, capabilitiesSummary: {total: capabilities.length, verified: 0, percentage: 0}, capabilities,
+    auditChainIntegrity: {valid: auditVerification.valid, breaksCount: auditVerification.valid ? 0 : 1, eventsChecked: auditLogs.length,
+      available: auditLogs.length > 0, trust: 'LOCAL_STORED_BYTES_ONLY'},
+    releaseReady: false, signedOff: false, localSignoffObservations};
 }
 
-/**
- * Executes the formal v0.1 Release Sign-Off ceremony (DMK-165 / SEC-CTRL-020).
- */
-export function executeReleaseSignoff(
-  store: ProjectDataAccessor,
-  projectId: string,
-  actor: string,
-  notes?: string
-): { success: boolean; report: ReleaseAuditReport; auditEvent?: AuditEvent; error?: string } {
-  // 1. Initial Gate Evaluation
-  const initialReport = evaluateReleaseGates(store, projectId);
-  if (!initialReport.releaseReady) {
-    const failedGates = initialReport.gates.filter((g) => g.gateId<=6 && g.status !== 'PASSED');
-    return {
-      success: false,
-      report: initialReport,
-      error: `Cannot sign off release: ${failedGates.length} prerequisite gates are not satisfied (${failedGates.map((g) => g.code).join(', ')}).`,
-    };
-  }
-
-  // 2. Commit Cryptographic Audit Record
-  let auditEvent: AuditEvent | undefined;
-  if (store.addAuditEvent) {
-    auditEvent = store.addAuditEvent(
-      projectId,
-      actor,
-      'RELEASE_GATE_APPROVED',
-      'DMK-165',
-      notes || 'v0.1 Definition-of-Done Review ratified; all 25 core capabilities verified across 7 release gates.',
-      {
-        targetMilestone: 'v0.1 Local-First MVP',
-        capabilitiesVerified: 25,
-        totalCapabilities: 25,
-        gatesPassed: [
-          'GATE-01-BLOCKERS',
-          'GATE-02-REQUIREMENTS',
-          'GATE-03-SECRETS',
-          'GATE-04-SECURITY-REGRESSION',
-          'GATE-05-GOLDEN-REFERENCE',
-          'GATE-06-AUDIT-INTEGRITY',
-          'GATE-07-RELEASE-SIGNOFF',
-        ],
-        timestamp: new Date().toISOString(),
-      }
-    );
-  }
-
-  // 3. Update DMK-165 WorkItem
-  const workItems = store.workItems[projectId] || [];
-  const dmk165 = workItems.find((w) => w.id === 'DMK-165');
-  if (dmk165) {
-    dmk165.status = 'VERIFIED';
-    if (!dmk165.evidence) dmk165.evidence = [];
-    if (!dmk165.evidence.includes('EV-165')) {
-      dmk165.evidence.push('EV-165');
-    }
-    if (dmk165.checklist) {
-      dmk165.checklist.forEach((item) => {
-        item.done = true;
-      });
-    }
-    dmk165.updatedAt = new Date().toISOString();
-  }
-
-  // 4. Update Project Progress
-  const project = store.projects.find((p) => p.id === projectId);
-  if (project) {
-    if (!project.progress) {
-      project.progress = {
-        requirementsReadiness: 100,
-        architectureReadiness: 100,
-        implementation: 100,
-        verification: 100,
-        securityAssurance: 100,
-        releaseReadiness: 100,
-      };
-    } else {
-      project.progress.releaseReadiness = 100;
-    }
-    project.healthScore = 100;
-  }
-
-  // 5. Update or Create Approval Item
-  if (store.approvals[projectId]) {
-    const existingApproval = store.approvals[projectId].find(
-      (a) => a.type === 'RELEASE_SIGNOFF'
-    );
-    if (existingApproval) {
-      existingApproval.status = 'APPROVED';
-      existingApproval.approvalsCollected.push({
-        role: 'Project Lead / Security Lead',
-        approver: actor,
-        timestamp: new Date().toISOString(),
-        decision: 'APPROVED',
-        comment: notes || 'All 7 v0.1 release gates verified and ratified.',
-      });
-    } else {
-      store.approvals[projectId].push({
-        id: `APV-REL-${Date.now().toString(36).toUpperCase()}`,
-        projectId,
-        title: 'v0.1 Local-First MVP Definition-of-Done & Release Gate Sign-off',
-        type: 'RELEASE_SIGNOFF',
-        requestedBy: actor,
-        requestedAt: new Date().toISOString(),
-        status: 'APPROVED',
-        urgency: 'CRITICAL',
-        targetEntityId: 'DMK-165',
-        targetEntityType: 'GATE',
-        description: 'Formal release ratification of docmonstakrakin v0.1 against the 25 core capabilities and 7 release gates.',
-        impactAnalysis: 'Certifies codebase for official v0.1 release tagging and local developer distribution.',
-        riskLevel: 'HIGH',
-        requiredRoles: ['Project Lead', 'Security Lead'],
-        approvalsCollected: [
-          {
-            role: 'Project Lead / Security Lead',
-            approver: actor,
-            timestamp: new Date().toISOString(),
-            decision: 'APPROVED',
-            comment: notes || 'Verified all 25 MVP capabilities and 7 release gates.',
-          },
-        ],
-        policyGates: initialReport.gates.map((g) => ({
-          gateName: g.name,
-          passed: g.status === 'PASSED',
-          details: g.details,
-        })),
-      });
-    }
-  }
-
-  // 6. Return Final Evaluated Report
-  const finalReport = evaluateReleaseGates(store, projectId);
-  return {
-    success: true,
-    report: finalReport,
-    auditEvent,
-  };
+/** The legacy ceremony cannot grant operational human authority. Never write
+ * evidence IDs, lifecycle labels, approvals, planning scores or audit events. */
+export function executeReleaseSignoff(store: ProjectDataAccessor, projectId: string, _actor: string, _notes?: string):
+  {success: boolean; report: ReleaseAuditReport; auditEvent?: AuditEvent; error?: string} {
+  const report = evaluateReleaseGates(store, projectId);
+  const unsatisfied = report.gates.filter(gate => gate.gateId <= 6 && gate.status !== 'PASSED');
+  return {success: false, report, error: `Cannot sign off release: ${unsatisfied.length} prerequisite gates are not satisfied (${unsatisfied.map(gate => gate.code).join(', ')}). Authenticated production evidence and independent human release authorization are unavailable.`};
 }

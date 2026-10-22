@@ -96,17 +96,17 @@ async function runReleaseGateTests() {
   const report = evaluateReleaseGates(store, 'PRJ-ATLAS-01');
 
   assert(report.gates.length === 7, 'Evaluates all 7 release gates');
-  assert(report.gates[0].status === 'PASSED', 'Gate 1 (Zero Unresolved Blockers) PASSED');
-  assert(report.gates[1].status === 'PASSED', 'Gate 2 (100% Core Requirements Verification) PASSED');
+  assert(report.gates[0].status === 'PENDING', 'Gate 1 (Zero Unresolved Blockers) does not pass from stored status alone');
+  assert(report.gates[1].status === 'PENDING', 'Gate 2 (100% Core Requirements Verification) does not pass from stored status alone');
   assert(report.gates[2].status === 'PENDING', 'Gate 3 requires authenticated production evidence beyond stored labels');
-  assert(report.gates[3].status === 'PASSED', 'Gate 4 (Security Regression Suite) PASSED');
-  assert(report.gates[4].status === 'PASSED', 'Gate 5 (Golden Reference Execution & Package) PASSED');
-  assert(report.gates[5].status === 'PASSED', 'Gate 6 (Cryptographic Audit Ledger Integrity) PASSED');
+  assert(report.gates[3].status === 'PENDING', 'Gate 4 (Security Regression Suite) does not pass from stored status alone');
+  assert(report.gates[4].status === 'PENDING', 'Gate 5 (Golden Reference Execution & Package) does not pass from stored status alone');
+  assert(report.gates[5].status === 'PENDING', 'Gate 6 (Cryptographic Audit Ledger Integrity) does not pass from stored status alone');
   assert(report.gates[6].status === 'HUMAN_APPROVAL_REQUIRED' || report.gates[6].status === 'PENDING' || report.gates[6].status === 'PASSED', 'Gate 7 (Sign-off) in valid state');
   assert(report.releaseReady === false, 'Stored fixture statuses do not establish production release readiness');
   assert(
-    report.capabilitiesSummary.percentage >= 96,
-    `Capabilities readiness meets MVP threshold (current: ${report.capabilitiesSummary.percentage}%)`
+    report.capabilitiesSummary.percentage === 0,
+    `Stored capability labels do not establish authenticated verification (current: ${report.capabilitiesSummary.percentage}%)`
   );
 
   // Test 3: Negative Detection - Unresolved Blocking Question
