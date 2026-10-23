@@ -4062,6 +4062,9 @@ await test('Scenario 48 (RED-02): Project creation response must not certify com
     harness.holdProjectCResponse(projectCHoldPromise);
 
     const packageBtn = page.locator('#topbar-package-btn');
+    // List metadata can render before the initial canonical snapshot is ready.
+    // Keep the existing eight-second bound and await this scenario's prerequisite.
+    await packageBtn.waitFor({state: 'visible'});
     assert.ok(await packageBtn.isVisible());
 
     // Create Project C through ProjectWizard

@@ -1,0 +1,88 @@
+{
+  "archive": "final-focused-exact-dacl-20261023.zip",
+  "sha256": "c73a49cea195d4d5702abbfb6ede24b79b5f013da2fe0875203de2744556078a",
+  "representation": "Original raw local evidence bytes",
+  "sourceCandidates": {
+    "factoryStoreBackupAppQuality": "298d7fcb1a0130181f57e09ff27525704b0cd965",
+    "tlsFixture": "7cc1fb9617b0bf62a40fc37afa130675d40ef0fd",
+    "versionSync": "Reviewed three-line initial prerequisite wait under existing8s bound; all50cases pass"
+  },
+  "results": "factory5/store18/backup17/App14, WBS/TypeScript/build passed; TLS17 zero failures/skips in71389ms within unchanged120000ms budget; helper6; original17TLSassertions invariant; controlled version-sync50/50. tls17.log is an INTERRUPTED unbatched attempt, NOT full success. Single local timings are not production capacity; actual hosted qualification remains required.",
+  "files": [
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/quality-result.json",
+      "bytes": 72,
+      "sha256": "9d788c8ac1b18207e8d070cc52f37dbd57de2b89d9ab29f7e90880db14c95a3c"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/quality.log",
+      "bytes": 2472,
+      "sha256": "3c8a50cc4330f9ee6dc34c21a4302944629104355007e366f3d0063e3c6d5804"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/results.json",
+      "bytes": 388,
+      "sha256": "2d17178944a1d9f8fce859b208b5b54f356b8c9a8eecd96ba28a356d17d7755a"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/testWorkspaceApplication.log",
+      "bytes": 1278,
+      "sha256": "f1a14d72f40f7a6566d70de6d6151d517e14e3cec1f32d269928fd7fafaec8d3"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/testWorkspaceBackup.log",
+      "bytes": 1404,
+      "sha256": "daddfc6b8e8aefd99065eb89f6d3e1c53d659adafde1cf00793a3cd0f7206c7e"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/testWorkspacePrivateDirectory.log",
+      "bytes": 535,
+      "sha256": "45503eeb5c0f8f4ed5b4ddeb8f9a7c620a98ec52c69ad69ad9ace884559d4c1c"
+    },
+    {
+      "file": "factory-store-backup-app-quality-298d7fc/testWorkspaceStore.log",
+      "bytes": 1687,
+      "sha256": "1fb5783204829dd2428d6b516451a296bb0375e054fb6e99602b616c1dc3fb58"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/assertion-invariance.log",
+      "bytes": 77,
+      "sha256": "47491119d43c9ea24ebeb0e1030b29c4b3cf79fc832831333780a23cb14bec34"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/assertion-invariance.ts",
+      "bytes": 1324,
+      "sha256": "6f89e1b2c2e1670cfdb94472f700cd308052827eaf682303dcc44a5d95b834bf"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/helper-check-six.log",
+      "bytes": 336,
+      "sha256": "42eb33096d89da2b80199cde0910345318362bb64ffc71d3988ab67e026ca447"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/helper-check.ts",
+      "bytes": 4934,
+      "sha256": "4b333a211bc9ac5a8e238fbfd45293619bfe0145477cadc843408dcdb45bc498"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/tls17-batched-timing.json",
+      "bytes": 139,
+      "sha256": "09fdf6d20fbe27399dd2498aded25ee9034e1066d4443605264a3ea2bba9e6f3"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/tls17-batched.log",
+      "bytes": 1579,
+      "sha256": "4e3d4bd91b3d87ace0f0cffd2bace4b9115ef0e860cbb247c8b23bb15c9b851d"
+    },
+    {
+      "file": "tls-fixture-7cc1fb9/tls17.log",
+      "bytes": 1237,
+      "sha256": "05cb0cf7b271b9d271d528070484ab673b574e14c1a250badce0f8d0fdb73b20"
+    },
+    {
+      "file": "version-sync-scenario48-wait-50-green.log",
+      "bytes": 6133,
+      "sha256": "ac56959d85a223f12e79b81d794b9b819ee514e816c86527702ccb53ac65aa2e"
+    }
+  ]
+}

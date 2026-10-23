@@ -245,7 +245,7 @@ const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(p
       & node --import tsx --input-type=commonjs -e $nodeProbe
       if ($LASTEXITCODE -ne 0) {throw 'NODE_DESCENDANT_OWNER_PROFILE_FAILED'}
       Remove-Item Env:DMK_OWNER_PROBE
-      foreach ($script in @('scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')) {
+      foreach ($script in @('scripts/testWorkspacePrivateDirectory.ts', 'scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')) {
         & node --import tsx $script
         if ($LASTEXITCODE -ne 0) {throw "PRIVATE_QUALIFICATION_FAILED: $script"}
       }
