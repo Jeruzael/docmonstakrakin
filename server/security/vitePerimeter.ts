@@ -12,7 +12,14 @@ export const WORKSPACE_VITE_FS_DENY=['.env','.env.*','*.{crt,pem}','**/.git/**',
 const privatePath=(value:string)=>value.replaceAll('\\','/').split('/').some(segment=>privateNames.has(segment.replace(/[. ]+$/,'').toLowerCase()));
 // Resolved Vite aliases include filesystem URL IDs, not just native paths.
 // In particular /@vite/client resolves to /@fs/<installed client.mjs>.
-const fileCandidate=(value:string)=>value.startsWith('/@fs/')?value.slice(5):value;
+const fileCandidate=(value:string)=>{
+  if(!value.startsWith('/@fs/'))return value;
+  // Match Vite's fsPathFromId representation before applying its unchanged
+  // admission policy: /@fs/tmp/a is /tmp/a, while /@fs/C:/a is C:/a.
+  const fsId=value.slice(5);
+  const candidate=path.posix.normalize(process.platform==='win32'?fsId.replaceAll('\\','/'):fsId);
+  return candidate.startsWith('/')||/^[A-Z]:/i.test(candidate)?candidate:'/'+candidate;
+};
 
 /** Covers publicDir (which bypasses fs.deny), aliases and directory links too. */
 function privateFileBoundary(config:ResolvedConfig,roots:string[],aliases=config.resolve.alias){
