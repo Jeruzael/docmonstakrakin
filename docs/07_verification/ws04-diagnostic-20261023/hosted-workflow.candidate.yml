@@ -1,0 +1,55 @@
+# DRAFT ONLY. Review before copying to .github/workflows/ and publishing.
+# Manual synthetic diagnosis; never a release/qualification gate or repair.
+name: Manual WS04 acquisition diagnosis
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CI: 'true'
+      GEMINI_API_KEY: ''
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: 'false'
+      # Evidence location only. Preserve the runner's actual default fixture TEMP.
+      DMK_WS04_EVIDENCE_PARENT: ${{ runner.temp }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Record bounded profile and install exact locked dependencies
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
+          git rev-parse HEAD
+          node --version
+          $config = Join-Path $env:RUNNER_TEMP 'ws04-empty.npmrc'
+          Set-Content -LiteralPath $config -Value ''
+          $env:NPM_CONFIG_USERCONFIG = $config
+          $env:NPM_CONFIG_CACHE = Join-Path $env:RUNNER_TEMP 'ws04-npm-cache'
+          $env:NPM_CONFIG_DEVDIR = Join-Path $env:RUNNER_TEMP 'ws04-node-headers'
+          npm.cmd ci --foreground-scripts
+          if ($LASTEXITCODE -ne 0) { throw 'WS04_DIAGNOSTIC_FRESH_INSTALL_FAILED' }
+          npm.cmd ls better-sqlite3 argon2 --all
+          if ($LASTEXITCODE -ne 0) { throw 'WS04_DIAGNOSTIC_NATIVE_PROVENANCE_FAILED' }
+      - name: Two fixed synthetic attempts in the original distinct child profile
+        run: ./scripts/diagnostics/runHostedWs04.ps1
+      - name: Preserve only sanitized bounded evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws04-acquisition-diagnostic-${{ github.sha }}
+          path: ${{ runner.temp }}/dmk-ws04-evidence-*/
+          if-no-files-found: error
+          retention-days: 7
