@@ -20,12 +20,12 @@ function Get-OwnerObservation([string]$Path) {
   }
 }
 
-# This launcher changes only a NEW duplicated primary token. It never calls
+# This launcher changes only a NEW suspended child's distinct primary token. It never calls
 # SetTokenInformation on the runner/PowerShell's existing token. No privileges
 # are enabled, no users/groups are created and no system policy is changed.
-# https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-duplicatetokenex
 # https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-settokeninformation
-# https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithtokenw
+# https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
+# https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-token_statistics
 $nativeDefinition = @'
 using System;
 using System.Collections;
@@ -45,33 +45,36 @@ public static class DmkPrivateQualificationProcess {
   [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool CloseHandle(IntPtr handle);
   [DllImport("advapi32.dll",SetLastError=true)] static extern bool OpenProcessToken(IntPtr process,uint access,out IntPtr token);
-  [DllImport("advapi32.dll",SetLastError=true)] static extern bool DuplicateTokenEx(IntPtr token,uint access,IntPtr attributes,int impersonation,int type,out IntPtr duplicate);
+  [DllImport("advapi32.dll",SetLastError=true)] static extern bool GetTokenInformation(IntPtr token,int informationClass,IntPtr information,int length,out int required);
   [DllImport("advapi32.dll",SetLastError=true)] static extern bool SetTokenInformation(IntPtr token,int informationClass,IntPtr information,int length);
-  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool CreateProcessWithTokenW(IntPtr token,uint logon,string application,StringBuilder command,uint flags,IntPtr environment,string directory,ref STARTUPINFO startup,out PROCESS_INFORMATION process);
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true,ExactSpelling=true)] static extern bool CreateProcessW(string application,StringBuilder command,IntPtr processAttributes,IntPtr threadAttributes,bool inheritHandles,uint flags,IntPtr environment,string directory,ref STARTUPINFO startup,out PROCESS_INFORMATION process);
   [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateFileW(string file,uint access,uint share,ref SECURITY_ATTRIBUTES attributes,uint disposition,uint flags,IntPtr template);
   [DllImport("kernel32.dll",SetLastError=true)] static extern uint WaitForSingleObject(IntPtr handle,uint milliseconds);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetExitCodeProcess(IntPtr process,out uint exitCode);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateProcess(IntPtr process,uint exitCode);
-  static void Require(bool success,string operation) {if(!success)throw new Win32Exception(Marshal.GetLastWin32Error(),operation);}
+  [DllImport("kernel32.dll",SetLastError=true)] static extern uint ResumeThread(IntPtr thread);
+  static void Require(bool success,string operation) {if(!success){var code=Marshal.GetLastWin32Error();throw new Win32Exception(code,operation+" [Win32="+code+"] "+new Win32Exception(code).Message);}}
   static string Owner() {using(var identity=WindowsIdentity.GetCurrent())return identity.Owner.Value;}
+  static long TokenId(IntPtr token) {
+    int required;var sized=GetTokenInformation(token,10,IntPtr.Zero,0,out required);var code=Marshal.GetLastWin32Error();
+    if(sized||code!=122)throw new Win32Exception(code,"GetTokenInformation(TokenStatistics size) [Win32="+code+"] "+new Win32Exception(code).Message);
+    if(required<8||required>4096)throw new InvalidOperationException("TOKEN_STATISTICS_SIZE_INVALID");
+    var data=Marshal.AllocHGlobal(required);
+    try {Require(GetTokenInformation(token,10,data,required,out required),"GetTokenInformation(TokenStatistics)");return Marshal.ReadInt64(data);}
+    finally {Marshal.FreeHGlobal(data);}
+  }
   static string EnvironmentBlock() {
     var variables=Environment.GetEnvironmentVariables();var names=new string[variables.Count];variables.Keys.CopyTo(names,0);Array.Sort(names,StringComparer.OrdinalIgnoreCase);
     var block=new StringBuilder();foreach(var name in names)block.Append(name).Append('=').Append(variables[name]).Append('\0');return block.Append('\0').ToString();
   }
   public static int Run(string executable,string arguments,string directory,string logDirectory,string expectedUser) {
-    IntPtr source=IntPtr.Zero,duplicate=IntPtr.Zero,sid=IntPtr.Zero,owner=IntPtr.Zero,environment=IntPtr.Zero,output=IntPtr.Zero,error=IntPtr.Zero,input=IntPtr.Zero;
+    IntPtr source=IntPtr.Zero,childToken=IntPtr.Zero,sid=IntPtr.Zero,owner=IntPtr.Zero,environment=IntPtr.Zero,output=IntPtr.Zero,error=IntPtr.Zero,input=IntPtr.Zero;
     var process=new PROCESS_INFORMATION();var originalOwner=Owner();bool completed=false;
     try {
-      // Query/duplicate the existing token. ADJUST_DEFAULT is requested only on
-      // the new token; no privilege/group/session/DACL adjustment API is used.
-      Require(OpenProcessToken(GetCurrentProcess(),0x0008|0x0002,out source),"OpenProcessToken");
-      Require(DuplicateTokenEx(source,0x0008|0x0002|0x0001|0x0080,IntPtr.Zero,2,1,out duplicate),"DuplicateTokenEx");
-      using(var identity=new WindowsIdentity(duplicate))if(identity.User.Value!=expectedUser)throw new InvalidOperationException("DUPLICATE_TOKEN_USER_CHANGED");
-      var identifier=new SecurityIdentifier(expectedUser);var bytes=new byte[identifier.BinaryLength];identifier.GetBinaryForm(bytes,0);
-      sid=Marshal.AllocHGlobal(bytes.Length);Marshal.Copy(bytes,0,sid,bytes.Length);owner=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(owner,sid);
-      Require(SetTokenInformation(duplicate,4,owner,IntPtr.Size),"SetTokenInformation(TokenOwner)");
-      using(var identity=new WindowsIdentity(duplicate))if(identity.Owner.Value!=expectedUser)throw new InvalidOperationException("DUPLICATE_TOKEN_OWNER_UNCONFIRMED");
-      if(Owner()!=originalOwner)throw new InvalidOperationException("PARENT_TOKEN_OWNER_CHANGED");
+      // The existing token is QUERY-only. No adjustment or duplication rights
+      // are requested on the runner/parent token.
+      Require(OpenProcessToken(GetCurrentProcess(),0x0008,out source),"OpenProcessToken(parent query)");
+      var parentId=TokenId(source);
       var attributes=new SECURITY_ATTRIBUTES {length=Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),inherit=true};
       output=CreateFileW(Path.Combine(logDirectory,"stdout.log"),0x40000000,1,ref attributes,1,0x80,IntPtr.Zero);
       Require(output!=new IntPtr(-1),"Create stdout");
@@ -83,13 +86,28 @@ public static class DmkPrivateQualificationProcess {
       // Explicit application path, hidden child, exact inherited environment;
       // CURRENT TEMP is preserved. No profile or credentials are provisioned.
       var command=new StringBuilder("\""+executable+"\" "+arguments);
-      Require(CreateProcessWithTokenW(duplicate,0,executable,command,0x08000000|0x400,environment,directory,ref startup,out process),"CreateProcessWithTokenW");
+      // Normal process creation needs no alternate-logon/impersonation grant.
+      // The primary thread cannot execute any script until every fence below.
+      Require(CreateProcessW(executable,command,IntPtr.Zero,IntPtr.Zero,true,0x00000004|0x08000000|0x400,environment,directory,ref startup,out process),"CreateProcessW(CREATE_SUSPENDED)");
+      Require(OpenProcessToken(process.process,0x0008|0x0080,out childToken),"OpenProcessToken(suspended child)");
+      var childId=TokenId(childToken);
+      if(childId==parentId)throw new InvalidOperationException("CHILD_TOKEN_NOT_INDEPENDENT");
+      using(var identity=new WindowsIdentity(childToken))if(identity.User.Value!=expectedUser)throw new InvalidOperationException("CHILD_TOKEN_USER_CHANGED");
+      var identifier=new SecurityIdentifier(expectedUser);var bytes=new byte[identifier.BinaryLength];identifier.GetBinaryForm(bytes,0);
+      sid=Marshal.AllocHGlobal(bytes.Length);Marshal.Copy(bytes,0,sid,bytes.Length);owner=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(owner,sid);
+      Require(SetTokenInformation(childToken,4,owner,IntPtr.Size),"SetTokenInformation(child TokenOwner)");
+      using(var identity=new WindowsIdentity(childToken))if(identity.User.Value!=expectedUser||identity.Owner.Value!=expectedUser)throw new InvalidOperationException("CHILD_TOKEN_OWNER_UNCONFIRMED");
+      if(TokenId(source)!=parentId||TokenId(childToken)!=childId||Owner()!=originalOwner)throw new InvalidOperationException("TOKEN_IDENTITY_OR_PARENT_OWNER_CHANGED");
+      Console.WriteLine("WINDOWS_PRIVATE_DISTINCT_CHILD_TOKEN {\"parentTokenId\":\""+parentId.ToString("X16")+"\",\"childTokenId\":\""+childId.ToString("X16")+"\",\"parentOwnerUnchanged\":true}");
+      var suspension=ResumeThread(process.thread);
+      Require(suspension!=0xffffffff,"ResumeThread");
+      if(suspension!=1)throw new InvalidOperationException("CHILD_SUSPEND_COUNT_INVALID");
       var wait=WaitForSingleObject(process.process,25*60*1000);
       if(wait!=0) {TerminateProcess(process.process,124);WaitForSingleObject(process.process,10000);throw new InvalidOperationException("QUALIFICATION_CHILD_TIMEOUT_OR_WAIT_FAILURE");}
       uint exitCode;Require(GetExitCodeProcess(process.process,out exitCode),"GetExitCodeProcess");completed=true;return checked((int)exitCode);
     } finally {
       if(!completed&&process.process!=IntPtr.Zero){TerminateProcess(process.process,125);WaitForSingleObject(process.process,10000);}
-      foreach(var handle in new[]{process.thread,process.process,input,output,error,duplicate,source})if(handle!=IntPtr.Zero&&handle!=new IntPtr(-1))CloseHandle(handle);
+      foreach(var handle in new[]{process.thread,process.process,input,output,error,childToken,source})if(handle!=IntPtr.Zero&&handle!=new IntPtr(-1))CloseHandle(handle);
       foreach(var pointer in new[]{environment,owner,sid})if(pointer!=IntPtr.Zero)Marshal.FreeHGlobal(pointer);
       if(Owner()!=originalOwner)throw new InvalidOperationException("PARENT_TOKEN_OWNER_CHANGED");
     }
@@ -119,8 +137,17 @@ try {
     $observation.directoryBefore = Get-OwnerObservation $probe
     $observation.fileBefore = Get-OwnerObservation $file
     # Match genuine new-root DACL hardening while recording its owner unchanged.
-    & icacls.exe $probe '/inheritance:r' '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
-    if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_DACL_FAILED'}
+    # Hosted diagnostic proved combined flags preserve foreign explicit ACEs.
+    # Keep that original case in Diagnostics; actual profiles use proven split calls.
+    if ($Phase -eq 'Diagnostics') {
+      & icacls.exe $probe '/inheritance:r' '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
+      if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_DACL_FAILED'}
+    } else {
+      & icacls.exe $probe '/inheritance:r' | Out-Null
+      if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_INHERITANCE_FAILED'}
+      & icacls.exe $probe '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
+      if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_GRANT_FAILED'}
+    }
     $observation.directoryAfter = Get-OwnerObservation $probe
     $observation.fileAfter = Get-OwnerObservation $file
     Write-Output ('WINDOWS_PRIVATE_OWNER_DIAGNOSTIC ' + ($observation | ConvertTo-Json -Depth 8 -Compress))
