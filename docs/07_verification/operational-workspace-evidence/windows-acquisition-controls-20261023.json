@@ -1,0 +1,177 @@
+{
+  "archive": "windows-acquisition-controls-20261023.zip",
+  "sha256": "47b0d8b0344a710f25427dceded0774d28bf2cdba4c0ec7e746eaa0de38c9122",
+  "scope": "Synthetic read-only acquisition experiments; diagnostic jobs intentionally stop NONZERO, not native qualification, application authority or production capacity",
+  "github": {
+    "39904182181": "21fbc8d: profile-control/restored/control all timed out4017.7147/4017.2454/4020.0394ms; profile-folder correction disproved. Other3jobs successful, Linux139/1392764/2764.",
+    "39905970676": "335a172: trivial startup150.3799/149.5789ms succeeds; all7 original strict variants time out4015.8–4025.6ms despite stdin/environment/loader controls. Windows intentional diagnostic stop; no native qualification.",
+    "39907214307": "c4a9ac9: stage reaches FullLanguage/BEFORE_GETACL only, timeout4017.3947ms; directPSstdin-ignore also timeout. Exact two read/constructor substitutions accept directory168.6274ms/file168.2955ms with same strict predicates and4s deadline; no policy change. Other3jobs successful, Linux139/1392764/2764; Windows intentional diagnostic stop."
+  },
+  "local": "All9/13 local observation scenarios accept, so they do not reproduce hosted cause. Inert5s-delay contract proves timeout/probe mechanics only. Local directory/file descriptor comparisons are equal and write no ACLs.",
+  "privacy": "Local full Owner/Group/Access SDDL values are deliberately excluded. A clearly labeled minimized derivative retains per-getter hashes, lengths, equality, protected flags and the original retained raw-file SHA; reproducible source is included. No raw evidence is silently replaced.",
+  "representations": {
+    "github-decoded-lf": "GitHub connector UTF-8 decoded logs normalized to LF; per-entry BOM/terminal-LF recorded, not original HTTP bytes",
+    "*-source-*": "Exact immutable git blob bytes with source revision and digest records",
+    "local": "Original captured local diagnostic logs and explicitly named minimized SDDL derivative"
+  },
+  "files": [
+    {
+      "file": "async-local-proof/final-local-matrix.log",
+      "bytes": 9363,
+      "sha256": "b5d5450930bf7dc097d6273be6e080e94b780409b30d81dc8d934dfa35364007"
+    },
+    {
+      "file": "async-local-proof/sddl-read-equivalence-minimized.json",
+      "bytes": 973,
+      "sha256": "a5ddc013220cbd072703c9886811e273189069965d388a8353e7451414a8eac6"
+    },
+    {
+      "file": "async-local-proof/sddl-read-equivalence.cjs",
+      "bytes": 2162,
+      "sha256": "d4c2d69b35680a51d2f48b22d935a0a26fab9c34209204e6e147b3543b3ead81"
+    },
+    {
+      "file": "async-local-proof/staged-local-matrix.log",
+      "bytes": 17324,
+      "sha256": "6fe39ae95f7b42ad5881040e43ce6ad6cf1c9b365ef5b0dfecc4e66f35479a3b"
+    },
+    {
+      "file": "async-source-335a172/scripts/fixtures/windowsAcquisitionProbe.cjs",
+      "bytes": 6419,
+      "sha256": "cab0fea02ac7665f16bcd93b1aa8fec41d37ec276d0f67efaa3cf544e491113e"
+    },
+    {
+      "file": "async-source-335a172/scripts/runWindowsPrivateQualification.ps1",
+      "bytes": 25665,
+      "sha256": "cb9207c90273850ce53d92f8496874377580d340dacd4fdd01790723069df8f5"
+    },
+    {
+      "file": "async-source-335a172/source.json",
+      "bytes": 540,
+      "sha256": "08a47e4b22e891bf02078f3e010b474d61211a23ae701f1a3d5223be3f79e0f2"
+    },
+    {
+      "file": "github-decoded-lf/complete-21fbc8d.log",
+      "bytes": 68776,
+      "sha256": "ca271dd23bd00dd6eca2c959307e8a1823231dee7e4252a19b2759f2faa153b8",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/complete-c4a9ac9.log",
+      "bytes": 68871,
+      "sha256": "4e6544cb58c27146b9fc5d16f3a5ee58da803f7fb75e9b3a7c61373e5af68412",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/controlled-21fbc8d.log",
+      "bytes": 64123,
+      "sha256": "6379a4550ff4567f5adcf8a270da5611d984bd04b3bf79366e285cbee7aa5d30",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/controlled-c4a9ac9.log",
+      "bytes": 64283,
+      "sha256": "26f7cbdd4df144800762f77866b72c2836d8db30ec51a0ceb4c313b91c6f18ae",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/quality-21fbc8d.log",
+      "bytes": 66200,
+      "sha256": "1572e16bd39c376a99423eb37de22783ae372e36adcffddd173a1e56bce7c15f",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/quality-c4a9ac9.log",
+      "bytes": 66205,
+      "sha256": "88c9d519bdfa9764d20744ca0803303a4fca626f137a912d52714a1da5925606",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/windows-21fbc8d.log",
+      "bytes": 95816,
+      "sha256": "689528f5ebb9b88e880274f3bd2325d92114a2f1b0f083085ec55cf9bf69c298",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/windows-335a172.log",
+      "bytes": 95440,
+      "sha256": "ff497bc0b06398dbe9882847c14abc73f4c33f4e09e6fe940a7f51b677e40524",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "github-decoded-lf/windows-c4a9ac9.log",
+      "bytes": 105137,
+      "sha256": "52512bbe5cdf5e03b1a0881d1210b570f39daa11c275f1fd7e3f0597ccfd6ec7",
+      "utf8Bom": true,
+      "terminalLFBytes": 2
+    },
+    {
+      "file": "paired-local-proof/genuine-foreign-ace-contract.log",
+      "bytes": 146,
+      "sha256": "085b1a162e0a867fde54b7d4116046f1a9e2e8e5377541f6648b3fb0b24a45dd"
+    },
+    {
+      "file": "paired-local-proof/hashes.json",
+      "bytes": 1546,
+      "sha256": "176270f0c24390433895710ae1fcba4ba75593343439195a0d718a22ce5cadb6"
+    },
+    {
+      "file": "paired-local-proof/inert-timeout-profile-contract.log",
+      "bytes": 126,
+      "sha256": "93d729a595d647f7ba14a8a81edb126b0855c43f0289021f03ef7a2d080b1f4b"
+    },
+    {
+      "file": "paired-local-proof/metadata.json",
+      "bytes": 678,
+      "sha256": "441d97a2798d7d09b38b43cf3d1d5d06fc9f97356faf8a30f7070b6f67dd80a8"
+    },
+    {
+      "file": "paired-local-proof/testFailureDiagnosticChild.mjs",
+      "bytes": 3034,
+      "sha256": "71a6b601e3aba8e45f33510a134dd4fd839f09b028ccda6315070eb6efe85d84"
+    },
+    {
+      "file": "paired-local-proof/testProfileControlDiagnostic.mjs",
+      "bytes": 3846,
+      "sha256": "c146129e67a3aa8d8aaf0a9a9a8e2e11018c668c41542f37fbc047bdd4719c40"
+    },
+    {
+      "file": "paired-source-21fbc8d/scripts/fixtures/workspaceAdmissionDiagnostics.ts",
+      "bytes": 6363,
+      "sha256": "2fdd0930d92345dcfe9c9195528ac0cf1fe423cbf7edce43756160b4e60b19b9"
+    },
+    {
+      "file": "paired-source-21fbc8d/scripts/testWorkspaceApplication.ts",
+      "bytes": 20068,
+      "sha256": "9f00d88fd9ee7c206fc9fba56d506ec4805ba6166ae8bbfb2acf1c39c2ebeccb"
+    },
+    {
+      "file": "paired-source-21fbc8d/source.json",
+      "bytes": 477,
+      "sha256": "fb1a7574518c3df0d5c00e2c901672b7e99d49c4203a4c8495165c43ff489922"
+    },
+    {
+      "file": "staged-source-c4a9ac9/scripts/fixtures/windowsAcquisitionProbe.cjs",
+      "bytes": 10802,
+      "sha256": "ee27fd11959d21ebf494b7128a0b93e895b39f08222f4d80acd7c1d5635df779"
+    },
+    {
+      "file": "staged-source-c4a9ac9/scripts/runWindowsPrivateQualification.ps1",
+      "bytes": 25665,
+      "sha256": "cb9207c90273850ce53d92f8496874377580d340dacd4fdd01790723069df8f5"
+    },
+    {
+      "file": "staged-source-c4a9ac9/source.json",
+      "bytes": 528,
+      "sha256": "eb7d4322c2b83ed14a59547cf693caa66a32a4001cd8570b5e499ba08277c2d8"
+    }
+  ]
+}

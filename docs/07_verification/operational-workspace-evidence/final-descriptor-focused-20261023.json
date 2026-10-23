@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "47ab8716a3cfd47494672bae3cfe544aab73f713",
+  "representation": "Original local focused logs and results bytes; synthetic fixtures only",
+  "archive": {
+    "file": "final-descriptor-focused-20261023.zip",
+    "bytes": 4908,
+    "sha256": "86dd8acb3e937cb4bd3c27a222e4ffa918d2036e25d178f2436ea199d60f8259"
+  },
+  "files": [
+    {
+      "file": "quality.log",
+      "bytes": 2472,
+      "sha256": "f4d3192f5bd028ebe2cf02b2232b9fe27c1e5be7232d8d8844e1e95d3e9504e1"
+    },
+    {
+      "file": "results.json",
+      "bytes": 916,
+      "sha256": "9fe653325d1cc4b84aecac5c2c678f9f971eeec8858c13cf7cd6c3ff97311e0c"
+    },
+    {
+      "file": "testWorkspaceApplication.log",
+      "bytes": 1278,
+      "sha256": "f1a14d72f40f7a6566d70de6d6151d517e14e3cec1f32d269928fd7fafaec8d3"
+    },
+    {
+      "file": "testWorkspaceBackup.log",
+      "bytes": 1404,
+      "sha256": "daddfc6b8e8aefd99065eb89f6d3e1c53d659adafde1cf00793a3cd0f7206c7e"
+    },
+    {
+      "file": "testWorkspacePrivateDirectory.log",
+      "bytes": 1241,
+      "sha256": "b9209bfec59b2c2ab23c59102263c8635a8d5c671d1e1276e9240ecfb9f54f85"
+    },
+    {
+      "file": "testWorkspaceStore.log",
+      "bytes": 1687,
+      "sha256": "1fb5783204829dd2428d6b516451a296bb0375e054fb6e99602b616c1dc3fb58"
+    }
+  ]
+}
