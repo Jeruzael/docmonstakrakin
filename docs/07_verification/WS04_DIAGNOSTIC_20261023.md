@@ -120,10 +120,24 @@ All three JavaScript syntax checks exited 0. PowerShell AST parsing found 0 erro
 
 ## Review-only hosted capture proposal and remaining uncertainty
 
-[hosted-workflow.candidate.yml](ws04-diagnostic-20261023/hosted-workflow.candidate.yml) remains under documentation, outside `.github/workflows`. It is a proposal for a **separate manual synthetic diagnostic**, not one of the four required CI jobs and not an edit to PR82.
+[hosted-workflow-proposal.yml](ws04-diagnostic-20261023/hosted-workflow-proposal.yml) remains under documentation, outside `.github/workflows`. It is a proposal for a **separate manual synthetic diagnostic**, not one of the four required CI jobs and not an edit to PR82.
 
 It selects Windows 2022 / Node 22.23.3, performs the locked fresh npm install on that disposable hosted runner without SDK installation, and invokes [runHostedWs04.ps1](../../scripts/diagnostics/runHostedWs04.ps1). That launcher parses the original qualification helper's exact reviewed C# literal and reuses its suspended-child/distinct-primary-token mechanism, while keeping the runner token unchanged. The child verifies owner equals user and runs one inherited and one PD06-sparse source prefix **WS01–WS04 in original order**, stopping before WS05. A failure is retained and stops execution; there is no retry-to-green. Evidence upload runs even on failure. Only the evidence location uses `runner.temp`; the fixture's default TEMP is preserved.
 
 This launcher/workflow has only been reviewed and syntax-checked locally, **not executed on hosted CI**. Current image/tooling and observer overhead may still differ from the failed run. An exit-3 capture can identify the original compound descriptor-admission stage, but the observer does not split its individual predicates; a subsequent bounded read-only synthetic descriptor capture would be needed to distinguish those predicates. A 4-second subprocess exception, successful listing-pin change, command-specific boundary error, and parent/worker startup failure are distinguishable in the proposed trace.
 
 The historical operation/stage/cause therefore remain **UNKNOWN**. No fix is proposed from the local passes. The next proposed evidence is a hosted trace with public command ID, target class, original acquisition timeout, real child status/error, and duration while retaining the original failure semantics and gates. Activating and executing that manual workflow requires separate review; publishing this diagnostic draft does not activate it or authorize a permanent fix.
+
+## Additive publication-path failure — 2026-10-23T09:57:26Z
+
+The first published signed diagnostic HEAD `7f5bf123999fc421af8cda218ff25371e8076a47` produced [CI39934633914](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39934633914). Complete Regression job120351059067 failed with137/139 suites passing and2,712 passed/2 failed reported checks; Controlled Docs job120351059537 also failed. Both identify the same explicit assertion in unchanged `scripts/testControlledDocsPersistence.ts:913–919`: paths containing `.candidate`, `.rollback` or `.dmk-` under real docs are rejected as transaction sibling artifacts. The inactive proposal filename `hosted-workflow.candidate.yml` matched that guard. The controlled-document orchestrator stopped at its prerequisite failure; later focused assertions were not executed. Quality & Build passed; Windows was still in progress at this capture. These are per-job observations, not an all-green run or a WS04 diagnosis.
+
+The [two-log archive](ws04-diagnostic-20261023/evidence/publication-failure-39934633914.zip) preserves the failure. It is34,868 bytes, SHA-256 `d46a4372cb5e10d7a6e254c9a7a52848f4987a1044a36a6a25f0f96aa1cb76e1`. Members are `job-120351059067.log` (91,553 bytes, SHA-256 `e92d0923c3a9af6951c005fc6b07be679782884865b06a222823461c1106916c`) and `job-120351059537.log` (63,514 bytes, SHA-256 `5f28a61572c9d0419fcd10769d993209a77334be1724aa0d26c08ee89edd0a0d`). These are tool-decoded UTF-8 text with CRLF normalized to LF and a terminal LF; they are not original HTTP archive bytes. The exact GitHub jobs remain the primary execution records.
+
+The narrow correction renames only the inactive proposal to `hosted-workflow-proposal.yml` and updates its link. It changes no assertion, test, runtime, permission, timeout, dependency or active workflow. The unchanged34-case persistence suite then passed using the separate retained validation toolchain from this isolated worktree:
+
+```powershell
+& $node 'C:/Users/HomePC/.codex/worktrees/campaign-combined/docmonstakrakin-version-sync/node_modules/tsx/dist/cli.mjs' 'C:/Users/HomePC/.codex/worktrees/campaign-combined/docmonstakrakin-version-sync/scripts/testControlledDocsPersistence.ts'
+```
+
+This focused check establishes the naming correction, not complete candidate CI, native installation support or the historical WS04 cause. The failed HEAD and evidence remain preserved; any later signed correction has its own CI and review boundary. The hosted diagnostic proposal is still inactive and NOT_RUN. Human acceptance remains BLOCKED/NOT_RUN.
