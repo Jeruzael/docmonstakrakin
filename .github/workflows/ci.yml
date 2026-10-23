@@ -79,6 +79,9 @@ jobs:
           if ($sdks.Count -eq 0) { throw 'No complete preinstalled Windows SDK' }
           $sdks.FullName
 
+      - name: Diagnose disposable runner token and new-object ownership
+        run: ./scripts/runWindowsPrivateQualification.ps1 -Phase Diagnostics
+
       - name: Fresh npm install and audit with lifecycle scripts
         run: |
           npm.cmd ci --foreground-scripts
@@ -87,9 +90,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows npm audit failed' }
           npm.cmd ls better-sqlite3 argon2 vite source-map-js --all
           if ($LASTEXITCODE -ne 0) { throw 'Installed dependency provenance failed' }
-
-      - name: Diagnose disposable runner token and new-object ownership
-        run: ./scripts/runWindowsPrivateQualification.ps1 -Phase Diagnostics
 
       - name: Qualify npm native runtime and existing quality gates
         run: |
