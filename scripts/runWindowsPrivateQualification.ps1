@@ -228,6 +228,13 @@ const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(p
  const security=path.join(workspace,'.security'),resources={};
  if(fs.existsSync(security)){resources['.security']=acl(security);for(const name of fs.readdirSync(security))if(['owner.lock','authority.sqlite','authority.sqlite-wal','authority.sqlite-shm'].includes(name))resources[name]=acl(path.join(security,name));}
  console.log('NODE_GENUINE_BOUNDARY_RESOURCES '+JSON.stringify({stage,resources}));
+ if(fs.existsSync(security)){
+  const whoami=cp.execFileSync('whoami.exe',['/user','/fo','csv','/nh'],{encoding:'utf8',windowsHide:true,timeout:2000});const expected=/S-1-\d+(?:-\d+)+/.exec(whoami)?.[0];
+  if(!expected)throw Error('NODE_EXPECTED_OWNER_SID_MISSING');
+  const admission="$ErrorActionPreference='Stop';$a=Get-Acl -LiteralPath '"+quote(security)+"';$s=New-Object System.Security.Principal.SecurityIdentifier('"+expected+"');if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};if(-not $a.AreAccessRulesProtected){exit 3};$r=$a.GetAccessRules($true,$true,[System.Security.Principal.SecurityIdentifier]);if($r.Count -lt 1){exit 3};foreach($v in $r){if($v.IdentityReference.Value -ne $s.Value -or $v.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow){exit 3}}";
+  const strict=cp.spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(admission,'utf16le').toString('base64')],{encoding:'utf8',windowsHide:true,timeout:10000,env});
+  console.log('NODE_EXACT_ADMISSION_RECHECK '+JSON.stringify({expectedSid:expected,status:strict.status,signal:strict.signal,error:strict.error?.code,stderr:strict.stderr.slice(-3000)}));
+ }
  if(stage==='complete'){
   let store;try{const {WorkspaceStore}=await import(pathToFileURL(path.resolve('server/security/workspaceAccess/store.ts')).href);store=await WorkspaceStore.open(workspace,{initialize:true});console.log('NODE_GENUINE_SQLITE_DIAGNOSTIC '+JSON.stringify({opened:true}));}
   catch(e){const after={};for(const name of fs.readdirSync(security))if(['owner.lock','authority.sqlite','authority.sqlite-wal','authority.sqlite-shm'].includes(name))after[name]=acl(path.join(security,name));console.log('NODE_GENUINE_SQLITE_DIAGNOSTIC '+JSON.stringify({opened:false,code:e.code||e.name,after}));}
