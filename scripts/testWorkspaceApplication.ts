@@ -11,7 +11,10 @@ async function api(endpoint:string,method='GET',body?:any,client?:Client,proof=t
  else{const response=await fetch(base+endpoint,{method,headers,...(body===undefined?{}:{body:JSON.stringify(body)})});status=response.status;text=await response.text();cookie=response.headers.get('set-cookie')??'';}
  let data:any;try{data=JSON.parse(text);}catch{data=text;}return{status,data,cookie};}
 async function login(name:string,client:Client){const r=await api('/api/governance/session','POST',{username:name,password});assert.equal(r.status,200,JSON.stringify(r.data));client.cookie=r.cookie.split(';')[0];client.csrf=r.data.csrf;assert.match(r.cookie,/HttpOnly/i);assert.match(r.cookie,/SameSite=Strict/i);assert.match(client.csrf,/^[A-Za-z0-9_-]{43}$/);return r;}
-async function stop(){if(child?.exitCode===null){const done=new Promise<void>(r=>child!.once('exit',()=>r()));child.kill();await done;}}
+// Deliberate crash fixture: POSIX SIGTERM closes authority cleanly and removes
+// its lock, whereas Windows termination is abrupt. SIGKILL exercises the same
+// retained-lock/lost-reply recovery contract on both supported platforms.
+async function stop(){if(child?.exitCode===null){const done=new Promise<void>(r=>child!.once('exit',()=>r()));child.kill('SIGKILL');await done;}}
 async function launch(tls=false,bundled=false){output='';const probe=net.createServer();await new Promise<void>(r=>probe.listen(0,'127.0.0.1',r));const port=(probe.address()as net.AddressInfo).port;await new Promise<void>(r=>probe.close(()=>r()));base=(tls?'https':'http')+'://127.0.0.1:'+port;
  const env:NodeJS.ProcessEnv={NODE_ENV:'production',HOST:'127.0.0.1',PORT:String(port),GEMINI_API_KEY:''};for(const key of['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[key])env[key]=process.env[key];
  if(tls){env.DMK_TLS_CERT='.security/tls/loopback.crt';env.DMK_TLS_KEY='.security/tls/loopback.key';}
