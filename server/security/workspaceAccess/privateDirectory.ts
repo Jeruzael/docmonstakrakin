@@ -16,5 +16,7 @@ export function acquirePrivateWorkspace(root: string, initialize: boolean): Priv
 export function releasePrivateWorkspace(h: PrivateWorkspaceHandle): void { mapped(() => boundary.release(h)); }
 /** Explicit stopped-owner recovery only. Never invoked by open() or close(). */
 export function recoverWorkspaceLock(root: string): boolean { return mapped(() => boundary.recover(root)); }
+/** Exclusively creates a new directory; never repairs or reowns existing state. */
+export function createPrivateDirectory(file: string): string { return mapped(() => boundary.createPrivateDirectory(file)); }
 export function assertPrivateDirectory(file: string): string { return mapped(() => boundary.assertPrivateDirectory(file)); }
 export function assertPrivateFile(file: string): string { return mapped(() => boundary.assertPrivateFile(file)); }

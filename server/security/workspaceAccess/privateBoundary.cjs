@@ -16,19 +16,11 @@ function currentSid() {
   if (!sid) { const raw = execFileSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], { encoding: 'utf8', windowsHide: true, timeout: 2000 }); sid = /S-1-\d+(?:-\d+)+/.exec(raw)?.[0]; if (!sid) fail('WORKSPACE_PRIVATE_DIRECTORY_UNAVAILABLE'); }
   return sid;
 }
-function privatePermissions(file, directory, fresh = false) {
+function privatePermissions(file, directory) {
   if (process.platform !== 'win32') {
     const s = fs.statSync(file); if (s.uid !== process.getuid() || (s.mode & 0o777) !== (directory ? 0o700 : 0o600)) fail('WORKSPACE_PERMISSIONS_INVALID'); return;
   }
   const ownerSid = currentSid();
-  if (fresh) {
-    // Separate operations: the combined invocation can preserve inherited
-    // SYSTEM/Administrators grants as explicit ACEs on Windows Server 2022.
-    // This runs only for the directory just created here. Existing state is
-    // inspected strictly below and is never repaired on admission.
-    execFileSync('icacls.exe', [file, '/inheritance:r'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
-    execFileSync('icacls.exe', [file, '/grant:r', '*' + ownerSid + ':(OI)(CI)F'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
-  }
   const listing = execFileSync('icacls.exe', [file], { encoding: 'utf8', windowsHide: true, timeout: 2000, maxBuffer: 16 * 1024 });
   const pin = crypto.createHash('sha256').update(listing).digest('hex');
   if (pins.has(file)) { if (pins.get(file) !== pin) fail('WORKSPACE_PERMISSIONS_INVALID'); return; }
@@ -42,19 +34,43 @@ function privatePermissions(file, directory, fresh = false) {
   catch { fail('WORKSPACE_PERMISSIONS_INVALID'); }
   pins.set(file, pin);
 }
+/** Own exclusive creation: no API for repairing an existing authority path. */
+function createPrivateDirectory(file) {
+  if (typeof file !== 'string' || !path.isAbsolute(file) || path.resolve(file) !== file || fs.realpathSync.native(path.dirname(file)) !== path.dirname(file)) fail();
+  identity(path.dirname(file), true);
+  fs.mkdirSync(file, { mode: 0o700 }); // Nonrecursive EEXIST refusal precedes any ACL write.
+  const created = identity(file, true);
+  if (fs.realpathSync.native(file) !== file || fs.readdirSync(file).length !== 0) fail();
+  if (process.platform === 'win32') {
+    const ownerSid = currentSid(), literal = file.replace(/'/g, "''");
+    // Hosted Windows proved icacls can retain foreign explicit grants even
+    // with separate inheritance/grant commands. Persist only a new exact DACL
+    // through Windows PowerShell 5's .NET API. Never set Owner, Group or SACL.
+    const code = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$p='" + literal + "';$s=New-Object System.Security.Principal.SecurityIdentifier('" + ownerSid + "');" +
+      "$a=Get-Acl -LiteralPath $p;if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};" +
+      "$d=New-Object System.Security.AccessControl.DirectorySecurity;$d.SetAccessRuleProtection($true,$false);" +
+      "$r=New-Object System.Security.AccessControl.FileSystemAccessRule($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow');$d.AddAccessRule($r);[System.IO.Directory]::SetAccessControl($p,$d);" +
+      "$a=Get-Acl -LiteralPath $p;if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3}";
+    try { execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], { windowsHide: true, timeout: 4000, stdio: 'pipe',
+      env: { ...process.env, PSModulePath: path.join(process.env.WINDIR || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/Modules') } }); }
+    catch { fail('WORKSPACE_PERMISSIONS_INVALID'); }
+  }
+  if (identity(file, true) !== created || fs.realpathSync.native(file) !== file) fail();
+  privatePermissions(file, true); // The same strict owner/ACL admission as existing state.
+  return created;
+}
 function capture(workspaceRoot, initialize) {
   if (typeof workspaceRoot !== 'string' || !path.isAbsolute(workspaceRoot)) fail();
   const workspace = fs.realpathSync.native(workspaceRoot);
   if (workspace !== path.resolve(workspaceRoot)) fail();
   const workspaceIdentity = identity(workspace, true), root = path.join(workspace, '.security');
-  let fresh = false;
   if (!fs.existsSync(root)) {
     if (!initialize) fail('WORKSPACE_NOT_INITIALIZED');
-    fs.mkdirSync(root, { mode: 0o700 }); fresh = true;
+    createPrivateDirectory(root);
   }
   const rootIdentity = identity(root, true);
   if (fs.realpathSync.native(root) !== root) fail();
-  privatePermissions(root, true, fresh);
+  privatePermissions(root, true);
   return { workspaceRoot: workspace, root, workspaceIdentity, rootIdentity };
 }
 function assertRoot(h) {
@@ -102,4 +118,4 @@ function recover(workspaceRoot) {
 }
 function assertPrivateDirectory(file) { if (!path.isAbsolute(file) || fs.realpathSync.native(file) !== path.resolve(file)) fail(); const value = identity(file, true); privatePermissions(file, true); return value; }
 function assertPrivateFile(file) { if (!path.isAbsolute(file) || fs.realpathSync.native(file) !== path.resolve(file)) fail(); const value = identity(file, false); privatePermissions(file, false); return value; }
-module.exports = { capture, assertRoot, assertFiles, acquire, assertLock, release, recover, assertPrivateDirectory, assertPrivateFile };
+module.exports = { capture, assertRoot, assertFiles, acquire, assertLock, release, recover, createPrivateDirectory, assertPrivateDirectory, assertPrivateFile };
