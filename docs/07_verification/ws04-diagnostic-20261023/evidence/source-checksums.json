@@ -1,0 +1,119 @@
+[
+  {
+    "path": "scripts/testWorkspaceStore.ts",
+    "sha256": "d5e6a7db8d0e0585c54b885cf7414ec347d19f5356fa85951b2b3684e8f687f8",
+    "baselineBlob": "ce7ce257896dc97d65fc856f85ea07e8352c6ad8",
+    "workingBlob": "ce7ce257896dc97d65fc856f85ea07e8352c6ad8",
+    "historicalBlob": "ce7ce257896dc97d65fc856f85ea07e8352c6ad8",
+    "final82Blob": "ce7ce257896dc97d65fc856f85ea07e8352c6ad8",
+    "identical": true
+  },
+  {
+    "path": "scripts/testWorkspacePrivateDirectory.ts",
+    "sha256": "5485e5269a2157be5d34618a9a5d0df43bab368ee65e45d733e83387e2636b60",
+    "baselineBlob": "469661232e568bff3e0bf056c063caa0fd9f5ea7",
+    "workingBlob": "469661232e568bff3e0bf056c063caa0fd9f5ea7",
+    "historicalBlob": "469661232e568bff3e0bf056c063caa0fd9f5ea7",
+    "final82Blob": "469661232e568bff3e0bf056c063caa0fd9f5ea7",
+    "identical": true
+  },
+  {
+    "path": "server/security/workspaceAccess/privateBoundary.cjs",
+    "sha256": "92a2a73945eda93e096a4216ce43d7240d21e8839f0dd5aabae614d95c8aa0e9",
+    "baselineBlob": "367d9ef7e6d64bc1c9de341a4a87d4afbcab9ec6",
+    "workingBlob": "367d9ef7e6d64bc1c9de341a4a87d4afbcab9ec6",
+    "historicalBlob": "367d9ef7e6d64bc1c9de341a4a87d4afbcab9ec6",
+    "final82Blob": "367d9ef7e6d64bc1c9de341a4a87d4afbcab9ec6",
+    "identical": true
+  },
+  {
+    "path": "server/security/workspaceAccess/privateDirectory.ts",
+    "sha256": "cdff16d7d02416f8d9d4c81675d13212c76c10b4a881e5fcdaedc12602c12f40",
+    "baselineBlob": "d0d7f6a238ba09afdd3eef47dd4f2b6b1a0c858a",
+    "workingBlob": "d0d7f6a238ba09afdd3eef47dd4f2b6b1a0c858a",
+    "historicalBlob": "d0d7f6a238ba09afdd3eef47dd4f2b6b1a0c858a",
+    "final82Blob": "d0d7f6a238ba09afdd3eef47dd4f2b6b1a0c858a",
+    "identical": true
+  },
+  {
+    "path": "server/security/workspaceAccess/worker.cjs",
+    "sha256": "fbf144bc70c9bbc6e74acec7040b596315bd643b401210549813d13d344e61a7",
+    "baselineBlob": "316a41363264691cc067d5dc73a8d703045582db",
+    "workingBlob": "316a41363264691cc067d5dc73a8d703045582db",
+    "historicalBlob": "316a41363264691cc067d5dc73a8d703045582db",
+    "final82Blob": "316a41363264691cc067d5dc73a8d703045582db",
+    "identical": true
+  },
+  {
+    "path": "server/security/workspaceAccess/store.ts",
+    "sha256": "fec533812f13cd4231fb2557682a1dd4adcded59d74ccbbda62caeb80950629e",
+    "baselineBlob": "f542b9c29c6494c475c76159ac45d4727d9bad12",
+    "workingBlob": "f542b9c29c6494c475c76159ac45d4727d9bad12",
+    "historicalBlob": "f542b9c29c6494c475c76159ac45d4727d9bad12",
+    "final82Blob": "f542b9c29c6494c475c76159ac45d4727d9bad12",
+    "identical": true
+  },
+  {
+    "path": "server/security/workspaceAccess/contracts.ts",
+    "sha256": "a7d28088c330e39787ca12622e7b4ec11906a7e0ff147fb3ffd23d4f39cdfc87",
+    "baselineBlob": "c038a83844202fc826bbd6c34e4512fb684e8bcf",
+    "workingBlob": "c038a83844202fc826bbd6c34e4512fb684e8bcf",
+    "historicalBlob": "c038a83844202fc826bbd6c34e4512fb684e8bcf",
+    "final82Blob": "c038a83844202fc826bbd6c34e4512fb684e8bcf",
+    "identical": true
+  },
+  {
+    "path": "scripts/runWindowsPrivateQualification.ps1",
+    "sha256": "511e6a347be9bc8ead8089572ba1da45aa29cf0ddd03eca872ec305cc4d2a97a",
+    "baselineBlob": "705a997c4df67a69c89a59fc3111e4bb6c01afc1",
+    "workingBlob": "705a997c4df67a69c89a59fc3111e4bb6c01afc1",
+    "historicalBlob": "705a997c4df67a69c89a59fc3111e4bb6c01afc1",
+    "final82Blob": "705a997c4df67a69c89a59fc3111e4bb6c01afc1",
+    "identical": true
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "sha256": "a7bab3d9060a278522dfdfab922a3cc9ee9997db5efaa029ca7a241826615fd4",
+    "baselineBlob": "e1325b3006f097b1a1a957dbf2a4833d6a613714",
+    "workingBlob": "e1325b3006f097b1a1a957dbf2a4833d6a613714",
+    "historicalBlob": "e1325b3006f097b1a1a957dbf2a4833d6a613714",
+    "final82Blob": "e1325b3006f097b1a1a957dbf2a4833d6a613714",
+    "identical": true
+  },
+  {
+    "path": "scripts/qualifyOperatorInstallation.ts",
+    "sha256": "1e30ca4e27828eee47065c481d1fb8ae4a3d903aec895b46b183ce53d3cdf72c",
+    "baselineBlob": "80b60fdf70e30cc61baf4454d866eabf98f4da75",
+    "workingBlob": "80b60fdf70e30cc61baf4454d866eabf98f4da75",
+    "historicalBlob": "80b60fdf70e30cc61baf4454d866eabf98f4da75",
+    "final82Blob": "80b60fdf70e30cc61baf4454d866eabf98f4da75",
+    "identical": true
+  },
+  {
+    "path": "package.json",
+    "sha256": "06ec2f4fa030077e8541ba799b046e70c4c73e430646d3ece306c6121344a0d3",
+    "baselineBlob": "468de94062670c7db82c25fc8dc3c880b0440d8e",
+    "workingBlob": "468de94062670c7db82c25fc8dc3c880b0440d8e",
+    "historicalBlob": "468de94062670c7db82c25fc8dc3c880b0440d8e",
+    "final82Blob": "468de94062670c7db82c25fc8dc3c880b0440d8e",
+    "identical": true
+  },
+  {
+    "path": "package-lock.json",
+    "sha256": "14fc25efb722971a956cec1c4ad2808fc09e8ac6ea745152b47fb105e0a21f65",
+    "baselineBlob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47",
+    "workingBlob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47",
+    "historicalBlob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47",
+    "final82Blob": "68bd47f41e5bf943efdd6254abe0fa79bf02fc47",
+    "identical": true
+  },
+  {
+    "path": "bun.lock",
+    "sha256": "7dfb09315ae8a4d48cfe37198202a7ea9246efe464478438713066a649b561ba",
+    "baselineBlob": "2f80238cf634973fa251c25650d2d370ef9819d4",
+    "workingBlob": "2f80238cf634973fa251c25650d2d370ef9819d4",
+    "historicalBlob": "2f80238cf634973fa251c25650d2d370ef9819d4",
+    "final82Blob": "2f80238cf634973fa251c25650d2d370ef9819d4",
+    "identical": true
+  }
+]

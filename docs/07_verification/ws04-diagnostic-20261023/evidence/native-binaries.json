@@ -1,0 +1,110 @@
+[
+  {
+    "path": "better-sqlite3\\prebuilds\\darwin-arm64.node",
+    "sha256": "98e0e8acd01c632fe5615243e1296af0372826f8783b18fc31c506f73c47459c",
+    "retainedSourceSame": true,
+    "bytes": 1980736
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\darwin-x64.node",
+    "sha256": "e6db154afe9d250e242e2ea3d45d273718ab80a0751d08873637553031752d21",
+    "retainedSourceSame": true,
+    "bytes": 1982880
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\linux-arm64.node",
+    "sha256": "8ba771f284dfd9430e3ef8e2ffc373ed7cc5a92fc7c4c0c7baf39dd672863485",
+    "retainedSourceSame": true,
+    "bytes": 2066328
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\linux-x64.node",
+    "sha256": "6fd4292c6c5f352436cd85c9e1cb286978efa43c20ae350973f83414ced9991d",
+    "retainedSourceSame": true,
+    "bytes": 2226168
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\linuxmusl-arm64.node",
+    "sha256": "09d5927246024b6d93c079ae1079554cbdd85790792342bf24636987dce7a786",
+    "retainedSourceSame": true,
+    "bytes": 2312112
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\linuxmusl-x64.node",
+    "sha256": "d661495d2dd4a026ccda893dd8ea1e2c245c3a681bd28224064953c8a9cc0a72",
+    "retainedSourceSame": true,
+    "bytes": 2435680
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\win32-arm64.node",
+    "sha256": "a47870d114b98baecaff0baa51cfb93d6280d43f064280adaadefafb6949f1bf",
+    "retainedSourceSame": true,
+    "bytes": 1903104
+  },
+  {
+    "path": "better-sqlite3\\prebuilds\\win32-x64.node",
+    "sha256": "e21e5efd71fba66578e95b62554d9028064a80dafd7221bf8a8ef155de8d240a",
+    "retainedSourceSame": true,
+    "bytes": 1989632
+  },
+  {
+    "path": "argon2\\prebuilds\\darwin-arm64\\argon2.armv8.glibc.node",
+    "sha256": "f15eb7cc6bc02c8bbdcce4f3255f72d4feea9960d93400c70ba95a3a827d526e",
+    "retainedSourceSame": true,
+    "bytes": 93080
+  },
+  {
+    "path": "argon2\\prebuilds\\freebsd-arm64\\argon2.armv8.glibc.node",
+    "sha256": "e23c4c3760c29310b6f7fef9bb0992c84d6a91123b2bc2d6c47d4094eef63564",
+    "retainedSourceSame": true,
+    "bytes": 69416
+  },
+  {
+    "path": "argon2\\prebuilds\\freebsd-x64\\argon2.glibc.node",
+    "sha256": "6ff8b65a9710c8e5965d67cc17d65052434d0e1ad98702045c8179f14cd0d407",
+    "retainedSourceSame": true,
+    "bytes": 67096
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-arm\\argon2.armv7.glibc.node",
+    "sha256": "636847081cabdbf70836af81682954d73fbf24e78de698780fe6fe8bea484982",
+    "retainedSourceSame": true,
+    "bytes": 38664
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-arm\\argon2.armv7.musl.node",
+    "sha256": "fbde253330b25315ab1f209f974653997ef3f6b90ad372583b99fa4ba5e627d3",
+    "retainedSourceSame": true,
+    "bytes": 46468
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-arm64\\argon2.armv8.glibc.node",
+    "sha256": "d1a174cb5c08aa9638496c3cb1b4652492330838dbfe4906d34b6c097789c630",
+    "retainedSourceSame": true,
+    "bytes": 51800
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-arm64\\argon2.armv8.musl.node",
+    "sha256": "7e084fc69aac5f608fddaa91fbf1a353335f226f38f4ee3a7cfa0ad247db8ff3",
+    "retainedSourceSame": true,
+    "bytes": 67512
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-x64\\argon2.glibc.node",
+    "sha256": "36aafaaf30e493a2a91586f24b8429191538447d8c7c292f60988026de503e49",
+    "retainedSourceSame": true,
+    "bytes": 60208
+  },
+  {
+    "path": "argon2\\prebuilds\\linux-x64\\argon2.musl.node",
+    "sha256": "143e145f409c78f211f5694af72610f96c0adb067ca38b7737ac342d02e23623",
+    "retainedSourceSame": true,
+    "bytes": 63496
+  },
+  {
+    "path": "argon2\\prebuilds\\win32-x64\\argon2.glibc.node",
+    "sha256": "7d1716c8eafe32d54a12af5c0d3024cd715a7e1fdc8092eea84fd369d267075c",
+    "retainedSourceSame": true,
+    "bytes": 210944
+  }
+]

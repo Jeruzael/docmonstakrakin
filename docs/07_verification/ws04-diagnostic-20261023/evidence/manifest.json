@@ -1,0 +1,30 @@
+[
+  {
+    "label": "inherited",
+    "archive": "inherited.zip",
+    "sha256": "1facbf1ae32425b39aaae0d25808792eb0a8f66b88eed06e35374d9db95bdcf1",
+    "bytes": 12307,
+    "files": 5
+  },
+  {
+    "label": "sparse-provisional",
+    "archive": "sparse-provisional.zip",
+    "sha256": "d11c10c222d7325cb2996b51707bb5679837de3fcbb746f847b73ffa64f27cdf",
+    "bytes": 12217,
+    "files": 5
+  },
+  {
+    "label": "sparse-pd06",
+    "archive": "sparse-pd06.zip",
+    "sha256": "8c74f143b2e88e77637ef2c774cf9d719cf09c14da0d44656c4d0d80a85de457",
+    "bytes": 12327,
+    "files": 5
+  },
+  {
+    "label": "controls",
+    "archive": "controls.zip",
+    "sha256": "4d357619684423db8912cf4f16a378771c595e45e5c03d088a71986d1f1bac8a",
+    "bytes": 1032,
+    "files": 1
+  }
+]
