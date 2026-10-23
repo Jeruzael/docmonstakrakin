@@ -136,7 +136,7 @@ Recalculation: initial 22 + 6 + 10 = 38; add DMK-190 owner assessment (+1), abso
 
 Reuse the Agent Center's existing AGT/COM/UX/AUTH/DUR/DATA/PROV/RUN/AUD/SEC families. Registry/admission map to AGT-04/AUTH-03/SEC-01; command/outbox to DUR-01/02/03/05; presence/views to UX-01/02/04 and AGT-03; messaging to COM-01–04 and DATA-01–04. Preserve the original v0.3 PRD/manifest and create a reviewed successor/addendum during the later authorized documentation pass. Retrieval does not prove understanding; server policy must enforce operations. Fifteen-minute presence expiry remains a proposal, not a ratified requirement/default.
 
-Revised sequence for the later brief:
+Revised work tracks for the later brief: non-applying documentation/planning may proceed while human acceptance is BLOCKED. The setup/consent/headroom gates apply to executing the operator pilot, not to reading evidence or preparing planning proposals. The broader documentation campaign remains outside this bounded pass.
 1. Review this current-state/capacity/acceptance preparation; obtain a qualified fresh environment and explicit operator enrollment consent separately.
 2. Complete actual bounded human task1; retain failures and all production restrictions.
 3. Perform the broader single-specification/requirements/architecture/impact-matrix and typed PLANNING_CANDIDATE YAML pass against current master; build exact positive/negative acceptance and dependency graphs for the 34 entries, coordinated with the separate capacity owner. It is still a draft review, not registration.
