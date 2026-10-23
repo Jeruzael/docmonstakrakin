@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 
 const boundary = createRequire(import.meta.url)('../server/security/workspaceAccess/privateBoundary.cjs');
@@ -12,6 +12,10 @@ const root = fs.mkdtempSync(path.join(parent, 'dmk-private-directory-'));
 let passed = 0, failed = 0;
 function check(name: string, run: () => void) {
   try { run(); passed++; console.log('PASS ' + name); }
+  catch (error) { failed++; console.error('FAIL ' + name + ': ' + String(error)); }
+}
+async function checkAsync(name: string, run: () => Promise<void>) {
+  try { await run(); passed++; console.log('PASS ' + name); }
   catch (error) { failed++; console.error('FAIL ' + name + ': ' + String(error)); }
 }
 function powershell(code: string): string {
@@ -78,6 +82,50 @@ try {
     const workspace = path.join(root, 'new-workspace'); fs.mkdirSync(workspace); foreignGrants(workspace);
     const before = observation(workspace), handle = boundary.capture(workspace, true);
     assertPrivate(handle.root, true); boundary.assertRoot(handle); assert.deepEqual(observation(workspace), before);
+  });
+  await checkAsync('PD06 asynchronous sparse-environment acquisition preserves positive and negative admission', async () => {
+    const existing = path.join(root, 'async-existing'), fresh = path.join(root, 'async-fresh'), denied = path.join(root, 'async-denied');
+    for (const directory of [existing, fresh, denied]) fs.mkdirSync(directory);
+    const handle = boundary.capture(existing, true), inert = path.join(handle.root, 'authority.sqlite');
+    fs.writeFileSync(inert, 'inert synthetic bytes', { flag: 'wx', mode: 0o600 });
+    const deniedRoot = path.join(denied, '.security'); fs.mkdirSync(deniedRoot); foreignGrants(deniedRoot);
+    const deniedMarker = path.join(deniedRoot, 'authority.sqlite'); fs.writeFileSync(deniedMarker, 'preserved denied bytes');
+    const before = observation(deniedRoot);
+    const code = `const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+      const b=require(${JSON.stringify(path.resolve('server/security/workspaceAccess/privateBoundary.cjs'))});
+      b.assertFiles(b.capture(${JSON.stringify(existing)},false));
+      const fresh=b.capture(${JSON.stringify(fresh)},true);b.assertFiles(fresh);
+      assert.throws(()=>b.capture(${JSON.stringify(denied)},true),e=>e.code==='WORKSPACE_PERMISSIONS_INVALID');
+      assert.equal(fs.readFileSync(${JSON.stringify(inert)},'utf8'),'inert synthetic bytes');
+      assert.equal(fs.readFileSync(${JSON.stringify(deniedMarker)},'utf8'),'preserved denied bytes');
+      console.log('ASYNC_PRIVATE_ADMISSION '+JSON.stringify({existing:true,fresh:true,file:true,foreignRejected:true}));`;
+    const environment: NodeJS.ProcessEnv = { NODE_ENV: 'production' };
+    for (const key of ['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']) if (process.env[key]) environment[key] = process.env[key];
+    const child = spawn(process.execPath, ['--input-type=commonjs', '-e', code], { cwd: root, env: environment, windowsHide: true, stdio: 'pipe' });
+    // Keep the asynchronous child's input open, matching a supervising process.
+    let stdout = '', stderr = '';
+    child.stdout.on('data', data => { stdout = (stdout + data).slice(-4000); });
+    child.stderr.on('data', data => { stderr = (stderr + data).slice(-4000); });
+    const timer = setTimeout(() => child.kill('SIGKILL'), 20000);
+    try {
+      const status = await new Promise<number | null>((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+      assert.equal(status, 0, 'asynchronous native admission failed: ' + stderr);
+      const line = stdout.split(/\r?\n/).find(value => value.startsWith('ASYNC_PRIVATE_ADMISSION '));
+      assert.ok(line); assert.deepEqual(JSON.parse(line.slice('ASYNC_PRIVATE_ADMISSION '.length)), { existing: true, fresh: true, file: true, foreignRejected: true });
+      assert.deepEqual(observation(deniedRoot), before, 'denied authority ACL must remain unchanged');
+      assert.equal(fs.readFileSync(deniedMarker, 'utf8'), 'preserved denied bytes');
+    } finally { clearTimeout(timer); }
+  });
+  if (process.platform === 'win32') check('PD07 Windows direct and cmdlet reads preserve owner group and access descriptor bytes', () => {
+    const directory = path.join(root, 'descriptor-equivalence'); boundary.createPrivateDirectory(directory);
+    const file = path.join(directory, 'inert.txt'); fs.writeFileSync(file, 'inert', { flag: 'wx', mode: 0o600 });
+    const query = "$sections=[System.Security.AccessControl.AccessControlSections]::Owner -bor [System.Security.AccessControl.AccessControlSections]::Group -bor [System.Security.AccessControl.AccessControlSections]::Access;$out=@();" +
+      ([[directory, 'Directory'], [file, 'File']] as const).map(([target, kind]) =>
+        `$a=Get-Acl -LiteralPath ${literal(target)};$b=[System.IO.${kind}]::GetAccessControl(${literal(target)});$old=$a.GetSecurityDescriptorSddlForm($sections);$new=$b.GetSecurityDescriptorSddlForm($sections);$sha=[System.Security.Cryptography.SHA256]::Create();try{$out+=[ordered]@{kind='${kind}';equal=($old -ceq $new);protectedEqual=($a.AreAccessRulesProtected -eq $b.AreAccessRulesProtected);oldBytes=[Text.Encoding]::UTF8.GetByteCount($old);newBytes=[Text.Encoding]::UTF8.GetByteCount($new);oldSha256=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($old))).Replace('-','');newSha256=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($new))).Replace('-','')}}finally{$sha.Dispose()};`).join('') + '$out|ConvertTo-Json -Compress';
+    const result = JSON.parse(powershell(query)); assert.equal(result.length, 2);
+    for (const record of result) { assert.equal(record.equal, true); assert.equal(record.protectedEqual, true); assert.equal(record.oldBytes, record.newBytes); assert.equal(record.oldSha256, record.newSha256); }
+    console.log('PRIVATE_DESCRIPTOR_EQUIVALENCE ' + JSON.stringify(result));
+    assert.equal(fs.readFileSync(file, 'utf8'), 'inert');
   });
 } finally {
   assert.equal(path.dirname(root), parent); assert.match(path.basename(root), /^dmk-private-directory-/);
