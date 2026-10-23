@@ -152,6 +152,9 @@ try{
       const client=await fixtureResponse(port,'/@vite/client');
       assert.equal(client.status,200,'Vite internal client must load through its built-in alias');
       assert.match(client.body,/function|import/);
+      const clientDependencies=[...client.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/@fs/'));
+      assert(clientDependencies.some(url=>url.includes('/vite/dist/client/env.mjs')),'Real Vite client must exercise its absolute filesystem env import');
+      for(const target of clientDependencies)assert.equal((await fixtureResponse(port,target)).status,200,target);
       const entry=await fixtureResponse(port,'/src/main.tsx');
       assert.equal(entry.status,200);assert.match(entry.body,/createRoot/);
       const dependencies=[...entry.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/runtime/dmk-vite-fixture-'));
@@ -168,10 +171,13 @@ try{
     const vite=await startIsolatedVite(sourceAppRoot);
     const executable=process.env.DMK_TEST_BROWSER||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(file=>fs.existsSync(file));
     const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
+    const errors:string[]=[],failedModules:string[]=[],failedRequests:string[]=[];
+    const record=(items:string[],value:string)=>{if(items.length<16)items.push(value.slice(0,500));};
     try{
-      const page=await browser.newPage(),errors:string[]=[],failedModules:string[]=[];
-      page.on('pageerror',error=>errors.push(error.message));
-      page.on('response',response=>{if(response.status()>=400&&!new URL(response.url()).pathname.startsWith('/api/'))failedModules.push(response.status()+' '+response.url());});
+      const page=await browser.newPage();
+      page.on('pageerror',error=>record(errors,error.message));
+      page.on('response',response=>{if(response.status()>=400&&!new URL(response.url()).pathname.startsWith('/api/'))record(failedModules,response.status()+' '+new URL(response.url()).pathname);});
+      page.on('requestfailed',request=>record(failedRequests,new URL(request.url()).pathname+' '+request.failure()?.errorText));
       // Real index/main/App, React tree and CSS; only inert API replies are
       // controlled. There is no server authority or operator workspace here.
       await page.route('**/api/**',async route=>{
@@ -183,6 +189,7 @@ try{
       await page.getByText('A-SSDLC Plane',{exact:true}).waitFor({state:'visible',timeout:8000});
       assert(await page.locator('#root').textContent(),'Real React root must contain the App');
       assert.deepEqual(failedModules,[]);assert.deepEqual(errors,[]);
+    }catch(error){console.error('VITE_SOURCE_APP_DIAGNOSTIC '+JSON.stringify({pageErrors:errors,failedModules,failedRequests}));throw error;
     }finally{await browser.close();await vite.close();}
   });
   // Every file in this workspace is a synthetic marker. Never probe an actual
