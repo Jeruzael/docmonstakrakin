@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "master": "62d66779b9d7236e093eb2fd8e47355c8d42b798",
+  "sourceCandidate": "9e2d5aac52feb6371aca1abee5e4b0374337b32f",
+  "tree": "8f8f34429555173bb595c1f2fdbe48a3c1fa9a87",
+  "workflow": 39911133606,
+  "representation": "Decoded GitHub UTF8 text, BOM preserved, CRLF to LF, one extra terminal LF appended; source decoding details in provenance.json; actual archived byte lengths and hashes below",
+  "archive": {
+    "file": "master-62d6677-20261023.zip",
+    "bytes": 87848,
+    "sha256": "21a63e06856eee3a15535e67573da35283e4a30af7b93f57363cb153403b4388"
+  },
+  "files": [
+    {
+      "file": "github-complete-decoded.log",
+      "bytes": 67309,
+      "sha256": "906f0ca69e34e25d4014e161b35d02b504522143c4a0f9e0068c8a6770799009"
+    },
+    {
+      "file": "github-controlled-decoded.log",
+      "bytes": 62813,
+      "sha256": "5692c0554205195bbd95d5ed5e0591d54254375d331e8b1d954d1c641d47641e"
+    },
+    {
+      "file": "github-quality-decoded.log",
+      "bytes": 64802,
+      "sha256": "02952541c83e83a99e5c62eadd7b3cdddf5f5ded11a371183330f3260c3f5173"
+    },
+    {
+      "file": "github-windows-decoded.log",
+      "bytes": 149666,
+      "sha256": "35cba84fbfa639cf95517e659dd9f482b12484180a90b5505225d9f892ba7c79"
+    },
+    {
+      "file": "provenance.json",
+      "bytes": 3906,
+      "sha256": "2ea3604fdc4a328e6ff9be52ffa27126d6b1c6bdcd8a768296a81faf641d0636"
+    }
+  ]
+}

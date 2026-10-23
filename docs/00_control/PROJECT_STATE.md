@@ -1,5 +1,13 @@
 # docmonstakrakin current project state
 
+## Verified engineering integration — 2026-10-23
+
+PR81 is normally merged at `62d66779b9d7236e093eb2fd8e47355c8d42b798`, from signed candidate `9e2d5aac52feb6371aca1abee5e4b0374337b32f`; exact tree `8f8f34429555173bb595c1f2fdbe48a3c1fa9a87` and both ordered parents are verified. Actual [master CI39911133606](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606) passed all four jobs: Linux139/139 suites and2,765 reported checks, controlled11/11 focused suites/336 assertions plus40 core/29 supplemental probes, quality/build, and both fresh npm/frozen Bun Windows native phases. Frozen local Windows139/139 suites and2,766 reported checks also passed; the one-check OS difference is the Windows-only descriptor-equivalence test. All have zero failures/skips. Fresh audit reports zero vulnerabilities. See the [final additive checkpoint](../07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md) and [workspace guide](../08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md).
+
+Tasks2–8 are engineering-complete within their recorded boundaries. The original checkout is fast-forwarded to this master; its project-state JSON, untracked PR53 note and dependency junction are unchanged. That old dependency installation still contains Vite6.4.3/source-map-js1.2.1 and lacks native package manifests; it is not the qualified fresh setup. Use the documented fresh regular checkout/process-only prerequisites. The final signed documentation/evidence handoff is on `codex/operational-qualification-evidence-20261023`, without another closure-only PR or new runtime merge. Earlier pending captures below remain historical, not current instructions.
+
+The agent performed the guarded merge under the operator's standing engineering authorization. GitHub records accountJeruzael as merger; no independent human APPROVED review is invented. Actual operator browser acceptance/task1 remains deferred, real enrollment/import/membership decisions remain unperformed, and production authority/capacity/antirollback/recovery acceptance remain unresolved. Canonical WBS/history, original portfolio, both lockfiles, human-only SO/LA quorum, PR34/52,14 privileged denials, disabled live agents, Gate7 and release restrictions remain intact. Bun's unchanged genai/protobufjs lifecycle blocks are disclosed; native qualification is not full lifecycle acceptance.
+
 
 ## Continuation gate — 2026-10-23
 
