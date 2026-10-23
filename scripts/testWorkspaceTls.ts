@@ -20,13 +20,31 @@ let passed = 0, failed = 0, skipped = 0;
 const onlyMetadata = process.argv.includes('--metadata-only');
 const selectedCase = process.argv.find(arg => arg.startsWith('--case='))?.slice('--case='.length);
 const sid = process.platform === 'win32' ? /S-1-\d+(?:-\d+)+/.exec(execFileSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], {encoding: 'utf8', windowsHide: true}))?.[0] : undefined;
-function privatePath(file: string, directory: boolean) {
-  assert(file.startsWith(base + path.sep) || file === base);
+function privatePaths(files: ReadonlyArray<readonly [file:string,directory:boolean]>) {
+  for(const [file,directory] of files){
+    assert(file.startsWith(base + path.sep) || file === base);
+    const stat=fs.lstatSync(file);
+    assert(!stat.isSymbolicLink() && (directory?stat.isDirectory():stat.isFile()&&stat.nlink===1));
+    assert.equal(fs.realpathSync.native(file),file);
+  }
   if (process.platform === 'win32') {
-    assert(sid); execFileSync('icacls.exe', [file, '/inheritance:r'], {windowsHide: true, stdio: 'pipe', timeout: 5000});
-    execFileSync('icacls.exe', [file, '/grant:r', `*${sid}:${directory ? '(OI)(CI)F' : 'F'}`], {windowsHide: true, stdio: 'pipe', timeout: 5000});
-  } else fs.chmodSync(file, directory ? 0o700 : 0o600);
+    assert(sid);
+    // Only newly created synthetic fixtures reach this helper. Replace their
+    // DACL exactly; inherited broad grants can become explicit under icacls.
+    // Validate every path and owner before the batch mutates any DACL. Persist
+    // Access only, preserving ownership/SACL without one process per pathname.
+    const encoded=Buffer.from(JSON.stringify(files.map(([file,directory])=>({file,directory}))),'utf8').toString('base64');
+    const code="$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$s=New-Object System.Security.Principal.SecurityIdentifier('"+sid+"');"+
+      "$items=ConvertFrom-Json ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"+encoded+"')));"+
+      "function ReadOwner($i){if($i.directory){$a=[IO.Directory]::GetAccessControl($i.file,[Security.AccessControl.AccessControlSections]::Owner)}else{$a=[IO.File]::GetAccessControl($i.file,[Security.AccessControl.AccessControlSections]::Owner)};return $a.GetOwner([Security.Principal.SecurityIdentifier]).Value};"+
+      "foreach($i in $items){if((ReadOwner $i) -ne $s.Value){throw 'FIXTURE_OWNER_INVALID'}};"+
+      "foreach($i in $items){if($i.directory){$a=New-Object Security.AccessControl.DirectorySecurity;$flags='OICI'}else{$a=New-Object Security.AccessControl.FileSecurity;$flags=''};"+
+      "$a.SetSecurityDescriptorSddlForm(('D:P(A;'+$flags+';FA;;;'+$s.Value+')'),[Security.AccessControl.AccessControlSections]::Access);if($i.directory){[IO.Directory]::SetAccessControl($i.file,$a)}else{[IO.File]::SetAccessControl($i.file,$a)};if((ReadOwner $i) -ne $s.Value){throw 'FIXTURE_OWNER_CHANGED'}}";
+    execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(code,'utf16le').toString('base64')],
+      {windowsHide:true,stdio:'pipe',timeout:5000,env:{...process.env,PSModulePath:path.join(process.env.WINDIR||'C:\\Windows','System32/WindowsPowerShell/v1.0/Modules')}});
+  } else for(const [file,directory] of files)fs.chmodSync(file,directory?0o700:0o600);
 }
+function privatePath(file:string,directory:boolean){privatePaths([[file,directory]]);}
 privatePath(base, true);
 // Exercise genuine source bytes and the genuine shared policy in a disposable
 // deployment, even while the two implementation branches are separate.
@@ -45,7 +63,7 @@ function certificate(name: string, extensions: string[]) {
   execFileSync(openssl, ['req', '-new', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-sha256', '-days', '2',
     '-config', configPath, ...extensions.flatMap(extension => ['-addext', extension]), '-keyout', key, '-out', cert],
     {windowsHide: true, stdio: 'pipe', timeout: 10000, maxBuffer: 65536});
-  privatePath(key, false); privatePath(cert, false); return {cert: fs.readFileSync(cert), key: fs.readFileSync(key)};
+  privatePaths([[key,false],[cert,false]]); return {cert: fs.readFileSync(cert), key: fs.readFileSync(key)};
 }
 const valid = certificate('valid', ['subjectAltName=IP:127.0.0.1', 'basicConstraints=critical,CA:FALSE', 'extendedKeyUsage=serverAuth']);
 const noSan = certificate('no-san', ['basicConstraints=critical,CA:FALSE']);
@@ -54,10 +72,10 @@ const caCert = certificate('ca', ['subjectAltName=IP:127.0.0.1', 'basicConstrain
 let serial = 0;
 function workspace(material = valid) {
   const root = path.join(base, `workspace-${++serial}`), security = path.join(root, '.security'), tls = path.join(security, 'tls');
-  for (const directory of [root, security, tls]) {fs.mkdirSync(directory); privatePath(directory, true);}
+  for (const directory of [root, security, tls]) fs.mkdirSync(directory);
   fs.writeFileSync(path.join(tls, 'loopback.crt'), material.cert, {flag: 'wx', mode: 0o600});
   fs.writeFileSync(path.join(tls, 'loopback.key'), material.key, {flag: 'wx', mode: 0o600});
-  privatePath(path.join(tls, 'loopback.crt'), false); privatePath(path.join(tls, 'loopback.key'), false);
+  privatePaths([[root,true],[security,true],[tls,true],[path.join(tls,'loopback.crt'),false],[path.join(tls,'loopback.key'),false]]);
   return {root, security, tls, cert: path.join(tls, 'loopback.crt'), key: path.join(tls, 'loopback.key')};
 }
 function rejects(run: () => unknown, code?: string) {
@@ -127,8 +145,9 @@ try {
     fs.renameSync(w.key, path.join(w.root, 'key-saved')); fs.writeFileSync(w.key, valid.key, {flag: 'wx', mode: 0o600}); privatePath(w.key, false);
     rejects(() => resolveWorkspaceTls(w.root, env), 'WORKSPACE_TLS_CHANGED');
     const other = workspace(); resolveWorkspaceTls(other.root, env); fs.renameSync(other.tls, other.tls + '-saved');
-    fs.mkdirSync(other.tls); privatePath(other.tls, true);
-    for (const name of ['loopback.crt', 'loopback.key']) {fs.copyFileSync(path.join(other.tls + '-saved', name), path.join(other.tls, name)); privatePath(path.join(other.tls, name), false);}
+    fs.mkdirSync(other.tls);
+    for (const name of ['loopback.crt', 'loopback.key']) fs.copyFileSync(path.join(other.tls + '-saved', name), path.join(other.tls, name));
+    privatePaths([[other.tls,true],[path.join(other.tls,'loopback.crt'),false],[path.join(other.tls,'loopback.key'),false]]);
     rejects(() => resolveWorkspaceTls(other.root, env), 'WORKSPACE_TLS_CHANGED');
   });
   await test('TLS11 an opened file descriptor cannot be replaced between admission and bounded read', () => {
