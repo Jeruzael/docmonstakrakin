@@ -111,7 +111,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
-          # Runtime owner checks remain strict. A new duplicated-token child
+          # Runtime owner checks remain strict. A distinct suspended-child token
           # qualifies current-user ownership without changing the runner token.
           ./scripts/runWindowsPrivateQualification.ps1 -Phase Npm
           git diff --exit-code
