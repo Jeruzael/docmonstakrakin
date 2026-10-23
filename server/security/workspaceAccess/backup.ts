@@ -2,9 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
 import { WorkspaceSecurityError, WORKSPACE_LIMITS } from './contracts.ts';
-import { acquirePrivateWorkspace, releasePrivateWorkspace, assertPrivateDirectory, assertPrivateFile, type PrivateWorkspaceHandle } from './privateDirectory.ts';
+import { acquirePrivateWorkspace, releasePrivateWorkspace, createPrivateDirectory, assertPrivateDirectory, assertPrivateFile, type PrivateWorkspaceHandle } from './privateDirectory.ts';
 
 const require = createRequire(import.meta.url);
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -35,17 +34,9 @@ function identity(file: string): string {
 function absent(file: string): boolean {
   try { fs.lstatSync(file); return false; } catch (e) { if ((e as any)?.code === 'ENOENT') return true; throw e; }
 }
-let ownerSid: string | undefined;
 /** Only a newly created directory is hardened. Existing directories must already pass admission. */
 function makePrivateDirectory(file: string): void {
-  fs.mkdirSync(file, { mode: 0o700 });
-  if (process.platform === 'win32') {
-    ownerSid ??= /S-1-\d+(?:-\d+)+/.exec(execFileSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], { encoding: 'utf8', windowsHide: true, timeout: 2000 }))?.[0];
-    if (!ownerSid) fail('WORKSPACE_PRIVATE_DIRECTORY_UNAVAILABLE');
-    execFileSync('icacls.exe', [file, '/inheritance:r'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
-    execFileSync('icacls.exe', [file, '/grant:r', `*${ownerSid}:(OI)(CI)F`], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
-  }
-  assertPrivateDirectory(file);
+  createPrivateDirectory(file);
 }
 function writeExclusive(file: string, bytes: string | Buffer): void {
   const fd = fs.openSync(file, 'wx', 0o600);
