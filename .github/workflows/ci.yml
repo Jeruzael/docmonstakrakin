@@ -88,6 +88,9 @@ jobs:
           npm.cmd ls better-sqlite3 argon2 vite source-map-js --all
           if ($LASTEXITCODE -ne 0) { throw 'Installed dependency provenance failed' }
 
+      - name: Diagnose disposable runner token and new-object ownership
+        run: ./scripts/runWindowsPrivateQualification.ps1 -Phase Diagnostics
+
       - name: Qualify npm native runtime and existing quality gates
         run: |
           node scripts/testBunLifecycleInventory.ts
