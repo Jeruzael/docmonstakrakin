@@ -76,7 +76,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   const releaseReport = currentReportState.status === 'AVAILABLE' ? currentReportState.report! : null;
   const loadingReport = currentReportState.status === 'LOADING';
   const [isSignoffModalOpen, setIsSignoffModalOpen] = useState(false);
-  const [signoffActor, setSignoffActor] = useState('Security Lead (Gio)');
+  const [signoffActor, setSignoffActor] = useState('');
   const [signoffNotes, setSignoffNotes] = useState('');
   const [signoffError, setSignoffError] = useState<string | null>(null);
   const [signingOff, setSigningOff] = useState(false);
@@ -627,7 +627,7 @@ ${components
                   value={signoffActor}
                   onChange={(e) => setSignoffActor(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="e.g., Security Lead (Gio)"
+                  placeholder="Authenticated human identity is authoritative"
                 />
               </div>
 

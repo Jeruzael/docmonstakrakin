@@ -1,6 +1,8 @@
 import { ReviewerSession } from './components/ReviewerSession';
 import {ScopedDashboardView} from './components/ScopedDashboardView';
 import {ProjectReadinessSetup} from './components/ProjectReadinessSetup';
+import {workspaceProjectActions} from './data/workspaceProjectAccess';
+import {observedWorkspaceMode} from './data/workspaceTransport';
 import {VerificationPanel} from './components/VerificationPanel';
 import type {ManagedDocumentCreateResponse} from './managedDocumentTypes';
 import { LocalContainmentNotice } from './components/LocalContainmentNotice';
@@ -1065,7 +1067,7 @@ export default function App() {
               onCreateProject={handleOpenCreateWizard}
               onRetry={() => void handleRefreshProjectList()}
               onRefreshProjects={handleRefreshProjectList}
-            />{currentProject && projectReady && currentProject.id!=='PRJ-DOCMONSTAKRAKIN' && <div className="mt-6"><ProjectReadinessSetup project={currentProject} sessionRevision={reviewerDisplay.revision} canEdit={reviewerDisplay.phase==='confirmed'} onChanged={handleProjectMutationAcknowledged}/></div>}</>
+            />{currentProject && projectReady && currentProject.id!=='PRJ-DOCMONSTAKRAKIN' && <div className="mt-6"><ProjectReadinessSetup project={currentProject} sessionRevision={reviewerDisplay.revision} canEdit={reviewerDisplay.phase==='confirmed'&&(observedWorkspaceMode()==='LOCAL_DEVELOPMENT'||workspaceProjectActions(currentProject)?.includes('project:write')===true)} onChanged={handleProjectMutationAcknowledged}/></div>}</>
           ) : projectsLoading && projects.length===0 ? (
             <p role="status">Loading projects…</p>
           ) : projectsError && projects.length===0 ? (

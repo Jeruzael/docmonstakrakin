@@ -60,7 +60,7 @@ async function setup(reply:Reply) {
         try{return await send(created,201);}catch(error){if(!state.expectAbortedResponse)throw error;}
       }finally{state.completed++;}
     }
-    if(url.pathname==='/api/governance/session')return send({identity:null});
+    if(url.pathname==='/api/governance/session')return send({identity:null,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}});
     if(url.pathname==='/api/projects')return send(projects);
     if(!match)return send({});
     const [,id,suffix]=match;

@@ -38,11 +38,11 @@ async function fixture(overrides:NodeJS.ProcessEnv={},seed=true){
   }
   const secretModule=pathToFileURL(path.join(root,'server/secrets/secretStoreFactory.ts')).href;
   // Test-only injection selects the existing fallback driver before actual app startup.
-  // No application authorization bypass or production test-mode flag is introduced.
+  // This disposable historical-contract fixture explicitly selects demo mode.
   const preload=`import http from 'node:http';\nimport {getSecretStore} from ${JSON.stringify(secretModule)};\ngetSecretStore({forceFallback:true,masterPassphrase:'disposable-perimeter-master'});\nconst listen=http.Server.prototype.listen;http.Server.prototype.listen=function(...args){this.once('listening',()=>console.log('FIXTURE_BOUND '+JSON.stringify(this.address())));return listen.apply(this,args);};\n`;
   fs.writeFileSync(path.join(dir,'fixture-preload.mjs'),preload);
   const before=files(dir);
-  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:roster,DOCMONSTAKRAKIN_MASTER_KEY:'disposable-perimeter-master'};
+  const env:NodeJS.ProcessEnv={NODE_ENV:'production',DMK_WORKSPACE_ACCESS:'LOCAL_DEVELOPMENT',PORT:String(port),GEMINI_API_KEY:'',DMK_HUMAN_REVIEWERS:roster,DOCMONSTAKRAKIN_MASTER_KEY:'disposable-perimeter-master'};
   for(const k of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[k])env[k]=process.env[k];
   Object.assign(env,overrides);
   let output='';
@@ -67,15 +67,16 @@ try{
   await check('Every actual API registration has exactly one explicit route policy',async()=>{
     const {API_ROUTE_POLICIES}=await import('../server/security/apiRoutePolicy.ts');
     const registrations=new Map<string,string[]>();
-    for(const file of ['server.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts','server/verification/routes.ts','server/readiness/routes.ts']){
+    for(const file of ['server.ts','server/security/workspaceAccess/http.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts','server/verification/routes.ts','server/readiness/routes.ts','server/release/githubCiRoutes.ts']){
       for(const m of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:app|router)\.(get|post|patch|delete|put)\(\s*['"]([^'"]+)['"]/g)){
         const p=(['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].includes(file)?'/api/projects':'')+m[2];if(p.startsWith('/api/')){const key=m[1].toUpperCase()+' '+p;registrations.set(key,[...(registrations.get(key)||[]),file]);}
       }
     }
     const sharedDocumentDispatch=new Set(['GET /api/projects/:id/docs','GET /api/projects/:id/docs/:documentId','POST /api/projects/:id/docs/:documentId/diff','POST /api/projects/:id/docs/:documentId/validate','POST /api/projects/:id/docs/:documentId/save']);
-    for(const [key,files] of registrations){if(files.length>1){assert(sharedDocumentDispatch.has(key),`Unexpected duplicate route ${key}`);assert.deepEqual(files.sort(),['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].sort());}}
+    const conditionalSessionDispatch=new Set(['GET /api/governance/session','POST /api/governance/session','DELETE /api/governance/session']);
+    for(const [key,files] of registrations){if(files.length>1){if(conditionalSessionDispatch.has(key))assert.deepEqual(files.sort(),['server/proposals/identity.ts','server/security/workspaceAccess/http.ts'].sort());else {assert(sharedDocumentDispatch.has(key),`Unexpected duplicate route ${key}`);assert.deepEqual(files.sort(),['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].sort());}}}
     const registered=[...registrations.keys()];
-    assert.equal(registered.length,78);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
+    assert.equal(registered.length,81);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
     assert.equal(new Set(API_ROUTE_POLICIES.map(route=>route.method+' '+route.path)).size,registered.length);
     const {resolveLocalNetworkConfig}=await import('../server/security/localPerimeter.ts');
     assert.deepEqual(resolveLocalNetworkConfig({}),{host:'127.0.0.1',port:3000});

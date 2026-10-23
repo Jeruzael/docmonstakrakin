@@ -7,11 +7,11 @@ import {VerificationError, verificationProject, verificationSession, verificatio
 import {assertVerificationRetention} from './retention.ts';
 
 /** Install AFTER existing project snapshot persistence; requireHuman is the shared auth boundary. */
-export function registerVerificationRoutes(app:Express,store:ProjectStore,requireHuman:(req:Request,res:Response)=>ReviewerIdentity|undefined) {
+export function registerVerificationRoutes(app:Express,store:ProjectStore,requireHuman:(req:Request,res:Response)=>ReviewerIdentity|undefined,principalResolver?:(identity:ReviewerIdentity)=>ReturnType<typeof resolveVerificationPrincipal>) {
  const roster=process.env.DMK_HUMAN_REVIEWERS;
  const handler=(action:(req:Request,res:Response,principal:NonNullable<ReturnType<typeof resolveVerificationPrincipal>>)=>void)=>(req:Request,res:Response)=>{
   const identity=requireHuman(req,res);if(!identity)return;
-  const principal=resolveVerificationPrincipal(identity,roster);if(!principal)return void res.status(403).json({error:'Verification requires an unambiguous operator-controlled personId binding in the human reviewer roster (local assertion only)'});
+  const principal=principalResolver?principalResolver(identity):resolveVerificationPrincipal(identity,roster);if(!principal)return void res.status(403).json({error:'Verification requires an unambiguous operator-controlled personId binding in the human reviewer roster (local assertion only)'});
   try{
    if(['POST','PATCH'].includes(req.method)&&res.locals.projectPersistenceMode!=='MUTATING')return void res.status(503).json({error:'Verification mutations require the project persistence transaction boundary'});
    if(['POST','PATCH'].includes(req.method)) {

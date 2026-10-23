@@ -243,5 +243,21 @@ if (api) {
     assert.deepEqual((await store.execute({ command: 'authorize', digest, action: 'project:create', now: at })).allowedActions, []);
     assert.deepEqual(await store.execute({ command: 'snapshot' }), before);
   }));
+  await test('WS18 atomic listing matches individual policy decisions and fences revocation', () => fixture(async ({ store }) => {
+    const digest = await bootstrap(store);
+    const list = () => store.execute({command:'listProjects',digest,now:at});
+    assert.deepEqual((await list()).projectIds, []);
+    await store.execute({command:'membership',projectId:'PRJ-A',principalId:'synthetic-owner',role:'OWNER'});
+    await store.execute({command:'membership',projectId:'PRJ-B',principalId:'synthetic-owner',role:'READER',deniedActions:['project:read']});
+    const result=await list(),info=await store.execute({command:'info'});
+    assert.equal(result.allowed,true);assert.equal(result.principal.id,'synthetic-owner');assert.deepEqual(result.projectIds,['PRJ-A']);
+    assert.equal(result.policyRevision,info.policyRevision);assert.equal(result.snapshotRevision,info.snapshotRevision);
+    assert.equal('verifier' in result.principal,false);
+    for(const project of state().state.projects){const one=await store.execute({command:'authorize',digest,action:'project:read',projectId:project.id,now:at});assert.equal(result.projectIds.includes(project.id),one.allowed);}
+    await store.execute({command:'membership',projectId:'PRJ-A',principalId:'synthetic-owner',role:'DENY'});
+    assert.deepEqual((await list()).projectIds,[]);
+    await store.execute({command:'disable',principalId:'synthetic-owner'});
+    const denied=await list();assert.equal(denied.allowed,false);assert.equal(denied.reason,'SESSION_INVALID');assert.deepEqual(denied.projectIds,[]);
+  }));
 }
 console.log(`Workspace store: ${passed} passed, ${failed} failed`); process.exitCode = failed ? 1 : 0;

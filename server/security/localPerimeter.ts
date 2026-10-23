@@ -20,8 +20,10 @@ function reject(res:ServerResponse,status:number,error:string,message:string){
 export function localRequestBoundary(req:IncomingMessage,res:ServerResponse,next:()=>void):void {
   const count=(name:string)=>req.rawHeaders.filter((_,i)=>i%2===0&&req.rawHeaders[i].toLowerCase()===name).length;
   const port=req.socket.localPort;
+  const encrypted=(req.socket as import('node:tls').TLSSocket).encrypted===true;
+  const protocol=encrypted?'https':'http';
   const host=req.headers.host;
-  const authorities=port===80?['127.0.0.1','localhost']:['127.0.0.1:'+port,'localhost:'+port];
+  const authorities=port===(encrypted?443:80)?['127.0.0.1','localhost','127.0.0.1:'+port,'localhost:'+port]:['127.0.0.1:'+port,'localhost:'+port];
   if(!port||count('host')!==1||typeof host!=='string'||!authorities.includes(host.toLowerCase())||
     Object.keys(req.headers).some(k=>k==='forwarded'||k.startsWith('x-forwarded-'))){
     return reject(res,403,'LOCAL_HOST_REQUIRED','Use the direct loopback service address; proxy and remote authority are unsupported');
@@ -29,7 +31,7 @@ export function localRequestBoundary(req:IncomingMessage,res:ServerResponse,next
   const origin=req.headers.origin;
   const site=req.headers['sec-fetch-site'];
   if(count('origin')>1||count('sec-fetch-site')>1||
-    (origin!==undefined&&origin!==`http://${host.toLowerCase()}`)||
+    (origin!==undefined&&origin!==`${protocol}://${host.toLowerCase()}`)||
     (site!==undefined&&!['same-origin','none'].includes(String(site)))){
     return reject(res,403,'LOCAL_ORIGIN_REQUIRED','Cross-origin browser access to this local service is blocked');
   }
@@ -43,5 +45,7 @@ export function localRequestBoundary(req:IncomingMessage,res:ServerResponse,next
     }
   }catch{return reject(res,400,'AMBIGUOUS_LOCAL_PATH','Malformed or ambiguous request path');}
   res.setHeader('X-Content-Type-Options','nosniff');
+  res.setHeader('X-Frame-Options','DENY');
+  res.setHeader('Content-Security-Policy',"frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
   next();
 }

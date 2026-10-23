@@ -38,6 +38,8 @@ const root=${JSON.stringify(root)};
 const identity=fs.lstatSync(process.cwd(),{bigint:true});
 if(fs.realpathSync.native(process.cwd())!==root || identity.isSymbolicLink() || !identity.isDirectory() || String(identity.dev)!==${JSON.stringify(String(identity.dev))} || String(identity.ino)!==${JSON.stringify(String(identity.ino))} || process.env.GEMINI_API_KEY)throw new Error('SYNTHETIC_FIXTURE_ADMISSION_FAILED');
 installNativeCredentialTripwire();
+// Only this independently admitted disposable legacy fixture selects demo mode.
+process.env.DMK_WORKSPACE_ACCESS='LOCAL_DEVELOPMENT';
 const dataDir=path.join(root,'.synthetic-secrets');
 getSecretStore({forceFallback:true,dataDir,legacyMachineTokenPath:path.join(dataDir,'legacy-token'),serviceName:'docmonstakrakin-synthetic-only',masterPassphrase:'synthetic-server-fixture-only'});
 console.log('SYNTHETIC_NATIVE_CREDENTIALS_FORBIDDEN');

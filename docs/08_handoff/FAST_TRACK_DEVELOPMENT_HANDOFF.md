@@ -1,5 +1,21 @@
 # Subscription-independent development handoff
 
+
+## Continuation gate — 2026-10-23
+
+The operator selected all six remaining engineering workstreams. Password input, deterministic review-inbox races, atomic project-list filtering and acknowledged session replacement are corrected and focused-tested. Windows fresh private-SDK installation remains qualified separately from the untouched original installation. Full candidate/master integration remains pending at this snapshot; master7c20c82856bd7a3be2d97d8f1bb6c59fe3459732 is still the last verified integrated runtime. Use the operational workspace guide and combined verification checkpoint for exact code, measurements, retained failures and pending gates. Earlier dated captures below remain historical. Do not execute their superseded pending merge sequences.
+
+## Operational workspace continuation — 2026-10-22
+
+The operator deferred actual browser acceptance (task1) and authorized autonomous engineering for tasks2–8. The implementation candidate is `codex/production-security-completion-20261022`, based on verified master `7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`. Start with the [workspace guide](../08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md) and [combined checkpoint](../07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md). Those current records supersede older unscoped-access and missing-SDK capture statements for the new implementation, while preserving earlier history below.
+
+ENFORCED startup now uses a private SQLite authority, persisted/revocable sessions, explicit project/document/package policy, atomic scoped project commits, CSRF and browser identity fencing. Explicit LOCAL_DEVELOPMENT retains its visibly unscoped historical demo. No default or real operator account, grant, certificate or trust root was created. The operator's original snapshot, dependency junction and untracked PR53 note remain unchanged. Genuine lifecycle-enabled fresh npm installation on this Windows host passed with a task-private Microsoft SDK and new Node-header cache; the additive qualification contains a reproducible public helper and all initial failures.
+
+Quality and focused mechanisms pass. The first completed combined run reported133/137 suites with four browser-fixture failures; their raw results are retained and corrections are being qualified. Final signed candidate, hosted checks, normal guarded merge and actual post-merge CI remain pending at this capture. Last fully verified master remains the baseline above; do not infer new CI from baseline results.
+
+All69 canonical WBS states/history, human-only SO/LA quorum,14 privileged denials, disabled live agents, PR34/52, Gate7 and release restrictions remain. Local person assertions and successful technical tests supply no independent human appointment, operational trust, WBS application or release approval. Task1 acceptance, actual operator setup/custody, production evidence acquisition and accepted operational capacity remain distinct outstanding facts. Routine development review is waived by the operator; no human GitHub APPROVED review is invented.
+
+
 ## Final local-MVP integration — 2026-10-22
 
 PR #80 is merged at **`7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`**, with valid signature, correct ordered parents and exact tested tree `45d51f48c68a91bd5233569c6301b44c786b1e15`. Start with the [final eight-workstream closure](../07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md), [normal-checkout runbook](LOCAL_MVP_REPRODUCIBILITY_20261022.md) and [task plan](../06_planning/LOCAL_MVP_COMPLETION_20261022.md). The closure records actual candidate/local/master CI separately and preserves the first full-run failures. Older pending instructions below are historical capture states, not current integration instructions.

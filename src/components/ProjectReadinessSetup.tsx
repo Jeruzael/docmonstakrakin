@@ -91,7 +91,7 @@ export function ProjectReadinessSetup({project, onChanged, sessionRevision = 0, 
       if (!current(operation)) return;
       setNeedsReload(true);
       setError(cause instanceof ReadinessResponseError && [401, 403].includes(cause.status)
-        ? 'Sign in as a configured human Security Officer or Lead Architect, then Reload readiness.'
+        ? 'Sign in with configured human project authority, then Reload readiness.'
         : 'Readiness could not be confirmed. Check the server connection, then Reload readiness.');
     } finally {finish(operation);}
   }
@@ -148,7 +148,7 @@ export function ProjectReadinessSetup({project, onChanged, sessionRevision = 0, 
   return <section aria-label="Project readiness setup" aria-busy={canEdit && (!sameView || pending !== null)} className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
     <div className="flex flex-wrap justify-between items-start gap-3"><div><h2 className="font-semibold text-slate-900">Project setup and current-release scope</h2><p className="text-xs text-slate-600 mt-1">Local planning context grants no approval or release authority. No repository or provider action is performed.</p></div>
       {canEdit && <button type="button" onClick={load} disabled={pending !== null} className="underline text-sm disabled:opacity-50">Reload readiness</button>}</div>
-    {!canEdit && <p>Sign in as a configured human Security Officer or Lead Architect to inspect or edit readiness setup.</p>}
+    {!canEdit && <p>Readiness edits require an authenticated human with project write permission. Project access grants no governance quorum role.</p>}
     {canEdit && (!sameView || pending) && <p role="status">{!sameView || pending === 'load' ? 'Loading readiness…' : 'Saving planning context…'}</p>}
     {sameView && error && <p role="alert" className="text-sm text-red-700">{error}</p>}
     {sameView && message && <p role="status" className="text-sm text-emerald-800">{message}</p>}

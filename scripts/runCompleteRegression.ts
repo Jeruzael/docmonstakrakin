@@ -18,7 +18,10 @@ const files=[path.join(root,'scripts/runAutomatedQa.ts'),...discover(path.join(r
 const results=[];
 for(const file of files){
   const name=path.relative(root,file).replaceAll('\\','/');
-  const r=spawnSync(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,file],{cwd:root,windowsHide:true,encoding:'utf8',timeout:120000,env:{...process.env,GEMINI_API_KEY:''}});
+  // Native Windows ACL/SQLite fixture admission measured 138 seconds for this
+  // suite. This harness allowance does not enlarge any application RPC budget.
+  const timeout=['scripts/testWorkspaceStore.ts','scripts/testWorkspaceApplication.ts','scripts/testWorkspaceBackup.ts'].includes(name)?240000:120000;
+  const r=spawnSync(process.execPath,['--import',pathToFileURL(path.join(root,'node_modules/tsx/dist/loader.mjs')).href,file],{cwd:root,windowsHide:true,encoding:'utf8',timeout,env:{...process.env,GEMINI_API_KEY:''}});
   const changedEvidence=protectedPaths.filter(p=>!fs.existsSync(path.join(root,p))||!fs.readFileSync(path.join(root,p)).equals(retained.get(p)!));
   // Keep each captured stream's first result marker at a line boundary even if
   // stdout ends without a newline; otherwise stderr FAIL could become PASS text.

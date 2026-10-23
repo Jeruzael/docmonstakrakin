@@ -18,7 +18,7 @@ export type WorkspaceCommand =
   | { command: 'credential'; name: string }
   | { command: 'admitLogin'; key: string; now: number }
   | { command: 'issue'; principalId: string; expectedCredentialRevision: number; expectedGeneration: number; digest: string; now: number }
-  | { command: 'session' | 'logout'; digest: string; now: number }
+  | { command: 'session' | 'logout' | 'listProjects'; digest: string; now: number }
   | { command: 'rotate'; digest: string; replacementDigest: string; now: number }
   | { command: 'changeCredential'; digest: string; expectedCredentialRevision: number; verifier: string; now: number }
   | { command: 'resetCredential'; principalId: string; verifier: string }

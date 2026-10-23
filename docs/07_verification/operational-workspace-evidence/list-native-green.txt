@@ -1,0 +1,19 @@
+PASS WS01 independent workspace authority store exists
+PASS WS02 missing authority is setup-required and never creates a default root
+PASS WS03 actual SQLite initialization, one-time bootstrap, no implicit grants, private credential shape
+PASS WS04 member authors write; review needs separate SO/LA and explicit DENY wins
+PASS WS05 snapshot/CAS/current policy rollback excludes collateral and revoked authority
+PASS WS06 creation ownership, import replacement, replay tombstone and existing-object isolation are atomic
+PASS WS07 session rotation/credential CAS/revocation and monotonic time never restore authority
+PASS WS08 persisted throttle and restart generation fence old sessions without JSON writes
+PASS WS09 unknown commands, AGENT provisioning and executable/oversized input fail closed
+PASS WS10 self-project export appends only one export event and cannot mutate content
+PASS WS11 exact idle/absolute lifetimes and disabled principal deny current actions
+PASS WS12 full retained audit capacity rolls back snapshot/ownership/clock and retains diagnostic reads
+PASS WS13 linked authority files and corruption refuse reopen without deleting evidence
+PASS WS14 abrupt committed child exit retains lock; explicit stopped-owner recovery preserves replay refusal
+PASS WS15 snapshot duplicate/unknown/foreign project bindings and nonfinite numbers reject without mutation
+PASS WS16 altered owned schema refuses reopen before granting authority
+PASS WS17 current allowedActions matches central enforcement without role inference or grant leakage
+PASS WS18 atomic listing matches individual policy decisions and fences revocation
+Workspace store: 18 passed, 0 failed

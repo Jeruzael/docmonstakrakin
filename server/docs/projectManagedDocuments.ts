@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import express, {type Request, type Response} from 'express';
 import type {ProjectStore} from '../projectStore.ts';
 import type {ReviewerIdentity} from '../proposals/identity.ts';
+import {isWorkspaceIdentity} from '../security/workspaceAccess/identity.ts';
 import type {ProjectManagedDocument, ProjectManagedDocuments} from '../../src/managedDocumentTypes.ts';
 import type {ControlledDocumentKind} from '../../src/types.ts';
 import {computeDocumentDiff} from './controlledDocsValidator.ts';
@@ -92,7 +93,7 @@ function bodyKeys(body: any, allowed: string[]) {
 }
 function commonWrite(store: Store, req: Request, res: Response, requireHuman: (req:Request,res:Response)=>ReviewerIdentity|undefined) {
   const reviewer=requireHuman(req,res);if(!reviewer)return;
-  if(reviewer.kind!=='HUMAN'||reviewer.roleSource!=='LOCAL_SERVER_ROSTER'||!reviewer.roles.some(r=>['Security Officer','Lead Architect'].includes(r)))fail(403,'HUMAN_REVIEWER_REQUIRED');
+  if(reviewer.kind!=='HUMAN'||reviewer.roleSource!=='LOCAL_SERVER_ROSTER'||(!isWorkspaceIdentity(reviewer)&&!reviewer.roles.some(r=>['Security Officer','Lead Architect'].includes(r))))fail(403,'HUMAN_REVIEWER_REQUIRED');
   if(res.locals.projectPersistenceMode!=='MUTATING'||!store.managedDocuments)fail(503,'MANAGED_DOCUMENT_PERSISTENCE_REQUIRED');
   const project=store.projects.find(p=>p.id===req.params.id);if(!project)fail(404,'PROJECT_NOT_FOUND');
   if(project.id===SELF_BOOTSTRAP_PROJECT_ID)fail(403,'MANAGED_DOCUMENT_PROJECT_PROTECTED');

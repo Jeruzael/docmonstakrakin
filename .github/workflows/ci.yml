@@ -21,7 +21,9 @@ jobs:
   windows_native:
     name: Windows Native Qualification
     runs-on: windows-2022
-    timeout-minutes: 20
+    # Fresh npm and Bun now each exercise the private authority, actual App,
+    # TLS and backup fixtures in addition to the disconnected native contracts.
+    timeout-minutes: 30
     defaults:
       run:
         shell: pwsh
@@ -106,6 +108,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
+          node --import tsx scripts/testWorkspaceStore.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed private workspace authority failed' }
+          node --import tsx scripts/testWorkspaceApplication.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed enforced App/HTTP/SQLite journey failed' }
+          node --import tsx scripts/testWorkspaceTls.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed private TLS qualification failed' }
+          node --import tsx scripts/testWorkspaceBackup.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed offline backup qualification failed' }
           npm.cmd run ci:quality
           if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
           git diff --exit-code
@@ -149,6 +159,14 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
+            node --import tsx scripts/testWorkspaceStore.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed private workspace authority failed' }
+            node --import tsx scripts/testWorkspaceApplication.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed enforced App/HTTP/SQLite journey failed' }
+            node --import tsx scripts/testWorkspaceTls.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed private TLS qualification failed' }
+            node --import tsx scripts/testWorkspaceBackup.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed offline backup qualification failed' }
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
@@ -212,6 +230,9 @@ jobs:
           node --import tsx scripts/testSyntheticSessionCapacity.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
+          node --import tsx scripts/testWorkspaceStore.ts
+          node --import tsx scripts/testWorkspaceTls.ts
+          node --import tsx scripts/testWorkspaceBackup.ts
           git diff --exit-code
 
   controlled_docs:

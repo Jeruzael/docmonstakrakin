@@ -227,6 +227,20 @@ function command(c) {
       exact(c, ['command', 'principalId', 'expectedCredentialRevision', 'expectedGeneration', 'digest', 'now']); id(c.principalId); integer(c.expectedCredentialRevision, 1); integer(c.expectedGeneration, 1); digest(c.digest); now(c.now);
       return transaction(() => { initialized(); clock(c.now); const p = principal(c.principalId), m = meta(); if (!p || p.disabled || p.credentialRevision !== c.expectedCredentialRevision || m.generation !== c.expectedGeneration) fail('WORKSPACE_STALE_CREDENTIAL'); insertSession(p, c.digest, c.now); event('SESSION_ISSUED', p.id, c.now); return true; });
     }
+    case 'listProjects': {
+      exact(c, ['command', 'digest', 'now']); digest(c.digest); now(c.now);
+      return transaction(() => {
+        initialized(); clock(c.now); const m = meta(), s = session(c.digest, c.now);
+        const result = { allowed: false, reason: 'SESSION_INVALID', projectIds: [], policyRevision: m.policyRevision, snapshotRevision: m.snapshotRevision };
+        if (!s) return result;
+        // One snapshot parse and one membership read, in the same transaction
+        // as the current session check. Never accept a caller-selected ID list.
+        const members = new Map(db.prepare('SELECT projectId,role,deniedActions FROM memberships WHERE principalId=?').all(s.principal.id)
+          .map(row => [row.projectId, { role: row.role, deniedActions: JSON.parse(row.deniedActions) }]));
+        result.projectIds = snapshotValue().state.projects.filter(project => evaluateProjectAction(s.principal, members.get(project.id), 'project:read', project.id).allowed).map(project => project.id);
+        return { ...result, allowed: true, reason: 'ALLOWED', principal: s.principal };
+      });
+    }
     case 'session': case 'authorize': {
       exact(c, ['command', 'digest', 'now', ...(c.command === 'authorize' ? ['action'] : [])], c.command === 'authorize' ? ['projectId'] : []); digest(c.digest); now(c.now); if (c.projectId !== undefined) id(c.projectId);
       return transaction(() => { initialized(); clock(c.now); return c.command === 'session' ? session(c.digest, c.now) : decision(c.digest, c.action, c.projectId, c.now); });

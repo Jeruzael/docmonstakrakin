@@ -96,3 +96,7 @@ Retained logs live under `C:\Users\HomePC\AppData\Local\Temp\codex-security-arti
 | `workspace-backup-quality.log` | 1447 | `f57068ca2dac55f0f84b1473700aed927ce0a201f9ddae050eb18d48c5de9d8d` |
 
 No production activation, operator restore, human identity enrollment, browser acceptance or release approval is implied by this receipt.
+
+## Later installation reconciliation — 2026-10-23
+
+The earlier blocked-install and retained-package observations below describe their original execution time. Later genuine private-SDK, lifecycle-enabled clean Windows npm installation succeeded, with audit0, native35/35, path7/7 and quality/build. See [the additive qualification](OPERATOR_WINDOWS_QUALIFICATION_20261022.md). The combined candidate reruns backup/native checks against that fresh dependency directory and actual hosted Windows/Linux candidate CI; those outcomes are recorded separately. Original measurements are not relabeled as fresh-install results. Activated recovery and production capacity remain unqualified.

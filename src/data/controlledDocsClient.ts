@@ -13,6 +13,7 @@ import type {
   ReviewerSessionInfo,
   DetectedEol,
 } from '../types.js';
+import {workspaceProjectActions} from './workspaceProjectAccess.ts';
 import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 import type { ManagedDocumentCreateInput, ManagedDocumentCreateResponse, ManagedDocumentSaveInput, ManagedDocumentContentResponse } from '../managedDocumentTypes.js';
 
@@ -419,6 +420,13 @@ export function createControlledDocsLoader(request: typeof fetch = fetch) {
       'project', `/api/projects/${encodeURIComponent(projectId)}`, { method: 'GET' }, (data: any) => {
         if (!data || data.id !== projectId || !isValidStateVersion(data.stateVersion)) throw new Error('Invalid project version response.');
         return data.stateVersion;
+      }
+    ),
+
+    loadProjectAuthoringContext: async (projectId:string):Promise<{stateVersion:number;actions:string[]|null}> => executeChannel(
+      'project',`/api/projects/${encodeURIComponent(projectId)}`,{method:'GET'},(data:any)=>{
+        if(!data||data.id!==projectId||!isValidStateVersion(data.stateVersion))throw Error('Invalid project authoring response.');
+        return{stateVersion:data.stateVersion,actions:workspaceProjectActions(data)};
       }
     ),
 

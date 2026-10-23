@@ -33,6 +33,7 @@ import { createControlledDocsLoader } from '../data/controlledDocsClient.js';
 import { isValidStateVersion } from '../utils/projectListReconciliation.js';
 import { DocumentsView } from './DocumentsView';
 import type { ManagedDocumentContentResponse, ManagedDocumentCreateResponse } from '../managedDocumentTypes.js';
+import {observedWorkspaceMode} from '../data/workspaceTransport.ts';
 
 type DynamicProjectionsProps = ComponentProps<typeof DocumentsView>;
 
@@ -121,6 +122,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
   const [createReason, setCreateReason] = useState('');
   const [createConfirmed, setCreateConfirmed] = useState(false);
   const [createVersion, setCreateVersion] = useState<number | null>(null);
+  const [createAllowed,setCreateAllowed]=useState(false);
   const [createRequestId, setCreateRequestId] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
   const [createContextLoading, setCreateContextLoading] = useState(false);
@@ -212,6 +214,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     setCreateReason('');
     setCreateConfirmed(false);
     setCreateVersion(null);
+    setCreateAllowed(false);
     setCreateRequestId('');
     setCreateError(null);
     setCreateRecoveryRequired(false);
@@ -553,14 +556,16 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
     setCreateContextLoading(true);
     setCreateConfirmed(false);
     setCreateVersion(null);
+    setCreateAllowed(false);
     setReviewerSession(null);
     try {
-      const [session, version] = await Promise.all([
-        api.loadGovernanceSession(), api.loadProjectStateVersion(projectId),
+      const [session, context] = await Promise.all([
+        api.loadGovernanceSession(), api.loadProjectAuthoringContext(projectId),
       ]);
       if (!current()) return;
       setReviewerSession(session);
-      setCreateVersion(version);
+      setCreateVersion(context.stateVersion);
+      setCreateAllowed(!!session&&(context.actions?.includes('project:write')??(observedWorkspaceMode()==='LOCAL_DEVELOPMENT'&&session.roles.some(role=>['Security Officer','Lead Architect'].includes(role)))));
       setCreateRecoveryRequired(false);
     } catch (err: any) {
       if (current()) setCreateError(err.message || 'Unable to load reviewer session and project state.');
@@ -579,7 +584,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
 
   const handleCreate = async () => {
     if (!canonicalReady || createBusy || createContextLoading || createVersion === null || createRecoveryRequired || !createConfirmed ||
-      !reviewerSession?.roles.some(role => ['Security Officer', 'Lead Architect'].includes(role)) ||
+      !createAllowed ||
       !createTitle.trim() || !createContent.trim() || !createReason.trim()) return;
     const current = captureContext();
     setCreateBusy(true);
@@ -633,7 +638,7 @@ export const ControlledDocsView: FC<ControlledDocsViewProps> = ({
           <div className="flex flex-wrap gap-3 justify-end">
             <button disabled={createBusy} onClick={() => setCreateOpen(false)} className="border rounded px-3 py-2 text-sm">Cancel</button>
             <button data-testid="btn-reload-create-context" disabled={createBusy || createContextLoading} onClick={async () => { const current = captureContext(); await refreshDocumentList(); if (current()) await loadCreateContext(); }} className="border rounded px-3 py-2 text-sm">Reload catalog and reviewer context</button>
-            <button data-testid="btn-confirm-create-document" onClick={handleCreate} disabled={!canonicalReady || createBusy || createContextLoading || createRecoveryRequired || createVersion === null || !createConfirmed || !createTitle.trim() || !createContent.trim() || !createReason.trim() || !reviewerSession?.roles.some(role => ['Security Officer','Lead Architect'].includes(role))} className="bg-emerald-600 text-white rounded px-3 py-2 text-sm disabled:opacity-40">{createBusy ? 'Creating…' : 'Confirm and create'}</button>
+            <button data-testid="btn-confirm-create-document" onClick={handleCreate} disabled={!canonicalReady || createBusy || createContextLoading || createRecoveryRequired || createVersion === null || !createConfirmed || !createTitle.trim() || !createContent.trim() || !createReason.trim() || !createAllowed} className="bg-emerald-600 text-white rounded px-3 py-2 text-sm disabled:opacity-40">{createBusy ? 'Creating…' : 'Confirm and create'}</button>
           </div>
         </div>
       </div>}
