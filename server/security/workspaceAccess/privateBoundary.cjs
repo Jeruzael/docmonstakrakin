@@ -25,8 +25,10 @@ function privatePermissions(file, directory) {
   const pin = crypto.createHash('sha256').update(listing).digest('hex');
   if (pins.has(file)) { if (pins.get(file) !== pin) fail('WORKSPACE_PERMISSIONS_INVALID'); return; }
   // Validate the initial ACL by SID, rather than trusting localized icacls text.
+  // Direct .NET reads avoid cmdlet acquisition (Get-Acl stalled on the hosted
+  // sparse-environment child). Descriptor predicates and timeout stay identical.
   const literal = file.replace(/'/g, "''");
-  const code = "$ErrorActionPreference='Stop';$a=Get-Acl -LiteralPath '" + literal + "';$s=New-Object System.Security.Principal.SecurityIdentifier('" + ownerSid + "');if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};" +
+  const code = "$ErrorActionPreference='Stop';$a=[System.IO." + (directory ? 'Directory' : 'File') + "]::GetAccessControl('" + literal + "');$s=[System.Security.Principal.SecurityIdentifier]::new('" + ownerSid + "');if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};" +
     (directory ? 'if(-not $a.AreAccessRulesProtected){exit 3};' : '') +
     '$r=$a.GetAccessRules($true,$true,[System.Security.Principal.SecurityIdentifier]);if($r.Count -lt 1){exit 3};foreach($v in $r){if($v.IdentityReference.Value -ne $s.Value -or $v.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow){exit 3}}';
   try { execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], { windowsHide: true, timeout: 4000, stdio: 'pipe',
@@ -46,11 +48,11 @@ function createPrivateDirectory(file) {
     // Hosted Windows proved icacls can retain foreign explicit grants even
     // with separate inheritance/grant commands. Persist only a new exact DACL
     // through Windows PowerShell 5's .NET API. Never set Owner, Group or SACL.
-    const code = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$p='" + literal + "';$s=New-Object System.Security.Principal.SecurityIdentifier('" + ownerSid + "');" +
-      "$a=Get-Acl -LiteralPath $p;if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};" +
-      "$d=New-Object System.Security.AccessControl.DirectorySecurity;$d.SetAccessRuleProtection($true,$false);" +
-      "$r=New-Object System.Security.AccessControl.FileSystemAccessRule($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow');$d.AddAccessRule($r);[System.IO.Directory]::SetAccessControl($p,$d);" +
-      "$a=Get-Acl -LiteralPath $p;if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3}";
+    const code = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$p='" + literal + "';$s=[System.Security.Principal.SecurityIdentifier]::new('" + ownerSid + "');" +
+      "$a=[System.IO.Directory]::GetAccessControl($p);if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3};" +
+      "$d=[System.Security.AccessControl.DirectorySecurity]::new();$d.SetAccessRuleProtection($true,$false);" +
+      "$r=[System.Security.AccessControl.FileSystemAccessRule]::new($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow');$d.AddAccessRule($r);[System.IO.Directory]::SetAccessControl($p,$d);" +
+      "$a=[System.IO.Directory]::GetAccessControl($p);if($a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $s.Value){exit 3}";
     try { execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], { windowsHide: true, timeout: 4000, stdio: 'pipe',
       env: { ...process.env, PSModulePath: path.join(process.env.WINDIR || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/Modules') } }); }
     catch { fail('WORKSPACE_PERMISSIONS_INVALID'); }
