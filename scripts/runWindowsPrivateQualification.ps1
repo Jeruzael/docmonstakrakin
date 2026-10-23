@@ -19,6 +19,20 @@ function Get-OwnerObservation([string]$Path) {
     })
   }
 }
+function New-PrivateProbeDacl([string]$Sid) {
+  # A fresh descriptor removes unrelated explicit grants as well as inherited
+  # ones. Applied only to this helper's exclusively created disposable probe.
+  # It does not set an owner or touch any authority directory/file.
+  $acl = [System.Security.AccessControl.DirectorySecurity]::new()
+  $acl.SetAccessRuleProtection($true, $false)
+  $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+    [System.Security.Principal.SecurityIdentifier]::new($Sid),
+    [System.Security.AccessControl.FileSystemRights]::FullControl,
+    ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit),
+    [System.Security.AccessControl.PropagationFlags]::None,
+    [System.Security.AccessControl.AccessControlType]::Allow))
+  return $acl
+}
 
 # This launcher changes only a NEW suspended child's distinct primary token. It never calls
 # SetTokenInformation on the runner/PowerShell's existing token. No privileges
@@ -136,20 +150,22 @@ try {
     try {$stream.WriteByte(1)} finally {$stream.Dispose()}
     $observation.directoryBefore = Get-OwnerObservation $probe
     $observation.fileBefore = Get-OwnerObservation $file
-    # Match genuine new-root DACL hardening while recording its owner unchanged.
-    # Hosted diagnostic proved combined flags preserve foreign explicit ACEs.
-    # Keep that original case in Diagnostics; actual profiles use proven split calls.
+    # Keep the original combined-icacls diagnostic. Actual helper probes are
+    # nonempty (the exclusive file above already exists), unlike the successful
+    # empty-directory split-command variant. Use the independently tested exact
+    # descriptor here; runtime authority admission remains completely separate.
     if ($Phase -eq 'Diagnostics') {
       & icacls.exe $probe '/inheritance:r' '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
       if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_DACL_FAILED'}
     } else {
-      & icacls.exe $probe '/inheritance:r' | Out-Null
-      if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_INHERITANCE_FAILED'}
-      & icacls.exe $probe '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
-      if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_GRANT_FAILED'}
+      # Persist modified DACL only. PowerShell Set-Acl can request unrelated
+      # SACL access for a new descriptor and require SeSecurityPrivilege.
+      # https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions.setaccesscontrol
+      [System.IO.FileSystemAclExtensions]::SetAccessControl([System.IO.DirectoryInfo]::new($probe), (New-PrivateProbeDacl $sid))
     }
     $observation.directoryAfter = Get-OwnerObservation $probe
     $observation.fileAfter = Get-OwnerObservation $file
+    if ($observation.directoryAfter.ownerSid -ne $observation.directoryBefore.ownerSid -or $observation.fileAfter.ownerSid -ne $observation.fileBefore.ownerSid) {throw 'OWNER_PROBE_UNEXPECTED_OWNER_CHANGE'}
     Write-Output ('WINDOWS_PRIVATE_OWNER_DIAGNOSTIC ' + ($observation | ConvertTo-Json -Depth 8 -Compress))
     if ($Phase -eq 'Diagnostics') {
       if ($Child) {throw 'DIAGNOSTICS_CANNOT_SELECT_CHILD_PROFILE'}
@@ -171,16 +187,7 @@ try {
         } else {
           # A new DACL, not SetAccessRule (which retains unrelated explicit ACEs).
           # https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.objectsecurity.setaccessruleprotection
-          $acl = [System.Security.AccessControl.DirectorySecurity]::new()
-          $acl.SetAccessRuleProtection($true, $false)
-          $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
-            [System.Security.Principal.SecurityIdentifier]::new($sid),
-            [System.Security.AccessControl.FileSystemRights]::FullControl,
-            ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit),
-            [System.Security.AccessControl.PropagationFlags]::None,
-            [System.Security.AccessControl.AccessControlType]::Allow)
-          $acl.AddAccessRule($rule)
-          Set-Acl -LiteralPath $variant -AclObject $acl
+          [System.IO.FileSystemAclExtensions]::SetAccessControl([System.IO.DirectoryInfo]::new($variant), (New-PrivateProbeDacl $sid))
         }
         $variantResult.after = Get-OwnerObservation $variant
         if ($variantResult.after.ownerSid -ne $before.ownerSid) {throw 'OWNER_PROBE_UNEXPECTED_OWNER_CHANGE'}
@@ -192,7 +199,7 @@ try {
     if ($Child) {
       # Direct -Child invocation cannot skip the actual token/filesystem checks.
       if ($identity.Owner.Value -ne $sid -or $observation.directoryBefore.ownerSid -ne $sid -or $observation.fileBefore.ownerSid -ne $sid) {throw 'CHILD_OWNER_PROFILE_UNCONFIRMED'}
-      if (-not $observation.directoryAfter.protected -or @($observation.directoryAfter.access | Where-Object {$_.sid -ne $sid -or $_.type -ne 'Allow'}).Count) {throw 'CHILD_DACL_PROFILE_UNCONFIRMED'}
+      if (-not $observation.directoryAfter.protected -or $observation.directoryAfter.access.Count -ne 1 -or @($observation.directoryAfter.access | Where-Object {$_.sid -ne $sid -or $_.type -ne 'Allow' -or $_.rights -ne [long][System.Security.AccessControl.FileSystemRights]::FullControl}).Count) {throw 'CHILD_DACL_PROFILE_UNCONFIRMED'}
       $env:DMK_OWNER_PROBE = $probe
       $nodeProbe = @'
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
