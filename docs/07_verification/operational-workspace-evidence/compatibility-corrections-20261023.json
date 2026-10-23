@@ -1,0 +1,65 @@
+{
+  "archive": "compatibility-corrections-20261023.zip",
+  "sha256": "702675689501ae29de128e3936a5f4cb65ef759bc895b2ee25e5f99042b4ff4f",
+  "representation": "Original raw local source/log bytes",
+  "viteCorrection": "3be0e72d68746d2a33de89724fe01000f0596e5a",
+  "windowsHelperCorrection": "532eb95f62edac79069e8f85211e696910a6b9c0",
+  "scope": "Linux UI-only disposable fixture using verified official Node22.23.3 and Windows Chromium; baseline RED env.mjs403, corrected exact source App GREEN, imports200/private-outside403; Windows perimeter26/26. Full WSL lifecycle install failed missing make/g++; UI-only scratch manifest omitted better-sqlite3, without repository declaration changes. No Linux native/full-install qualification follows. Private DACL harness uses exclusively new adversarial Windows probes; its fixture requires local privileges, not operator authority. Actual hosted npm/Bun qualification still required.",
+  "files": [
+    {
+      "file": "http-probe.ts",
+      "bytes": 1536,
+      "sha256": "c89c36b786db928c469aea181a24285bae52d63c41106425d0912424b0abfb3d"
+    },
+    {
+      "file": "linux-http-final-3be0e72.log",
+      "bytes": 1397,
+      "sha256": "9809668b4d462e30b11272ea5a28bbe712388046f28d55e6f0104284040310d0"
+    },
+    {
+      "file": "linux-source-app-diagnostic.log",
+      "bytes": 442,
+      "sha256": "f67241de000c0406982b02a2b40d364cff8128ee9d684d787afc92c4011afc2b"
+    },
+    {
+      "file": "linux-source-app-final-3be0e72.log",
+      "bytes": 57,
+      "sha256": "031356aab6d20d28a8129ebf28ac389b2281f0af67c6fe6d334f5fff6374d4e9"
+    },
+    {
+      "file": "npm-ci-live.log",
+      "bytes": 3675,
+      "sha256": "c0f51f02471f22aba147b0f4b0426ddfa4c9fded2cc2133fbe853632631e324b"
+    },
+    {
+      "file": "npm-ui-only-corrected.log",
+      "bytes": 545,
+      "sha256": "af7650c69f02fc500cc3695ea2df1cd6b0f5adab371ae4be5081882b17dc330f"
+    },
+    {
+      "file": "SHASUMS256.txt",
+      "bytes": 3981,
+      "sha256": "4fe99a2ba9d552a6f51c13ed68fb11104cfa5df601aec616be689253a8139e7a"
+    },
+    {
+      "file": "source-server.ts",
+      "bytes": 1933,
+      "sha256": "da0a3fed32e62a559b6572f986a3e0ed0d67873cc59fbed1299f5f558743a5a9"
+    },
+    {
+      "file": "testProbeAcl.ps1",
+      "bytes": 3484,
+      "sha256": "10a7e257b91d1e4acbc837306e4b4c02cbe291b80dea1405441db0c79bf9a9f7"
+    },
+    {
+      "file": "windows-browser-linux-vite.ts",
+      "bytes": 1344,
+      "sha256": "b37f1195eb81a03845dea19d172abdbae826331dcbe320b922c4e86a2cb54390"
+    },
+    {
+      "file": "windows-perimeter-final-3be0e72.log",
+      "bytes": 1892,
+      "sha256": "c79ce7d591c0bcf84f1cfa2c15937818a41da2346ed937ca20a4d2cb37aacc32"
+    }
+  ]
+}
