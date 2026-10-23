@@ -79,7 +79,7 @@ PR34/52,14 privileged denials, disabled live agents, independent SO/LA human quo
 
 ## Reproducible bounded validator
 
-The following module is a documentation fixture. Extract the `javascript` fenced block to a task-local `.mjs` outside the repository, then invoke Node with argument1 the review worktree and argument2 an existing `yaml/dist/index.js` path. It writes no repository files and uses no native runtime libraries. Run `git diff --check` and the existing WBS renderer `--check` separately as recorded above. Root-directory paths and dependencies are arguments, not product setup promises.
+The following module is a documentation fixture. Extract the `javascript` fenced block to a task-local `.mjs` outside the repository, then invoke Node with argument1 the review worktree and argument2 an existing `yaml/dist/index.js` path. It writes no repository files and uses no native runtime libraries. The final publication validator compares both committed and working changes against the pinned runtime baseline, so it also works from a clean checkout of this candidate; an earlier preparation-only version depended on uncommitted files and was corrected before PR publication. Run `git diff --check` and the existing WBS renderer `--check` separately as recorded above. Root-directory paths and dependencies are arguments, not product setup promises.
 
 ```javascript
 import fs from 'node:fs';
@@ -170,17 +170,22 @@ assert.deepEqual(d.counts,{external_entries:34,canonical_owners:23,canonical_add
 assert.ok(owners.get('DMK-209').acceptance_criteria.some(s=>s.includes('every project operation')&&s.includes('scoped reads')));
 assert.ok(owners.get('DMK-209').negative_acceptance_criteria.some(s=>s.includes('scoped project read')&&s.includes('fails before disclosure')));
 assert.ok(owners.get('EXT-CAND-07').acceptance_criteria.some(s=>s.includes('server time before expiry')&&s.includes('at expiry')&&s.includes('task claim')));
-const newFiles=git('ls-files','--others','--exclude-standard').split(/\r?\n/).filter(Boolean);
-const changed=git('diff','--name-only','HEAD').split(/\r?\n/).filter(Boolean);
+const pinnedBaseline='62d66779b9d7236e093eb2fd8e47355c8d42b798';
+assert.equal(d.baseline.runtime,pinnedBaseline);
+const delta=git('diff','--name-status',pinnedBaseline).split(/\r?\n/).filter(Boolean).map(line=>line.split('\t'));
+assert.ok(delta.every(([status])=>['A','M'].includes(status)),'unexpected deletion/rename/type change');
+const untracked=git('ls-files','--others','--exclude-standard').split(/\r?\n/).filter(Boolean);
+const newFiles=[...new Set([...untracked,...delta.filter(([status])=>status==='A').map(([,file])=>file)])];
+const changed=delta.filter(([status])=>status==='M').map(([,file])=>file);
 const files=[...new Set([...newFiles,...changed])];
 const expectedNew=['docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md','docs/06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md',inventory,'docs/07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md'];
 const expectedChanged=['docs/MASTER_PLAN.md','docs/ARCHITECTURE_AND_SPECS.md','docs/README.md','docs/01_product/PRODUCT_VISION.md','docs/02_requirements/FUNCTIONAL_REQUIREMENTS.md','docs/02_requirements/NON_FUNCTIONAL_REQUIREMENTS.md','docs/02_requirements/REQUIREMENTS_REGISTER.md','docs/03_architecture/SYSTEM_ARCHITECTURE.md','docs/03_architecture/AGENT_ARCHITECTURE.md','docs/03_architecture/INTEGRATION_ARCHITECTURE.md','docs/04_security/RISK_REGISTER.md','docs/00_control/TRACEABILITY_MATRIX.md','docs/08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md'];
 assert.deepEqual(files.sort(),[...expectedNew,...expectedChanged].sort());
-for(const p of changed){const n=git('diff','--numstat','HEAD','--',p).split('\t');assert.equal(n[1],'0',`nonadditive summary edit${p}`);}
+for(const p of changed){const n=git('diff','--numstat',pinnedBaseline,'--',p).split('\t');assert.equal(n[1],'0',`nonadditive summary edit${p}`);}
 let linkCount=0;
 for(const p of files.filter(f=>f.endsWith('.md'))){
  // Legacy links are not attributed to this addendum; check all links in new documents and only added text in summaries.
- const body=newFiles.includes(p)?read(p):git('diff','--unified=0','HEAD','--',p).split(/\r?\n/).filter(l=>l.startsWith('+')&&!l.startsWith('+++')).map(l=>l.slice(1)).join('\n');
+ const body=newFiles.includes(p)?read(p):git('diff','--unified=0',pinnedBaseline,'--',p).split(/\r?\n/).filter(l=>l.startsWith('+')&&!l.startsWith('+++')).map(l=>l.slice(1)).join('\n');
  const prose=body.replace(/```[\s\S]*?```/g,'');
  for(const m of prose.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)){
   const ref=m[1].replace(/^<|>$/g,'');if(/^(https?:|mailto:|codex:)/.test(ref))continue;
@@ -191,11 +196,11 @@ for(const p of files.filter(f=>f.endsWith('.md'))){
  }
 }
 const protectedPaths=['docs/00_control/MASTER_WBS.yaml','docs/00_control/MASTER_WBS.md','docs/01_product/agent-center-v0.3','src','server','scripts','package.json','package-lock.json','bun.lock'];
-assert.equal(git('diff','--name-only','HEAD','--',...protectedPaths),'');
+assert.equal(git('diff','--name-only',pinnedBaseline,'--',...protectedPaths),'');
 const sensitivePatterns=[/AKIA[0-9A-Z]{16}/g,/gh[pousr]_[A-Za-z0-9]{20,}/g,/github_pat_[A-Za-z0-9_]{30,}/g,/sk-[A-Za-z0-9_-]{24,}/g,/AIza[0-9A-Za-z_-]{30,}/g,/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g,/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,/Bearer\s+[A-Za-z0-9._-]{24,}/g,/(?:password|token|secret|api_key)\s*[:=]\s*["'][A-Za-z0-9_./+=-]{16,}["']/gi,/https?:\/\/[^\s/@:]+:[^\s/@]+@/g];
 let sensitiveMatches=0;
-for(const p of files){const body=newFiles.includes(p)?read(p):git('diff','--unified=0','HEAD','--',p);for(const pattern of sensitivePatterns){pattern.lastIndex=0;for(const ignored of body.matchAll(pattern))sensitiveMatches++;}}
+for(const p of files){const body=newFiles.includes(p)?read(p):git('diff','--unified=0',pinnedBaseline,'--',p);for(const pattern of sensitivePatterns){pattern.lastIndex=0;for(const ignored of body.matchAll(pattern))sensitiveMatches++;}}
 assert.equal(sensitiveMatches,0,'sensitive data pattern match; inspect privately');
-git('diff','--check');
+git('diff','--check',pinnedBaseline);
 console.log(JSON.stringify({status:'PASS',entries:d.entries.length,positive_criteria:positive,negative_criteria:negative,unique_criteria:criteriaIds.size,proposed_requirements:d.proposed_requirements.length,readiness_dag_nodes:readinessNodes,registration_dag_nodes:registrationNodes,canonical_top_level_items:sourceWbs.items.length,canonical_ids_including_children:canonical.size,source_location_checks:sourceLocations,local_link_checks:linkCount,changed_summaries:changed.length,new_documents:newFiles.length,protected_path_drift:0,sensitive_pattern_categories:sensitivePatterns.length,sensitive_matches:sensitiveMatches,nonapplying:true},null,2));
 ```
