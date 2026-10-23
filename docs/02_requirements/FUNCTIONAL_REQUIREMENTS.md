@@ -1,4 +1,9 @@
 # docmonstakrakin Functional Requirements
+
+## External-agent-first successor requirements — proposed, 2026-10-23
+
+The [successor clarification §10](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md#10-proposed-requirement-ownership-and-reuse) defines18 PROPOSED EAF-REQ design references and reuses the existing FR and Agent Center requirement IDs. The [typed review inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml) assigns exact positive/negative criteria and one lead owner per criterion. It extends existing compiler/question/work/evidence mechanisms rather than duplicating them. These references are not approved canonical requirement registrations, executable proposal-schema1.1 payloads or implemented external-client features.
+
 ## System Functional Capability Specifications
 
 **Document ID:** DOC-REQ-001  

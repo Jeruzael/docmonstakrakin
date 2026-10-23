@@ -1,4 +1,9 @@
 # docmonstakrakin Product Vision
+
+## Proposed successor direction — 2026-10-23
+
+See the [single external-agent-first clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) for conversation/project reuse, trusted skills per operation, typed continuous questions, authorized task collaboration, evidence, durable presence/chat and strict release boundaries. External clients, approved local/direct adapters, GitHub-mediated work and manual compiler/import must remain useful without a DMK model API key; capability support is acquired and tested per client. [Planning ownership](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md) is REVIEW_ONLY, with registration/runtime NOT_APPLIED. The original Agent Center v0.3 remains immutable; no human approval, production privacy guarantee or live agent capability is implied.
+
 ## A-SSDLC Development Control Plane
 
 **Document ID:** DOC-PROD-001  

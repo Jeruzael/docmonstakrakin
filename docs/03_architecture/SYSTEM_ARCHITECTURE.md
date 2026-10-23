@@ -1,4 +1,9 @@
 # docmonstakrakin System Architecture
+
+## Proposed external-agent boundary — 2026-10-23
+
+The [successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) adds a proposed common action/policy boundary across direct/local/GitHub/manual transports. Reuse the PR80/81 ENFORCED session/private SQLite/project-policy/atomic-CAS foundations; no new routes or stores are implemented by this document. DMK owns accepted structured knowledge, Git source, CI execution observations and documents projections; DMK-205 self-project WBS direction is preserved. [Inventory and readiness DAG](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md) distinguish governance registration from technical credit, and require exact migration/rollback review before activation.
+
 ## High-Level Topology, Component Model & Boundary Architecture
 
 **Document ID:** DOC-ARC-001  
