@@ -1,9 +1,4 @@
 # docmonstakrakin Risk Register
-
-## Proposed external-agent risk coverage — 2026-10-23
-
-The [successor clarification §9](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md#9-continuous-security-and-exact-release-qualification) extends existing risk038, exceptions041, tests199 and evidence206 with source/trust/admission, cross-transport replay/revocation, derived-source ACL/existence, bounded loops and freshness coverage. No residual risk reduction or vulnerability-free guarantee is claimed here. Pentesting requires explicit target/technique/environment/time/data/stop authorization; repository access grants no shell/secrets/deploy/release rights. [Exact criteria and accountable owners](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml) remain REVIEW_ONLY; WS04 cause UNKNOWN and operator qualification/consent BLOCKED remain visible.
-
 ## Inherent & Residual Risk Assessment and Mandatory Risk Floors
 
 **Document ID:** DOC-SEC-003  

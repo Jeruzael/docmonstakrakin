@@ -1,9 +1,4 @@
 # docmonstakrakin Agent Architecture
-
-## External agent/client successor contract — proposed, 2026-10-23
-
-The [successor clarification §2–8](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) extends existing roles/compiler/review with distinct principal/client/session/sponsor identity, actual capability descriptors, per-operation current skill consultation/admission, atomic task claims and durable events/chat. Skill retrieval is not understanding; server enforcement is independent. Agents/GitHub actors cannot satisfy independent human quorum. Direct/manual work requires no DMK model API key, and manual import is not live-agent authentication. Proposed owners and evidence methods are in the [review inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml); live agents remain disabled.
-
 ## Agent Roles, Authority Modes, Scoped Context & Dual-Agent Verification
 
 **Document ID:** DOC-ARC-003  

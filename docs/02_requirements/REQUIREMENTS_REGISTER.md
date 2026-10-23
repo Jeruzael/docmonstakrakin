@@ -1,9 +1,4 @@
 # docmonstakrakin Canonical Requirements Register
-
-## Successor design references — not canonical registrations, 2026-10-23
-
-All18 EAF-REQ IDs in the [successor ownership table](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md#10-proposed-requirement-ownership-and-reuse) are PROPOSED references in a review-only addendum; no register status below is changed. The [34-entry task inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml) maps these and existing AGT/COM/UX/AUTH/DUR/DATA/PROV/RUN/AUD/SEC IDs to residual owner scopes. DMK-209–214 remain unregistered, DMK-190 original VERIFIED scope remains intact, and no DMK-215 is allocated. Canonical registration/runtime board are NOT_APPLIED.
-
 ## Master Register of System & Assurance Requirements
 
 **Document ID:** DOC-REQ-003  

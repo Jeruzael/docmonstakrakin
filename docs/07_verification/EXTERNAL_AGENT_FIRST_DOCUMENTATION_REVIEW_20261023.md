@@ -6,7 +6,7 @@ Canonical registration **NOT_APPLIED**; runtime board **NOT_APPLIED**.
 
 ## Purpose, readers and scope
 
-This review covers the [single successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md), [impact/coverage ledger](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md), [typed planning inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml), and concise links in13 current product/requirements/architecture/security/control/handoff/navigation summaries. Readers are product owners, implementers, security/governance reviewers and QA. It establishes a concrete reviewable task set; it does not approve or implement it.
+This review covers the [single successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md), [impact/coverage ledger](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md), [typed planning inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml), and concise links in8 current product/requirements/architecture/security/control/handoff/navigation summaries. Readers are product owners, implementers, security/governance reviewers and QA. It establishes a concrete reviewable task set; it does not approve or implement it.
 
 Inspected sources include the immutable Agent Center v0.3 spec/PRD/IA/manifest, MASTER_WBS, current requirements/architecture/risk/traceability and handoff, compiler/importer and seeded prompt assets, project/workspace policy/CAS/session/store code, regression/controlled-doc scripts and package scripts. The separate PR82 preparation clone was read without edits. No new commands, API endpoints, storage tables, credentials or delivered external-client support are asserted.
 
@@ -31,7 +31,7 @@ Fresh local Windows SDK absence caused actual installation failure; native/owner
 
 The bounded validator below checks duplicate YAML keys, required fields/types/enums, exact owner sets/dispositions/statuses, known requirement IDs, source paths, criterion identity/ownership, all18 proposed lead owners, absorption retention, both DAGs, no bootstrap cycle, per-read admission and timer criteria, local links/new anchors, additive summaries and protected-file/no-runtime drift. It does not prove product correctness, policy ratification, semantic understanding, live-client capability or native installation.
 
-## Actual validation results
+## Initial preparation validation results — before publication CI
 
 Results are recorded after the final bounded validation commands below. Full runtime/native/browser/operator regression is **NOT_RUN** in this documentation pass. Retained tsx/yaml tooling is used read-only for document checks and does not qualify a fresh installation.
 
@@ -69,6 +69,18 @@ Preserved SHA-256 values: canonical WBS53050b92be8de04eb0bc9a38c44a401e5d13d8846
 No full native/browser/live-agent/runtime regression or operator acceptance was needed or run for this non-applying document change. Hosted CI, independent human review and publication after this capture remain separate future records.
 
 
+## Additive publication compatibility failure and correction — 2026-10-23
+
+Signed HEAD f342f3874d10f6ffb57e59462d6488aa3d8b6de0 [CI39935215673](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39935215673) passed Quality, Controlled Docs and Windows Native, but Complete Regression job120352980657 failed:136/139 suites,2,713 passed/3 failed reported checks. Canonical reconciliation, self-bootstrap execution verification and self-bootstrap execution refused five modified document digests pinned by the unchanged bootstrap manifest. The earlier structural PASS above did not establish regression compatibility.
+
+The five files are docs/01_product/PRODUCT_VISION.md, docs/02_requirements/REQUIREMENTS_REGISTER.md, docs/03_architecture/SYSTEM_ARCHITECTURE.md, docs/03_architecture/AGENT_ARCHITECTURE.md and docs/04_security/RISK_REGISTER.md. Their original bytes are restored exactly from runtime62d66779. No manifest hash, historical receipt, verifier or assertion is changed. Clarification remains in the new successor specification and8 safe current summaries. Future direct changes to those pinned documents require a separately reviewed controlled-successor/manifest compatibility strategy; this planning candidate does not apply that strategy.
+
+The [failure archive](external-agent-first-evidence-20261023/ci-39935215673.zip) preserves18,030 bytes/SHA-256000226ef14a89478c30f48c1c036cad6d1d07f3ea29e8e6358a9c91d00dd70de. Its sole complete-regression.log member is81,184 bytes/SHA-256683c95db23768fbe0d1feb77cc2693331908c9e040eb33bbc2fd0beb3e3176f9. It is tool-decoded UTF-8 text, CRLF normalized to LF and a terminal LF; not original HTTP archive bytes. The exact job remains primary execution evidence.
+
+Final publication scope is8 additive summaries,4 new planning documents and1 preserved failure archive. The validator below now protects all five pinned source paths and bootstrap/history bytes, checks the archive hash/member/privacy, and compares against the pinned runtime in clean committed checkouts. The34 entries/138 criteria and all absorbed requirements remain unchanged. Any corrected signed HEAD requires its own CI qualification; the failed HEAD remains historical. No runtime fix, registration or activation is included.
+
+Final bounded structural validation passed34 entries/138 criteria,18 proposed requirements,160 source-path checks,36 local links,8 additive summaries,4 new documents and1 evidence archive, with zero protected drift or sensitive-pattern matches. A local focused bootstrap attempt using the separate retained tsx toolchain passed its initial canonical-reconciliation assertions but then failed a nested CLI-isolation subprocess: it hardcodes this worktree's absent node_modules/tsx/dist/loader.mjs (ERR_MODULE_NOT_FOUND). That local attempt is incomplete/FAIL for tooling availability; the subsequent two requested focused suites were NOT_RUN. No loader shim, installation, dependency copy or assertion change was made. Full correction qualification is left to the fresh exact-HEAD hosted jobs.
+
 ## Remaining decisions and follow-up
 
 Independent human review of this exact task set remains pending. Next implementation requires an exact authorized bounded slice, actual client capability/trust acquisition, schema/claim/retention/timer choices, source ACL and bootstrap policy, appointed human authority and migration/rollback review. Proposed registration210→211→212→209 is preserved separately from readiness after PR81 credit; none is registered/completed. 3D is DEFER; default15minute expiry is only a proposal. Readonly/scoped access cannot imply shell/secrets/deploy/release rights.
@@ -85,6 +97,8 @@ The following module is a documentation fixture. Extract the `javascript` fenced
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 const root=process.argv[2];
@@ -178,8 +192,8 @@ const untracked=git('ls-files','--others','--exclude-standard').split(/\r?\n/).f
 const newFiles=[...new Set([...untracked,...delta.filter(([status])=>status==='A').map(([,file])=>file)])];
 const changed=delta.filter(([status])=>status==='M').map(([,file])=>file);
 const files=[...new Set([...newFiles,...changed])];
-const expectedNew=['docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md','docs/06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md',inventory,'docs/07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md'];
-const expectedChanged=['docs/MASTER_PLAN.md','docs/ARCHITECTURE_AND_SPECS.md','docs/README.md','docs/01_product/PRODUCT_VISION.md','docs/02_requirements/FUNCTIONAL_REQUIREMENTS.md','docs/02_requirements/NON_FUNCTIONAL_REQUIREMENTS.md','docs/02_requirements/REQUIREMENTS_REGISTER.md','docs/03_architecture/SYSTEM_ARCHITECTURE.md','docs/03_architecture/AGENT_ARCHITECTURE.md','docs/03_architecture/INTEGRATION_ARCHITECTURE.md','docs/04_security/RISK_REGISTER.md','docs/00_control/TRACEABILITY_MATRIX.md','docs/08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md'];
+const expectedNew=['docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md','docs/06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md',inventory,'docs/07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md','docs/07_verification/external-agent-first-evidence-20261023/ci-39935215673.zip'];
+const expectedChanged=['docs/MASTER_PLAN.md','docs/ARCHITECTURE_AND_SPECS.md','docs/README.md','docs/02_requirements/FUNCTIONAL_REQUIREMENTS.md','docs/02_requirements/NON_FUNCTIONAL_REQUIREMENTS.md','docs/03_architecture/INTEGRATION_ARCHITECTURE.md','docs/00_control/TRACEABILITY_MATRIX.md','docs/08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md'];
 assert.deepEqual(files.sort(),[...expectedNew,...expectedChanged].sort());
 for(const p of changed){const n=git('diff','--numstat',pinnedBaseline,'--',p).split('\t');assert.equal(n[1],'0',`nonadditive summary edit${p}`);}
 let linkCount=0;
@@ -195,12 +209,20 @@ for(const p of files.filter(f=>f.endsWith('.md'))){
   linkCount++;
  }
 }
-const protectedPaths=['docs/00_control/MASTER_WBS.yaml','docs/00_control/MASTER_WBS.md','docs/01_product/agent-center-v0.3','src','server','scripts','package.json','package-lock.json','bun.lock'];
+const protectedPaths=["docs/01_product/PRODUCT_VISION.md","docs/02_requirements/REQUIREMENTS_REGISTER.md","docs/03_architecture/SYSTEM_ARCHITECTURE.md","docs/03_architecture/AGENT_ARCHITECTURE.md","docs/04_security/RISK_REGISTER.md",'bootstrap','.github','docs/07_verification/history','docs/00_control/MASTER_WBS.yaml','docs/00_control/MASTER_WBS.md','docs/01_product/agent-center-v0.3','src','server','scripts','package.json','package-lock.json','bun.lock'];
 assert.equal(git('diff','--name-only',pinnedBaseline,'--',...protectedPaths),'');
 const sensitivePatterns=[/AKIA[0-9A-Z]{16}/g,/gh[pousr]_[A-Za-z0-9]{20,}/g,/github_pat_[A-Za-z0-9_]{30,}/g,/sk-[A-Za-z0-9_-]{24,}/g,/AIza[0-9A-Za-z_-]{30,}/g,/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g,/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,/Bearer\s+[A-Za-z0-9._-]{24,}/g,/(?:password|token|secret|api_key)\s*[:=]\s*["'][A-Za-z0-9_./+=-]{16,}["']/gi,/https?:\/\/[^\s/@:]+:[^\s/@]+@/g];
+const archiveFile='docs/07_verification/external-agent-first-evidence-20261023/ci-39935215673.zip';
+const zip=fs.readFileSync(path.join(root,archiveFile));
+assert.equal(zip.length,18030);assert.equal(crypto.createHash('sha256').update(zip).digest('hex'),'000226ef14a89478c30f48c1c036cad6d1d07f3ea29e8e6358a9c91d00dd70de');
+const zipEnd=zip.lastIndexOf(Buffer.from([0x50,0x4b,0x05,0x06]));assert.ok(zipEnd>=0);assert.equal(zip.readUInt16LE(zipEnd+10),1);
+const central=zip.readUInt32LE(zipEnd+16),offset=zip.readUInt32LE(central+42),start=offset+30+zip.readUInt16LE(offset+26)+zip.readUInt16LE(offset+28);
+assert.equal(zip.subarray(central+46,central+46+zip.readUInt16LE(central+28)).toString(),'complete-regression.log');assert.equal(zip.readUInt16LE(central+10),8);
+const decodedFailure=zlib.inflateRawSync(zip.subarray(start,start+zip.readUInt32LE(central+20)),{maxOutputLength:1048576});
+assert.equal(decodedFailure.length,81184);assert.equal(crypto.createHash('sha256').update(decodedFailure).digest('hex'),'683c95db23768fbe0d1feb77cc2693331908c9e040eb33bbc2fd0beb3e3176f9');
 let sensitiveMatches=0;
-for(const p of files){const body=newFiles.includes(p)?read(p):git('diff','--unified=0',pinnedBaseline,'--',p);for(const pattern of sensitivePatterns){pattern.lastIndex=0;for(const ignored of body.matchAll(pattern))sensitiveMatches++;}}
+for(const p of files){const body=p===archiveFile?decodedFailure.toString('utf8'):newFiles.includes(p)?read(p):git('diff','--unified=0',pinnedBaseline,'--',p);for(const pattern of sensitivePatterns){pattern.lastIndex=0;for(const ignored of body.matchAll(pattern))sensitiveMatches++;}}
 assert.equal(sensitiveMatches,0,'sensitive data pattern match; inspect privately');
 git('diff','--check',pinnedBaseline);
-console.log(JSON.stringify({status:'PASS',entries:d.entries.length,positive_criteria:positive,negative_criteria:negative,unique_criteria:criteriaIds.size,proposed_requirements:d.proposed_requirements.length,readiness_dag_nodes:readinessNodes,registration_dag_nodes:registrationNodes,canonical_top_level_items:sourceWbs.items.length,canonical_ids_including_children:canonical.size,source_location_checks:sourceLocations,local_link_checks:linkCount,changed_summaries:changed.length,new_documents:newFiles.length,protected_path_drift:0,sensitive_pattern_categories:sensitivePatterns.length,sensitive_matches:sensitiveMatches,nonapplying:true},null,2));
+console.log(JSON.stringify({status:'PASS',entries:d.entries.length,positive_criteria:positive,negative_criteria:negative,unique_criteria:criteriaIds.size,proposed_requirements:d.proposed_requirements.length,readiness_dag_nodes:readinessNodes,registration_dag_nodes:registrationNodes,canonical_top_level_items:sourceWbs.items.length,canonical_ids_including_children:canonical.size,source_location_checks:sourceLocations,local_link_checks:linkCount,changed_summaries:changed.length,new_documents:newFiles.filter(p=>/\.(?:md|yaml)$/.test(p)).length,new_evidence_archives:newFiles.filter(p=>p.endsWith('.zip')).length,protected_path_drift:0,sensitive_pattern_categories:sensitivePatterns.length,sensitive_matches:sensitiveMatches,nonapplying:true},null,2));
 ```
