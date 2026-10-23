@@ -144,22 +144,25 @@ try{
     assert(fs.lstatSync(modules).isSymbolicLink(),'Fixture must exercise the retained module junction');
     assert(!canonical.startsWith(sourceAppRoot+path.sep),'Dependencies must physically reside outside the source root');
     const vite=await startIsolatedVite(sourceAppRoot);
+    const cacheDir=vite.config.cacheDir;
     try{
+      assert.equal(path.resolve(path.dirname(cacheDir)),path.resolve(sourceAppRoot,'runtime'),'Optimizer cache must stay inside the existing source-root allowance');
+      assert(path.basename(cacheDir).startsWith('dmk-vite-fixture-'),'Cache must have a unique fixture-owned directory');
       const port=(vite.httpServer!.address() as AddressInfo).port;
       const client=await fixtureResponse(port,'/@vite/client');
       assert.equal(client.status,200,'Vite internal client must load through its built-in alias');
       assert.match(client.body,/function|import/);
       const entry=await fixtureResponse(port,'/src/main.tsx');
       assert.equal(entry.status,200);assert.match(entry.body,/createRoot/);
-      const dependencies=[...entry.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/@fs/'));
-      assert(dependencies.length>0,'Actual entry must import canonical dependency/cache paths');
+      const dependencies=[...entry.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/runtime/dmk-vite-fixture-'));
+      assert(dependencies.length>0,'Actual entry must import the isolated optimizer cache within the existing source allowance');
       for(const target of dependencies)assert.equal((await fixtureResponse(port,target)).status,200,target);
       // The client/module correction grants neither TEMP nor the dependency
       // parent tree. These existing non-private files remain outside admission.
       for(const file of [path.join(out,'outside-app.txt'),path.join(canonical,'react/package.json')]){
         assert.equal((await fixtureResponse(port,'/@fs/'+file.replaceAll('\\','/'))).status,403,file);
       }
-    }finally{await vite.close();}
+    }finally{await vite.close();assert.equal(fs.existsSync(cacheDir),false,'Closing the fixture removes only its unique optimizer cache');}
   });
   await check('Real source App mounts through the retained dependency junction without blocked modules',async()=>{
     const vite=await startIsolatedVite(sourceAppRoot);
