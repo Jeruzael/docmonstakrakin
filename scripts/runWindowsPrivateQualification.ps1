@@ -15,7 +15,7 @@ function Get-OwnerObservation([string]$Path) {
     ownerSid = $acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
     protected = $acl.AreAccessRulesProtected
     access = @($acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]) | ForEach-Object {
-      [ordered]@{sid = $_.IdentityReference.Value; type = [string]$_.AccessControlType; rights = [long]$_.FileSystemRights; inherited = $_.IsInherited}
+      [ordered]@{sid = $_.IdentityReference.Value; type = [string]$_.AccessControlType; rights = [long]$_.FileSystemRights; inherited = $_.IsInherited; inheritance = [string]$_.InheritanceFlags; propagation = [string]$_.PropagationFlags}
     })
   }
 }
@@ -126,6 +126,40 @@ try {
     Write-Output ('WINDOWS_PRIVATE_OWNER_DIAGNOSTIC ' + ($observation | ConvertTo-Json -Depth 8 -Compress))
     if ($Phase -eq 'Diagnostics') {
       if ($Child) {throw 'DIAGNOSTICS_CANNOT_SELECT_CHILD_PROFILE'}
+      # Compare only NEW, disposable descendants. Owner is observed, never set.
+      # This distinguishes TOKEN_OWNER from DACL-hardening behavior without
+      # changing the existing authority's admission contract or repairing it.
+      $variants = [ordered]@{}
+      foreach ($name in @('separate-icacls', 'exact-directory-security')) {
+        $variant = Join-Path $probe $name
+        New-Item -ItemType Directory -Path $variant -ErrorAction Stop | Out-Null
+        $before = Get-OwnerObservation $variant
+        $variantResult = [ordered]@{before=$before}
+        if ($name -eq 'separate-icacls') {
+          & icacls.exe $variant '/inheritance:r' | Out-Null
+          if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_SEPARATE_INHERITANCE_FAILED'}
+          $variantResult.afterInheritance = Get-OwnerObservation $variant
+          & icacls.exe $variant '/grant:r' "*$($sid):(OI)(CI)F" | Out-Null
+          if ($LASTEXITCODE -ne 0) {throw 'OWNER_PROBE_SEPARATE_GRANT_FAILED'}
+        } else {
+          # A new DACL, not SetAccessRule (which retains unrelated explicit ACEs).
+          # https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.objectsecurity.setaccessruleprotection
+          $acl = [System.Security.AccessControl.DirectorySecurity]::new()
+          $acl.SetAccessRuleProtection($true, $false)
+          $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
+            [System.Security.Principal.SecurityIdentifier]::new($sid),
+            [System.Security.AccessControl.FileSystemRights]::FullControl,
+            ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit),
+            [System.Security.AccessControl.PropagationFlags]::None,
+            [System.Security.AccessControl.AccessControlType]::Allow)
+          $acl.AddAccessRule($rule)
+          Set-Acl -LiteralPath $variant -AclObject $acl
+        }
+        $variantResult.after = Get-OwnerObservation $variant
+        if ($variantResult.after.ownerSid -ne $before.ownerSid) {throw 'OWNER_PROBE_UNEXPECTED_OWNER_CHANGE'}
+        $variants[$name] = $variantResult
+      }
+      Write-Output ('WINDOWS_PRIVATE_DACL_VARIANTS ' + ($variants | ConvertTo-Json -Depth 9 -Compress))
       return
     }
     if ($Child) {
