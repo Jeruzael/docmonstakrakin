@@ -200,6 +200,13 @@ try {
       # Direct -Child invocation cannot skip the actual token/filesystem checks.
       if ($identity.Owner.Value -ne $sid -or $observation.directoryBefore.ownerSid -ne $sid -or $observation.fileBefore.ownerSid -ne $sid) {throw 'CHILD_OWNER_PROFILE_UNCONFIRMED'}
       if (-not $observation.directoryAfter.protected -or $observation.directoryAfter.access.Count -ne 1 -or @($observation.directoryAfter.access | Where-Object {$_.sid -ne $sid -or $_.type -ne 'Allow' -or $_.rights -ne [long][System.Security.AccessControl.FileSystemRights]::FullControl}).Count) {throw 'CHILD_DACL_PROFILE_UNCONFIRMED'}
+      if ($Phase -eq 'Npm') {
+        # TEMPORARY signed diagnostic candidate: original native gates below
+        # remain intact and must be restored to execution before any merge.
+        & node scripts/fixtures/windowsAcquisitionProbe.cjs
+        if ($LASTEXITCODE -ne 0) {throw 'ACQUISITION_DIAGNOSTIC_FAILED'}
+        throw 'DIAGNOSTIC_ONLY_INTENTIONAL_STOP_NOT_QUALIFICATION'
+      }
       $env:DMK_OWNER_PROBE = $probe
       $nodeProbe = @'
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
