@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "kind": "PLANNING_CANDIDATE",
+  "canonicalApply": false,
+  "runtimeApply": false,
+  "mayApply": false,
+  "observationTimeUtc": "2026-10-23T08:33:10Z",
+  "repository": "Jeruzael/docmonstakrakin",
+  "baseline": {
+    "defaultBranch": "master",
+    "runtimeCommit": "62d66779b9d7236e093eb2fd8e47355c8d42b798",
+    "runtimeTree": "8f8f34429555173bb595c1f2fdbe48a3c1fa9a87",
+    "runtimeSignature": "valid",
+    "runtimePr": 81,
+    "evidenceCommit": "ade88004341f59503a4ccad833d2aba9f6a76647",
+    "evidenceBranch": "codex/operational-qualification-evidence-20261023",
+    "evidenceSignature": "valid",
+    "evidenceMergedIntoMaster": false,
+    "masterCi": {
+      "run": 39911133606,
+      "event": "push",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 120274162486,
+          "name": "Quality & Build",
+          "conclusion": "success"
+        },
+        {
+          "id": 120274162720,
+          "name": "Windows Native Qualification",
+          "conclusion": "success"
+        },
+        {
+          "id": 120274162741,
+          "name": "Complete Regression",
+          "conclusion": "success"
+        },
+        {
+          "id": 120274162775,
+          "name": "Controlled Docs",
+          "conclusion": "success"
+        }
+      ]
+    }
+  },
+  "preparation": {
+    "checkout": "C:/Users/HomePC/dev/docmonstakrakin-operator-prep-20261023-4e6bb8d3",
+    "freshClone": true,
+    "initialNodeModulesPresent": false,
+    "initialAuthorityPresent": false,
+    "install": {
+      "command": "npm ci --foreground-scripts",
+      "node": "v22.23.3",
+      "started": "2026-10-23T08:18:22.0540985Z",
+      "ended": "2026-10-23T08:19:13.5392877Z",
+      "exitCode": 1,
+      "result": "FAIL",
+      "cause": "node-gyp found VS2026/v145 but no Windows SDK",
+      "qualification": "BLOCKED",
+      "rawLog": "npm-ci.log",
+      "rawLogArchive": "npm-ci.zip",
+      "archiveBytes": 1882,
+      "archiveSha256": "9a10dbc4449d9b4c23d9813501a3cb704ca34d1476606abcf6cdfee77dc36c8b",
+      "rawLogBytes": 6006,
+      "rawLogSha256": "a9fbd3819a5028dd24a5798fdf5f3daa4d89beee2c49df0318fd4773d3fc1880"
+    },
+    "nativeQualification": "BLOCKED",
+    "realEnrollment": "NOT_RUN",
+    "enrollmentAuthorization": "BLOCKED",
+    "humanAcceptance": "NOT_RUN",
+    "serverStarted": false,
+    "operatorApplicationRestarted": false,
+    "originalDependenciesModified": false,
+    "productionActivation": false,
+    "originalStateSha256": "c0310a67da990dc440a7037f4c6a0e4dfd607d5726c27a1228fbb09a87ca3e37",
+    "originalPr53NoteSha256": "7080cbaf778e4b40e08c803eb9599acba0e703998d588a717505ea30e65d3eb9",
+    "originalJunctionTarget": "C:/Users/HomePC/dev/docmonstakrakin/node_modules"
+  },
+  "planning": {
+    "initialEntries": 38,
+    "initialCanonicalOwners": [
+      "DMK-010",
+      "DMK-017",
+      "DMK-020",
+      "DMK-027",
+      "DMK-033",
+      "DMK-038",
+      "DMK-041",
+      "DMK-081",
+      "DMK-085",
+      "DMK-167",
+      "DMK-169",
+      "DMK-170",
+      "DMK-171",
+      "DMK-179",
+      "DMK-180",
+      "DMK-198",
+      "DMK-199",
+      "DMK-201",
+      "DMK-202",
+      "DMK-205",
+      "DMK-206",
+      "DMK-207"
+    ],
+    "canonicalOwnerAssessments": [
+      {
+        "id": "DMK-010",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-017",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-020",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-027",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-033",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-038",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-041",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-081",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-085",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-167",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-169",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-170",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-171",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-179",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-180",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-198",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-199",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-201",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-202",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-205",
+        "disposition": "AMEND_SCOPE"
+      },
+      {
+        "id": "DMK-206",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-207",
+        "disposition": "ADD_SUBTASK"
+      },
+      {
+        "id": "DMK-190",
+        "disposition": "ADD_SUBTASK"
+      }
+    ],
+    "unregisteredAuthenticationProposals": [
+      "DMK-209",
+      "DMK-210",
+      "DMK-211",
+      "DMK-212",
+      "DMK-213",
+      "DMK-214"
+    ],
+    "retainedCandidates": [
+      "EXT-CAND-01",
+      "EXT-CAND-02",
+      "EXT-CAND-03",
+      "EXT-CAND-07",
+      "EXT-CAND-09"
+    ],
+    "absorbedCandidates": {
+      "EXT-CAND-04": [
+        "DMK-209",
+        "DMK-210",
+        "DMK-213"
+      ],
+      "EXT-CAND-05": [
+        "DMK-190"
+      ],
+      "EXT-CAND-06": [
+        "DMK-201",
+        "DMK-205"
+      ],
+      "EXT-CAND-08": [
+        "EXT-CAND-07"
+      ],
+      "EXT-CAND-10": [
+        "DMK-038",
+        "DMK-041",
+        "DMK-199",
+        "DMK-206"
+      ]
+    },
+    "externalAgentPlanningEntries": 34,
+    "additionalCapacityCandidate": {
+      "key": "CAPACITY-FOLLOWUP-01",
+      "proposedFunctionalOwner": "DMK-120",
+      "humanAssignee": "PENDING",
+      "disposition": "ADD_SUBTASK",
+      "implementationAuthorized": false
+    },
+    "totalReviewEntries": 35,
+    "atomicCodingTaskCount": null,
+    "countsProvisional": true,
+    "registration": "NOT_APPLIED",
+    "runtimeSync": "NOT_APPLIED",
+    "broadDocumentationCampaign": "NOT_STARTED"
+  },
+  "capacity": {
+    "auditLimit": 4096,
+    "operationLimit": 4096,
+    "usedDigestLimit": 4096,
+    "atFull": {
+      "normalAuthenticatedReads": "BLOCKED",
+      "login": "BLOCKED",
+      "logout": "BLOCKED",
+      "reopen": "BLOCKED",
+      "alreadyOpenInternalDiagnostics": "AVAILABLE",
+      "offlineStatus": "BLOCKED_ON_REOPEN",
+      "lockRecoveryResetsCapacity": false,
+      "backupActivatesSuccessor": false
+    },
+    "statusConsumesOpenEvent": true,
+    "retentionChangeAuthorized": false,
+    "pilotDecision": "CONDITIONAL_ONLY_CURRENTLY_BLOCKED",
+    "acceptanceCriteria": [
+      "No existing history/guard/capacity policy change in this pass.",
+      "Future inspector must not mutate source bytes, generation, WAL or audit and must not create an HTTP authorization bypass.",
+      "Any successor must preserve anchored audit and replay continuity with atomic CAS/crash recovery.",
+      "Real operator enrollment and human acceptance require explicit consent and actual observation."
+    ]
+  },
+  "validation": {
+    "wbs": {
+      "result": "PASS",
+      "detail": "69 unique canonical IDs; all23 owner assessments plusDMK120 exist; DMK209–214 remain unregistered; renderer zero drift",
+      "toolchain": "retained separate existing tsx/yaml, not the failed fresh installation"
+    },
+    "fullRegression": "NOT_RUN_IN_THIS_PASS",
+    "historicalCiIsHumanAcceptance": false
+  }
+}

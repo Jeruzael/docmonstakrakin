@@ -1,5 +1,22 @@
 # docmonstakrakin
 
+## Current verified runtime and operator acceptance
+
+Runtime master is PR #81 merge `62d66779b9d7236e093eb2fd8e47355c8d42b798`;
+[actual master CI 39911133606](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606)
+passed all four jobs. Final signed evidence is the separate documentation commit
+[`ade8800`](https://github.com/Jeruzael/docmonstakrakin/commit/ade88004341f59503a4ccad833d2aba9f6a76647),
+not a later runtime merge or human acceptance record.
+
+Start with the [current status, capacity finding and task-brief reconciliation](docs/08_handoff/CURRENT_STATUS_RECONCILIATION_20261023.md),
+[operator acceptance checklist](docs/08_handoff/OPERATOR_ACCEPTANCE_CHECKLIST_20261023.md)
+and [final qualified setup guide](https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md).
+Human task 1 is NOT_RUN; current fresh operator installation is BLOCKED by the
+missing Windows SDK prerequisite. Do not install through the original dependency
+junction. The 4,096-entry history constraint and production authorization remain
+separate gates. Older dated candidate/closure descriptions below are historical
+captures; PR #80/#81 implementation is integrated and must not be redone.
+
 A local-first development control plane for project discovery, requirements,
 linked work, offline prompt compilation, controlled documents, evidence and audit.
 The React UI runs with an Express server on IPv4 loopback. The ordinary local
