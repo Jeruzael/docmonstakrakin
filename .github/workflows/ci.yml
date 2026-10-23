@@ -111,16 +111,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
-          node --import tsx scripts/testWorkspaceStore.ts
-          if ($LASTEXITCODE -ne 0) { throw 'npm-installed private workspace authority failed' }
-          node --import tsx scripts/testWorkspaceApplication.ts
-          if ($LASTEXITCODE -ne 0) { throw 'npm-installed enforced App/HTTP/SQLite journey failed' }
-          node --import tsx scripts/testWorkspaceTls.ts
-          if ($LASTEXITCODE -ne 0) { throw 'npm-installed private TLS qualification failed' }
-          node --import tsx scripts/testWorkspaceBackup.ts
-          if ($LASTEXITCODE -ne 0) { throw 'npm-installed offline backup qualification failed' }
-          npm.cmd run ci:quality
-          if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
+          # Runtime owner checks remain strict. A new duplicated-token child
+          # qualifies current-user ownership without changing the runner token.
+          ./scripts/runWindowsPrivateQualification.ps1 -Phase Npm
           git diff --exit-code
           if ($LASTEXITCODE -ne 0) { throw 'npm verification changed tracked source' }
 
@@ -162,14 +155,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
-            node --import tsx scripts/testWorkspaceStore.ts
-            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed private workspace authority failed' }
-            node --import tsx scripts/testWorkspaceApplication.ts
-            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed enforced App/HTTP/SQLite journey failed' }
-            node --import tsx scripts/testWorkspaceTls.ts
-            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed private TLS qualification failed' }
-            node --import tsx scripts/testWorkspaceBackup.ts
-            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed offline backup qualification failed' }
+            ./scripts/runWindowsPrivateQualification.ps1 -Phase Bun
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
