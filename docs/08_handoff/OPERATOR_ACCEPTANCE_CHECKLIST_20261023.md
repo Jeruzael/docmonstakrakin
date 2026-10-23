@@ -20,6 +20,8 @@ Record exact source/tree, Node/npm/native versions and provenance, OS/architectu
 
 Actual gate results this pass: clone/runtime isolation PASS; npm ci FAIL (missing SDK), native/owner/headroom qualification BLOCKED, real enrollment authorization absent/BLOCKED. All human steps below remain NOT_RUN.
 
+Fresh publication CI on f578091 also failed Windows store WS04 with WORKSPACE_PERMISSIONS_INVALID (17/18 cases passed). Reproducible Windows admission remains BLOCKED pending separate diagnosis; the earlier green master run does not resolve this new observation. See the current reconciliation for preserved evidence.
+
 ## Human execution and expected results
 
 | Step | Operator action and observable acceptance | Actual |

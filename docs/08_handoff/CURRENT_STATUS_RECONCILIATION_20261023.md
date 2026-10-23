@@ -148,8 +148,20 @@ Revised work tracks for the later brief: non-applying documentation/planning may
 - The existing WBS renderer reported zero YAML/Markdown drift using the separate retained tsx/yaml toolchain. This is document validation, not fresh-install/native qualification.
 - Canonical YAML parsed as 69 unique IDs; all 23 external-brief owners plus capacity owner DMK-120 exist, and DMK-209–214 remain unregistered.
 - Local document links and pinned Git-object targets were checked; planning uniqueness, 16/7 dispositions, 34+1 counts, criteria string arrays and non-applying flags were validated. The one-entry failure archive preserves the original 6,006 bytes and SHA-256 a9fbd3819a5028dd24a5798fdf5f3daa4d89beee2c49df0318fd4773d3fc1880 without Git line-ending conversion.
-- Ten bounded sensitive-data pattern categories found zero matches in the five changed artifacts, including the extracted failure log. No canonical WBS, generated WBS, historical receipt, Agent Center v0.3, runtime, dependency declaration/lockfile or original operator state was changed.
+- Ten bounded sensitive-data pattern categories found zero matches in the six changed artifacts, including the extracted failure log. No canonical WBS, generated WBS, historical receipt, Agent Center v0.3, runtime, dependency declaration/lockfile or original operator state was changed.
 - Full local browser/native regression and operator acceptance were NOT_RUN in this pass. Any hosted publication CI qualifies its exact later documentation candidate only; it does not repair the observed operator installation or supply human acceptance.
+
+## Additive publication failure observation — 2026-10-23T08:53:25Z
+
+Fresh publication CI [39926700203](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39926700203) on signed documentation HEAD f578091b38ffe2b3c3357b6e6d99d528edc39fc4 failed Windows job120324904757. Private-directory7/7 passed, but workspace store reported17 passed/1 failed: WS04 member-author/reviewer/explicit-DENY case raised WORKSPACE_PERMISSIONS_INVALID. Npm installation/native provenance passed before that failure; this is separate from the local missing-SDK installation failure. The later Windows App/TLS/backup and Bun phases were not reached. Quality and Complete Regression had succeeded; Controlled Docs was still in progress at this snapshot. These are per-job facts, not an all-green run.
+
+The relevant worker/private-boundary source, store test, qualification helper and workflow are byte-identical to runtime master62d66779. The log does not identify which WS04 operation or underlying permission acquisition failed; root cause is UNKNOWN. Do not label it transient, environmental, an actual loose ACL, an SDK error or a policy regression without evidence. The earlier successful exact-master run remains a historical observation; it cannot qualify this failed candidate or establish repeatable Windows acceptance.
+
+The [one-entry decoded failure archive](../07_verification/operator-acceptance-preparation-20261023/ci-windows-f578091.zip) has SHA-25614c390d9bf1559fda051d783a11cc79b2de824b2283e01229434070fb3ef7ea6. Its92941-byte decoded log has SHA-256e4c6bf04ba65f2e74a125b72fbcf92857c2f6f20ccefa8f5cd69df46b8bac441; BOM is preserved, CRLF normalized to LF and one terminal LF appended. The original GitHub log remains linked through the exact job/run. This is a decoded representation, not original HTTP archive bytes.
+
+Operator readiness additionally remains BLOCKED on this unresolved Windows admission/qualification result. Recommended separate scope: instrument only a disposable synthetic WS04 reproduction at each authority operation and permission-acquisition stage; retain bounded error/exit/timeout/SID-DACL-pin observations without credentials, then isolate the cause under the exact supported owner profile. Preserve all permission predicates, four-second acquisition deadlines, native versions, quorum and source history. No code/helper/timeout change, automatic retry-to-green, live authority test or remediation is authorized by this documentation pass. A later successful CI run must not erase this failure or claim its cause resolved.
+
+The next documentation commit may trigger its own CI; attribute that separately. This snapshot does not claim results on any later HEAD.
 
 ## Publication and application state
 

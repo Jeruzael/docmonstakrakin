@@ -12,7 +12,8 @@ Start with the [current status, capacity finding and task-brief reconciliation](
 [operator acceptance checklist](docs/08_handoff/OPERATOR_ACCEPTANCE_CHECKLIST_20261023.md)
 and [final qualified setup guide](https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md).
 Human task 1 is NOT_RUN; current fresh operator installation is BLOCKED by the
-missing Windows SDK prerequisite. Do not install through the original dependency
+missing Windows SDK prerequisite. Fresh publication CI also found an unresolved
+Windows permission-admission failure; see the current record. Do not install through the original dependency
 junction. The 4,096-entry history constraint and production authorization remain
 separate gates. Older dated candidate/closure descriptions below are historical
 captures; PR #80/#81 implementation is integrated and must not be redone.

@@ -282,5 +282,31 @@
     },
     "fullRegression": "NOT_RUN_IN_THIS_PASS",
     "historicalCiIsHumanAcceptance": false
+  },
+  "publicationObservation": {
+    "observedAt": "2026-10-23T08:53:25Z",
+    "head": "f578091b38ffe2b3c3357b6e6d99d528edc39fc4",
+    "run": 39926700203,
+    "job": 120324904757,
+    "windows": "FAIL",
+    "storePassed": 17,
+    "storeFailed": 1,
+    "test": "WS04",
+    "error": "WORKSPACE_PERMISSIONS_INVALID",
+    "rootCause": "UNKNOWN",
+    "relevantRuntimeTestHelperWorkflowChanged": false,
+    "qualityAtSnapshot": "SUCCESS",
+    "completeAtSnapshot": "SUCCESS",
+    "controlledAtSnapshot": "IN_PROGRESS",
+    "diagnosticImplementationAuthorized": false,
+    "requiresSeparateScopedInvestigation": true,
+    "archive": "ci-windows-f578091.zip",
+    "archiveBytes": 23027,
+    "archiveSha256": "14c390d9bf1559fda051d783a11cc79b2de824b2283e01229434070fb3ef7ea6",
+    "member": "github-windows-f578091-decoded.log",
+    "decodedBytes": 92941,
+    "decodedSha256": "e4c6bf04ba65f2e74a125b72fbcf92857c2f6f20ccefa8f5cd69df46b8bac441",
+    "representation": "GitHub connector UTF8 decoded text; BOM preserved, CRLF converted to LF, one terminal LF appended. Archived bytes/digests are authoritative; not original HTTP ZIP bytes.",
+    "laterCandidateCi": "SEPARATE_NOT_QUALIFIED_BY_THIS_SNAPSHOT"
   }
 }
