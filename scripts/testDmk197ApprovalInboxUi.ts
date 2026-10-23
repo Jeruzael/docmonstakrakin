@@ -304,28 +304,79 @@ const mockSession = {
   },
 };
 
-let holdProjectAResponse: (() => void) | null = null;
-let delayProjectAApprovals = false;
-
-let holdProjectARefresh: (() => void) | null = null;
-let delayProjectARefresh = false;
-
-let holdDecisionResponse: (() => void) | null = null;
-let delayDecision = false;
-
-let holdProjectADecision: (() => void) | null = null;
-let delayProjectADecision = false;
-
-let holdProjectBRequest: (() => void) | null = null;
-let delayProjectBRequest = false;
+function deferredReply(name: string) {
+  let pending: {
+    held: boolean;
+    entered: Promise<void>;
+    released: Promise<void>;
+    finished: Promise<void>;
+    enter: () => void;
+    release: () => void;
+    finish: () => void;
+  } | null = null;
+  const withinDeadline = async (promise: Promise<void>) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(Error(`${name}: deferred route barrier timed out`)), 8000);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+  return {
+    arm() {
+      assert.equal(pending, null, `${name}: prior deferred route was not released`);
+      let enter!: () => void, release!: () => void, finish!: () => void;
+      const entered = new Promise<void>(resolve => { enter = resolve; });
+      const released = new Promise<void>(resolve => { release = resolve; });
+      const finished = new Promise<void>(resolve => { finish = resolve; });
+      pending = {held: false, entered, released, finished, enter, release, finish};
+    },
+    async respond(reply: () => Promise<void>) {
+      const current = pending;
+      if (!current || current.held) return reply();
+      current.held = true;
+      current.enter();
+      await current.released;
+      try { await reply(); } finally { current.finish(); }
+    },
+    async held() {
+      assert(pending, `${name}: route must be armed`);
+      await withinDeadline(pending.entered);
+    },
+    async release() {
+      const current = pending;
+      assert(current?.held, `${name}: actual request must be held before release`);
+      current.release();
+      await withinDeadline(current.finished);
+      pending = null;
+    },
+    async reset() {
+      const current = pending;
+      pending = null;
+      if (current?.held) {
+        current.release();
+        await withinDeadline(current.finished);
+      }
+    },
+  };
+}
+const initialApprovals = deferredReply('Project A initial approvals'), refreshApprovals = deferredReply('Project A refresh');
+const decisionReply = deferredReply('Decision'), projectADecision = deferredReply('Project A decision');
+const projectBRequest = deferredReply('Project B request'), reissueReply = deferredReply('Reissue');
+const deferredReplies = [initialApprovals, refreshApprovals, decisionReply, projectADecision, projectBRequest, reissueReply];
+const resetDeferredReplies = async () => {for (const reply of deferredReplies) await reply.reset();};
 let countProjectBRequests = 0;
 let overrideStatusProjectA: number | null = null;
-let holdReissue: (() => void) | null = null;
-let delayReissue = false;
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(8000);
+  const flushUi = () => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 
   await page.route('**/api/**', async (route: Route) => {
     const url = new URL(route.request().url()).pathname;
@@ -336,7 +387,7 @@ try {
     }
 
     if (url === '/api/governance/session') {
-      return route.fulfill({ status: 200, json: mockSession });
+      return route.fulfill({ status: 200, json: {...mockSession,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}} });
     }
 
     if (url === `/api/projects/${testProject.id}/approvals` && method === 'GET') {
@@ -344,15 +395,7 @@ try {
         const st = overrideStatusProjectA;
         return route.fulfill({ status: st, json: { error: 'Auth failed' } });
       }
-      if (delayProjectAApprovals) {
-        delayProjectAApprovals = false;
-        await new Promise<void>((r) => { holdProjectAResponse = r; });
-      }
-      if (delayProjectARefresh) {
-        delayProjectARefresh = false;
-        await new Promise<void>((r) => { holdProjectARefresh = r; });
-      }
-      return route.fulfill({ status: 200, json: mockApprovals });
+      return initialApprovals.respond(() => refreshApprovals.respond(() => route.fulfill({ status: 200, json: mockApprovals })));
     }
 
     if (url === `/api/projects/${testProject2.id}/approvals` && method === 'GET') {
@@ -361,11 +404,7 @@ try {
 
     if (url === `/api/projects/${testProject2.id}/approvals` && method === 'POST') {
       countProjectBRequests++;
-      if (delayProjectBRequest) {
-        delayProjectBRequest = false;
-        await new Promise<void>((r) => { holdProjectBRequest = r; });
-      }
-      return route.fulfill({
+      return projectBRequest.respond(() => route.fulfill({
         status: 201,
         json: {
           id: 'APV-NEW-B-01',
@@ -378,19 +417,11 @@ try {
           policyVersion: 'LOCAL_SESSION_V1',
           targetDigest: 'b'.repeat(64),
         },
-      });
+      }));
     }
 
     if (url.includes('/decide') && method === 'POST') {
-      if (delayDecision) {
-        delayDecision = false;
-        await new Promise<void>((r) => { holdDecisionResponse = r; });
-      }
-      if (delayProjectADecision) {
-        delayProjectADecision = false;
-        await new Promise<void>((r) => { holdProjectADecision = r; });
-      }
-      return route.fulfill({
+      return decisionReply.respond(() => projectADecision.respond(() => route.fulfill({
         status: 200,
         json: {
           ...mockApprovals[1],
@@ -406,15 +437,11 @@ try {
             },
           ],
         },
-      });
+      })));
     }
 
     if (url.includes('/reissue') && method === 'POST') {
-      if (delayReissue) {
-        delayReissue = false;
-        await new Promise<void>((r) => { holdReissue = r; });
-      }
-      return route.fulfill({
+      return reissueReply.respond(() => route.fulfill({
         status: 201,
         json: {
           id: 'APV-REPLACEMENT-99',
@@ -429,7 +456,7 @@ try {
           policyVersion: 'LOCAL_SESSION_V1',
           supersededApprovalId: 'APV-INVALID-04',
         },
-      });
+      }));
     }
 
     if (url === `/api/projects/${testProject.id}` && method === 'GET') {
@@ -725,7 +752,7 @@ try {
   try {
     // Current project is testProject2 (ALT).
     // Arm route interception to hold testProject's initial fetch.
-    delayProjectAApprovals = true;
+    initialApprovals.arm();
 
     // Trigger switch to testProject (Project A)
     await page.evaluate((targetProjId) => {
@@ -735,7 +762,8 @@ try {
       window.dispatchEvent(new PopStateEvent('popstate'));
     }, testProject.id);
 
-    // While Project A fetch is held in-flight, immediately switch back to testProject2 (Project B)
+    await initialApprovals.held();
+    // Only switch once a real Project A request is held in-flight.
     await page.evaluate((targetProjId) => {
       const url = new URL(window.location.href);
       url.searchParams.set('project', targetProjId);
@@ -749,11 +777,8 @@ try {
     assert.ok((await altCard.count()) >= 1, 'Project B approvals must be loaded and visible');
 
     // Release held Project A response
-    if (holdProjectAResponse) {
-      holdProjectAResponse();
-      holdProjectAResponse = null;
-    }
-    await page.waitForTimeout(200);
+    await initialApprovals.release();
+    await flushUi();
 
     // Verify Project A's approvals do NOT overwrite Project B
     assert.equal(await page.getByTestId('approval-card-APV-PENDING-01').count(), 0, 'Delayed Project A approvals must not appear');
@@ -763,6 +788,8 @@ try {
     pass('UI-13: Deterministic Race Scenario A: Delayed initial fetch response from switched project is discarded');
   } catch (e) {
     fail('UI-13: Deterministic Race Scenario A: Delayed initial fetch response from switched project is discarded', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-14. Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded
@@ -779,11 +806,12 @@ try {
     await firstCard.waitFor();
 
     // Arm delay on Project A's manual refresh
-    delayProjectARefresh = true;
+    refreshApprovals.arm();
 
     // Click Refresh button
     const refreshBtn = page.getByRole('button', { name: /Refresh/i });
     await refreshBtn.click();
+    await refreshApprovals.held();
 
     // While refresh is held, switch to Project B
     await page.evaluate((targetProjId) => {
@@ -797,11 +825,8 @@ try {
     await altCard.waitFor();
 
     // Release held Project A refresh response
-    if (holdProjectARefresh) {
-      holdProjectARefresh();
-      holdProjectARefresh = null;
-    }
-    await page.waitForTimeout(200);
+    await refreshApprovals.release();
+    await flushUi();
 
     // Verify Project B state remains completely unchanged
     assert.equal(await page.getByTestId('approval-card-APV-PENDING-01').count(), 0, 'Held refresh must not overwrite Project B');
@@ -810,6 +835,8 @@ try {
     pass('UI-14: Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded');
   } catch (e) {
     fail('UI-14: Deterministic Race Scenario B: Delayed manual refresh response from switched project is discarded', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-15. Deterministic Race Scenario C: Stale decision response does not affect switched project
@@ -834,10 +861,11 @@ try {
     await confirmCheckbox.check();
 
     // Arm delay on decision response
-    delayDecision = true;
+    decisionReply.arm();
 
     const submitBtn = page.getByRole('button', { name: /Record APPROVED Decision/i });
     await submitBtn.click();
+    await decisionReply.held();
 
     // Switch to Project B while decision is in-flight
     await page.evaluate((targetProjId) => {
@@ -851,11 +879,8 @@ try {
     await altCard.waitFor();
 
     // Release held decision response
-    if (holdDecisionResponse) {
-      holdDecisionResponse();
-      holdDecisionResponse = null;
-    }
-    await page.waitForTimeout(200);
+    await decisionReply.release();
+    await flushUi();
 
     // Confirm Project B's state, approvals, and lack of error banners
     assert.ok((await altCard.count()) >= 1, 'Project B card remains visible');
@@ -866,6 +891,8 @@ try {
     pass('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project');
   } catch (e) {
     fail('UI-15: Deterministic Race Scenario C: Stale decision response does not affect switched project', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-16: Project B remains usable after delayed Project A decision
@@ -891,9 +918,10 @@ try {
     await confirmCheckbox.check();
 
     // 3 & 4. Begin valid decision POST and hold response
-    delayProjectADecision = true;
+    projectADecision.arm();
     const submitBtn = page.getByRole('button', { name: /Record APPROVED Decision/i });
     await submitBtn.click();
+    await projectADecision.held();
 
     // 5. Confirm submission becomes busy
     await page.waitForFunction(() => {
@@ -926,11 +954,8 @@ try {
     assert.equal(await bSubmitBtn.innerText(), 'Submit Sign-Off Request', 'Button must not display submitting state');
 
     // 9. Release the Project A response
-    if (holdProjectADecision) {
-      holdProjectADecision();
-      holdProjectADecision = null;
-    }
-    await page.waitForTimeout(200);
+    await projectADecision.release();
+    await flushUi();
 
     // 10. Verify Project B remains usable after Project A completes
     assert.equal(await bSubmitBtn.isDisabled(), false, 'Project B submit button must remain enabled after Project A response resolves');
@@ -958,6 +983,8 @@ try {
     pass('UI-16: Project B remains usable after delayed Project A decision');
   } catch (e) {
     fail('UI-16: Project B remains usable after delayed Project A decision', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-17: Old completion cannot interrupt a newer submission
@@ -979,9 +1006,10 @@ try {
     await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
     await page.getByRole('checkbox').check();
 
-    delayProjectADecision = true;
+    projectADecision.arm();
     const submitBtnA = page.getByRole('button', { name: /Record APPROVED Decision/i });
     await submitBtnA.click();
+    await projectADecision.held();
 
     // 2. Switch to Project B
     await page.evaluate((targetProjId) => {
@@ -1007,9 +1035,10 @@ try {
     await descInput.fill('Detailed rationale for Project B overlapping request');
 
     // 4. Arm delay on Project B response and submit
-    delayProjectBRequest = true;
+    projectBRequest.arm();
     const bSubmitBtn = page.getByRole('button', { name: 'Submit Sign-Off Request' });
     await bSubmitBtn.click();
+    await projectBRequest.held();
 
     // Verify Project B is in submitting state
     await page.waitForFunction(() => {
@@ -1018,11 +1047,8 @@ try {
     });
 
     // 5. Release Project A's old response first
-    if (holdProjectADecision) {
-      holdProjectADecision();
-      holdProjectADecision = null;
-    }
-    await page.waitForTimeout(200);
+    await projectADecision.release();
+    await flushUi();
 
     // 6 & 7. Verify Project B remains in its own active submitting state!
     const pendingSubmitBtn = page.locator('button[type="submit"]');
@@ -1030,11 +1056,8 @@ try {
     assert.equal(await pendingSubmitBtn.innerText(), 'Submitting...', 'Project B submit button must still show Submitting...');
 
     // 8. Release Project B's response
-    if (holdProjectBRequest) {
-      holdProjectBRequest();
-      holdProjectBRequest = null;
-    }
-    await page.waitForTimeout(200);
+    await projectBRequest.release();
+    await flushUi();
 
     // 9. Verify Project B completes normally
     await page.waitForFunction(() => !document.body.innerText.includes('Submit Formal Sign-Off Request'));
@@ -1050,6 +1073,8 @@ try {
     pass('UI-17: Old completion cannot interrupt a newer submission');
   } catch (e) {
     fail('UI-17: Old completion cannot interrupt a newer submission', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-18: A → B → A operation invalidation
@@ -1071,9 +1096,10 @@ try {
     await page.getByText('Sign Governance Decision: APPROVED', { exact: true }).waitFor();
     await page.getByRole('checkbox').check();
 
-    delayProjectADecision = true;
+    projectADecision.arm();
     const submitBtnA = page.getByRole('button', { name: /Record APPROVED Decision/i });
     await submitBtnA.click();
+    await projectADecision.held();
 
     // 2. Switch to Project B
     await page.evaluate((targetProjId) => {
@@ -1108,11 +1134,8 @@ try {
     assert.ok((await reviewerCtx.count()) >= 1);
 
     // 5. Release original outdated Project A response (from APV-PARTIAL-02)
-    if (holdProjectADecision) {
-      holdProjectADecision();
-      holdProjectADecision = null;
-    }
-    await page.waitForTimeout(200);
+    await projectADecision.release();
+    await flushUi();
 
     // 6. Verify that stale response does NOT close modal, mutate selection, or trigger stale reload
     assert.ok((await page.getByText('Sign Governance Decision: APPROVED').count()) >= 1, 'Decision modal must remain open');
@@ -1125,6 +1148,8 @@ try {
     pass('UI-18: A → B → A operation invalidation');
   } catch (e) {
     fail('UI-18: A → B → A operation invalidation', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // UI-19: Unauthenticated response displays auth notice and recovers on re-check
@@ -1252,9 +1277,10 @@ try {
     await page.locator('#reissue-confirm').check();
 
     // 2. Arm delay on reissue response and click submit
-    delayReissue = true;
+    reissueReply.arm();
     const confirmBtn = page.getByRole('button', { name: 'Confirm & Reissue Sign-Off' });
     await confirmBtn.click();
+    await reissueReply.held();
 
     // 3. While request is in-flight, switch to Project B
     await page.evaluate((targetProjId) => {
@@ -1271,11 +1297,8 @@ try {
     assert.equal(await page.locator('text="Governed Sign-Off Reissue"').count(), 0, 'Reissue modal must not be visible in Project B');
 
     // 4. Release Project A's delayed reissue response
-    if (holdReissue) {
-      holdReissue();
-      holdReissue = null;
-    }
-    await page.waitForTimeout(200);
+    await reissueReply.release();
+    await flushUi();
 
     // 5. Verify Project B's UI is still pristine: no error, controls are enabled
     assert.equal(await page.getByRole('alert').count(), 0, 'No error alert injected into Project B');
@@ -1293,6 +1316,8 @@ try {
     pass('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project');
   } catch (e) {
     fail('UI-23: Project switching during in-flight reissue cannot contaminate the active UI project', e);
+  } finally {
+    await resetDeferredReplies();
   }
 
   // 24. Malformed signature card renders REISSUE REQUIRED, inspector shows reason, decision buttons suppressed, reissue succeeds
@@ -1332,7 +1357,7 @@ try {
     await confirmBtn.click();
 
     // Wait for reissue modal to close
-    await page.waitForTimeout(200);
+    await page.getByText('Governed Sign-Off Reissue', {exact: true}).waitFor({state: 'hidden'});
     assert.equal(await page.locator('text="Governed Sign-Off Reissue"').count(), 0, 'Modal must close after reissue');
 
     pass('UI-24: Genuine malformed signature card renders REISSUE REQUIRED, suppresses decision buttons, and enables governed reissue');
@@ -1380,6 +1405,7 @@ try {
 
   await page.close();
 } finally {
+  await resetDeferredReplies();
   await browser.close();
   await vite.close();
 }
