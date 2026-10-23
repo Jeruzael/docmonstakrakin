@@ -4220,6 +4220,9 @@ await test('Scenario 50: Late stale release response is discarded and snapshot r
 
     // 1. The canonical v120 snapshot is current; release authority is unavailable.
     const packageBtn = page.locator('#topbar-package-btn');
+    // The harness can return after list metadata renders, before the complete
+    // canonical snapshot is accepted. Wait for its actual readiness indicator.
+    await packageBtn.waitFor({state: 'visible'});
     assert.ok(await packageBtn.isVisible(), 'TopBar package button must be visible initially (snapshot v120 ready)');
 
     // 2. Navigate to Projects workspace
