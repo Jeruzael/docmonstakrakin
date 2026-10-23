@@ -1,0 +1,688 @@
+{
+  "timestamp": "2026-10-20T02:28:05.512Z",
+  "counting": "Observed named assertion/check outputs; compound checks can contain multiple Node assert calls. Historical banner totals are not used.",
+  "suites": {
+    "total": 67,
+    "passed": 67,
+    "failed": 0,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 1672,
+    "passed": 1672,
+    "failed": 0,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "suite": "scripts/runAutomatedQa.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_runAutomatedQa.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testAccountProvisioning.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testAccountProvisioning.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testAuditValidation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testAuditValidation.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testCanonicalLifecycle.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCanonicalLifecycle.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testCanonicalReconciliation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCanonicalReconciliation.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocVersionSync.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 50,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocVersionSync.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocs.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 87,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocs.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsApi.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsApi.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsClient.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsClient.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsPersistence.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsPersistence.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsRecovery.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 69,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsRecovery.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsRegistry.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsRegistry.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsTransaction.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsTransaction.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsValidator.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsValidator.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsViewComponent.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsViewComponent.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testControlledDocsWorkspaceTabs.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testControlledDocsWorkspaceTabs.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testCryptoDemon.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCryptoDemon.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testCryptoDemonIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testCryptoDemonIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDiscoveryRemediation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDiscoveryRemediation.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk196Closure.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk196Closure.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk196PostMergeCandidate.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk196PostMergeCandidate.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197ApprovalInboxUi.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197ApprovalInboxUi.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197Closure.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197Closure.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197ClosureCandidate.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197ClosureCandidate.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197Persistence.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197Persistence.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197PostMergeGovernance.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197PostMergeGovernance.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testDmk197Quorum.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 86,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testDmk197Quorum.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testEnvironmentFixtures.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testEnvironmentFixtures.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testForwardWbsEvidence.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testForwardWbsEvidence.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testGate3Adversarial.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testGate3Adversarial.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testPlanWbsRegistrationTransaction.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testPlanWbsRegistrationTransaction.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testProjectListReconciliation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProjectListReconciliation.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testProjectPersistenceClassifier.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProjectPersistenceClassifier.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testProjectsWorkspace.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProjectsWorkspace.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testProjectsWorkspaceUi.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProjectsWorkspaceUi.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testProposalContract.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testProposalContract.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testRequirementLifecycle.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 105,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testRequirementLifecycle.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testRequirementSignoff.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testRequirementSignoff.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testRequirementStatusSync.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testRequirementStatusSync.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSecurityPerimeter.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSecurityPerimeter.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSelfBootstrapContract.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSelfBootstrapContract.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSelfBootstrapExecutionVerifier.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSelfBootstrapExecutionVerifier.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSelfBootstrapExecutor.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSelfBootstrapExecutor.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSelfWorkItemReconciliation.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 90,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSelfWorkItemReconciliation.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testSourceMapDependency.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testSourceMapDependency.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testStageB2aAdversarial.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testStageB2aAdversarial.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testStageB2b1Adversarial.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testStageB2b1Adversarial.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testStatusAuditReceipt.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 56,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testStatusAuditReceipt.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testTechnicalBaseline.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testTechnicalBaseline.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testTrustedWbsRegistrationV2.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testTrustedWbsRegistrationV2.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testVitePerimeter.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testVitePerimeter.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testWbsRegistration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testWbsRegistration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "scripts/testWorkItemUpdates.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "log": "scripts_testWorkItemUpdates.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/package/testPackageServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_package_testPackageServerIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/package/testPortablePackage.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_package_testPortablePackage.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/release/testReleaseGate.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_release_testReleaseGate.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/release/testReleaseServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_release_testReleaseServerIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testAuditRedactionIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testAuditRedactionIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testCredentialMigration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testCredentialMigration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testMigrationServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testMigrationServerIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testOsKeychainStore.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testOsKeychainStore.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testRedactionFilter.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testRedactionFilter.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testSecretStore.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testSecretStore.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testSecretStoreFactory.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testSecretStoreFactory.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/secrets/testServerIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_secrets_testServerIntegration.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/security/testSecurityRegression.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_security_testSecurityRegression.log",
+      "changedEvidence": []
+    },
+    {
+      "suite": "server/security/testServerSecurityIntegration.ts",
+      "exitCode": 0,
+      "status": "PASSED",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "server_security_testServerSecurityIntegration.log",
+      "changedEvidence": []
+    }
+  ]
+}
