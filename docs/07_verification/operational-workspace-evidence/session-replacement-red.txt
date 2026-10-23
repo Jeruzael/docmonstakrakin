@@ -1,0 +1,19 @@
+PASS project request uses one atomic principal-and-resource authorization RPC
+PASS authority overload is unavailable rather than an invalid credential
+PASS revoked or unknown session returns unauthorized
+PASS inaccessible resource is concealed
+PASS project listing uses one atomic current-policy RPC without per-project authorization
+PASS project listing refuses revoked and unavailable authority
+FAIL account replacement cannot succeed when old-session revocation is unacknowledged: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+200 !== 503
+
+FAIL expired old cookie permits a fresh session without pretending to revoke it: AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
++ ]
+- []
+
+{"suite":"workspace-http","passed":6,"failed":2}

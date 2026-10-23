@@ -66,7 +66,7 @@ async function setup(empty=false) {
       if(url.endsWith('/answers')) {const q=state.questions.find(q=>q.id===body.questionId)!;Object.assign(q,{answer:body.answer,state:'ANSWERED'});return send({ok:true});}
       return send({error:'Unexpected mutation'},400);
     }
-    if(url==='/api/governance/session')return send({identity:null});
+    if(url==='/api/governance/session')return send({identity:null,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}});
     if(url==='/api/projects')return send(state.projects);
     const match=url.match(/^\/api\/projects\/([^/]+)(.*)$/);
     if(!match)return send({});

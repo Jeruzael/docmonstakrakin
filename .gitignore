@@ -3,6 +3,8 @@ build/
 dist/
 coverage/
 .local/
+.security/
+.security-backups/
 .secrets/
 runtime/
 .DS_Store

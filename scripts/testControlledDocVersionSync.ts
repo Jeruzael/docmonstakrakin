@@ -6,6 +6,7 @@ import { chromium, type Page, type Route } from 'playwright';
 import { startIsolatedVite } from './fixtures/isolatedVite.ts';
 import { INITIAL_PROJECTS, INITIAL_QUESTIONS, INITIAL_REQUIREMENTS, INITIAL_WORK_ITEMS, INITIAL_AUDIT_EVENTS } from '../src/data/initialData.ts';
 import { evaluateReleaseGates, type ReleaseAuditReport } from '../server/release/releaseGateEvaluator.ts';
+import { readReleaseReport } from '../src/data/releaseReportProjection.ts';
 import type {
   ControlledDocumentSummary,
   DocumentContentResponse,
@@ -34,9 +35,12 @@ const browser = await chromium.launch({
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
+const releaseOnly = process.argv.includes('--release-only');
 const results: { name: string; status: string; error?: string }[] = [];
 
 async function test(name: string, fn: () => Promise<void>) {
+  if (releaseOnly && !/^Scenario (?:49|50)(?:\s|:)/.test(name)) {skipped++; return;}
   try {
     await fn();
     passed++;
@@ -80,35 +84,42 @@ interface TestHarnessOptions {
   projectBVersion?: number;
   initialProjects?: any[];
   sessionAuthenticated?: boolean;
+  ignoreReleaseAbort?: boolean;
   saveResponseOverride?: (reqBody: any) => Promise<{ status: number; body: any }>;
   refreshFails?: boolean;
   projectAResponseOverride?: (callCount: number) => Promise<{ status: number; body: any } | null>;
   auditResponseOverride?: (projectId: string, callCount: number, saveCallsCount: number) => Promise<{ status: number; body: any } | null>;
 }
 
-function syntheticReadyReport(project: Pick<Project, 'id' | 'name'>): ReleaseAuditReport {
-  const sourceId = 'PRJ-ATLAS-01';
-  // Use the real evaluator's complete seven-gate response with inert seed inputs.
-  // Only browser-fixture identity is remapped for the pre-existing stale-snapshot
-  // scenarios; this does not claim that the real DOCMONSTAKRAKIN project is ready.
+function syntheticPendingReport(project: Pick<Project, 'id' | 'name' | 'stateVersion'>): ReleaseAuditReport {
+  // Unmodified protocol/1 response from the real evaluator for the exact
+  // inert project snapshot. No trust roots, acquisition or human approval exist.
   const report = evaluateReleaseGates({
-    projects: structuredClone(INITIAL_PROJECTS),
-    questions: { [sourceId]: structuredClone(INITIAL_QUESTIONS) },
-    requirements: { [sourceId]: structuredClone(INITIAL_REQUIREMENTS) },
-    workItems: { [sourceId]: structuredClone(INITIAL_WORK_ITEMS) },
-    auditLogs: { [sourceId]: structuredClone(INITIAL_AUDIT_EVENTS) },
-    approvals: { [sourceId]: [] },
-  }, sourceId);
-  assert.equal(report.releaseReady, false, 'Stored Atlas input must fail closed without authenticated production acquisition');
+    projects: [{...structuredClone(INITIAL_PROJECTS[0]), ...project}],
+    questions: { [project.id]: [] }, requirements: { [project.id]: [] },
+    workItems: { [project.id]: [] }, auditLogs: { [project.id]: [] }, approvals: { [project.id]: [] },
+  }, project.id);
+  assert.equal(report.releaseReady, false, 'Stored fixture input must fail closed without authenticated production acquisition');
   assert.equal(report.signedOff, false, 'Synthetic fixture must not contain release approval');
-  // Inert transport mock solely for stale-snapshot/signoff UI scenarios. This
-  // fixture-only status overrides no runtime policy or production authority.
-  return { ...report, releaseReady:true, gates:report.gates.map(gate=>gate.gateId===3?{...gate,status:'PASSED',details:'INERT TEST TRANSPORT: ready-modal scenario only.'}:gate),projectId: project.id, projectName: project.name };
+  assert.equal(report.allGatesPassed, false);
+  assert.equal(report.productionEvidence.trustedProductionEvidence, false);
+  assert.equal(report.localSignoffObservations.humanAuthorization, false);
+  assert.equal(report.projectStateVersion, project.stateVersion);
+  assert.equal(report.gates[6].status, 'HUMAN_APPROVAL_REQUIRED');
+  assert(readReleaseReport(report, project.id), 'Real evaluator DTO must pass the strict current response parser');
+  return report;
 }
 
 async function createHarness(options: TestHarnessOptions = {}) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultTimeout(8000);
+  if (options.ignoreReleaseAbort) await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    // Only the held release response ignores abort. A stale result must still
+    // be fenced when transport cancellation cannot prevent its arrival.
+    window.fetch = (input, init) => originalFetch(input,
+      typeof input === 'string' && input.endsWith('/release/gates') && init ? {...init, signal: undefined} : init);
+  });
 
   const initialVersion = options.initialStateVersion ?? 120;
   const projectBVersion = options.projectBVersion ?? 50;
@@ -162,7 +173,7 @@ async function createHarness(options: TestHarnessOptions = {}) {
   let projectCHoldPromise: Promise<void> | null = null;
   const endpointFetchCounts: Record<string, number> = {};
   const signoffCalls: any[] = [];
-  let releaseGatesData: ReleaseAuditReport = syntheticReadyReport(projectAData);
+  let releaseGatesData: ReleaseAuditReport = syntheticPendingReport(projectAData);
   let releaseGatesHoldPromise: Promise<void> | null = null;
 
   const projectAAuditLogs: any[] = [
@@ -231,9 +242,10 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
     if (url === '/api/governance/session') {
       if (options.sessionAuthenticated === false) {
-        return send({ identity: null });
+        return send({ identity: null,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false} });
       }
       return send({
+        access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false},
         identity: {
           name: 'Lead Architect',
           roles: ['LEAD_ARCHITECT'],
@@ -243,31 +255,18 @@ async function createHarness(options: TestHarnessOptions = {}) {
 
     // Release endpoints
     if (url.endsWith('/release/gates') && method === 'GET') {
+      // An in-flight response represents its request-time snapshot, even if a
+      // later request is configured with a newer report while this one waits.
+      const response = structuredClone(releaseGatesData);
       if (releaseGatesHoldPromise) await releaseGatesHoldPromise;
-      return send(releaseGatesData);
+      return send(response);
     }
     if (url.endsWith('/release/signoff') && method === 'POST') {
       const body = route.request().postDataJSON();
       signoffCalls.push(body);
-      // This is a response mock only; stale-snapshot scenarios still require
-      // zero POST attempts and never execute the server's signoff writer.
-      const report: ReleaseAuditReport = {
-        ...structuredClone(releaseGatesData),
-        gates: releaseGatesData.gates.map((gate) => gate.gateId === 7
-          ? { ...gate, status: 'PASSED', details: 'Synthetic browser-only signoff response.' }
-          : structuredClone(gate)),
-        signedOff: true,
-        signoffDetails: {
-          actor: body.actor,
-          timestamp: new Date().toISOString(),
-          auditEventId: 'AUD-REL-001',
-        },
-      };
-      report.allGatesPassed = report.gates.every((gate) => gate.status === 'PASSED');
-      return send({
-        ok: true,
-        report,
-      });
+      // Every scenario requires zero attempts. If that invariant regresses,
+      // this inert boundary records it and still cannot grant release authority.
+      return send({error: 'HUMAN_RELEASE_AUTHORIZATION_UNAVAILABLE', report: releaseGatesData}, 409);
     }
 
     // Projects endpoints
@@ -4063,6 +4062,9 @@ await test('Scenario 48 (RED-02): Project creation response must not certify com
     harness.holdProjectCResponse(projectCHoldPromise);
 
     const packageBtn = page.locator('#topbar-package-btn');
+    // List metadata can render before the initial canonical snapshot is ready.
+    // Keep the existing eight-second bound and await this scenario's prerequisite.
+    await packageBtn.waitFor({state: 'visible'});
     assert.ok(await packageBtn.isVisible());
 
     // Create Project C through ProjectWizard
@@ -4122,15 +4124,20 @@ await test('Scenario 48 (RED-02): Project creation response must not certify com
   }
 });
 
-// Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale
-await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical data is stale', async () => {
+// Protocol/1 rejects releaseReady/allGatesPassed/signedOff/signoffDetails. The
+// historical ready-modal positive fixture is therefore unsupported. These two
+// cases retain snapshot fencing/recovery with accepted real DTOs and zero POSTs.
+async function assertReleaseBlocked(page: Page, signoffCalls: any[]) {
+  assert.equal(await page.getByRole('button', {name: 'Execute v0.1 DoD Sign-Off'}).count(), 0, 'No release entry is authorized');
+  assert.equal(await page.getByRole('heading', {name: 'Execute v0.1 Definition-of-Done Sign-Off'}).count(), 0, 'No sign-off modal is authorized');
+  assert.equal(await page.getByRole('button', {name: 'Authorize & Seal v0.1 Release'}).count(), 0, 'No release submission is authorized');
+  assert.equal(signoffCalls.length, 0, 'No signoff POST request should be issued');
+}
+
+await test('Scenario 49 (RED-03): Current incomplete release evaluation is invalidated while canonical data is stale', async () => {
   const harness = await createHarness({ initialStateVersion: 120 });
   try {
     const { page } = harness;
-    page.on('pageerror', (err) => console.error('[SCENARIO 49 PAGE ERROR]:', err.message));
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') console.error('[SCENARIO 49 CONSOLE ERROR]:', msg.text());
-    });
 
     // Ensure initial project mount at v120 is complete
     const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
@@ -4150,14 +4157,17 @@ await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical
     await relTabBtn.waitFor();
     await relTabBtn.click();
 
-    // Wait for release gate panel to render
-    await page.waitForFunction(() => document.body.textContent?.includes('Governance Protocol') || document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'), { timeout: 4000 });
-
-    // Release sign-off entry button is visible and enabled initially while snapshot is fresh
-    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
-    await signoffBtn.waitFor();
-    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is fresh');
-    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is fresh');
+    // A current snapshot permits an honest report, never production authority.
+    await page.getByText('INCOMPLETE (SERVER-REPORTED)', {exact: true}).waitFor();
+    await page.locator('[data-testid="projection-toggle-raw"]').click();
+    const raw = page.locator('[data-testid="dynamic-projection-raw"]');
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* 120/);
+    assert.match(await raw.innerText(), /HUMAN_APPROVAL_REQUIRED/);
+    assert.match(await raw.innerText(), /Production evidence acquisition remains UNAVAILABLE/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
+    const releaseEndpoint = '/api/projects/PRJ-DOCMONSTAKRAKIN/release/gates';
+    const reportFetches = harness.getFetchCountFor(releaseEndpoint);
+    assert.ok(reportFetches > 0, 'Current report must be acquired through its API boundary');
 
     // Advance list floor to v121 while snapshot is v120
     await page.getByRole('button', { name: 'Projects' }).click();
@@ -4186,32 +4196,36 @@ await test('Scenario 49 (RED-03): Release sign-off is prohibited while canonical
     const snapshotWarning = page.locator('[data-testid="stale-snapshot-warning"]');
     assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must remain visible');
 
-    // Execute v0.1 DoD Sign-Off MUST BE disabled or unavailable!
-    assert.ok(
-      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
-      'Execute v0.1 DoD Sign-Off must be disabled or unavailable while canonical snapshot is stale'
-    );
-
-    // No signoff POST must have occurred
-    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
+    const status = page.locator('[data-testid="release-evaluation-status"]');
+    await status.waitFor();
+    assert.match(await status.innerText(), /Evaluation unavailable \(unavailable\)/);
+    await page.locator('[data-testid="projection-toggle-raw"]').click();
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* UNAVAILABLE/);
+    assert.doesNotMatch(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* 120/);
+    assert.equal(harness.getFetchCountFor(releaseEndpoint), reportFetches, 'Stale canonical data cannot acquire a new current report');
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
   } finally {
     await harness.close();
   }
 });
 
-// Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale
-await test('Scenario 50: Already-open release sign-off modal must automatically close and invalidate when canonical readiness becomes stale', async () => {
+await test('Scenario 50: Late stale release response is discarded and snapshot recovery waits for the current incomplete report', async () => {
   let resolveListHold: (() => void) | null = null;
   const listHoldPromise = new Promise<void>((r) => (resolveListHold = r));
   let resolveReportHold: (() => void) | null = null;
   const reportHoldPromise = new Promise<void>((resolve) => (resolveReportHold = resolve));
+  let resolveCurrentReport: (() => void) | null = null;
+  const currentReportPromise = new Promise<void>((resolve) => (resolveCurrentReport = resolve));
 
-  const harness = await createHarness({ initialStateVersion: 120 });
+  const harness = await createHarness({ initialStateVersion: 120, ignoreReleaseAbort: true });
   try {
     const { page } = harness;
 
-    // 1. Initial state: Project A initial snapshot v120, ready.
+    // 1. The canonical v120 snapshot is current; release authority is unavailable.
     const packageBtn = page.locator('#topbar-package-btn');
+    // The harness can return after list metadata renders, before the complete
+    // canonical snapshot is accepted. Wait for its actual readiness indicator.
+    await packageBtn.waitFor({state: 'visible'});
     assert.ok(await packageBtn.isVisible(), 'TopBar package button must be visible initially (snapshot v120 ready)');
 
     // 2. Navigate to Projects workspace
@@ -4243,28 +4257,19 @@ await test('Scenario 50: Already-open release sign-off modal must automatically 
     await relTabBtn.waitFor();
     await relTabBtn.click();
 
-    await page.waitForFunction(
-      () => document.body.textContent?.includes('Execute v0.1 DoD Sign-Off'),
-      { timeout: 4000 }
-    );
+    await page.getByText('INCOMPLETE (SERVER-REPORTED)', {exact: true}).waitFor();
+    await page.locator('[data-testid="projection-toggle-raw"]').click();
+    const raw = page.locator('[data-testid="dynamic-projection-raw"]');
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* 120/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
 
-    // 6. Confirm snapshot v120 is ready; click "Execute v0.1 DoD Sign-Off"; verify modal visible and submit button enabled
-    const signoffBtn = page.getByRole('button', { name: 'Execute v0.1 DoD Sign-Off' });
-    await signoffBtn.waitFor();
-    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible when canonical data is ready');
-    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be enabled when canonical data is ready');
-
-    await signoffBtn.click();
-
-    // Verify modal is open
-    const modalHeading = page.getByRole('heading', { name: 'Execute v0.1 Definition-of-Done Sign-Off' });
-    await modalHeading.waitFor({ state: 'visible' });
-
-    // Fill actor so submit button would otherwise be valid
-    const actorInput = page.locator('input[placeholder*="Security Lead"]');
-    await actorInput.fill('Security Lead (Gio)');
-    const modalSubmitBtn = page.getByRole('button', { name: 'Authorize & Seal v0.1 Release' });
-    assert.ok(await modalSubmitBtn.isEnabled(), 'Modal submit button must be enabled with actor provided and canonical data ready');
+    // 6. Keep a v120 refresh physically in flight across the snapshot change.
+    harness.holdReleaseGatesResponse(reportHoldPromise);
+    const oldRequest = page.waitForRequest(request => request.url().endsWith('/release/gates'));
+    await page.getByRole('button', {name: 'Refresh evaluation', exact: true}).click();
+    await oldRequest;
+    const status = page.locator('[data-testid="release-evaluation-status"]');
+    await page.getByText('Loading current release evaluation…', {exact: true}).waitFor();
 
     // 7. Release list hold: resolveListHold(); harness.holdProjectListResponse(null);
     if (resolveListHold) {
@@ -4278,28 +4283,22 @@ await test('Scenario 50: Already-open release sign-off modal must automatically 
     await snapshotWarning.waitFor({ state: 'visible' });
     assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning must appear after list floor advances to v121');
 
-    // 9. Modal automatically closes via useEffect in DocumentsView.tsx
-    await modalHeading.waitFor({ state: 'hidden' });
-    assert.ok(!(await modalHeading.isVisible()), 'Modal must automatically close when canonical readiness is lost');
-
-    // 10. "Execute v0.1 DoD Sign-Off" entry button becomes disabled/hidden
-    assert.ok(
-      !(await signoffBtn.isVisible()) || (await signoffBtn.isDisabled()),
-      'Execute v0.1 DoD Sign-Off entry button must be disabled or hidden while canonical snapshot is stale'
-    );
-
-    // 11. Exactly 0 sign-off POST requests issued
-    assert.equal(harness.getSignoffCalls().length, 0, 'No signoff POST request should be issued');
+    await status.waitFor();
+    assert.match(await status.innerText(), /Evaluation unavailable \(unavailable\)/);
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* UNAVAILABLE/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
 
     // 12. Hold the separate release evaluation while the canonical snapshot recovers.
     // Snapshot recovery alone must not reuse the previous scope's release report.
-    harness.holdReleaseGatesResponse(reportHoldPromise);
-    harness.setProjectAData({
+    harness.holdReleaseGatesResponse(currentReportPromise);
+    const currentProject = {
       ...structuredClone(INITIAL_PROJECTS[0]),
       id: 'PRJ-DOCMONSTAKRAKIN',
       name: 'Fresh Snapshot v121',
       stateVersion: 121,
-    });
+    };
+    harness.setProjectAData(currentProject);
+    harness.setReleaseGatesData(syntheticPendingReport(currentProject));
     const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
     await retrySnapshotBtn.click();
     await page.waitForFunction(() => !document.querySelector('[data-testid="stale-snapshot-warning"]'));
@@ -4307,19 +4306,34 @@ await test('Scenario 50: Already-open release sign-off modal must automatically 
     assert.ok(!(await snapshotWarning.isVisible()), 'Snapshot warning must clear on v121 recovery');
     assert.ok(await packageBtn.isVisible(), 'TopBar package button restored on v121 complete snapshot recovery');
     await page.getByText('Loading current release evaluation…', {exact: true}).waitFor({state: 'visible'});
-    assert.ok(!(await signoffBtn.isVisible()), 'Sign-off entry must remain unavailable while the new report is pending');
-    assert.ok(!(await modalHeading.isVisible()), 'The invalidated sign-off modal must remain closed while the report is pending');
-    assert.equal(harness.getSignoffCalls().length, 0, 'A recovered snapshot with a pending report must issue zero signoff POSTs');
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* UNAVAILABLE/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
 
-    // 13. Admit the current report, then retain every original recovery assertion.
+    // 13. Deliver the old response despite abort. It must not populate the new
+    // scope while that scope's own v121 response remains held and pending.
+    const oldResponse = page.waitForResponse(response => response.url().endsWith('/release/gates'));
+    if (resolveReportHold) {(resolveReportHold as () => void)(); resolveReportHold = null;}
+    const deliveredOldReport = await oldResponse;
+    assert.equal((await deliveredOldReport.json()).projectStateVersion, 120);
+    await deliveredOldReport.finished();
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    assert.equal(await status.innerText(), 'Loading current release evaluation…', 'A late previous-scope report cannot replace the current pending state');
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* UNAVAILABLE/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
+
+    // 14. A current accepted DTO restores the incomplete report, never a modal
+    // or human authorization. Canonical readiness alone cannot approve release.
     harness.holdReleaseGatesResponse(null);
-    if (resolveReportHold) { (resolveReportHold as () => void)(); resolveReportHold = null; }
-    await signoffBtn.waitFor({state: 'visible', timeout: 8000});
-    assert.ok(await signoffBtn.isVisible(), 'Sign-off entry button must be visible after recovery');
-    assert.ok(await signoffBtn.isEnabled(), 'Sign-off entry button must be re-enabled after recovery');
-    assert.equal(harness.getSignoffCalls().length, 0, 'Signoff POST calls must remain 0');
+    if (resolveCurrentReport) {(resolveCurrentReport as () => void)(); resolveCurrentReport = null;}
+    await page.getByText('INCOMPLETE (SERVER-REPORTED)', {exact: true}).waitFor();
+    assert.match(await raw.innerText(), /\*\*Evaluated Server Snapshot:\*\* 121/);
+    assert.match(await raw.innerText(), /HUMAN_APPROVAL_REQUIRED/);
+    assert.match(await raw.innerText(), /Production evidence acquisition remains UNAVAILABLE/);
+    assert.doesNotMatch(await raw.innerText(), /READY FOR SIGNOFF|SIGNED OFF \(SERVER-REPORTED\)/);
+    await assertReleaseBlocked(page, harness.getSignoffCalls());
   } finally {
     harness.holdReleaseGatesResponse(null);
+    if (resolveCurrentReport) (resolveCurrentReport as () => void)();
     if (resolveReportHold) (resolveReportHold as () => void)();
     harness.holdProjectListResponse(null);
     if (resolveListHold) {
@@ -4336,6 +4350,7 @@ console.log('============================================================');
 console.log(`TOTAL TESTS: ${passed + failed}`);
 console.log(`PASSED: ${passed}`);
 console.log(`FAILED: ${failed}`);
+if (releaseOnly) console.log(`NOT EXECUTED: ${skipped} other scenarios (--release-only)`);
 console.log('============================================================');
 
 if (failed > 0) {

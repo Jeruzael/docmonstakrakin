@@ -1,0 +1,70 @@
+{
+  "version": "0.0.0",
+  "name": "docmonstakrakin",
+  "dependencies": {
+    "@tailwindcss/vite": {
+      "version": "4.3.3",
+      "resolved": "https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz",
+      "overridden": false,
+      "dependencies": {
+        "@tailwindcss/node": {
+          "version": "4.3.3",
+          "resolved": "https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.3.tgz",
+          "overridden": false,
+          "dependencies": {
+            "source-map-js": {
+              "version": "1.2.2",
+              "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz",
+              "overridden": false
+            }
+          }
+        },
+        "vite": {
+          "version": "6.4.4"
+        }
+      }
+    },
+    "@vitejs/plugin-react": {
+      "version": "5.2.0",
+      "resolved": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-5.2.0.tgz",
+      "overridden": false,
+      "dependencies": {
+        "vite": {
+          "version": "6.4.4"
+        }
+      }
+    },
+    "argon2": {
+      "version": "0.45.1",
+      "resolved": "https://registry.npmjs.org/argon2/-/argon2-0.45.1.tgz",
+      "overridden": false
+    },
+    "autoprefixer": {
+      "version": "10.6.1",
+      "resolved": "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.6.1.tgz",
+      "overridden": false,
+      "dependencies": {
+        "postcss": {
+          "version": "8.5.28",
+          "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz",
+          "overridden": false,
+          "dependencies": {
+            "source-map-js": {
+              "version": "1.2.2"
+            }
+          }
+        }
+      }
+    },
+    "better-sqlite3": {
+      "version": "13.0.3",
+      "resolved": "https://registry.npmjs.org/better-sqlite3/-/better-sqlite3-13.0.3.tgz",
+      "overridden": false
+    },
+    "vite": {
+      "version": "6.4.4",
+      "resolved": "https://registry.npmjs.org/vite/-/vite-6.4.4.tgz",
+      "overridden": false
+    }
+  }
+}

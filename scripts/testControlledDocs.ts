@@ -664,7 +664,9 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const app = express();
-      app.use(express.json());
+      // Match server.ts's bounded parser: JSON escaping can push current living
+      // document requests above Express's unrelated 100 KiB default.
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -798,7 +800,7 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -881,7 +883,7 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -924,7 +926,7 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -1022,7 +1024,7 @@ async function main() {
 
       // Call actual POST /diff
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -1097,7 +1099,7 @@ async function main() {
 
       // Call actual POST /validate
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -1154,7 +1156,7 @@ async function main() {
       const prj = ws.store.projects.find((p) => p.id === 'PRJ-DOCMONSTAKRAKIN');
       const initialVersion = prj?.stateVersion!;
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -1688,7 +1690,7 @@ async function main() {
     const ws = createDisposableWorkspace();
     try {
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);
@@ -1869,7 +1871,7 @@ async function main() {
 
       // 3. Exercise actual /save route
       const app = express();
-      app.use(express.json());
+      app.use(express.json({ limit: '10mb' }));
       installProjectPersistence(app, ws.store, ws.workspaceDir);
       app.use('/api/projects', createControlledDocsRouter(ws.store, () => TEST_REVIEWER, ws.workspaceDir));
       const { base, close } = await startTestServer(app);

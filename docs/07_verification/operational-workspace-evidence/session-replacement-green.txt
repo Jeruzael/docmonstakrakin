@@ -1,0 +1,9 @@
+PASS project request uses one atomic principal-and-resource authorization RPC
+PASS authority overload is unavailable rather than an invalid credential
+PASS revoked or unknown session returns unauthorized
+PASS inaccessible resource is concealed
+PASS project listing uses one atomic current-policy RPC without per-project authorization
+PASS project listing refuses revoked and unavailable authority
+PASS account replacement cannot succeed when old-session revocation is unacknowledged
+PASS expired old cookie permits a fresh session without pretending to revoke it
+{"suite":"workspace-http","passed":8,"failed":0}

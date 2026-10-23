@@ -1,0 +1,68 @@
+# Private workspace implementation and continuation
+
+Status: engineering candidate; qualification and publication are recorded in the accompanying verification checkpoint. This guide supersedes older statements that the application has only unscoped project access **for the new ENFORCED mode**. Historical records and explicit LOCAL_DEVELOPMENT behavior remain historical/development contracts.
+
+## Start safely
+
+Use a complete checkout on Windows/Linux x64 with Node22.23.3 or a compatible later22.x runtime, the pinned lockfiles, and successful lifecycle-enabled dependency installation. The server bundle depends on its committed `server/security/workspaceAccess` worker/helper files; copying only `dist/server.cjs` is unsupported. Do not install dependencies through a junction to another installation.
+
+Normal startup defaults to `DMK_WORKSPACE_ACCESS=ENFORCED`. Before a private authority is initialized, only aggregate health, session/setup information and the built sign-in UI are available. There are no default accounts. Enforced mode uses built static UI even when NODE_ENV is development; run the build before serving it. Missing or invalid native packages, private permissions, provenance or authority state fail closed.
+
+The operator's existing installation/data were not migrated or initialized by this work. The first isolated clean npm installation on this host failed on a missing Windows SDK. A genuine Microsoft SDK was then extracted into a task-private directory without host installation or registry changes. Fresh normal lifecycle-enabled npm installation, audit0, native35/35, ownership/path7/7 and quality/build succeeded using that SDK and a new Node-header cache. The additive chronology and reproducible process-only setup are in `docs/07_verification/OPERATOR_WINDOWS_QUALIFICATION_20261022.md`. This qualifies that configured isolated host environment; it does not mean the operator's original dependency junction or global SDK was changed.
+
+Windows private authority requires actual owner SID to equal the current account SID, with only that account admitted by its private ACL. An elevated token whose default owner is Administrators does not meet that contract. Do not bypass the failure or change ownership of existing authority automatically. The GitHub Windows fixture separately qualifies a newly created suspended same-user child after proving a distinct token and changing only that child's default owner. It does not alter the operator/runner parent token, enroll an account, enable privileges or accept Administrators as owner. Current-user ownership and strict private ACLs must also hold in actual Node descendants. This CI fixture is not a general operator launcher or qualification of every elevated/shared-host configuration.
+
+Fresh private-directory creation uses an exclusive, nonrecursive factory and an exact protected current-user DACL. Actual Windows Server2022 same-token diagnostics showed both combined and separate icacls operations could retain broad grants as explicit ACEs. The factory uses DACL-only .NET persistence after checking the new directory's owner, then repeats the unchanged strict admission. It cannot repair an existing directory or set ownership. Existing state remains non-repairing and strict.
+
+For an explicitly unscoped local demo, a shell may select `DMK_WORKSPACE_ACCESS=LOCAL_DEVELOPMENT`. This displays its development limitation and retains the earlier reviewer roster contract. It is not operational authentication and must not be used as a workaround for failed private-authority admission. Remote listeners and forwarded/proxy authority remain unsupported.
+
+## Offline authority maintenance
+
+Stop the server. Inspect `npm run security:workspace -- help`. Initialize/provision only identities and role assignments the competent operator actually knows and authorizes. Example placeholders are deliberately not runnable appointments:
+
+```text
+npm run security:workspace -- init --id <account-id> --name <account-name> --person <local-person-id> --can-create --import-state
+npm run security:workspace -- provision --id <other-id> --name <other-name> --person <other-person-id>
+npm run security:workspace -- membership --id <account-id> --project <existing-project-id> --role OWNER
+npm run security:workspace -- status
+```
+
+Passwords use the hidden local terminal or private stdin. Never provide them in command arguments, environment variables, source control, tickets or chat. `--import-state` reads only the fixed `.local/project-state.json`; it preserves that original migration input. It grants no imported ownership. A creator's new project ownership is instead committed atomically with the new project. Initial imported projects need explicit offline membership decisions.
+
+Membership roles are OWNER, EDITOR, READER or DENY. They are distinct from human Security Officer/Lead Architect roles. Local personId assertions do not prove real-world human independence. The historical verification contract continues to require configured SO/LA authority for its submitter and two distinct other persons for its actual review; ordinary project authors receive no implicit reviewer role. Never duplicate one human across keys/accounts to manufacture quorum.
+
+The private `.security` SQLite authority owns credentials, revocable sessions, membership policy, security audit and the operational project snapshot. Enforced writes never shadow-write the old JSON snapshot. Project package imports contain project data/history, never active workspace principals, credential verifiers, sessions or grants. The self project remains read/export only; canonical WBS mutation is unavailable.
+
+## Sessions and transport
+
+The built UI confirms the server access mode before mounting project screens. Tokens use HttpOnly/SameSite=Strict cookies, with Secure under explicit TLS. CSRF proof stays in page memory. Mutations and audit-appending GET/HEAD package exports require CSRF and a unique operation ID. Sign-out, expiry or principal transition discards prior private UI/cache and personal confirmations. An uncertain write is never automatically retried.
+
+Modern-browser tabs receive a credential-free session-change notification. It only clears cached identity and asks for a fresh server check; it cannot supply an account, role, token or approval. No credential or CSRF material is placed in browser storage or that notification. A same-account replacement CSRF proof also fences the mounted App. Browsers without BroadcastChannel do not receive immediate cross-tab invalidation and are not qualified for that privacy behavior.
+
+The server binds only127.0.0.1. `scripts/prepareLoopbackTls.ts` describes/validates the optional fixed `.security/tls/loopback.crt` and `.security/tls/loopback.key` contract. SAN must be exactly127.0.0.1; the private leaf/key are admitted through owner-only filesystem checks. No operator certificate, system trust installation or issuer appointment was performed. Choosing real certificate custody/trust remains an operator decision. Plain loopback HTTP is not claimed as accepted shared/remote transport.
+
+Plain HTTP assumes a trusted local host/browser environment. Cookies are not isolated by TCP port: another HTTP service on127.0.0.1 can receive same-host cookies if the browser visits it. HttpOnly and SameSite do not fix that port boundary. Use deliberately trusted loopback TLS/custody before accepting an environment with untrusted local services; this candidate does not qualify hostile local services, shared hosts or remote deployment.
+
+## Failure and recovery
+
+Only one authority owner may be live. A crash or uncertain worker outcome retains the lock. `recover-lock --confirm-stopped` is an explicit offline operation that verifies the recorded process is dead; startup never steals a lock. Server restart fences earlier sessions. Structural corruption, substituted links/identities, loose permissions and exhausted retained budgets deny authority.
+
+All project reads/writes are blocked while a shared projection commit is pending. Any failed/uncertain commit blocks project access until restart reloads authoritative SQLite. Restoring memory is insufficient when the durable commit acknowledgment is lost. Keep the original database and evidence before diagnosing such an outcome.
+
+Offline backup and new-destination restore **preparation** preserve original authority provenance. A copied database is not an enrolled new authority. Rebinding/restoring grants needs a separately reviewed recovery/fresh-revocation decision; copying an old database cannot establish that its approvals or revocations are current. Refer to the backup verification record for the exact commands and filesystem side effects. Never overwrite the only authority or backup.
+
+Candidate limits include128 principals,512 memberships,256 retained sessions,4096 retained security-audit/operation records,128 throttle keys and a64MiB snapshot. The worker retains16 pending RPCs/3second request deadlines. Authority admission is four active operations without a server queue; the browser admits two private requests and at most64 waiting for20seconds. Full budgets reject instead of silently deleting security history. These are candidate constraints, not accepted production SLOs; maximum admitted proofs/snapshots, real disk-full, hostile same-OS-owner races and a whole-process capacity profile remain unqualified.
+
+Project listing uses one atomic authority transaction: check the current session, parse the current snapshot once, read that principal's memberships once and filter through the shared project policy. It does not perform one filesystem-admitted RPC per project or combine different policy revisions. Synthetic latency measurements are retained with the combined checkpoint; maximum snapshots and production latency remain unqualified. Expired/revoked/old-generation sessions can be reclaimed at insertion, but retained audit/operation history has a finite lifetime ceiling. There is no automatic authority-history archive/prune or audited activated-recovery mechanism; inspect offline `status` counts and stop and preserve the authority before its history capacity is exhausted. At full history capacity, authority admission also refuses reads/login/logout rather than bypassing the retention invariant; a restart does not reset that capacity.
+
+Terminal password input uses fatal incremental UTF8 decoding, preserves literal Unicode/BOM data and restores terminal raw mode on completion or failure. Passwords remain limited to1,024 UTF8 bytes; piped input permits1,026 bytes including an optional trailing CRLF. A candidate8KiB cumulative terminal-editing budget bounds repeated backspaces/input; exceeding it rejects the attempt without enrolling authority. This is an engineering admission choice, not production resource-budget ratification.
+
+## Evidence and remaining decisions
+
+Windows private-boundary admission reads descriptors through Windows PowerShell5's direct .NET Directory/File APIs. Hosted controlled probes measured a Get-Acl acquisition stall and successful equivalent direct reads; owner, protected DACL, SID/rule, permission-pin checks and four-second deadlines remain mandatory. Existing insecure authority is rejected without repair. Creation writes only an exact DACL on the exclusively created new directory. No execution-policy bypass, host SDK/global-package change, account enrollment or production certificate installation is part of this correction. See the additive operational checkpoint for genuine failures and final qualification status.
+
+The release evaluator binds exact project/release/task/commit/build/environment context. Its readonly CI observer is pinned to this repository's self project, workflow and four job identities; it is not a generic imported-project CI authority. Authenticated metadata is observed through bounded public GitHub HTTPS acquisition and short-lived in-memory branding. Passing CI supplies no independent human appointment, production producer trust or release approval. Missing production gates remain unavailable/pending; Gate7 remains human-required and unexecuted.
+
+The governance readiness command composes actual existing historical/synthetic verifiers while retaining `mayApply:false`. Real role appointments, root/custody ratification, authenticated time/revocation/antirollback acquisition, atomic protected Git WBS/ledger publication and recovery acceptance remain separate prerequisites. There is no live canonical WBS apply engine or new authority bootstrap under this candidate.
+
+The operator deferred task1 browser acceptance. Complete that actual operator journey after the technical candidate and original-host installation are qualified. Do not record it as passed from a synthetic browser test. All14 privileged registrations, live agents, PR34/52, canonical WBS and historical receipts retain their existing boundaries; no release promotion follows from this guide.

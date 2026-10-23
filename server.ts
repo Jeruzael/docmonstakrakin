@@ -1,6 +1,15 @@
 import {sanitizeAndHashAudit} from './server/security/sanitizedAudit.js';
 import {localRequestBoundary, resolveLocalNetworkConfig} from './server/security/localPerimeter.ts';
 import {enforceApiRoutePolicy} from './server/security/apiRoutePolicy.ts';
+import {installWorkspaceHttp,resolveWorkspaceAccessMode} from './server/security/workspaceAccess/http.ts';
+import {WorkspaceStore} from './server/security/workspaceAccess/store.ts';
+import {createWorkspaceSessionService} from './server/security/workspaceAccess/service.ts';
+import {installWorkspaceProjectPersistence} from './server/security/workspaceAccess/projectPersistence.ts';
+import {workspaceVerificationPrincipal} from './server/security/workspaceAccess/identity.ts';
+import {resolveWorkspaceTls} from './server/security/workspaceAccess/tls.ts';
+import {createWorkspaceBodyAdmission} from './server/security/workspaceAccess/bodyAdmission.ts';
+import {createServer as createHttpsServer} from 'node:https';
+import {registerGitHubCiRoutes} from './server/release/githubCiRoutes.ts';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { generateUniqueRequirementId, validateRequirementId } from './server/requirementId.ts';
@@ -121,15 +130,18 @@ const store = new ProjectStore();
 
 async function startServer() {
   const network=resolveLocalNetworkConfig();
+  const workspaceMode=resolveWorkspaceAccessMode();
+  const tls=resolveWorkspaceTls(process.cwd());
   // Install console redaction interceptor (DMK-157.5)
   defaultRedactor.installConsoleInterceptor();
 
   // Initialize SecretStore abstraction (DMK-157)
   // Startup-fatal fail-closed policy: store integrity or authentication failure halts startup.
-  const secretStore = await initializeSecretStore();
+  // Enforced startup must not query or initialize unrelated operator credentials.
+  const secretStore = workspaceMode==='LOCAL_DEVELOPMENT'?await initializeSecretStore():null;
 
   // Dynamically register ambient or provisioned credentials
-  const ambientKey = await resolveSecret('GEMINI_API_KEY');
+  const ambientKey = secretStore?await resolveSecret('GEMINI_API_KEY'):null;
   if (ambientKey) {
     defaultRedactor.registerSecret(ambientKey);
   }
@@ -137,9 +149,10 @@ async function startServer() {
   const app = express();
   app.use(localRequestBoundary);
   app.use(enforceApiRoutePolicy);
+  if(workspaceMode==='ENFORCED')app.use(createWorkspaceBodyAdmission());
   app.use(express.json({ limit: '10mb' }));
 
-  const recoveryReport = recoverDocumentTransactions(process.cwd());
+  const recoveryReport = workspaceMode==='LOCAL_DEVELOPMENT'?recoverDocumentTransactions(process.cwd()):{locked:false,errors:[]};
   if (recoveryReport.locked) {
     console.error(
       'Controlled document transaction recovery is locked:',
@@ -147,7 +160,19 @@ async function startServer() {
     );
   }
 
-  const reviewerAuth = installReviewerIdentity(app);
+  let workspaceAuthority:WorkspaceStore|null=null;
+  if(workspaceMode==='ENFORCED'){
+    try{workspaceAuthority=await WorkspaceStore.open(process.cwd());}
+    catch(error){if((error as any)?.code!=='WORKSPACE_NOT_INITIALIZED')throw error;}
+  }
+  const authorityInfo=workspaceAuthority?await workspaceAuthority.execute({command:'info'}):null;
+  const workspaceSession=workspaceAuthority&&authorityInfo?.initialized?await createWorkspaceSessionService(workspaceAuthority):null;
+  if(workspaceMode==='LOCAL_DEVELOPMENT')app.use((req,res,next)=>{
+    if(['GET','HEAD'].includes(req.method)&&/^\/api\/governance\/session\/?$/i.test(req.path)){
+      const send=res.json.bind(res);res.json=body=>send({...body,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}});
+    }next();
+  });
+  const reviewerAuth=workspaceMode==='ENFORCED'?installWorkspaceHttp(app,workspaceSession,store):installReviewerIdentity(app);
   app.use((req,res,next)=>{
     // This context grants only the pre-existing governance roles, never general
     // project membership or the disabled administrative capabilities.
@@ -155,8 +180,11 @@ async function startServer() {
     if((res.locals.securityRouteClass==='SPECIALIZED_REVIEWER'||reviewerTransition)&&!reviewerAuth.requireHuman(req,res))return;
     next();
   });
-  installProjectPersistence(app, store);
-  registerVerificationRoutes(app,store,reviewerAuth.requireHuman);
+  if(workspaceMode==='ENFORCED'){
+    if(workspaceAuthority)await installWorkspaceProjectPersistence(app,store,workspaceAuthority);
+  }else installProjectPersistence(app, store);
+  const releaseCi=registerGitHubCiRoutes(app,store,reviewerAuth.requireHuman);
+  registerVerificationRoutes(app,store,reviewerAuth.requireHuman,workspaceMode==='ENFORCED'?workspaceVerificationPrincipal:undefined);
   registerProjectReadinessRoutes(app,store,reviewerAuth.requireHuman,(projectId,current)=>projectVerificationEvidence(store,projectId,current));
   registerSignoffRoutes(app, store, reviewerAuth);
   app.use('/api/projects', createControlledDocsRouter(store, reviewerAuth.requireHuman));
@@ -171,6 +199,7 @@ async function startServer() {
   // Lazy Gemini client backed by SecretStore
   let geminiClient: GoogleGenAI | null = null;
   async function getGemini(): Promise<GoogleGenAI> {
+    if(workspaceMode==='ENFORCED')throw Error('PRIVILEGED_PROVIDER_UNAVAILABLE');
     if (!geminiClient) {
       const key = await resolveSecret('GEMINI_API_KEY');
       if (!key) {
@@ -186,13 +215,14 @@ async function startServer() {
   // ==========================================
 
   app.get('/api/health', (req, res) => {
+    if(workspaceMode==='ENFORCED')return void res.json({status:'ok',service:'docmonstakrakin-control-plane',mode:'enforced-loopback',timestamp:new Date().toISOString()});
     res.json({
       status: 'ok',
       service: 'docmonstakrakin-control-plane',
       timestamp: new Date().toISOString(),
       projectsCount: store.projects.length,
       mode: 'local-first',
-      secretStoreProvider: secretStore.getProviderType(),
+      secretStoreProvider: secretStore!.getProviderType(),
     });
   });
 
@@ -204,7 +234,7 @@ async function startServer() {
     try {
       const metadata = await secretStore.listSecretMetadata();
       res.json({
-        provider: secretStore.getProviderType(),
+        provider: secretStore!.getProviderType(),
         count: metadata.length,
         secrets: metadata,
       });
@@ -220,7 +250,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Secret key and value are required' });
       }
 
-      await secretStore.setSecret(key, value, description);
+      await secretStore!.setSecret(key, value, description);
       defaultRedactor.registerSecret(value);
 
       const prjId = projectId || 'PRJ-ATLAS-01';
@@ -229,13 +259,13 @@ async function startServer() {
         'Security Lead',
         'SECRET_ROTATED',
         key,
-        `Credential '${key}' securely updated in ${secretStore.getProviderType()} store`
+        `Credential '${key}' securely updated in ${secretStore!.getProviderType()} store`
       );
 
       res.status(200).json({
         status: 'ok',
         key,
-        provider: secretStore.getProviderType(),
+        provider: secretStore!.getProviderType(),
         message: `Secret ${key} safely secured`,
       });
     } catch (err: any) {
@@ -247,8 +277,8 @@ async function startServer() {
     try {
       const { key } = req.params;
       const { projectId } = req.body || {};
-      const existingSecret = await secretStore.getSecret(key);
-      const deleted = await secretStore.deleteSecret(key);
+      const existingSecret = await secretStore!.getSecret(key);
+      const deleted = await secretStore!.deleteSecret(key);
 
       if (deleted) {
         if (existingSecret) {
@@ -260,7 +290,7 @@ async function startServer() {
           'Security Lead',
           'SECRET_DELETED',
           key,
-          `Credential '${key}' removed from ${secretStore.getProviderType()} store`
+          `Credential '${key}' removed from ${secretStore!.getProviderType()} store`
         );
       }
 
@@ -295,7 +325,7 @@ async function startServer() {
         'Security Lead',
         dryRun ? 'CREDENTIAL_MIGRATION_DRY_RUN' : 'CREDENTIAL_MIGRATION_CEREMONY',
         path.basename(targetPath),
-        `Migrated ${result.migratedCount} credentials into ${secretStore.getProviderType()} store with proof ${result.proofHash.slice(0, 12)}`,
+        `Migrated ${result.migratedCount} credentials into ${secretStore!.getProviderType()} store with proof ${result.proofHash.slice(0, 12)}`,
         {
           proofHash: result.proofHash,
           totalFound: result.totalFound,
@@ -358,10 +388,10 @@ async function startServer() {
 
   app.get('/api/ai/status', async (req, res) => {
     try {
-      const isConfigured = await secretStore.hasSecret('GEMINI_API_KEY');
+      const isConfigured = await secretStore!.hasSecret('GEMINI_API_KEY');
       res.json({
         isConfigured,
-        provider: secretStore.getProviderType(),
+        provider: secretStore!.getProviderType(),
         model: 'gemini-2.5-flash',
       });
     } catch (err: any) {
@@ -371,7 +401,8 @@ async function startServer() {
 
   // Projects
   app.get('/api/projects', (req, res) => {
-    res.json(store.projects);
+    const visible=res.locals.workspaceProjects as Set<string>|undefined;
+    res.json(visible?store.projects.filter(project=>visible.has(project.id)):store.projects);
   });
 
   app.get('/api/projects/:id', (req, res) => {
@@ -379,7 +410,8 @@ async function startServer() {
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    res.json(project);
+    const authorization=res.locals.workspaceAuthorization;
+    res.json(authorization?{...project,workspaceAccess:{projectId:project.id,policyRevision:authorization.policyRevision,allowedActions:authorization.allowedActions??[]}}:project);
   });
 
   app.post('/api/projects', (req, res) => {
@@ -405,7 +437,7 @@ async function startServer() {
       dataSensitivity: body.dataSensitivity || 'INTERNAL',
       lifecyclePhase: 'DISCOVERY',
       stateVersion: 1,
-      owner: body.owner || 'Local Developer',
+      owner: res.locals.workspaceSession?.principal.name || body.owner || 'Local Developer',
       targetRelease: body.targetRelease || 'Q4 2026',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1105,7 +1137,7 @@ async function startServer() {
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     try {
-      const actor = (req.query.actor as string) || 'docmonstakrakin Control Plane';
+      const actor = res.locals.workspaceSession?.principal.name || (req.query.actor as string) || 'docmonstakrakin Control Plane';
       const pkg = createPortablePackage({
         project,
         questions: store.questions[projectId] || [],
@@ -1185,7 +1217,7 @@ async function startServer() {
     try {
       const payload = req.body.package || req.body;
       const overwrite = req.body.overwrite === true;
-      const actor = req.body.actor || 'docmonstakrakin User';
+      const actor = res.locals.workspaceSession?.principal.name || req.body.actor || 'docmonstakrakin User';
 
       const verification = verifyPortablePackage(payload);
       if (!verification.valid) {
@@ -1292,7 +1324,7 @@ async function startServer() {
 
   app.get('/api/projects/:id/release/gates', (req, res) => {
     try {
-      const report = evaluateReleaseGates(store, req.params.id);
+      const report = evaluateReleaseGates(store, req.params.id,{ciObservation:releaseCi.cachedObservation(req.params.id)});
       res.json(report);
     } catch (err: any) {
       console.error('[ReleaseGates] Error evaluating release gates:', err);
@@ -1730,15 +1762,20 @@ async function startServer() {
   // ==========================================
 
   app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if(res.headersSent)return;
     if (error?.type === 'entity.parse.failed' && _req.method === 'POST' && /^\/api\/projects\/[^/]+\/requirements\/[^/]+\/status\/?$/i.test(_req.path)) {
       return res.status(400).json({ error: 'Malformed requirement status JSON body' });
     }
+    // body-parser errors retain the raw body. Never log a malformed login or
+    // credential-bearing payload, including before workspace setup completes.
+    if(error?.type==='entity.parse.failed')return res.status(400).json({error:'MALFORMED_JSON'});
+    if(error?.type==='entity.too.large')return res.status(413).json({error:'REQUEST_BODY_TOO_LARGE'});
     if (error instanceof DerivationError) return res.status(422).json({error: error.toJSON()});
     console.error(error);
     res.status(500).json({error: 'Request failed; canonical changes were not accepted'});
   });
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production'&&workspaceMode==='LOCAL_DEVELOPMENT') {
     const vite = await createViteServer({
       server: { middlewareMode: true, host:'127.0.0.1', ws:false, hmr:false },
       appType: 'spa',
@@ -1752,9 +1789,12 @@ async function startServer() {
     });
   }
 
-  app.listen(network.port, network.host, () => {
-    console.log(`docmonstakrakin Control Plane running at http://${network.host}:${network.port}`);
+  const listener=tls.enabled?createHttpsServer({cert:tls.cert,key:tls.key,minVersion:'TLSv1.3'},app): (await import('node:http')).createServer(app);
+  listener.listen(network.port, network.host, () => {
+    console.log(`docmonstakrakin Control Plane running at ${tls.enabled?'https':'http'}://${network.host}:${network.port}`);
   });
+  const close=()=>{workspaceSession?.close();listener.close(()=>{void workspaceAuthority?.close().finally(()=>process.exit(0));if(!workspaceAuthority)process.exit(0);});};
+  process.once('SIGINT',close);process.once('SIGTERM',close);
 }
 
 startServer().catch((err) => {

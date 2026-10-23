@@ -21,7 +21,9 @@ jobs:
   windows_native:
     name: Windows Native Qualification
     runs-on: windows-2022
-    timeout-minutes: 20
+    # Fresh npm and Bun now each exercise the private authority, actual App,
+    # TLS and backup fixtures in addition to the disconnected native contracts.
+    timeout-minutes: 30
     defaults:
       run:
         shell: pwsh
@@ -77,6 +79,9 @@ jobs:
           if ($sdks.Count -eq 0) { throw 'No complete preinstalled Windows SDK' }
           $sdks.FullName
 
+      - name: Diagnose disposable runner token and new-object ownership
+        run: ./scripts/runWindowsPrivateQualification.ps1 -Phase Diagnostics
+
       - name: Fresh npm install and audit with lifecycle scripts
         run: |
           npm.cmd ci --foreground-scripts
@@ -106,8 +111,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
-          npm.cmd run ci:quality
-          if ($LASTEXITCODE -ne 0) { throw 'Windows quality gates failed' }
+          # Runtime owner checks remain strict. A distinct suspended-child token
+          # qualifies current-user ownership without changing the runner token.
+          ./scripts/runWindowsPrivateQualification.ps1 -Phase Npm
           git diff --exit-code
           if ($LASTEXITCODE -ne 0) { throw 'npm verification changed tracked source' }
 
@@ -149,6 +155,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
+            ./scripts/runWindowsPrivateQualification.ps1 -Phase Bun
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
           } finally { Pop-Location }
@@ -212,6 +219,9 @@ jobs:
           node --import tsx scripts/testSyntheticSessionCapacity.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
+          node --import tsx scripts/testWorkspaceStore.ts
+          node --import tsx scripts/testWorkspaceTls.ts
+          node --import tsx scripts/testWorkspaceBackup.ts
           git diff --exit-code
 
   controlled_docs:

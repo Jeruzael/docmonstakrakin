@@ -9,10 +9,22 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import type {AddressInfo} from 'node:net';
 import {createServer,preview,type InlineConfig} from 'vite';
+import {chromium} from 'playwright';
+import {startIsolatedVite} from './fixtures/isolatedVite.ts';
 
 const root=process.cwd();
 const out=fs.mkdtempSync(path.join(os.tmpdir(),'dmk-vite-perimeter-'));
 fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><title>Disposable preview</title>');
+// Copy the real App and config into a disposable source checkout, retaining a
+// dependency junction to the already installed canonical tree. No dependency
+// file or operator workspace is modified, even when CI installed ordinary dirs.
+const sourceAppRoot=path.join(out,'source-app');fs.mkdirSync(sourceAppRoot);
+for(const file of ['package.json','index.html','vite.config.ts'])fs.copyFileSync(path.join(root,file),path.join(sourceAppRoot,file));
+fs.cpSync(path.join(root,'src'),path.join(sourceAppRoot,'src'),{recursive:true});
+fs.mkdirSync(path.join(sourceAppRoot,'server/security'),{recursive:true});
+for(const file of ['vitePerimeter.ts','localPerimeter.ts'])fs.copyFileSync(path.join(root,'server/security',file),path.join(sourceAppRoot,'server/security',file));
+fs.symlinkSync(fs.realpathSync.native(path.join(root,'node_modules')),path.join(sourceAppRoot,'node_modules'),process.platform==='win32'?'junction':'dir');
+fs.writeFileSync(path.join(out,'outside-app.txt'),'SYNTHETIC_OUTSIDE_ALLOW_ROOT');
 // Exercise real network configuration without filesystem watching. Vite's
 // inline config merge ignores watch:null, so use the existing config flag.
 const previousWatchFlag=process.env.DISABLE_HMR;
@@ -21,6 +33,11 @@ let passed=0,failed=0;
 async function check(name:string,fn:()=>Promise<void>){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+String(e));}}
 const request=(port:number,headers:Record<string,string>,target='/')=>new Promise<number>((resolve,reject)=>{
   const req=http.get({host:'127.0.0.1',port,path:target,headers:{Host:`127.0.0.1:${port}`,...headers}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode!));});req.on('error',reject);
+});
+const fixtureResponse=(port:number,target:string)=>new Promise<{status:number;body:string}>((resolve,reject)=>{
+  const req=http.get({host:'127.0.0.1',port,path:target,headers:{Host:`127.0.0.1:${port}`}},res=>{
+    let body='';res.setEncoding('utf8');res.on('data',chunk=>{body+=chunk;});res.on('end',()=>resolve({status:res.statusCode!,body}));
+  });req.on('error',reject);
 });
 
 // Characterize the delivered Vite editor boundary, not a separately installed
@@ -122,6 +139,122 @@ try{
     const result=inertEditor(editorSource,{platform:'win32',file:'C:\\workspace\\absent.txt',existing:[]});
     assert.deepEqual(result.calls,[]);assert.deepEqual(result.errors,[]);
   });
+  await check('Retained dependency junction serves the actual Vite client and imported modules',async()=>{
+    const modules=path.join(sourceAppRoot,'node_modules'),canonical=fs.realpathSync.native(modules);
+    assert(fs.lstatSync(modules).isSymbolicLink(),'Fixture must exercise the retained module junction');
+    assert(!canonical.startsWith(sourceAppRoot+path.sep),'Dependencies must physically reside outside the source root');
+    const vite=await startIsolatedVite(sourceAppRoot);
+    const cacheDir=vite.config.cacheDir;
+    try{
+      assert.equal(path.resolve(path.dirname(cacheDir)),path.resolve(sourceAppRoot,'runtime'),'Optimizer cache must stay inside the existing source-root allowance');
+      assert(path.basename(cacheDir).startsWith('dmk-vite-fixture-'),'Cache must have a unique fixture-owned directory');
+      const port=(vite.httpServer!.address() as AddressInfo).port;
+      const client=await fixtureResponse(port,'/@vite/client');
+      assert.equal(client.status,200,'Vite internal client must load through its built-in alias');
+      assert.match(client.body,/function|import/);
+      const clientDependencies=[...client.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/@fs/'));
+      assert(clientDependencies.some(url=>url.includes('/vite/dist/client/env.mjs')),'Real Vite client must exercise its absolute filesystem env import');
+      for(const target of clientDependencies)assert.equal((await fixtureResponse(port,target)).status,200,target);
+      const entry=await fixtureResponse(port,'/src/main.tsx');
+      assert.equal(entry.status,200);assert.match(entry.body,/createRoot/);
+      const dependencies=[...entry.body.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match=>match[1]).filter(url=>url.startsWith('/runtime/dmk-vite-fixture-'));
+      assert(dependencies.length>0,'Actual entry must import the isolated optimizer cache within the existing source allowance');
+      for(const target of dependencies)assert.equal((await fixtureResponse(port,target)).status,200,target);
+      // The client/module correction grants neither TEMP nor the dependency
+      // parent tree. These existing non-private files remain outside admission.
+      for(const file of [path.join(out,'outside-app.txt'),path.join(canonical,'react/package.json')]){
+        assert.equal((await fixtureResponse(port,'/@fs/'+file.replaceAll('\\','/'))).status,403,file);
+      }
+    }finally{await vite.close();assert.equal(fs.existsSync(cacheDir),false,'Closing the fixture removes only its unique optimizer cache');}
+  });
+  await check('Real source App mounts through the retained dependency junction without blocked modules',async()=>{
+    const vite=await startIsolatedVite(sourceAppRoot);
+    const executable=process.env.DMK_TEST_BROWSER||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(file=>fs.existsSync(file));
+    const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
+    const errors:string[]=[],failedModules:string[]=[],failedRequests:string[]=[];
+    const record=(items:string[],value:string)=>{if(items.length<16)items.push(value.slice(0,500));};
+    try{
+      const page=await browser.newPage();
+      page.on('pageerror',error=>record(errors,error.message));
+      page.on('response',response=>{if(response.status()>=400&&!new URL(response.url()).pathname.startsWith('/api/'))record(failedModules,response.status()+' '+new URL(response.url()).pathname);});
+      page.on('requestfailed',request=>record(failedRequests,new URL(request.url()).pathname+' '+request.failure()?.errorText));
+      // Real index/main/App, React tree and CSS; only inert API replies are
+      // controlled. There is no server authority or operator workspace here.
+      await page.route('**/api/**',async route=>{
+        const pathname=new URL(route.request().url()).pathname;
+        const json=pathname==='/api/governance/session'?{identity:null,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}}:pathname==='/api/projects'?[]:{};
+        await route.fulfill({status:200,json});
+      });
+      await page.goto(vite.resolvedUrls!.local[0],{waitUntil:'domcontentloaded'});
+      await page.getByText('A-SSDLC Plane',{exact:true}).waitFor({state:'visible',timeout:8000});
+      assert(await page.locator('#root').textContent(),'Real React root must contain the App');
+      assert.deepEqual(failedModules,[]);assert.deepEqual(errors,[]);
+    }catch(error){console.error('VITE_SOURCE_APP_DIAGNOSTIC '+JSON.stringify({pageErrors:errors,failedModules,failedRequests}));throw error;
+    }finally{await browser.close();await vite.close();}
+  });
+  // Every file in this workspace is a synthetic marker. Never probe an actual
+  // operator authority, encrypted store, snapshot, key or backup directory.
+  const privateDirectories=['.security','.security-backups','.local','.secrets','.docmonstakrakin'];
+  const privateFiles=['authority.sqlite','authority.sqlite-wal','authority.sqlite-shm','backup.bak','fixture.key','.machine_token'];
+  fs.writeFileSync(path.join(out,'ordinary.txt'),'SYNTHETIC_PUBLIC_CONTROL');
+  fs.writeFileSync(path.join(out,'.security-notes.txt'),'SYNTHETIC_SIMILAR_NAME_CONTROL');
+  fs.writeFileSync(path.join(out,'.env'),'DMK_SYNTHETIC_MARKER=SYNTHETIC_PRIVATE_FIXTURE');
+  fs.writeFileSync(path.join(out,'fixture.pem'),'SYNTHETIC_PRIVATE_FIXTURE');
+  fs.writeFileSync(path.join(out,'custom-denied.txt'),'SYNTHETIC_PRIVATE_FIXTURE');
+  fs.mkdirSync(path.join(out,'public'));
+  fs.writeFileSync(path.join(out,'public','ordinary-public.txt'),'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+  fs.writeFileSync(path.join(out,'ordinary-public.txt'),'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+  for(const directory of privateDirectories){
+    fs.mkdirSync(path.join(out,directory));
+    fs.mkdirSync(path.join(out,'public',directory));
+    for(const filename of privateFiles){
+      fs.writeFileSync(path.join(out,directory,filename),'SYNTHETIC_PRIVATE_FIXTURE');
+      fs.writeFileSync(path.join(out,'public',directory,filename),'SYNTHETIC_PRIVATE_FIXTURE');
+    }
+  }
+  fs.symlinkSync(path.join(out,'.security'),path.join(out,'public','opaque-directory'),process.platform==='win32'?'junction':'dir');
+  for(const mode of ['standalone','middleware','preview'] as const){
+    await check(mode+' rejects private state raw, filesystem, static and aliased assets',async()=>{
+      const options:InlineConfig={root:out,configFile:path.join(root,'vite.config.ts'),logLevel:'silent',appType:'custom',
+        resolve:{alias:Object.fromEntries(privateDirectories.flatMap((directory,index)=>[
+          ['/opaque-private-'+index,path.join(out,directory)],
+          ['/opaque-private-fs-'+index,'/@fs/'+path.join(out,directory).replaceAll('\\','/')],
+        ]))},
+        server:{port:0,fs:{deny:['**/custom-denied.txt']},...(mode==='middleware'?{middlewareMode:true}:{})},build:{outDir:out},preview:{port:0}};
+      const vite=mode==='preview'?await preview(options):await createServer(options);
+      let listener:http.Server|undefined;
+      try{
+        if(mode==='middleware'){
+          listener=http.createServer((req,res)=>(vite as Awaited<ReturnType<typeof createServer>>).middlewares(req,res,()=>{res.statusCode=404;res.end();}));
+          await new Promise<void>(resolve=>listener!.listen(0,'127.0.0.1',resolve));
+        }else if(mode==='standalone')await (vite as Awaited<ReturnType<typeof createServer>>).listen();
+        const port=((listener??vite.httpServer)!.address() as AddressInfo).port;
+        const ordinary=await fixtureResponse(port,'/ordinary.txt?note=.security');
+        assert.equal(ordinary.status,200);assert.equal(ordinary.body,'SYNTHETIC_PUBLIC_CONTROL');
+        assert.equal((await fixtureResponse(port,'/ordinary-public.txt')).body,'SYNTHETIC_PUBLIC_ASSET_CONTROL');
+        if(mode!=='preview'){
+          assert.match((await fixtureResponse(port,'/.security-notes.txt?raw')).body,/SYNTHETIC_SIMILAR_NAME_CONTROL/);
+        }
+        for(const [index,directory] of privateDirectories.entries())for(const filename of privateFiles){
+          const absolute=path.join(out,directory,filename).replaceAll('\\','/');
+          const targets=[`/${directory}/${filename}?raw`,`/@fs/${absolute}?raw`,`/${directory}/${filename}`,`/${directory}/${filename}?url&import`,
+            `/${directory.replace('.','%2e')}/${filename}?raw`,`/${directory.toUpperCase()}/${filename}?raw`];
+          if(mode!=='preview')targets.push(`/opaque-private-${index}/${filename}?raw`,`/opaque-private-${index}/${filename}?url&import`,
+            `/opaque-private-fs-${index}/${filename}?raw`,`/opaque-private-fs-${index}/${filename}?url&import`);
+          for(const target of targets){
+            const response=await fixtureResponse(port,target);
+            assert.equal(response.status,403,target);assert.equal(response.body.includes('SYNTHETIC_PRIVATE_FIXTURE'),false,target);
+          }
+        }
+        const linked=await fixtureResponse(port,`${mode==='preview'?'/public':''}/opaque-directory/authority.sqlite`);
+        assert.equal(linked.status,403,'public directory link to private state');assert.equal(linked.body.includes('SYNTHETIC_PRIVATE_FIXTURE'),false);
+        if(mode!=='preview')for(const target of ['/.env?raw','/fixture.pem?raw','/custom-denied.txt?raw'])assert.equal((await fixtureResponse(port,target)).status,403,target);
+      }finally{
+        if(listener)await new Promise<void>(resolve=>listener!.close(()=>resolve()));
+        await vite.close();
+      }
+    });
+  }
   for(const kind of ['dev','preview'] as const){
     await check(kind+' defaults to loopback and enforces actual Host/Origin boundary',async()=>{
       const options:InlineConfig={root,logLevel:'silent',...(kind==='dev'?{server:{port:0}}:{build:{outDir:out},preview:{port:0}})};
@@ -160,7 +293,12 @@ try{
   });
 }finally{
   if(previousWatchFlag===undefined)delete process.env.DISABLE_HMR;else process.env.DISABLE_HMR=previousWatchFlag;
-  assert.equal(path.dirname(out),os.tmpdir());assert(path.basename(out).startsWith('dmk-vite-perimeter-'));fs.rmSync(out,{recursive:true,force:true});
+  // Remove only this fixture's dependency link before recursive cleanup. Never
+  // recurse through the retained external dependency tree on Windows.
+  const moduleLink=path.join(sourceAppRoot,'node_modules');
+  assert.equal(path.dirname(out),os.tmpdir());assert(path.basename(out).startsWith('dmk-vite-perimeter-'));
+  if(fs.lstatSync(moduleLink).isSymbolicLink())fs.unlinkSync(moduleLink);
+  fs.rmSync(out,{recursive:true,force:true});
 }
 console.log(`Vite perimeter checks: ${passed} passed, ${failed} failed.`);
 if(failed)process.exitCode=1;

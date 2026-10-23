@@ -412,7 +412,7 @@ try {
     }
 
     if (url === '/api/governance/session') {
-      return route.fulfill({ status: 200, json: { identity: null } });
+      return route.fulfill({ status: 200, json: { identity: null,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false} } });
     }
 
     const match = url.match(/^\/api\/projects\/([^/]+)(.*)$/);

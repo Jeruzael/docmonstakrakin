@@ -1,0 +1,41 @@
+{
+  "archive": "first-complete-failures.zip",
+  "archiveSha256": "13bb4d4a3092eb2b97b51971bc48d643dc4ce7e509fa4bfb0d21dc6ff607d1b0",
+  "rawFiles": [
+    {
+      "file": "console.log",
+      "bytes": 11336,
+      "sha256": "7c86354fa333baecafca9d957fd9ab1d088416a75fe7a1a716c3c1c272fb1ede"
+    },
+    {
+      "file": "hashes.json",
+      "bytes": 931,
+      "sha256": "12452afd67114555fd6dda44dde2b87ed008f6e3859f2f5671a3f8efe1121807"
+    },
+    {
+      "file": "results.json",
+      "bytes": 43093,
+      "sha256": "cac7142c9ca47dfd62de7cffc700e275b1e3c36d57521408ab7f7a84e65fff69"
+    },
+    {
+      "file": "scripts_testControlledDocVersionSync.log",
+      "bytes": 5684,
+      "sha256": "8335c0e6ba3b6a54f92b303caa185c9ff1bdd64e56b8614eb4ee4a01ddf0c3e3"
+    },
+    {
+      "file": "scripts_testDmk197ApprovalInboxUi.log",
+      "bytes": 7675,
+      "sha256": "068aefc660549a639cba859950fd096b7a4ae077b22d89b7643267328bd3e0b0"
+    },
+    {
+      "file": "scripts_testReviewerDisplayCoherence.log",
+      "bytes": 11017,
+      "sha256": "68b7b8d45803b55b2b503b84ffa3c9093ad0206a44d00c00bc89f8e33ed908a2"
+    },
+    {
+      "file": "scripts_testWorkspaceApplication.log",
+      "bytes": 1120,
+      "sha256": "6fd1fe305152a134582b0fd5bdfe6017b333cd651a533a76847208508be0c639"
+    }
+  ]
+}

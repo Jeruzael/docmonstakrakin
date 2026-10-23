@@ -46,7 +46,7 @@ async function setup(options: {childReply?: object; timed?: boolean; reissue?: b
       if (reply.network) return Promise.reject(new TypeError('Synthetic transport failure'));
       const status = reply.status || 200;
       if (status === 200 && method !== 'GET') state.identity = method === 'DELETE' ? null : bob;
-      return Promise.resolve(new Response(JSON.stringify(Object.hasOwn(reply, 'body') ? reply.body : {identity: state.identity}), {status, headers: {'Content-Type': 'application/json'}}));
+      return Promise.resolve(new Response(JSON.stringify(Object.hasOwn(reply, 'body') ? reply.body : {identity: state.identity,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}}), {status, headers: {'Content-Type': 'application/json'}}));
     };
   }, {alice, bob});
   await page.route('**/*', route => {

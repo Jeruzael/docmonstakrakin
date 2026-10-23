@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readReleaseReport, releaseReportMarkdown, requirementReferenceSummary} from '../src/data/releaseReportProjection.ts';
 import {evaluateReleaseGates} from '../server/release/releaseGateEvaluator.ts';
 import {INITIAL_PROJECTS, INITIAL_REQUIREMENTS} from '../src/data/initialData.ts';
+import {createChainedAuditEvent} from '../server/security/auditImmutability.ts';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {DocumentsView} from '../src/components/DocumentsView.tsx';
@@ -48,23 +49,35 @@ test('P5 summary counts and percentages must match capability status records', (
     assert.equal(readReleaseReport({...source, capabilitiesSummary}, project.id), null);
   assert.equal(readReleaseReport({...source, capabilities: [...source.capabilities.slice(1), source.capabilities[1]]}, project.id), null);
 });
-test('P6 audit flags require finite nonnegative counts and agree with gate six', () => {
+test('P6 audit flags require finite counts and separate local chain checks from production gates', () => {
   for (const auditChainIntegrity of [null, {valid: true, breaksCount: 1, eventsChecked: 1},
     {valid: true, breaksCount: 0, eventsChecked: -1}, {valid: false, breaksCount: 1, eventsChecked: 1},
     {valid: true, breaksCount: 0, eventsChecked: Infinity}])
     assert.equal(readReleaseReport({...source, auditChainIntegrity}, project.id), null);
+  const event = createChainedAuditEvent({actor: 'Inert fixture', action: 'FIXTURE', target: project.id});
+  const local = evaluateReleaseGates({projects: [project], requirements: {}, questions: {}, workItems: {}, approvals: {}, auditLogs: {[project.id]: [event]}}, project.id);
+  assert.equal(local.auditChainIntegrity.valid, true); assert.equal(local.gates[5].status, 'PENDING');
+  assert(readReleaseReport(local, project.id));
 });
 test('P7 success flags cannot disagree with returned gates', () => {
   for (const flags of [{signedOff: true}, {releaseReady: true}, {allGatesPassed: true}])
     assert.equal(readReleaseReport({...source, ...flags}, project.id), null);
 });
-test('P8 signoff sourced from existing approval may omit signer detail without inventing a person', () => {
+test('P8 forged signoff flags and local approval records cannot become independent human authorization', () => {
   const candidate = {...source, signedOff: true,
     gates: source.gates.map(gate => gate.gateId === 7 ? {...gate, status: 'PASSED' as const} : gate)};
-  const report = readReleaseReport(candidate, project.id); assert(report);
-  const markdown = releaseReportMarkdown(project, report, 'AVAILABLE', '2026-10-21T12:00:00Z');
-  assert.match(markdown, /SIGNED OFF \(SERVER-REPORTED\)/); assert(!markdown.includes('Signed Off By:'));
+  assert.equal(readReleaseReport(candidate, project.id), null);
   assert.equal(readReleaseReport({...candidate, signoffDetails: {actor: '', timestamp: 'bad', auditEventId: ''}}, project.id), null);
+});
+test('P12 old unscoped reports missing capabilities and forged trust claims fail closed before display', () => {
+  const missingCapability = {...source, capabilities: source.capabilities.slice(1), capabilitiesSummary: {total: 24, verified: 0, percentage: 0}};
+  assert.equal(readReleaseReport(missingCapability, project.id), null);
+  assert.equal(readReleaseReport({...source, version: undefined}, project.id), null);
+  assert.equal(readReleaseReport({...source, productionEvidence: {...source.productionEvidence, trustedProductionEvidence: true}}, project.id), null);
+  assert.equal(readReleaseReport({...source, evaluationScope: {status: 'BOUND', scope: null, reason: 'forged'}}, project.id), null);
+  const markdown = releaseReportMarkdown(project, source, 'AVAILABLE', '2026-10-21T12:00:00Z');
+  assert.match(markdown, /Release Scope:\*\* UNAVAILABLE/); assert.match(markdown, /Commit:\*\* UNAVAILABLE/);
+  assert(!markdown.includes('VALID (SERVER-REPORTED)'));
 });
 test('P9 RTM keeps approval and reference coverage separate from verification', () => {
   const requirement = structuredClone(INITIAL_REQUIREMENTS[0]);

@@ -7,12 +7,20 @@ workflow and disposable demo need no Gemini or other external-provider key.
 Live provider calls are a separate capability; no credential setup is part of
 this quick start.
 
-The 2026-10-22 local-MVP work is a **candidate pending parent integration and
-validation**. It adds ordinary-project managed documents, local human verification
-sessions and reviewer-setup guidance. Use the [normal-checkout reproducibility
-guide](docs/08_handoff/LOCAL_MVP_REPRODUCIBILITY_20261022.md) to distinguish expected
-behavior from recorded results. This documentation update claims no new clean
-install, normal-checkout startup or end-to-end package result.
+The 2026-10-22 local-MVP work is integrated through
+[PR #80](https://github.com/Jeruzael/docmonstakrakin/pull/80). It adds ordinary-project
+managed documents, local verification sessions, reviewer diagnostics and explicit
+scope-bound progress. The [actual integration closure](docs/07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md)
+records exact commits and execution results; the [normal-checkout runbook](docs/08_handoff/LOCAL_MVP_REPRODUCIBILITY_20261022.md)
+separates synthetic end-to-end and configured fresh CI qualification from the
+untouched original workstation. Production authorization remains incomplete.
+
+The operational workspace candidate adds default-enforced persistent sessions,
+explicit project permissions and transactional private SQLite persistence. Start
+with the [current workspace guide](docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md)
+and [combined qualification checkpoint](docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md).
+These controls do not establish operational WBS trust, independent human
+appointments, shared/remote deployment acceptance or release permission.
 
 ## Install in a fresh checkout
 
@@ -36,11 +44,13 @@ npm ci --foreground-scripts
 npm audit --json
 ```
 
-Keep normal lifecycle scripts enabled. Hosted Windows qualification uses fresh
-npm and pinned Bun installations with the existing CI toolchain; it does not
-prove a clean install on the original operator machine. That machine's recorded
-Windows SDK/space issue remains unresolved, and its original dependency junction
-was not repaired. Retained-package test runs are separate evidence. See the
+Keep normal lifecycle scripts enabled. In addition to hosted npm/Bun checks,
+a fresh normal npm installation on the original Windows host now passes in a
+regular isolated checkout with a genuine task-private SDK and new header cache.
+The original SDK/cache failures remain in the
+[additive qualification receipt](docs/07_verification/OPERATOR_WINDOWS_QUALIFICATION_20261022.md).
+The operator's original installation and dependency junction were not changed.
+Retained-package test runs are separate evidence. See the
 [native compatibility record](docs/07_verification/WINDOWS_NATIVE_COMPATIBILITY_20261021.md),
 [developer handoff](docs/08_handoff/FAST_TRACK_DEVELOPMENT_HANDOFF.md) and
 [CI workflow](.github/workflows/ci.yml) for prerequisites, installer differences
@@ -67,16 +77,21 @@ editing and expected denials; the
 records what the journey proves. Follow the current integration checkpoint in
 the developer handoff when reading historical branch instructions in these records.
 
-Run from the deliberately selected checkout root. For development in PowerShell:
+Run from the deliberately selected checkout root. Normal startup uses ENFORCED
+access, serves the built UI and exposes setup instructions until a private
+authority is explicitly initialized offline. There are no default accounts.
+Build first, then start in PowerShell:
 
 ```powershell
 $env:NODE_ENV = 'development'
+npm run build
 npm run dev
 ```
 
 In a POSIX shell:
 
 ```sh
+npm run build
 NODE_ENV=development npm run dev
 ```
 
@@ -95,9 +110,12 @@ npm run build
 NODE_ENV=production npm start
 ```
 
-`NODE_ENV=production` selects the built `dist` UI; the `start` script does not set
-it. Both modes remain a local loopback service with the existing partial
-authorization boundary. Open [the default local address](http://127.0.0.1:3000).
+ENFORCED always serves the built `dist` UI. Explicit
+`DMK_WORKSPACE_ACCESS=LOCAL_DEVELOPMENT` selects the older unscoped demo contract;
+in that mode NODE_ENV selects Vite versus built assets. Use the
+[workspace guide](docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md) for
+offline initialization, membership and optional private TLS. Open
+[the default local address](http://127.0.0.1:3000).
 `HOST` accepts only `127.0.0.1`; `PORT` is an integer from 1 through 65535.
 Restart from the same checkout root: state and the built UI use the process
 working directory.
@@ -105,18 +123,25 @@ working directory.
 [.env.example](.env.example) lists configuration names. Normal startup reads the
 process environment; copying this reference to `.env` or `.env.local` does not
 configure the server. No environment file or provider credential is needed for
-the ordinary local journey. The [reviewer setup guide](docs/07_verification/REVIEWER_SESSION_SETUP.md)
-describes operator-owned roster configuration without enrolling people or
-providing credentials.
+the disposable local journey. The older
+[reviewer setup guide](docs/07_verification/REVIEWER_SESSION_SETUP.md) describes
+LOCAL_DEVELOPMENT's roster contract; ENFORCED resolves identity from its private
+authority instead of that environment roster.
 
 ## Persistence and recovery
 
-Normal startup reads `.local/project-state.json` when present and initializes
-the private SecretStore. Successful project mutations atomically persist project
-collections and audit there. Candidate managed documents keep content, digest,
-metadata and replay history in the same snapshot. Existing filesystem document
-transactions use `.local/document-transactions/`; `.local/project-state.write.lock`
-coordinates snapshot writers.
+ENFORCED uses `.security/authority.sqlite` for principals, sessions, membership,
+security audit and the authoritative project snapshot. Its scoped mutations
+commit snapshot, policy/revision checks and replay records atomically. It never
+shadow-writes the old JSON or initializes the unrelated SecretStore. An explicit
+offline `init --import-state` may copy the fixed `.local/project-state.json`
+input while preserving its bytes and granting no imported ownership. See the
+workspace guide for private backup and unactivated restore preparation.
+
+Explicit LOCAL_DEVELOPMENT retains JSON snapshot persistence and SecretStore
+startup. Its filesystem document transactions use `.local/document-transactions/`
+and `.local/project-state.write.lock`. These legacy files are not an alternate
+authority for ENFORCED recovery.
 
 The default private SecretStore uses `.secrets/store.enc`, `.secrets/store.salt`
 and `.secrets/.machine_token`; an older installation may also have
@@ -169,14 +194,15 @@ operation is needed for this sequence.
 ## Current boundaries
 
 - The route policy in `server/security/apiRoutePolicy.ts` is the source for
-  route classification. Legacy local project access remains partially contained;
-  loopback and Origin checks authenticate no user. Reviewer sessions gate selected
-  operations and grant no general project membership or privileged administration.
+  classification. ENFORCED resolves current sessions and explicit project policy;
+  project ownership grants no independent-human review role. LOCAL_DEVELOPMENT
+  remains visibly unscoped; loopback/Origin checks alone authenticate no user.
 - Authentication and governance development pilots are explicitly disconnected.
   Their tests and synthetic roles grant no real identity, permission or quorum.
   Live agent execution, Gate 7 authorization and release remain outside the demo.
-- After candidate integration, ordinary managed-document creation/save requires a
-  configured HUMAN Security Officer or Lead Architect, a reason and confirmation.
+- In ENFORCED, ordinary managed-document creation/save requires an authenticated
+  human with explicit project-write permission, a reason and confirmation.
+  LOCAL_DEVELOPMENT retains its configured SO/LA author contract.
   Self-project filesystem documents retain their existing registry restrictions.
   The [synthetic creation demo](scripts/demoSyntheticDocumentCreation.ts) remains a
   separate fixture. Neither creation path grants governance approval or trust.
@@ -185,7 +211,8 @@ operation is needed for this sequence.
   and local review approval confer no trusted production evidence or release
   authority. See the reviewer setup and reproducibility guides for the boundaries.
 - Planning health, stored lifecycle status and evidence references are not
-  authenticated acceptance. Release evaluation still has documented heuristics;
-  viewing or exporting a report does not perform signoff or release a project.
+  authenticated acceptance. Release evaluation binds exact scope and separates
+  local/CI observations from unavailable production evidence; viewing or
+  exporting a report does not perform signoff or release a project.
 
 Historical prototype reference: [original AI Studio project](https://ai.studio/apps/d9657610-b77b-48c1-b428-5ab58b77c232).

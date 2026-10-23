@@ -1,0 +1,14 @@
+PASS project request uses one atomic principal-and-resource authorization RPC
+PASS authority overload is unavailable rather than an invalid credential
+PASS revoked or unknown session returns unauthorized
+PASS inaccessible resource is concealed
+FAIL project listing uses one atomic current-policy RPC without per-project authorization: AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
+    'PRJ-ATLAS-01',
++   'PRJ-FINPAY-02'
+  ]
+
+PASS project listing refuses revoked and unavailable authority
+{"suite":"workspace-http","passed":5,"failed":1}

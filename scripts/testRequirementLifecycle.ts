@@ -62,7 +62,7 @@ function request(url: string, method = 'GET', value?: unknown, raw?: string, hea
   });
 }
 async function start() {
-  const env: NodeJS.ProcessEnv = { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), GEMINI_API_KEY: '', DMK_HUMAN_REVIEWERS: '{}', DOCMONSTAKRAKIN_MASTER_KEY: 'disposable-lifecycle-only' };
+  const env: NodeJS.ProcessEnv = { NODE_ENV: 'production', DMK_WORKSPACE_ACCESS:'LOCAL_DEVELOPMENT', HOST: '127.0.0.1', PORT: String(port), GEMINI_API_KEY: '', DMK_HUMAN_REVIEWERS: '{}', DOCMONSTAKRAKIN_MASTER_KEY: 'disposable-lifecycle-only' };
   for (const name of ['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']) if (process.env[name]) env[name] = process.env[name];
   child = spawn(process.execPath, ['--import', pathToFileURL(path.join(root, 'node_modules/tsx/dist/loader.mjs')).href, '--import', pathToFileURL(preload).href, path.join(root, 'server.ts')], { cwd: dir, windowsHide: true, env, stdio: 'pipe' });
   child.stdout?.on('data', chunk => output += chunk);

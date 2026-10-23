@@ -1,0 +1,6 @@
+PASS offline security help describes private setup without creating authority
+PASS password command-line arguments are rejected without echoing their value
+PASS unknown and incomplete commands do not create a store or enroll a person
+PASS non-UTF8 password input rejects before creating authority
+PASS non-UTF8 migration input rejects before creating authority and preserves exact bytes
+{"suite":"workspace-security-cli","passed":5,"failed":0}

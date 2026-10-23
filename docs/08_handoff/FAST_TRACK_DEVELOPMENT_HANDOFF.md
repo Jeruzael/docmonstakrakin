@@ -1,5 +1,29 @@
 # Subscription-independent development handoff
 
+
+## Continuation gate — 2026-10-23
+
+The operator selected all six remaining engineering workstreams. Password input, deterministic review-inbox races, atomic project-list filtering and acknowledged session replacement are corrected and focused-tested. Windows fresh private-SDK installation remains qualified separately from the untouched original installation. Full candidate/master integration remains pending at this snapshot; master7c20c82856bd7a3be2d97d8f1bb6c59fe3459732 is still the last verified integrated runtime. Use the operational workspace guide and combined verification checkpoint for exact code, measurements, retained failures and pending gates. Earlier dated captures below remain historical. Do not execute their superseded pending merge sequences.
+
+## Operational workspace continuation — 2026-10-22
+
+The operator deferred actual browser acceptance (task1) and authorized autonomous engineering for tasks2–8. The implementation candidate is `codex/production-security-completion-20261022`, based on verified master `7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`. Start with the [workspace guide](../08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md) and [combined checkpoint](../07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md). Those current records supersede older unscoped-access and missing-SDK capture statements for the new implementation, while preserving earlier history below.
+
+ENFORCED startup now uses a private SQLite authority, persisted/revocable sessions, explicit project/document/package policy, atomic scoped project commits, CSRF and browser identity fencing. Explicit LOCAL_DEVELOPMENT retains its visibly unscoped historical demo. No default or real operator account, grant, certificate or trust root was created. The operator's original snapshot, dependency junction and untracked PR53 note remain unchanged. Genuine lifecycle-enabled fresh npm installation on this Windows host passed with a task-private Microsoft SDK and new Node-header cache; the additive qualification contains a reproducible public helper and all initial failures.
+
+Quality and focused mechanisms pass. The first completed combined run reported133/137 suites with four browser-fixture failures; their raw results are retained and corrections are being qualified. Final signed candidate, hosted checks, normal guarded merge and actual post-merge CI remain pending at this capture. Last fully verified master remains the baseline above; do not infer new CI from baseline results.
+
+All69 canonical WBS states/history, human-only SO/LA quorum,14 privileged denials, disabled live agents, PR34/52, Gate7 and release restrictions remain. Local person assertions and successful technical tests supply no independent human appointment, operational trust, WBS application or release approval. Task1 acceptance, actual operator setup/custody, production evidence acquisition and accepted operational capacity remain distinct outstanding facts. Routine development review is waived by the operator; no human GitHub APPROVED review is invented.
+
+
+## Final local-MVP integration — 2026-10-22
+
+PR #80 is merged at **`7c20c82856bd7a3be2d97d8f1bb6c59fe3459732`**, with valid signature, correct ordered parents and exact tested tree `45d51f48c68a91bd5233569c6301b44c786b1e15`. Start with the [final eight-workstream closure](../07_verification/LOCAL_MVP_COMPLETION_CLOSURE_20261022.md), [normal-checkout runbook](LOCAL_MVP_REPRODUCIBILITY_20261022.md) and [task plan](../06_planning/LOCAL_MVP_COMPLETION_20261022.md). The closure records actual candidate/local/master CI separately and preserves the first full-run failures. Older pending instructions below are historical capture states, not current integration instructions.
+
+Actual [master CI39721949800](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39721949800) passed all four jobs, **114/114 suites and2,481/2,481 reported checks**, zero failures/skips. Controlled documents passed11 focused suites/336 measured assertions,40 core and29 supplemental probes. Fresh configured Windows/Linux npm and frozen Bun native checks passed; npm audit zero. The primary checkout was fast-forwarded to this verified master while its existing snapshot, original PR #53 note and dependency junction remained unchanged. The separately published final documentation branch has no runtime changes and does not claim a further master CI run.
+
+This additive documentation checkpoint is published separately on `codex/local-mvp-closure-20261022`, based on actual master, without another closure-only PR or runtime merge. Fetch that branch for the final records; the signed PR #80 implementation HEAD stays unchanged. The next executable work is ordinary local operator/browser acceptance using the runbook, with the original-host clean-install limitation disclosed. Production/shared deployment, real enrollment, operational trust/acquisition, canonical WBS/receipt application, privileged routes, live agents, Gate 7 and release retain separate decision gates. PRs #34/#52 remain unchanged. No actual GitHub human APPROVED review is invented under the operator's routine-development waiver.
+
 ## Current continuation checkpoint — 2026-10-22
 
 Start with the [eight-task completion plan](../06_planning/LOCAL_MVP_COMPLETION_20261022.md), [integration evidence](../07_verification/LOCAL_MVP_INTEGRATION_20261022.md) and [normal-checkout runbook](LOCAL_MVP_REPRODUCIBILITY_20261022.md). The last fully verified master is `d503323aad1002f7325ba3a45faf4bee261686a9`, PR #79, actual [CI 39703341247](https://github.com/Jeruzael/docmonstakrakin/actions/runs/39703341247), four jobs successful and 94 suites / 2,258 reported checks. Earlier dated sections remain historical records; their old merge sequences and unavailable-feature claims are not current continuation instructions.

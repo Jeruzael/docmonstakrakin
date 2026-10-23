@@ -1,6 +1,7 @@
 import type {Express, Request, Response} from 'express';
 import type {ProjectStore} from '../projectStore';
 import type {ReviewerIdentity} from '../proposals/identity';
+import {isWorkspaceIdentity} from '../security/workspaceAccess/identity.ts';
 import type {WorkItem} from '../../src/types';
 import type {BoundReleaseEvidence, LocalReleaseEvidenceObservation, ProjectReadinessResponse, ReadinessProject} from '../../src/releaseScopeTypes';
 import {releaseHealthProjection, isReleaseScopeContext, readinessText} from '../../src/data/releaseHealthProjection';
@@ -15,7 +16,7 @@ export function registerProjectReadinessRoutes(app: Express, store: ProjectStore
     const identity = requireHuman(req, res);
     if (!identity) return;
     if (identity.kind !== 'HUMAN' || identity.roleSource !== 'LOCAL_SERVER_ROSTER' || !readinessText(identity.id) || !readinessText(identity.name) ||
-      !Array.isArray(identity.roles) || !identity.roles.some(role => ['Security Officer', 'Lead Architect'].includes(role))) {
+      !Array.isArray(identity.roles) || (!isWorkspaceIdentity(identity)&&!identity.roles.some(role => ['Security Officer', 'Lead Architect'].includes(role)))) {
       res.status(403).json({error: 'Configured human governance authority is required'}); return;
     }
     return identity;
