@@ -208,8 +208,34 @@ const literal=file.replaceAll("'","''");
 const code="$ErrorActionPreference='Stop';$i=[System.Security.Principal.WindowsIdentity]::GetCurrent();@{userSid=$i.User.Value;tokenOwnerSid=$i.Owner.Value;fileOwnerSid=(Get-Acl -LiteralPath '"+literal+"').GetOwner([System.Security.Principal.SecurityIdentifier]).Value}|ConvertTo-Json -Compress";
 const result=cp.spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(code,'utf16le').toString('base64')],{encoding:'utf8',windowsHide:true,timeout:10000,env:{...process.env,PSModulePath:path.join(process.env.WINDIR,'System32/WindowsPowerShell/v1.0/Modules')}});
 if(result.status!==0)throw Error('NODE_DESCENDANT_OWNER_QUERY_FAILED');const observation=JSON.parse(result.stdout.trim());if(observation.userSid!==observation.tokenOwnerSid||observation.userSid!==observation.fileOwnerSid)throw Error('NODE_DESCENDANT_OWNER_UNCONFIRMED');console.log('NODE_DESCENDANT_OWNER_PROFILE '+JSON.stringify(observation));
+// This is diagnostic acquisition on NEW synthetic paths, not an authority repair.
+// Record the actual Node subprocess profile before the full native suite runs.
+const os=require('node:os'),{pathToFileURL}=require('node:url');
+const env={...process.env,PSModulePath:path.join(process.env.WINDIR,'System32/WindowsPowerShell/v1.0/Modules')};
+const ps=code=>{const r=cp.spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from("$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';"+code,'utf16le').toString('base64')],{encoding:'utf8',windowsHide:true,timeout:10000,env});if(r.status!==0)throw Error('NODE_ACL_QUERY_FAILED '+r.status+' '+r.stderr.slice(-2000));return r.stdout.trim();};
+const quote=p=>p.replaceAll("'","''");
+const acl=p=>JSON.parse(ps("$i=[Security.Principal.WindowsIdentity]::GetCurrent();$a=Get-Acl -LiteralPath '"+quote(p)+"';@{powershellVersion=$PSVersionTable.PSVersion.ToString();userSid=$i.User.Value;tokenOwnerSid=$i.Owner.Value;ownerSid=$a.GetOwner([Security.Principal.SecurityIdentifier]).Value;protected=$a.AreAccessRulesProtected;access=@($a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])|%{@{sid=$_.IdentityReference.Value;type=[string]$_.AccessControlType;rights=[long]$_.FileSystemRights;inherited=$_.IsInherited}})}|ConvertTo-Json -Depth 6 -Compress"));
+const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(parent,'dmk-node-owner-diagnostic-'));
+(async()=>{try{
+ const empty=path.join(root,'empty-node-created');fs.mkdirSync(empty,{mode:0o700});const before=acl(empty);
+ cp.execFileSync('icacls.exe',[empty,'/inheritance:r'],{windowsHide:true,stdio:'pipe',timeout:3000});const afterInheritance=acl(empty);
+ cp.execFileSync('icacls.exe',[empty,'/grant:r','*'+observation.userSid+':(OI)(CI)F'],{windowsHide:true,stdio:'pipe',timeout:3000});const afterGrant=acl(empty);
+ console.log('NODE_FRESH_DACL_DIAGNOSTIC '+JSON.stringify({node:process.versions.node,before,afterInheritance,afterGrant}));
+ const workspace=path.join(root,'genuine-boundary');fs.mkdirSync(workspace);const boundary=require(path.resolve('server/security/workspaceAccess/privateBoundary.cjs'));let stage='capture',handle;
+ try{handle=boundary.capture(workspace,true);stage='acquire';handle=boundary.acquire(handle);stage='assertFiles';boundary.assertFiles(handle);stage='release';boundary.release(handle);handle=undefined;stage='complete';}
+ catch(e){console.log('NODE_GENUINE_BOUNDARY_DIAGNOSTIC '+JSON.stringify({stage,code:e.code||e.name}));}
+ finally{if(handle?.lockRaw){try{boundary.release(handle);}catch{}}}
+ const security=path.join(workspace,'.security'),resources={};
+ if(fs.existsSync(security)){resources['.security']=acl(security);for(const name of fs.readdirSync(security))if(['owner.lock','authority.sqlite','authority.sqlite-wal','authority.sqlite-shm'].includes(name))resources[name]=acl(path.join(security,name));}
+ console.log('NODE_GENUINE_BOUNDARY_RESOURCES '+JSON.stringify({stage,resources}));
+ if(stage==='complete'){
+  let store;try{const {WorkspaceStore}=await import(pathToFileURL(path.resolve('server/security/workspaceAccess/store.ts')).href);store=await WorkspaceStore.open(workspace,{initialize:true});console.log('NODE_GENUINE_SQLITE_DIAGNOSTIC '+JSON.stringify({opened:true}));}
+  catch(e){const after={};for(const name of fs.readdirSync(security))if(['owner.lock','authority.sqlite','authority.sqlite-wal','authority.sqlite-shm'].includes(name))after[name]=acl(path.join(security,name));console.log('NODE_GENUINE_SQLITE_DIAGNOSTIC '+JSON.stringify({opened:false,code:e.code||e.name,after}));}
+  finally{if(store)await store.close();}
+ }
+}finally{if(path.dirname(path.resolve(root))!==parent||!/^dmk-node-owner-diagnostic-/.test(path.basename(root))||fs.lstatSync(root).isSymbolicLink())throw Error('NODE_DIAGNOSTIC_CLEANUP_REJECTED');fs.rmSync(root,{recursive:true});}})().catch(e=>{console.error('NODE_OWNERSHIP_DIAGNOSTIC_FAILED '+e.message);process.exitCode=1;});
 '@
-      & node --input-type=commonjs -e $nodeProbe
+      & node --import tsx --input-type=commonjs -e $nodeProbe
       if ($LASTEXITCODE -ne 0) {throw 'NODE_DESCENDANT_OWNER_PROFILE_FAILED'}
       Remove-Item Env:DMK_OWNER_PROBE
       foreach ($script in @('scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')) {
