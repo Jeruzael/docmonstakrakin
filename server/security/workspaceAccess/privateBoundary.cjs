@@ -21,7 +21,14 @@ function privatePermissions(file, directory, fresh = false) {
     const s = fs.statSync(file); if (s.uid !== process.getuid() || (s.mode & 0o777) !== (directory ? 0o700 : 0o600)) fail('WORKSPACE_PERMISSIONS_INVALID'); return;
   }
   const ownerSid = currentSid();
-  if (fresh) execFileSync('icacls.exe', [file, '/inheritance:r', '/grant:r', '*' + ownerSid + ':(OI)(CI)F'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
+  if (fresh) {
+    // Separate operations: the combined invocation can preserve inherited
+    // SYSTEM/Administrators grants as explicit ACEs on Windows Server 2022.
+    // This runs only for the directory just created here. Existing state is
+    // inspected strictly below and is never repaired on admission.
+    execFileSync('icacls.exe', [file, '/inheritance:r'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
+    execFileSync('icacls.exe', [file, '/grant:r', '*' + ownerSid + ':(OI)(CI)F'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
+  }
   const listing = execFileSync('icacls.exe', [file], { encoding: 'utf8', windowsHide: true, timeout: 2000, maxBuffer: 16 * 1024 });
   const pin = crypto.createHash('sha256').update(listing).digest('hex');
   if (pins.has(file)) { if (pins.get(file) !== pin) fail('WORKSPACE_PERMISSIONS_INVALID'); return; }

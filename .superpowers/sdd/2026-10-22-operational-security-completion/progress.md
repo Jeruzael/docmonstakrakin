@@ -13,3 +13,15 @@ Ruling: use one current-policy listProjects transaction rather than N sequential
 Ruling: adopt candidate8KiB cumulative terminal-editing admission while retaining1,024-byte password/1,026-byte piped bounds — bounds repeated erase/input work and preserves fatal Unicode decoding — cost if wrong: unusually long editing attempts must restart; this is not ratified production capacity.
 
 Review correction: old-session logout false was ignored during account replacement. HTTP RED6/2→GREEN8/0 now requires acknowledged revocation, with503/no successor cookie and best-effort undelivered-session cleanup on uncertainty. Expired old cookies remain eligible for fresh login.
+
+Final static review465e238: independent agent inspected120 paths, no further important correction; actual qualification remained pending. Later actual local136/138 and hosted125/138 failures are retained in the additive checkpoint and archive.
+
+Ruling: keep optimizer caches inside the existing disposable source-root allowance — hosted Linux403s proved external test caches were outside serving authority — cost if wrong: browser fixture startup fails; outside-root and private403 assertions remain mandatory.
+
+Ruling: explicitSIGKILL in the crash fixture on both OSs — POSIXSIGTERM gracefully closed and removed the very lock the test intended to recover — cost if wrong: the fixture fails its real abrupt-recovery assertions; no runtime shutdown policy changes.
+
+Ruling: split native inheritance removal and user grant only for newly created private directories — actual hosted DACL variants prove the combined call retained broad explicit grants — cost if wrong: setup fails closed; existing state must never be repaired on admission.
+
+Ruling: qualify Windows default-owner compatibility only in a new suspended CI child with proven distinct token ID and unchanged parent — actual runner used Administrators as default owner, and the first alternate-token launcher failed before execution — cost if wrong: CI fails and blocks integration; no existing owner predicate, host token, account or privilege is changed.
+
+Independent native-helper reviewc641c834: no critical/high findings; code-only clearance, hosted proof still required. Authored core/backup fresh-ACL diff is reviewed separately. Original WithTokenW failure and all later cancellations remain distinct from successful qualification.

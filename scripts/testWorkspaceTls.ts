@@ -23,7 +23,8 @@ const sid = process.platform === 'win32' ? /S-1-\d+(?:-\d+)+/.exec(execFileSync(
 function privatePath(file: string, directory: boolean) {
   assert(file.startsWith(base + path.sep) || file === base);
   if (process.platform === 'win32') {
-    assert(sid); execFileSync('icacls.exe', [file, '/inheritance:r', '/grant:r', `*${sid}:${directory ? '(OI)(CI)F' : 'F'}`], {windowsHide: true, stdio: 'pipe', timeout: 5000});
+    assert(sid); execFileSync('icacls.exe', [file, '/inheritance:r'], {windowsHide: true, stdio: 'pipe', timeout: 5000});
+    execFileSync('icacls.exe', [file, '/grant:r', `*${sid}:${directory ? '(OI)(CI)F' : 'F'}`], {windowsHide: true, stdio: 'pipe', timeout: 5000});
   } else fs.chmodSync(file, directory ? 0o700 : 0o600);
 }
 privatePath(base, true);

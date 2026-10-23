@@ -42,7 +42,8 @@ function makePrivateDirectory(file: string): void {
   if (process.platform === 'win32') {
     ownerSid ??= /S-1-\d+(?:-\d+)+/.exec(execFileSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], { encoding: 'utf8', windowsHide: true, timeout: 2000 }))?.[0];
     if (!ownerSid) fail('WORKSPACE_PRIVATE_DIRECTORY_UNAVAILABLE');
-    execFileSync('icacls.exe', [file, '/inheritance:r', '/grant:r', `*${ownerSid}:(OI)(CI)F`], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
+    execFileSync('icacls.exe', [file, '/inheritance:r'], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
+    execFileSync('icacls.exe', [file, '/grant:r', `*${ownerSid}:(OI)(CI)F`], { windowsHide: true, timeout: 3000, stdio: 'pipe' });
   }
   assertPrivateDirectory(file);
 }

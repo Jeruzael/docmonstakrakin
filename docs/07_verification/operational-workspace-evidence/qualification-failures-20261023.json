@@ -1,0 +1,50 @@
+{
+  "archive": "qualification-failures-20261023.zip",
+  "sha256": "60804b0b23f6b1e5bac19b0f9ffc9e275169a9ce53564275dcd2e4e71593bb9c",
+  "representations": {
+    "local-attempt3": "original raw local bytes",
+    "github-decoded-lf": "GitHub connector decoded log text, line endings explicitly canonicalized to LF; not HTTP download bytes"
+  },
+  "files": [
+    {
+      "file": "local-attempt3/full-20261023.console.log",
+      "bytes": 10831,
+      "sha256": "3a1850f08b54cbfa8e08b97fdf46d1efef9c6d1b8e6f4d0bc9795bd5d164c68a"
+    },
+    {
+      "file": "local-attempt3/results.json",
+      "bytes": 43115,
+      "sha256": "b0ff23a7c151772d579175428851b5634e26c0463d4be185cd9dab74ebcb704a"
+    },
+    {
+      "file": "local-attempt3/scripts_testControlledDocs.log",
+      "bytes": 3174,
+      "sha256": "7183424bff7c5db05bc4c959571408733e4e4bcdd605f24487ba115d89fedb19"
+    },
+    {
+      "file": "local-attempt3/scripts_testControlledDocVersionSync.log",
+      "bytes": 6752,
+      "sha256": "1d514622ff6d3d1ba0e70a4114a9bdd87af3dac122cbf0a439f0104253ef3e1a"
+    },
+    {
+      "file": "github-decoded-lf/windows-ci-first-decoded.txt",
+      "bytes": 80410,
+      "sha256": "316165af902da74e714088e0eb851a421638aa0cdae9f48479ead9a32fee9352"
+    },
+    {
+      "file": "github-decoded-lf/first-linux-regression-decoded.txt",
+      "bytes": 167099,
+      "sha256": "8c5c1551ba5c7f80c9b3e497435c31a98b7182f25ba76a040aacc1c085aa9641"
+    },
+    {
+      "file": "github-decoded-lf/first-controlled-ci-decoded.txt",
+      "bytes": 90925,
+      "sha256": "37e6abe008ff38f40ea838310a982341cbb9580198359ae29e2ba031da26eceb"
+    },
+    {
+      "file": "github-decoded-lf/owner-variants-ci-decoded.txt",
+      "bytes": 83165,
+      "sha256": "afc5f8786253664f2dcf967921aac65c907c4a924adf5f9a79d797a1f2500cf8"
+    }
+  ]
+}
