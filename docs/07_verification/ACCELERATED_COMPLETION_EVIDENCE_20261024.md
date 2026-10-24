@@ -17,3 +17,22 @@ Commands/results: git fetch origin master; git merge-tree --write-tree origin/ma
 ## Qualification discipline
 
 Each worker records source/tree, exact commands, actual tool versions and all outcomes in its dedicated evidence. Retained dependencies may support focused development but are not fresh-install qualification. Synthetic credentials remain task-private. No local partial install, later green WS04 or clean audit diagnoses an unrelated earlier failure. No human acceptance, task registration, runtime synchronization or release is asserted by these results.
+
+## Addendum: actual #85 result
+
+Run40067046174 finished **NOT QUALIFIED**: Complete Regression140/140 suites,2774 reported assertions,zero failures/skips; Quality & Build PASS; Controlled Docs11/11 focused suites,336 measured assertions PASS. Windows npm qualification passed; frozen Bun install/native loading passed, but synthetic-session-capacity reported17/18 with `STORE_REQUEST_TIMEOUT` at `privateStore.ts:167` in the4095/4096 audit-boundary case. Node22.23.4. Subsequent Windows steps are not qualified. [Accurate integration record](https://github.com/Jeruzael/docmonstakrakin/pull/85#issuecomment-6380598706). No unchanged retry requested. Cause remains under bounded investigation; this is not a WS04 diagnosis.
+
+Captured original decoded job-log SHA-256 digests (logs remain available through the run's job links and retained local supplemental artifacts):
+
+| Job ID | SHA-256 |
+|---|---|
+|120792387012 Complete Regression|396c142387b8e72927b0047d168f081ae98d3d595b672299e25766c35a1f28fd|
+|120792387104 Quality & Build|084c19d23b74b9568bc8b6d32ab37870ab6ff728ce0cefdd7f5a64df39ae9ea8|
+|120792387120 Windows Native Qualification|4aa2fa11027575759d2f84d2f7aff330a10c4e7ab61a24613ac9cb5329307326|
+|120792387166 Controlled Docs|60d4b7964b9d913fa12711e812c15d9e9c81e838e85437f2ac6ae639125c661d|
+
+## Package12 development evidence (candidate, not integration)
+
+Root began from886bd7e with retained regular dependencies copied from the task-owned fresh npm installation. Node22.23.3 is the recorded development runtime, not the final current-security-runtime recommendation. Missing `actionRequestHash` produced the expected initial RED (0/1). Implementation passed4/4 inert hashing checks. New HTTP adapter tests produced seven explicit RED failures before implementation; an initially unbounded diagnostic wait was interrupted and replaced with a bounded1-second fixture observation, without changing runtime timeouts. The implemented adapter passed9/9 checks; unchanged legacy persistence passed8/8. These HTTP tests use a synthetic RPC and do not substitute for native SQL/session or actual application qualification.
+
+One extra version-check command used a mistyped disposable Node path and failed executable lookup; the preceding4/4 suite itself passed. No test result is inferred from that command's aggregate exit code. Final candidate/native/application/CI qualification remains pending. No timeout inflation, skipped assertions, authority migration, audit deletion or guard relaxation.

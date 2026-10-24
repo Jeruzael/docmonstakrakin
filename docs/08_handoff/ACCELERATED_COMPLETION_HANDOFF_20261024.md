@@ -2,7 +2,7 @@
 
 Standing authority: operator ACCEL-20261024 mandate, not an independent human vote. Start with [campaign map](../06_planning/ACCELERATED_COMPLETION_20261024.md), [decisions](../00_control/ACCELERATED_DECISION_LEDGER_20261024.md) and [evidence](../07_verification/ACCELERATED_COMPLETION_EVIDENCE_20261024.md). Prior dated handoffs remain historical, including instructions to stop for routine approvals superseded for this campaign.
 
-Current master **ef6b30bf1392a9c9ead69a3a73f9655c7d18317d**, PR85 integrated without approved-content change. Last fully qualified master is **556bed68191a6af27a8fc0aad95363b5a534cd48**, CI40063320425; actual new-master CI40067046174 is running at this capture. Do not use candidate CI as post-merge evidence.
+Current master **ef6b30bf1392a9c9ead69a3a73f9655c7d18317d**, PR85 integrated without approved-content change. Last fully qualified master is **556bed68191a6af27a8fc0aad95363b5a534cd48**, CI40063320425. Actual new-master CI40067046174 finished with three successful jobs and a Windows Bun synthetic-session-capacity timeout at4095/4096 audit entries. Dependent integrations are held for diagnosis/correction and actual post-merge qualification; independent work continues. Original evidence is retained in the campaign evidence addendum. Do not use candidate CI as post-merge evidence.
 
 Root worktree: `C:/Users/HomePC/.codex/worktrees/body-parser-security/docmonstakrakin-version-sync`, branch `codex/accelerated-completion-20261024`. Isolated workers: setup/WS04, capacity inspector, authority/registration preparation. One integration owner; no concurrent schema/store/dependency changes. Original operator checkout and junction are untouched.
 

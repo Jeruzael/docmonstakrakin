@@ -326,6 +326,7 @@ jobs:
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
           node --import tsx scripts/testWorkspaceStore.ts
+          node --import tsx scripts/testWorkspaceActionReceipts.ts
           node --import tsx scripts/testWorkspaceTls.ts
           node --import tsx scripts/testWorkspaceBackup.ts
           git diff --exit-code
