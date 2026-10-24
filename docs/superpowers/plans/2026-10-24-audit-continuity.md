@@ -30,7 +30,7 @@ Create only:
 - scripts/fixtures/qualifyAuditContinuity.sh: explicit root fixture launcher, always private mount namespace; own new source/output images and unprivileged observer.
 - docs/07_verification/AUDIT_CONTINUITY_ACCEL_20261024.md: exact results, limitations, resumable handoff and delegated decisions.
 
-No existing core/inspector/workflow file edits. A dedicated CI workflow may be proposed separately after local qualification.
+No existing core/inspector/workflow file edits. Root subsequently authorized the new `.github/workflows/audit-continuity.yml`: Ubuntu24.04, fresh lifecycle npm ci, Node22.23.4, explicit private namespace/task-owned ext4 fixtures, unprivileged engine, contents-read permission and logs-only artifacts. All ordinary CI jobs remain required.
 
 Public shape: async prepareTransition({sourceWorkspace,destinationBase,transitionId,priorStage?}, anchorClient, trustPolicy) -> staged receipt; commitTransition(stagePath,anchorClient,trustPolicy), recoverTransition(...) -> durable protocol receipt with activated:false and runtimeContinuityComplete:false. verifyStage(stagePath,trustPolicy) returns bounded verified artifacts; lookupReplay(stagePath,kind,value,trustPolicy) reports seen/not-seen-in-verified-sealed-history only, never authorization. AnchorClient consumes fresh nonce, lineage/expected revision/current pointer and exact intent/transition hash for observe/compareAndSwap/resolve. Synthetic keys/providers are identified as SYNTHETIC_ONLY.
 
@@ -42,9 +42,11 @@ P6-D02: output only new continuity-UUID children of an already current-owner pri
 
 P6-D03: caps are 8 sealed segments, 256 MiB each, existing 4,096 entries per segment, 16 MiB replay index, 64 MiB snapshot, bounded manifests/journal and 16 MiB free-space reserve. Complete index includes all operations and used digests; schema-1 historical body hashes stay null. Bounds stop new staging without pruning, truncation or higher runtime ceilings. Bound verification by count/bytes/time; no unlimited per-request history scan is promised.
 
-P6-D04: retain principals, credential revisions/disabled flags, membership DENY/policy and snapshot bytes from the exact anchored source; successor has no active sessions, strictly greater epoch/generation and an explicit fresh-service-key requirement. Concurrent revocation/source/pointer change invalidates CAS.
+P6-D04: retain principals, credential revisions/disabled flags, membership DENY/policy, throttle state and snapshot bytes from the exact anchored source; successor has no active sessions, strictly greater epoch/generation and an explicit fresh-service-key requirement. Concurrent revocation/source/pointer change invalidates CAS.
 
 P6-D05: flush data/index/seal/successor/manifest plus directory before PREPARED; durable external CAS precedes local COMMIT_CONFIRMED and FINALIZED. Unknown remote result remains unavailable until signed exact-intent resolution. Before cutover, cancelling local work does not prove predecessor currentness; after cutover, only forward recovery is allowed. Never delete incomplete artifacts or reactivate predecessor.
+
+P6-D06: mutating transition APIs explicitly refuse OPERATIONAL domain before file/provider access until runtime hooks and actual custody are qualified. The working SYNTHETIC-domain engine exercises the durable contract without permitting an accidental real-anchor cutover to an unsupported successor format. Receipt-format parsing alone does not enable production transitions.
 
 ## Review focus
 
@@ -56,15 +58,17 @@ P6-D05: flush data/index/seal/successor/manifest plus directory before PREPARED;
 
 ## Task sequence
 
-- [ ] Write API/receipt/replay acceptance assertions and observe expected missing-feature failure.
-- [ ] Implement exact format and signed-anchor verification with actual SQLite synthetic anchor: nonce, wrong/revoked signer, stale/future receipt, competing CAS, idempotent exact intent and changed-body rejection.
-- [ ] Implement complete readonly image staging, exact index/state/genesis verification and immutable manifest lineage. Test 4094/4095/4096 across all three histories, bounds, tamper, missing/truncated/reordered history, privacy and no old-session admission.
-- [ ] Implement phase journal, commit/resolve/recovery and controlled faults before/after durable preparation, anchor commit, local commit and acknowledgement. Preserve all failures/artifacts and original bytes.
-- [ ] Execute Linux native/private-ext4 qualification; run relevant prior inspector tests and typecheck without competing with reserved Windows heavy work. Propose dedicated hosted CI if needed.
-- [ ] Perform separate adversarial code/evidence self-review; document actual residual gaps; sign focused commits and publish draft only when instructed. Root owns all integration.
+- [x] Write API/receipt/replay acceptance assertions and observe expected missing-feature failure.
+- [x] Implement exact format and signed-anchor verification with actual SQLite synthetic anchor: nonce, wrong/revoked signer, stale/future receipt, competing CAS, idempotent exact intent and changed-body rejection.
+- [x] Implement complete readonly image staging, exact index/state/genesis verification and immutable manifest lineage. Local bounded chain/replay/invalid-input coverage passed; runtime session enforcement remains unsupported.
+- [x] Implement phase journal, commit/resolve/recovery and controlled faults before/after durable preparation, anchor commit, local commit and acknowledgement. Preserve all failures/artifacts and original bytes.
+- [x] Execute Linux native/private-ext4 qualification: focused13/13 and profile31/31, after shared-host release. Syntax/diff checks passed; existing inspector regression and project typecheck remain assigned to ordinary hosted CI.
+- [x] Perform separate adversarial code/evidence self-review and document actual residual gaps.
+- [ ] Sign focused commits and publish the delegated draft; fresh profile CI and all four ordinary jobs remain required. Root owns all integration.
 
 ## Interruption ledger
 
 - Source branch codex/accel-audit-continuity-20261024, clean base 3e314f9; PR88 branch remains at that commit.
 - First interrupted pass read the mandate/proposal and created the branch only. No implementation existed.
 - Parent approved the new-module staging/anchor-CAS scope and required no implicit trust, no shared core edits, capped complete indexing and honest runtime-incomplete status.
+- First complete Linux run passed 24 scenarios. Expanded coverage exposed a retained cold SQLite journal after SIGKILL inside COMMIT_CONFIRMED insertion. Narrow stage-only recovery now requires complete readonly main-snapshot/artifact verification before native open, exact UUID and private bounded journal admission; unreadable/torn/PREPARING state is preserved and refused. Final revised focused13/13 and profile31/31 passed after the host release at07:03:05Z. Both measured journals had cold headers; no hot-journal or device-power-loss guarantee is claimed.
