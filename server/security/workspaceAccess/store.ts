@@ -16,13 +16,13 @@ export class WorkspaceStore {
   private closePromise?: Promise<void>;
   private stopping?: Promise<void>;
   private constructor(private readonly handle: PrivateWorkspaceHandle) {}
-  static async open(workspaceRoot: string, options: { initialize?: boolean; actionReceipts?: boolean } = {}): Promise<WorkspaceStore> {
+  static async open(workspaceRoot: string, options: { initialize?: boolean; actionReceipts?: boolean; agentDelegation?: boolean } = {}): Promise<WorkspaceStore> {
     const version = process.versions.node.split('.').map(Number);
     if (!['win32', 'linux'].includes(process.platform) || process.arch !== 'x64' || version[0] !== 22 || version[1] < 23 || version[1] === 23 && version[2] < 3) throw new WorkspaceSecurityError('WORKSPACE_PLATFORM_UNSUPPORTED');
-    if (!options || Object.keys(options).some(k => !['initialize', 'actionReceipts'].includes(k)) || options.initialize !== undefined && typeof options.initialize !== 'boolean' || options.actionReceipts !== undefined && typeof options.actionReceipts !== 'boolean' || options.actionReceipts === true && options.initialize !== true) throw new WorkspaceSecurityError('WORKSPACE_INPUT_INVALID');
+    if (!options || Object.keys(options).some(k => !['initialize', 'actionReceipts', 'agentDelegation'].includes(k)) || options.initialize !== undefined && typeof options.initialize !== 'boolean' || options.actionReceipts !== undefined && typeof options.actionReceipts !== 'boolean' || options.actionReceipts === true && options.initialize !== true || options.agentDelegation !== undefined && typeof options.agentDelegation !== 'boolean' || options.agentDelegation === true && (options.initialize !== true || options.actionReceipts !== true)) throw new WorkspaceSecurityError('WORKSPACE_INPUT_INVALID');
     const h = acquirePrivateWorkspace(workspaceRoot, options.initialize === true);
     const store = new WorkspaceStore(h);
-    try { await store.start(options.initialize === true, options.actionReceipts === true); return store; }
+    try { await store.start(options.initialize === true, options.actionReceipts === true, options.agentDelegation === true); return store; }
     catch (error) {
       await store.stop('WORKSPACE_UNAVAILABLE');
       // No connection is ever made available on startup failure. Data remains.
@@ -30,11 +30,11 @@ export class WorkspaceStore {
       throw error;
     }
   }
-  private async start(initialize: boolean, actionReceipts: boolean) {
+  private async start(initialize: boolean, actionReceipts: boolean, agentDelegation: boolean) {
     const workerFile = typeof __dirname === 'string'
       ? path.resolve(__dirname, path.basename(__dirname) === 'dist' ? '../server/security/workspaceAccess/worker.cjs' : 'worker.cjs')
       : fileURLToPath(new URL('./worker.cjs', import.meta.url));
-    const worker = new Worker(workerFile, { workerData: { ...this.handle, initialize, actionReceipts }, execArgv: [] });
+    const worker = new Worker(workerFile, { workerData: { ...this.handle, initialize, actionReceipts, agentDelegation }, execArgv: [] });
     this.worker = worker;
     await new Promise<void>((resolve, reject) => {
       let ready = false;
