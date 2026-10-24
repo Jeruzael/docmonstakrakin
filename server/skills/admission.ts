@@ -31,7 +31,7 @@ type Context={binding:string;requestHash:string;skillId:string;version:string;re
 /** Host-only retrieval proof. The authority still decides every actual read. */
 export class TaskReadSkillAdmission {
  private readonly key=randomBytes(32);private closed=false;private highWater=0;
- private publicationEpoch=0;private publicationDigest='';
+ private publicationEpoch=0;private publicationDigest='';private publicationConflicted=false;
  private readonly clock:()=>number;private readonly publication:()=>PromptSkillPublication;
  constructor(options:{clock?:()=>number;publication?:()=>PromptSkillPublication}={}){this.clock=options.clock??Date.now;this.publication=options.publication??publishedPromptSkills;}
  private context(actor:any,request:any):Context {
@@ -49,7 +49,9 @@ export class TaskReadSkillAdmission {
   const ids=new Set<string>();let total=0;
   for(const a of p.assets){exact(a,['id','description','instructions','authority','actions']);if(!identifier(a.id)||ids.has(a.id)||a.authority!=='BUNDLED_SOURCE'||typeof a.description!=='string'||!a.description.trim()||typeof a.instructions!=='string'||!a.instructions.trim()||!Array.isArray(a.actions)||a.actions.some(x=>x!=='task:read')||new Set(a.actions).size!==a.actions.length)fail();ids.add(a.id);total+=Buffer.byteLength(a.description)+Buffer.byteLength(a.instructions);if(total>1024*1024)fail();}
   const registryDigest=hash([p.schema,p.epoch,[...p.revokedIds].sort(),p.assets.map(a=>[a.id,a.description,a.instructions,a.authority,a.actions]).sort((a,b)=>String(a[0])<String(b[0])?-1:String(a[0])>String(b[0])?1:0)]);
-  if(p.epoch<this.publicationEpoch||p.epoch===this.publicationEpoch&&registryDigest!==this.publicationDigest)fail();this.publicationEpoch=p.epoch;this.publicationDigest=registryDigest;
+  if(p.epoch<this.publicationEpoch)fail();
+  if(p.epoch===this.publicationEpoch){if(registryDigest!==this.publicationDigest)this.publicationConflicted=true;if(this.publicationConflicted)fail();}
+  else{this.publicationEpoch=p.epoch;this.publicationDigest=registryDigest;this.publicationConflicted=false;}
   const applicable=p.assets.filter(a=>a.actions.includes('task:read')&&!p.revokedIds.includes(a.id));if(applicable.length!==1)fail();const asset=applicable[0];
   const requestHash=hash(['DMK_TASK_READ/1',request.version,request.operationId,request.action,request.projectId,request.taskId,request.expectedRevision]);
   return{binding:hash(['DMK_SKILL_ACTOR/1',actor.kind,actor.principalId,actor.clientId,actor.sessionId,actor.sponsorPrincipalId,actor.grantId,actor.grantRevision,actor.projectId,[actor.scope.kind,actor.scope.taskIds??[]],actor.actions,actor.expiresAt,actor.policyRevision,actor.snapshotRevision]),requestHash,skillId:asset.id,version:'sha256:'+hash([asset.id,asset.description,asset.instructions]),registryDigest,policyRevision:actor.policyRevision,instructions:asset.instructions,description:asset.description,expiresAt:Math.min(actor.expiresAt,now+60000),now};
