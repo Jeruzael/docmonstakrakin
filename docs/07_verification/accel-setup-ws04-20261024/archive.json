@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "created": "2026-10-24T06:40:16.9426309Z",
+  "archive": "setup-ws04-evidence.zip",
+  "bytes": 1606063,
+  "sha256": "eff93a8ca5499961daf30a06a018ac2d1d0c1e9ac2a291e3aacc750cef5ca9bf",
+  "manifestSha256": "ee24bc5a8dd83b40450adb8750fdc36bfd7910b545ea5bab22cad2cfb813506a",
+  "fileCount": 252,
+  "purpose": "Curated raw qualification and bounded diagnostic evidence; no runtime payloads or credentials"
+}
