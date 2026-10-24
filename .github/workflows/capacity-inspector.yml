@@ -1,0 +1,104 @@
+name: Capacity Inspector Qualification
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/capacity-inspector.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'server/security/workspaceAccess/**'
+      - 'scripts/testWorkspaceCapacityInspector.ts'
+      - 'scripts/inspectWorkspaceCapacity.ts'
+      - 'scripts/fixtures/capacityInspector*'
+      - 'scripts/fixtures/qualifyCapacityReadonly.sh'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/capacity-inspector.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'server/security/workspaceAccess/**'
+      - 'scripts/testWorkspaceCapacityInspector.ts'
+      - 'scripts/inspectWorkspaceCapacity.ts'
+      - 'scripts/fixtures/capacityInspector*'
+      - 'scripts/fixtures/qualifyCapacityReadonly.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  readonly_linux:
+    name: Linux Immutable Capacity Qualification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI: 'true'
+      NODE_OPTIONS: ''
+    steps:
+      - name: Checkout exact isolated candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup qualified Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+
+      - name: Fresh lifecycle-enabled dependencies
+        run: npm ci --foreground-scripts
+
+      - name: Require native qualification tools
+        run: |
+          set -euo pipefail
+          for tool in strace mkfs.ext4 runuser unshare mount umount truncate tar; do
+            command -v "$tool"
+          done
+          test -c /dev/loop-control
+          test "$(id -u)" -ne 0
+          test ! -L node_modules
+          sudo -n true
+          node --version
+          strace --version
+          git rev-parse HEAD
+
+      - name: Image validation and ordinary-source refusal
+        run: node --import tsx scripts/testWorkspaceCapacityInspector.ts
+
+      - name: Qualify disposable readonly ext4 source with syscall observer
+        run: |
+          set -euo pipefail
+          mkdir -p .local/capacity-ci
+          node_path="$(realpath "$(command -v node)")"
+          modules_path="$(realpath node_modules)"
+          runner_user="$(id -un)"
+          trace_path="$(realpath "$(command -v strace)")"
+          # The script unshares a private mount namespace before any mount and
+          # creates only its own new 32 MiB synthetic image. Observer is nonroot.
+          sudo -n sh scripts/fixtures/qualifyCapacityReadonly.sh "$node_path" "$modules_path" "$runner_user" "$trace_path" |
+            tee .local/capacity-ci/qualification.log
+          fixture_path="$(sed -n 's#^Synthetic fixture and optional traces retained at \(/tmp/dmk-capacity-qualification\.[A-Za-z0-9]*\);.*#\1#p' .local/capacity-ci/qualification.log)"
+          test -n "$fixture_path"
+          test -d "$fixture_path/traces"
+          tar -czf .local/capacity-ci/strace.tar.gz -C "$fixture_path" traces
+          sha256sum .local/capacity-ci/qualification.log .local/capacity-ci/strace.tar.gz
+          git diff --exit-code
+
+      - name: Retain synthetic qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capacity-inspector-${{ github.sha }}
+          path: .local/capacity-ci/
+          if-no-files-found: warn
+          retention-days: 14

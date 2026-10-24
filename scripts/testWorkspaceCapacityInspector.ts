@@ -47,6 +47,14 @@ if (fs.existsSync(imageFile)) {
     ['oversize audit row', db=>db.prepare('UPDATE audit SET raw=? WHERE sequence=2').run('PRIVATE-SENTINEL'.repeat(400))]
   ];
   for (const [name,mutate] of invalid) await check('CI05 ' + name, () => assert.throws(() => inspect({},mutate), (error:any)=> !String(error).includes('PRIVATE-SENTINEL')));
+  await check('CI05b snapshot depth 64 admits and 65 refuses',()=>{
+    const raw=(depth:number)=>{let extra:any=0;for(let n=0;n<depth;n++)extra={nested:extra};return JSON.stringify({schemaVersion:1,state:{projects:[{id:'SYNTHETIC',extra}]}});};
+    assert.equal(inspect({},db=>db.prepare('UPDATE metadata SET stateJson=?').run(raw(60))).counts.audit,2);
+    assert.throws(()=>inspect({},db=>db.prepare('UPDATE metadata SET stateJson=?').run(raw(61))));
+  });
+  await check('CI05c forbidden decoded snapshot keys refuse',()=>{
+    assert.throws(()=>inspect({},db=>db.prepare('UPDATE metadata SET stateJson=?').run('{"schemaVersion":1,"state":{"projects":[{"id":"SYNTHETIC","constructor":{}}]}}')));
+  });
   await check('CI06 malformed and WAL bytes rejected unchanged', () => {
     for (const bytes of [Buffer.from('SYNTHETIC CORRUPT'), (()=>{const db=fixture();try{const b=db.serialize();b[18]=2;b[19]=2;return b;}finally{db.close();}})()]) {
       const before=hash(bytes); assert.throws(()=>inspectCapacityImage(bytes,expected)); assert.equal(hash(bytes),before);

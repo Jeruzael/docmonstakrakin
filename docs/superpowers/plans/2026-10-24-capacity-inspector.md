@@ -40,12 +40,12 @@ Files:
 
 Interface: inspectWorkspaceCapacity(path) returns schema WORKSPACE_CAPACITY_OBSERVATION/1, status VALID_BOUNDED/FULL/BLOCKED/INVALID, bounded reason(s), and aggregates only on successful complete admission. Success retains activated:false, freshnessEstablished:false, pilotAuthorized:false. No self-reported sourceMutated:false claim substitutes for external observer evidence. capacityImage validates only already supplied bytes and emits image aggregates, never a filesystem-admitted success result.
 
-- [ ] Write tests for missing exported inspector/image APIs and observe expected failure.
-- [ ] Implement admission + image validator; test audit 4094/4095/4096 and independent used_digests/operations ceilings, over-limit, corrupt schemas/history/metadata/provenance, relational/session bounds and safe redaction.
-- [ ] Implement timed public API/strict CLI; test ordinary writable source, locks/sidecars/links/permission/path/race refusal and bounded failures with original bytes/metadata unchanged.
-- [ ] Qualify native Buffer readonly behavior and no source-path SQLite opens. Run immutable-profile positive checks in a disposable read-only ext4 fixture if an isolated namespace is available; otherwise preserve NOT_RUN.
-- [ ] Run lint, focused tests, existing workspace admission/store/backup suites and npm test. Root will run the four combined-tree CI jobs.
-- [ ] Perform separate adversarial code/evidence self-review, fix concrete findings, record exact results, sign a focused commit and hand off to root without merging.
+- [x] Write tests for missing exported inspector/image APIs and observe expected failure.
+- [x] Implement admission + image validator; test audit 4094/4095/4096 and independent used_digests/operations ceilings, over-limit, corrupt schemas/history/metadata/provenance, relational/session bounds and safe redaction.
+- [x] Implement timed public API/strict CLI; test ordinary writable source, locks/sidecars/links/permission/path/race refusal and bounded failures with original bytes/metadata unchanged.
+- [x] Qualify native Buffer readonly behavior and no source-path SQLite opens. Run immutable-profile positive checks in a disposable read-only ext4 fixture if an isolated namespace is available; otherwise preserve NOT_RUN.
+- [x] Run lint, focused tests, existing workspace admission/store/backup suites and npm test. Root will run the four combined-tree CI jobs.
+- [x] Perform separate adversarial code/evidence self-review, fix concrete findings, record exact results, sign a focused commit and hand off to root without merging.
 
 ## Progress and evidence ledger
 
@@ -54,3 +54,6 @@ Interface: inspectWorkspaceCapacity(path) returns schema WORKSPACE_CAPACITY_OBSE
 - Native source: Buffer constructor substitutes :memory: and preserves readonly; native deserialize flags still require test/source qualification.
 - Planned ordinary filesystem refusal is required scope, not package completion. Windows immutable qualification remains a residual acceptance gap.
 
+## Candidate handoff
+
+Implementation signed at 77dd93ff8500c3b2127af4d80cafd70cb8d63680; scoped Linux acceptance and separate code/evidence self-review are recorded in docs/07_verification/CAPACITY_INSPECTOR_ACCEL_20261024.md. Root remains integration owner. Dedicated .github/workflows/capacity-inspector.yml was explicitly delegated by root and requires fresh dependencies, 22 immutable-profile checks and kernel traces; actual CI is pending. Additional test helpers cover syscall attempts and controlled cancellation. Windows, detached copies, schema 2 and maximum-size native RSS remain unsupported/unqualified. The completed checkboxes describe this narrow candidate, not full package-5 completion or integration.
