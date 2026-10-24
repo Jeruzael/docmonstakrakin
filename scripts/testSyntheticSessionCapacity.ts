@@ -17,6 +17,42 @@ const Database = require('better-sqlite3');
 const verifier = await new BoundedVerifier(argon).hash('synthetic-capacity-password');
 const started = performance.now();
 let passed = 0, failed = 0;
+type CapacityDiagnostic = {
+  caseName: string;
+  phase: string;
+  ordinal: number;
+  lastCompleted?: {operation: string; phase: string; ordinal: number; elapsedMs: number};
+};
+// Parent-side test observation only. Never emit request values, tokens, verifier
+// strings, proof bytes or private paths, and never retry an uncertain operation.
+async function observe<T>(diagnostic: CapacityDiagnostic, operation: string, run: () => Promise<T>): Promise<T> {
+  const began = performance.now(), ordinal = ++diagnostic.ordinal, phase = diagnostic.phase;
+  const label = /^[A-Za-z]{1,40}$/.test(operation) ? operation : 'unclassified';
+  try {
+    const value = await run();
+    diagnostic.lastCompleted = {operation: label, phase, ordinal, elapsedMs: Math.round(performance.now() - began)};
+    return value;
+  } catch (error) {
+    const code = (error as {code?: unknown})?.code;
+    if (code === 'STORE_REQUEST_TIMEOUT' || code === 'STORE_UNAVAILABLE') {
+      console.error('CAPACITY_OPERATION_DIAGNOSTIC ' + JSON.stringify({
+        case: diagnostic.caseName, phase, operation: label, ordinal,
+        elapsedMs: Math.round(performance.now() - began), code,
+        lastCompleted: diagnostic.lastCompleted, node: process.version,
+      }));
+    }
+    throw error;
+  }
+}
+function observeStore(store: PrivateSyntheticStore, diagnostic: CapacityDiagnostic) {
+  const execute = store.execute.bind(store), close = store.close.bind(store);
+  const restart = store.restart.bind(store), prepare = store.prepareTestTransfer.bind(store);
+  store.execute = command => observe(diagnostic, command.command, () => execute(command));
+  store.close = () => observe(diagnostic, 'close', close);
+  store.restart = () => observe(diagnostic, 'restart', restart);
+  store.prepareTestTransfer = (root, now) => observe(diagnostic, 'prepareTestTransfer', () => prepare(root, now));
+  return store;
+}
 type Fixture = {
   store: PrivateSyntheticStore;
   sessions: SyntheticSessions;
@@ -24,18 +60,21 @@ type Fixture = {
   connection: any;
   recoveryRoot?: TestRoot;
   retired: PrivateSyntheticStore[];
+  diagnostic: CapacityDiagnostic;
 };
-async function fixture(body: (f: Fixture) => Promise<void>, recovery = false) {
+async function fixture(body: (f: Fixture) => Promise<void>, recovery: boolean, diagnostic: CapacityDiagnostic) {
   const recoveryRoot = recovery ? createTestRecoveryRoot() : undefined;
-  const store = recoveryRoot ? await PrivateSyntheticStore.createRecoveryFixture(recoveryRoot) : await PrivateSyntheticStore.create();
-  const f = {store, now: 2_000_000, connection: undefined, recoveryRoot, retired: []} as Fixture;
+  const store = observeStore(await observe(diagnostic, 'create', () => recoveryRoot ? PrivateSyntheticStore.createRecoveryFixture(recoveryRoot) : PrivateSyntheticStore.create()), diagnostic);
+  const f = {store, now: 2_000_000, connection: undefined, recoveryRoot, retired: [], diagnostic} as Fixture;
   f.sessions = new SyntheticSessions(store, () => f.now);
   try {
     await store.execute({command: 'createPrincipal', id: 'capacity-human', kind: 'HUMAN', verifier});
     await store.execute({command: 'createPrincipal', id: 'other-human', kind: 'HUMAN', verifier});
     f.connection = new Database(path.join(store.rootDirectory, 'authority.sqlite'));
+    diagnostic.phase = 'case-body';
     await body(f);
   } finally {
+    diagnostic.phase = 'fixture-cleanup';
     f.connection?.close();
     for (const retired of f.retired) await retired.close();
     await f.store.close();
@@ -43,7 +82,8 @@ async function fixture(body: (f: Fixture) => Promise<void>, recovery = false) {
   }
 }
 async function check(name: string, body: (f: Fixture) => Promise<void>, recovery = false) {
-  try { await fixture(body, recovery); passed++; console.log('PASS ' + name); }
+  const diagnostic: CapacityDiagnostic = {caseName: name, phase: 'fixture-create', ordinal: 0};
+  try { await fixture(body, recovery, diagnostic); passed++; console.log('PASS ' + name); }
   catch (error) { failed++; console.error('FAIL ' + name); console.error(error); }
 }
 const snapshot = (f: Fixture) => f.store.execute({command: 'snapshot'});
@@ -58,7 +98,7 @@ async function handoff(f: Fixture) {
   assert(f.recoveryRoot);
   const previous = f.store;
   const proof = await previous.prepareTestTransfer(f.recoveryRoot, f.now);
-  const successor = await PrivateSyntheticStore.acceptTestTransfer(proof, f.recoveryRoot.publicDer, f.now);
+  const successor = observeStore(await observe(f.diagnostic, 'acceptTestTransfer', () => PrivateSyntheticStore.acceptTestTransfer(proof, f.recoveryRoot!.publicDer, f.now)), f.diagnostic);
   f.retired.push(previous);
   f.store = successor;
   f.sessions = new SyntheticSessions(successor, () => f.now);
@@ -275,10 +315,12 @@ await check('one remaining audit slot and the full 4096-entry ceiling both roll 
   // Bounded actual worker writes, never direct fabricated ledger rows.
   let count = (await snapshot(f)).counts.audit;
   while (count < 4095) {
+    f.diagnostic.phase = 'audit-fill-' + count;
     const denied = await f.store.execute({command: 'authorize', digest: 'f'.repeat(64), action: 'synthetic:read', resourceId: 'absent-resource', now: f.now});
     assert.equal(denied.allowed, false); count++;
   }
   for (const expectedAuditCount of [4095, 4096]) {
+    f.diagnostic.phase = 'audit-boundary-' + expectedAuditCount;
     const before = await snapshot(f), beforeAudit = await audit(f), beforeRows = rows(f);
     assert.equal(before.counts.audit, expectedAuditCount);
     await assert.rejects(() => f.sessions.issue('capacity-human'), {code: 'STORE_CAPACITY'});
@@ -353,12 +395,14 @@ await check('schema2 claim leaves a one-slot audit boundary where reclamation fa
   // authorization denials to reach 4092, never fabricated ledger entries.
   let count = (await snapshot(f)).counts.audit;
   while (count < 4092) {
+    f.diagnostic.phase = 'recovery-audit-fill-' + count;
     const denied = await f.store.execute({command: 'authorize', digest: 'f'.repeat(64), action: 'synthetic:read', resourceId: 'absent-resource', now: f.now});
     assert.equal(denied.allowed, false); count++;
   }
   await handoff(f);
   assert.equal((await snapshot(f)).counts.audit, 4095);
   for (const expectedAuditCount of [4095, 4096]) {
+    f.diagnostic.phase = 'recovery-audit-boundary-' + expectedAuditCount;
     const before = await snapshot(f), beforeAudit = await audit(f), beforeRows = rows(f), beforeCustody = custody(f);
     assert.equal(before.counts.audit, expectedAuditCount);
     await assert.rejects(() => f.sessions.issue('capacity-human'), {code: 'STORE_CAPACITY'});

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "diagnosticOnly": true,
+  "attempts": 1,
+  "node": "22.23.3",
+  "nodeSha256": "9c9245166b4a8e182e0b797da9c20136117ff24368eaff1fec8343a123c8db0e",
+  "sourceRevision": "556bed68191a6af27a8fc0aad95363b5a534cd48",
+  "sourceTree": "9f03079669e65329be553e96cbed3b3d9e843d31",
+  "sourceHashes": {
+    "scripts/testSyntheticSessionCapacity.ts": "bfa64a481cedb3211dfa9d5b90f5e52403a33fe7977293a8aa4101db32e59235",
+    "server/security/syntheticFoundations/privateStore.ts": "683592d5452bece806347b058d1dc61c30e0cf4426aaeb190eb676f81fd3f142",
+    "server/security/syntheticFoundations/privateStoreWorker.mjs": "1fdb122171d47943884aea1677552e698bc7601df50fe761892746e0bf8f6449",
+    "server/security/syntheticFoundations/sessions.ts": "8d477dba9d5928bf5e70cd684352f280c4358145a3461cd5acc38117625d7f4e",
+    "server/security/syntheticFoundations/audit.mjs": "8e16e545b381027420ca46be81cba04d0279e2fcc8f95674081bb8004a0acd7f"
+  },
+  "runnerSha256": "e286460d363ff8bc75ed5e4afc453cae85b106ec9c8fe9d69378e6eb11005d03",
+  "generatedSourceSha256": "fd9017c6dd5ff1aa5e579e40c07402c240f702ef27443f8c256ff78587378260",
+  "observer": "parent request timing; source-selected stage labels; no worker instrumentation",
+  "status": 0,
+  "signal": null,
+  "result": "NOT_REPRODUCED"
+}
