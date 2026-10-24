@@ -1,4 +1,5 @@
 import assert from'node:assert/strict';import fs from'node:fs';import os from'node:os';import path from'node:path';import net from'node:net';import{spawn}from'node:child_process';import{pathToFileURL}from'node:url';
+import {gzipSync,deflateSync} from 'node:zlib';
 const root=process.cwd(),dir=fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()),'dmk-workspace-enforced-'));let child:ReturnType<typeof spawn>|undefined,log='',passed=0,failed=0;
 async function check(name:string,fn:()=>unknown|Promise<unknown>){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+String(e));}}
 try{
@@ -15,6 +16,27 @@ try{
   await check('enforced development environment serves built static UI without Vite',async()=>{const body=await fetch(base).then(r=>r.text());assert.match(body,/synthetic-built-ui/);assert.doesNotMatch(body,/@vite\/client/);});
   await check('privileged routes stay denied before setup and cannot enroll through HTTP',async()=>{assert.equal((await fetch(base+'/api/repo/status')).status,403);assert.equal((await fetch(base+'/api/auth/register',{method:'POST'})).status,404);});
   await check('malformed login JSON returns 400 without logging raw credential material',async()=>{const marker='SYNTHETIC_MALFORMED_CREDENTIAL_MARKER';const r=await fetch(base+'/api/governance/session',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"password":"'+marker+'"'});assert.equal(r.status,400);await new Promise(r=>setTimeout(r,20));assert.equal(log.includes(marker),false);});
+  await check('unmatched non-API JSON retains normal parsing without granting a route or identity',async()=>{
+   // The real default ENFORCED server still parses outside /api, before routing
+   // and identity. No fixture endpoint or authentication bypass is introduced.
+   const json=Buffer.from('{"fixture":"synthetic-parser-control"}');
+   for(const [encoding,body] of [['identity',json],['gzip',gzipSync(json)],['deflate',deflateSync(json)]] as const){
+    const r=await fetch(base+'/synthetic-parser-probe',{method:'POST',headers:{'Content-Type':'application/json','Content-Encoding':encoding},body,signal:AbortSignal.timeout(4000)});
+    assert.equal(r.status,404);await r.arrayBuffer();
+   }
+   // A parser-specific error distinguishes actual parsing from an early 404.
+   const malformed=await fetch(base+'/synthetic-parser-probe',{method:'POST',headers:{'Content-Type':'application/json','Content-Encoding':'gzip'},body:gzipSync(Buffer.from('{"fixture":')),signal:AbortSignal.timeout(4000)});
+   assert.equal(malformed.status,400);assert.equal((await malformed.json()).error,'MALFORMED_JSON');
+   const health=await fetch(base+'/api/health',{signal:AbortSignal.timeout(4000)});assert.equal(health.status,200);await health.arrayBuffer();
+  });
+  await check('trailing compressed bytes cannot terminate the actual unauthenticated non-API parser path',async()=>{
+   const body=Buffer.concat([gzipSync(Buffer.from('{"fixture":"synthetic-parser-tail"}')),Buffer.from([0]),Buffer.alloc(100*1024,0x58)]);
+   const r=await fetch(base+'/synthetic-parser-probe',{method:'POST',headers:{'Content-Type':'application/json','Content-Encoding':'gzip'},body,signal:AbortSignal.timeout(4000)});
+   assert.equal(r.status,404);await r.arrayBuffer();await new Promise(r=>setTimeout(r,200));
+   assert.equal(child!.exitCode,null,log.slice(-1800));
+   const health=await fetch(base+'/api/health',{signal:AbortSignal.timeout(4000)});assert.equal(health.status,200);await health.arrayBuffer();
+   assert.equal(fs.existsSync(path.join(dir,'.security')),false);assert.equal(fs.existsSync(path.join(dir,'.secrets')),false);
+  });
  }
 }finally{if(child?.exitCode===null){const done=new Promise<void>(r=>child!.once('exit',()=>r()));child.kill();await done;}assert.equal(path.dirname(fs.realpathSync.native(dir)),fs.realpathSync.native(os.tmpdir()));assert.ok(path.basename(dir).startsWith('dmk-workspace-enforced-'));fs.rmSync(dir,{recursive:true,force:true});}
 console.log(JSON.stringify({suite:'workspace-enforced-server',passed,failed}));if(failed)process.exitCode=1;

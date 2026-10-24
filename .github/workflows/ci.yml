@@ -88,7 +88,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Clean Windows npm installation failed' }
           npm.cmd audit --json
           if ($LASTEXITCODE -ne 0) { throw 'Windows npm audit failed' }
-          npm.cmd ls better-sqlite3 argon2 vite source-map-js --all
+          npm.cmd ls better-sqlite3 argon2 vite source-map-js express body-parser --all
           if ($LASTEXITCODE -ne 0) { throw 'Installed dependency provenance failed' }
 
       - name: Qualify npm native runtime and existing quality gates
@@ -111,6 +111,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed native path protections failed' }
           node --import tsx scripts/testSyntheticWbsRegistration.ts
           if ($LASTEXITCODE -ne 0) { throw 'npm-installed synthetic WBS transaction qualification failed' }
+          node --import tsx scripts/testBodyParserSecurity.ts
+          if ($LASTEXITCODE -ne 0) { throw 'npm-installed compressed-body security regression failed' }
           # Runtime owner checks remain strict. A distinct suspended-child token
           # qualifies current-user ownership without changing the runner token.
           ./scripts/runWindowsPrivateQualification.ps1 -Phase Npm
@@ -137,6 +139,10 @@ jobs:
           try {
             npx.cmd --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$env:RUNNER_TEMP/native-bun-cache"
             if ($LASTEXITCODE -ne 0) { throw 'Clean frozen Windows Bun installation failed' }
+            npx.cmd --yes --package=bun@1.4.2 -- bun audit --json
+            if ($LASTEXITCODE -ne 0) { throw 'Frozen Windows Bun dependency audit failed' }
+            npm.cmd ls express body-parser --all
+            if ($LASTEXITCODE -ne 0) { throw 'Frozen Windows Bun parser dependency provenance failed' }
             $untrusted = npx.cmd --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1
             $trustExit = $LASTEXITCODE
             $untrusted | ForEach-Object { Write-Output $_ }
@@ -155,6 +161,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed native path protections failed' }
             node --import tsx scripts/testSyntheticWbsRegistration.ts
             if ($LASTEXITCODE -ne 0) { throw 'Bun-installed synthetic WBS transaction qualification failed' }
+            node --import tsx scripts/testBodyParserSecurity.ts
+            if ($LASTEXITCODE -ne 0) { throw 'Bun-installed compressed-body security regression failed' }
             ./scripts/runWindowsPrivateQualification.ps1 -Phase Bun
             git diff --exit-code
             if ($LASTEXITCODE -ne 0) { throw 'Bun verification changed tracked source' }
@@ -179,6 +187,101 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit candidate npm dependencies
+        run: npm audit --json --registry=https://registry.npmjs.org
+
+      - name: Record isolated vulnerable-baseline dependency provenance
+        # One-time before/after evidence for this remediation PR only. Candidate
+        # audit/native gates above and below are unconditional and stay strict.
+        if: github.event_name == 'pull_request' && github.head_ref == 'codex/body-parser-security-20261024'
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline=$(mktemp -d "$RUNNER_TEMP/body-parser-before.XXXXXX")
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$baseline"
+          git -C "$baseline" checkout --detach 796adced2b0e9795b801c808359dee9c8839d7c4
+          cd "$baseline"
+          test ! -e node_modules
+          printf 'registry=https://registry.npmjs.org\n'
+          node --version
+          npm --version
+          sha256sum package.json package-lock.json bun.lock
+          npm ci --foreground-scripts --registry=https://registry.npmjs.org
+          npm ls express body-parser --all --json
+          cp "$GITHUB_WORKSPACE/scripts/testBodyParserSecurity.ts" scripts/testBodyParserSecurity.ts
+          set +e
+          node --import tsx scripts/testBodyParserSecurity.ts > "$RUNNER_TEMP/body-parser-before-behavior.log" 2>&1
+          behavior_status=$?
+          set -e
+          cat "$RUNNER_TEMP/body-parser-before-behavior.log"
+          test "$behavior_status" -eq 1
+          node --input-type=module - "$RUNNER_TEMP/body-parser-before-behavior.log" <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const log=fs.readFileSync(process.argv[2],'utf8');
+          const summary=JSON.parse(log.trim().split('\n').at(-1));
+          assert.equal(summary.passed,6);assert.equal(summary.failed,1);
+          assert.match(log,/Z_DATA_ERROR/);
+          assert.match(log,/FAIL gzip frame followed by bounded trailing bytes/);
+          console.log('Vulnerable baseline child crash retained; no real application state used.');
+          NODE
+          cp "$GITHUB_WORKSPACE/scripts/testWorkspaceEnforcedServer.ts" scripts/testWorkspaceEnforcedServer.ts
+          set +e
+          node --import tsx scripts/testWorkspaceEnforcedServer.ts > "$RUNNER_TEMP/body-parser-before-application.log" 2>&1
+          behavior_status=$?
+          set -e
+          cat "$RUNNER_TEMP/body-parser-before-application.log"
+          test "$behavior_status" -eq 1
+          node --input-type=module - "$RUNNER_TEMP/body-parser-before-application.log" <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const log=fs.readFileSync(process.argv[2],'utf8');
+          const summary=JSON.parse(log.trim().split('\n').at(-1));
+          assert.equal(summary.passed,7);assert.equal(summary.failed,1);
+          assert.match(log,/Z_DATA_ERROR/);
+          assert.match(log,/FAIL trailing compressed bytes cannot terminate/);
+          console.log('Actual ENFORCED baseline non-API crash retained; no authority was initialized.');
+          NODE
+          date -u +%FT%TZ
+          set +e
+          npm audit --json --registry=https://registry.npmjs.org > "$RUNNER_TEMP/body-parser-before-npm-audit.json"
+          audit_status=$?
+          set -e
+          cat "$RUNNER_TEMP/body-parser-before-npm-audit.json"
+          test "$audit_status" -eq 1
+          node --input-type=module - "$RUNNER_TEMP/body-parser-before-npm-audit.json" <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const audit=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          const advisories=Object.values(audit.vulnerabilities).flatMap(v=>v.via).filter(v=>typeof v==='object');
+          assert.ok(advisories.length>0);
+          assert.ok(advisories.every(v=>v.url==='https://github.com/advisories/GHSA-27r3-jxmh-p828'));
+          console.log('Historical vulnerable-baseline observation only; candidate audits must be clean.');
+          NODE
+          bun_baseline=$(mktemp -d "$RUNNER_TEMP/body-parser-before-bun.XXXXXX")
+          git clone --no-hardlinks --no-checkout "$baseline" "$bun_baseline"
+          git -C "$bun_baseline" checkout --detach 796adced2b0e9795b801c808359dee9c8839d7c4
+          cd "$bun_baseline"
+          test ! -e node_modules
+          npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/body-parser-before-bun-cache"
+          npm ls express body-parser --all --json
+          date -u +%FT%TZ
+          set +e
+          npx --yes --package=bun@1.4.2 -- bun audit --json > "$RUNNER_TEMP/body-parser-before-bun-audit.json"
+          audit_status=$?
+          set -e
+          cat "$RUNNER_TEMP/body-parser-before-bun-audit.json"
+          test "$audit_status" -eq 1
+          node --input-type=module - "$RUNNER_TEMP/body-parser-before-bun-audit.json" <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const audit=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          const advisories=Object.values(audit).flat();
+          assert.ok(advisories.length>0);
+          assert.ok(advisories.every(v=>v.url==='https://github.com/advisories/GHSA-27r3-jxmh-p828'));
+          console.log('Frozen Bun historical observation only; candidate audit gates remain strict.');
+          NODE
 
       - name: Verify fail-closed Bun lifecycle inventory guard
         run: node scripts/testBunLifecycleInventory.ts
@@ -212,10 +315,13 @@ jobs:
           cd "$candidate"
           npx --yes --package=bun@1.4.2 -- bun --version
           npx --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/native-linux-bun-cache"
+          npx --yes --package=bun@1.4.2 -- bun audit --json
+          npm ls express body-parser --all
           untrusted=$(npx --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1)
           printf '%s\n' "$untrusted"
           printf '%s\n' "$untrusted" | node scripts/lib/bunLifecycleInventory.mjs
           node --import tsx scripts/testSyntheticSecurityFoundations.ts
+          node --import tsx scripts/testBodyParserSecurity.ts
           node --import tsx scripts/testSyntheticSessionCapacity.ts
           node --import tsx scripts/testSyntheticStorePaths.ts
           node --import tsx scripts/testAuthPilotRecovery.ts
