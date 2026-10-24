@@ -7,6 +7,12 @@ export interface WorkspacePrincipal {
 export interface WorkspaceMembership {
   projectId: string; principalId: string; role: 'OWNER' | 'EDITOR' | 'READER' | 'DENY'; deniedActions?: WorkspaceAction[];
 }
+/** Historical commit acknowledgment, never a claim about the current snapshot. */
+export interface WorkspaceActionReceipt {
+  version: 1; operationId: string; principalId: string; action: WorkspaceAction;
+  requestedProjectId: string | null; projectId: string; requestHash: string; effectHash: string;
+  snapshotRevision: number; policyRevision: number;
+}
 export const WORKSPACE_LIMITS = Object.freeze({ principals: 128, memberships: 512, sessions: 256, audit: 4096,
   throttleKeys: 128, snapshotBytes: 64 * 1024 * 1024, pending: 16, requestMs: 3000, startupMs: 10_000,
   idleMs: 600_000, absoluteMs: 1_800_000, throttleMs: 60_000, perName: 5, global: 30 });
@@ -24,7 +30,9 @@ export type WorkspaceCommand =
   | { command: 'resetCredential'; principalId: string; verifier: string }
   | { command: 'disable'; principalId: string }
   | { command: 'authorize'; digest: string; action: WorkspaceAction; projectId?: string; now: number }
-  | { command: 'commit'; operationId: string; digest: string; action: WorkspaceAction; projectId?: string; expectedRevision: number; expectedPolicyRevision: number; stateJson: string; now: number };
+  | { command: 'commit'; operationId: string; digest: string; action: WorkspaceAction; projectId?: string; expectedRevision: number; expectedPolicyRevision: number; stateJson: string; now: number }
+  | { command: 'commitReceipt'; operationId: string; digest: string; action: WorkspaceAction; projectId?: string; requestedProjectId?: string; requestHash: string; expectedRevision: number; expectedPolicyRevision: number; stateJson: string; now: number }
+  | { command: 'lookupReceipt'; operationId: string; digest: string; action: WorkspaceAction; projectId?: string; requestHash: string; now: number };
 export class WorkspaceSecurityError extends Error {
   constructor(public readonly code: string) { super(code); this.name = 'WorkspaceSecurityError'; }
 }
