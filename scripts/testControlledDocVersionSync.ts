@@ -3781,6 +3781,9 @@ await test('Scenario 47 (RED-01): Controlled document save acknowledgment must n
     const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
     const packageBtn = page.locator('#topbar-package-btn');
 
+    // The harness waits for list metadata/title, not complete snapshot acceptance.
+    // This scenario requires readiness; retain the inherited 8000 ms bound.
+    await packageBtn.waitFor({ state: 'visible' });
     // Starting fixture: Active Project A mounted at v120, ready
     assert.match(await topBarProjectBtn.innerText(), /v120/);
     assert.ok(await packageBtn.isVisible(), 'Export package button visible when snapshot is certified and ready');
@@ -3814,8 +3817,14 @@ await test('Scenario 47 (RED-01): Controlled document save acknowledgment must n
       stateVersion: 120,
     });
     const retrySnapshotBtn = page.locator('[data-testid="btn-retry-project-fetch"]');
-    await retrySnapshotBtn.click();
-    await page.waitForTimeout(300);
+    await Promise.all([
+      page.waitForResponse(response => new URL(response.url()).pathname === '/api/projects/PRJ-DOCMONSTAKRAKIN' && response.request().method() === 'GET'),
+      retrySnapshotBtn.click(),
+    ]);
+    await page.waitForFunction(() => {
+      const retry = document.querySelector<HTMLButtonElement>('[data-testid="btn-retry-project-fetch"]');
+      return retry !== null && !retry.disabled;
+    });
     assert.ok(await snapshotWarning.isVisible(), 'Snapshot warning remains when snapshot retry is stale v120');
     assert.ok(!(await packageBtn.isVisible()), 'Readiness remains false when snapshot is stale');
 
