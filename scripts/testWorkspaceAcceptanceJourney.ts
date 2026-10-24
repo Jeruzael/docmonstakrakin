@@ -52,7 +52,7 @@ if (process.argv.slice(2).length) {
   const owner: Client = {cookie:'',csrf:''}, reader: Client = {cookie:'',csrf:''}, outsider: Client = {cookie:'',csrf:''};
   let child: ChildProcess | undefined, childOutput = '', base = '', requests = 0, openAttempts = 0;
   let lastResponse: {method:string;status:number;sequence:number} | undefined;
-  let authorityCounts: unknown, documentId = '', workItemId = '', proposalId = '', evidenceId = '', migrationHash = '';
+  let authorityCounts: unknown, documentId = '', workItemId = '', proposalId = '', migrationHash = '';
   const environment: NodeJS.ProcessEnv = {NODE_ENV:'production',HOST:'127.0.0.1',GEMINI_API_KEY:''};
   for (const key of ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']) if (process.env[key] !== undefined) environment[key] = process.env[key];
   const budgetOpen = () => assert(++openAttempts <= 12, 'Finite authority-open budget exceeded');
@@ -182,31 +182,29 @@ if (process.argv.slice(2).length) {
       expect(await request(root+'/import-sessions/'+proposalId+'/changes/0/review','POST',{disposition:'ACCEPTED',humanConfirmed:false},owner),404);
       assert.deepEqual(await read(root+'/requirements'),requirements);
     });
-    await check('AJ08 evidence remains a bound unverified draft without human attestation or review',async() => {
-      const listing = await read(root+'/verification-sessions');
-      const expectedReviewer = {identityId:listing.identity.identityId,personId:listing.identity.personId};
-      const reference = 'AGENT_EXECUTED_ACCEPTANCE: synthetic document journey; human acceptance NOT_RUN.';
-      const draft = {expectedStateVersion:await version(),expectedReviewer,workItemId,commitSha:sourceRevision,buildRevision:scriptSha256,environment:'synthetic-task-owned-loopback',
-        criterionResults:[{criterionIndex:0,result:'PASS',notes:'Automated observation only; no human approval.',evidenceIds:['ACCEPTANCE-REFERENCE']}],
-        evidence:[{id:'ACCEPTANCE-REFERENCE',kind:'REFERENCE',encoding:'UTF8',content:reference,sha256:sha(reference)}]};
-      expect(await request(root+'/verification-sessions','POST',{...draft,evidence:[{...draft.evidence[0],sha256:'0'.repeat(64)}]},owner),422);
-      expect(await request(root+'/verification-sessions','POST',{...draft,evidence:[{...draft.evidence[0],provenance:'AUTHENTICATED_PRODUCER'}]},owner),422);
-      assert.equal((await read(root+'/verification-sessions')).sessions.length,0);
-      const created = expect(await request(root+'/verification-sessions','POST',draft,owner),201);
-      evidenceId = created.session.id; assert.equal(created.session.status,'DRAFT');
-      assert.equal(created.session.draft.evidence[0].provenance,'UNVERIFIED_REFERENCE');
-      assert.deepEqual(created.session.decisions,[]); assert.equal(created.review.eligible,false); assert.equal(created.review.trustedProductionEvidence,false);
-      expect(await request(root+'/verification-sessions/'+evidenceId+'/submit','POST',{expectedStateVersion:await version(),expectedReviewer,humanAttested:false},owner),422);
-      assert.equal((await read(root+'/verification-sessions/'+evidenceId)).session.status,'DRAFT');
+    await check('AJ08 ordinary evidence projection conveys no release approval and reviewer-only sessions stay denied',async() => {
+      assert.deepEqual(await read(root+'/evidence'),[]);
+      const readiness = await read(root+'/readiness');
+      assert.equal(readiness.summary.productionRelease.status,'Unavailable');
+      assert.equal(readiness.summary.securityAssurance.status,'Unavailable');
+      assert.equal(readiness.summary.localEvidence.reviewedCount,0);
+      // The current durable-identity bridge deliberately requires an explicit
+      // SO/LA role even to draft evidence. Keep this ordinary owner unprivileged;
+      // report that workflow as blocked instead of inventing a reviewer.
+      const revision = await version();
+      expect(await request(root+'/verification-sessions','GET',undefined,owner),403);
+      expect(await request(root+'/verification-sessions','POST',{expectedStateVersion:revision,workItemId},owner),403);
+      assert.equal(await version(),revision); assert.deepEqual(await read(root+'/evidence'),[]);
       assert.equal((await read(root+'/work-items')).find((item: any) => item.id===workItemId).status,'PROPOSED');
     });
     await check('AJ09 restart persists connected artifacts and fences the prior session',async() => {
-      const before = {document:await read(root+'/docs/'+documentId),work:await read(root+'/work-items'),proposal:await read(root+'/import-sessions/'+proposalId),evidence:await read(root+'/verification-sessions/'+evidenceId)};
+      const before = {document:await read(root+'/docs/'+documentId),work:await read(root+'/work-items'),proposal:await read(root+'/import-sessions/'+proposalId),evidence:await read(root+'/evidence')};
       await stop(); await recoverWorkspaceLock(directory); await launch();
       expect(await request('/api/projects','GET',undefined,owner),401); await login(ownerId,owner);
       assert.deepEqual(await read(root+'/docs/'+documentId),before.document); assert.deepEqual(await read(root+'/work-items'),before.work);
       assert.deepEqual(await read(root+'/import-sessions/'+proposalId),before.proposal);
-      assert.deepEqual((await read(root+'/verification-sessions/'+evidenceId)).session,before.evidence.session);
+      assert.deepEqual(await read(root+'/evidence'),before.evidence);
+      expect(await request(root+'/verification-sessions','GET',undefined,owner),403);
       assert.equal(sha(fs.readFileSync(path.join(directory,'.local/project-state.json'))),migrationHash);
       assert.equal(fs.existsSync(path.join(directory,'.secrets')),false);
     });
@@ -233,7 +231,8 @@ if (process.argv.slice(2).length) {
       assert.equal(fs.lstatSync(directory).isSymbolicLink(),false); fs.rmSync(directory,{recursive:true,force:true});
     } catch {failed++;console.error(JSON.stringify({suite:'workspace-acceptance-journey',stage:'cleanup',code:'OWNED_FIXTURE_CLEANUP_UNCONFIRMED'}));}
     console.log(JSON.stringify({suite:'workspace-acceptance-journey',scope:'actual-source-application-http',passed,failed,requests,openAttempts,authorityCounts,
-      sourceRevision,sourceTree,scriptSha256,node:process.version,platform:process.platform,acceptance:'AGENT_EXECUTED_ACCEPTANCE',humanAcceptance:'NOT_RUN',liveProvider:'NOT_RUN'}));
+      sourceRevision,sourceTree,scriptSha256,node:process.version,platform:process.platform,acceptance:'AGENT_EXECUTED_ACCEPTANCE',
+      evidenceSession:'BLOCKED_REVIEW_ROLE_REQUIRED',humanAcceptance:'NOT_RUN',liveProvider:'NOT_RUN'}));
     if (failed) process.exitCode = 1;
   }
 }
