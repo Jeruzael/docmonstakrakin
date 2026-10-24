@@ -1,4 +1,4 @@
-param([ValidateSet('Diagnostics', 'Npm', 'Bun')][string]$Phase = 'Diagnostics', [switch]$Child)
+param([ValidateSet('Diagnostics', 'Npm', 'Bun')][string]$Phase = 'Diagnostics', [switch]$Child, [ValidateSet('Workspace', 'Agent')][string]$Suite = 'Workspace')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -245,7 +245,12 @@ const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(p
       & node --import tsx --input-type=commonjs -e $nodeProbe
       if ($LASTEXITCODE -ne 0) {throw 'NODE_DESCENDANT_OWNER_PROFILE_FAILED'}
       Remove-Item Env:DMK_OWNER_PROBE
-      foreach ($script in @('scripts/testWorkspacePrivateDirectory.ts', 'scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceEmptyCreation.ts', 'scripts/testWorkspaceActionReceipts.ts', 'scripts/testWorkspaceActionApplication.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')) {
+      $scripts = if ($Suite -eq 'Agent') {
+        @('scripts/testWorkspaceAgentService.ts', 'scripts/testWorkspaceAgentDelegation.ts', 'scripts/testWorkspaceAgentApplication.ts')
+      } else {
+        @('scripts/testWorkspacePrivateDirectory.ts', 'scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceEmptyCreation.ts', 'scripts/testWorkspaceActionReceipts.ts', 'scripts/testWorkspaceActionApplication.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')
+      }
+      foreach ($script in $scripts) {
         & node --import tsx $script
         if ($LASTEXITCODE -ne 0) {throw "PRIVATE_QUALIFICATION_FAILED: $script"}
       }
@@ -263,7 +268,7 @@ const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(p
     New-Item -ItemType Directory -Path $logs | Out-Null
     $executable = (Get-Process -Id $PID).Path
     if ($PSCommandPath.Contains('"') -or $executable.Contains('"')) {throw 'QUALIFICATION_APPLICATION_PATH_INVALID'}
-    $arguments = '-NoLogo -NoProfile -NonInteractive -File "' + $PSCommandPath + '" -Phase ' + $Phase + ' -Child'
+    $arguments = '-NoLogo -NoProfile -NonInteractive -File "' + $PSCommandPath + '" -Phase ' + $Phase + ' -Suite ' + $Suite + ' -Child'
     try {$childExit = [DmkPrivateQualificationProcess]::Run($executable, $arguments, (Get-Location).ProviderPath, $logs, $sid)}
     finally {
       # Even a launcher/wait failure must expose the genuine child's evidence.

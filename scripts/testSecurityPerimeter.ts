@@ -67,7 +67,7 @@ try{
   await check('Every actual API registration has exactly one explicit route policy',async()=>{
     const {API_ROUTE_POLICIES}=await import('../server/security/apiRoutePolicy.ts');
     const registrations=new Map<string,string[]>();
-    for(const file of ['server.ts','server/security/workspaceAccess/http.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts','server/verification/routes.ts','server/readiness/routes.ts','server/release/githubCiRoutes.ts']){
+    for(const file of ['server.ts','server/security/workspaceAccess/http.ts','server/security/workspaceAccess/agentHttp.ts','server/proposals/identity.ts','server/proposals/signoff.ts','server/proposals/review.ts','server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts','server/verification/routes.ts','server/readiness/routes.ts','server/release/githubCiRoutes.ts']){
       for(const m of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:app|router)\.(get|post|patch|delete|put)\(\s*['"]([^'"]+)['"]/g)){
         const p=(['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].includes(file)?'/api/projects':'')+m[2];if(p.startsWith('/api/')){const key=m[1].toUpperCase()+' '+p;registrations.set(key,[...(registrations.get(key)||[]),file]);}
       }
@@ -76,7 +76,7 @@ try{
     const conditionalSessionDispatch=new Set(['GET /api/governance/session','POST /api/governance/session','DELETE /api/governance/session']);
     for(const [key,files] of registrations){if(files.length>1){if(conditionalSessionDispatch.has(key))assert.deepEqual(files.sort(),['server/proposals/identity.ts','server/security/workspaceAccess/http.ts'].sort());else {assert(sharedDocumentDispatch.has(key),`Unexpected duplicate route ${key}`);assert.deepEqual(files.sort(),['server/docs/controlledDocsRouter.ts','server/docs/projectManagedDocuments.ts'].sort());}}}
     const registered=[...registrations.keys()];
-    assert.equal(registered.length,81);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
+    assert.equal(registered.length,87);assert.deepEqual(API_ROUTE_POLICIES.map(p=>p.method+' '+p.path).sort(),registered.sort());
     assert.equal(new Set(API_ROUTE_POLICIES.map(route=>route.method+' '+route.path)).size,registered.length);
     const {resolveLocalNetworkConfig}=await import('../server/security/localPerimeter.ts');
     assert.deepEqual(resolveLocalNetworkConfig({}),{host:'127.0.0.1',port:3000});

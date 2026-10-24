@@ -1,0 +1,91 @@
+name: Agent Authority Qualification
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows_agent:
+    name: Windows Agent Qualification
+    runs-on: windows-2022
+    # Full capacity cases run in both fresh trees. Separate scheduling retains
+    # the existing four jobs and their bounds rather than lengthening them.
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CI: "true"
+      GEMINI_API_KEY: ""
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record disposable environment and isolate installation caches
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
+          node --version
+          if ($LASTEXITCODE -ne 0) { throw 'Node inventory failed' }
+          npm.cmd --version
+          if ($LASTEXITCODE -ne 0) { throw 'npm inventory failed' }
+          git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Checkout identity failed' }
+          node --input-type=module -e "import fs from 'node:fs';import os from 'node:os';console.log(JSON.stringify({temp:os.tmpdir(),real:fs.realpathSync.native(os.tmpdir())}));"
+          if ($LASTEXITCODE -ne 0) { throw 'TEMP inventory failed' }
+          $config = Join-Path $env:RUNNER_TEMP 'agent-empty.npmrc'
+          Set-Content -LiteralPath $config -Value ''
+          "NPM_CONFIG_USERCONFIG=$config" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_CACHE=$env:RUNNER_TEMP/agent-npm-cache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NPM_CONFIG_DEVDIR=$env:RUNNER_TEMP/agent-node-headers" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Fresh lifecycle-enabled npm installation and full agent qualification
+        run: |
+          npm.cmd ci --foreground-scripts
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh npm installation failed' }
+          npm.cmd audit --json
+          if ($LASTEXITCODE -ne 0) { throw 'npm audit failed' }
+          npm.cmd ls better-sqlite3 argon2 tsx --all
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency provenance failed' }
+          ./scripts/runWindowsPrivateQualification.ps1 -Phase Npm -Suite Agent
+      - name: Separate exact-checkout frozen Bun installation and full agent qualification
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Checkout identity unavailable' }
+          $clone = Join-Path $env:RUNNER_TEMP 'agent-bun-checkout'
+          git clone --no-hardlinks --no-checkout $env:GITHUB_WORKSPACE $clone
+          if ($LASTEXITCODE -ne 0) { throw 'Disposable clone failed' }
+          git -C $clone checkout --detach $sha
+          if ($LASTEXITCODE -ne 0) { throw 'Exact checkout failed' }
+          if (Test-Path -LiteralPath "$clone/node_modules") { throw 'Dependency tree must start absent' }
+          Push-Location $clone
+          try {
+            npx.cmd --yes --package=bun@1.4.2 -- bun install --frozen-lockfile --cache-dir "$env:RUNNER_TEMP/agent-bun-cache"
+            if ($LASTEXITCODE -ne 0) { throw 'Frozen Bun install failed' }
+            npx.cmd --yes --package=bun@1.4.2 -- bun audit --json
+            if ($LASTEXITCODE -ne 0) { throw 'Bun audit failed' }
+            $untrusted = npx.cmd --yes --package=bun@1.4.2 -- bun pm untrusted 2>&1
+            if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle inventory failed' }
+            $untrusted | Write-Output
+            $untrusted | node scripts/lib/bunLifecycleInventory.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'Bun lifecycle policy failed' }
+            ./scripts/runWindowsPrivateQualification.ps1 -Phase Bun -Suite Agent
+          } finally { Pop-Location }
+      - name: Verify source unchanged
+        run: |
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { throw 'Qualification changed tracked source' }

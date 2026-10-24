@@ -2,6 +2,12 @@ import type {RequestHandler} from 'express';
 
 export const API_ROUTE_POLICIES=[
   {method:"GET",path:"/api/health",access:"PUBLIC_HEALTH"},
+  {method:"GET",path:"/api/external/discovery",access:"AGENT_BOOTSTRAP"},
+  {method:"GET",path:"/api/external/session",access:"AGENT_READ"},
+  {method:"POST",path:"/api/external/skills/description",access:"AGENT_READ"},
+  {method:"POST",path:"/api/external/skills/content",access:"AGENT_READ"},
+  {method:"POST",path:"/api/external/actions",access:"AGENT_READ"},
+  {method:"POST",path:"/api/external/sponsor-actions",access:"HUMAN_AGENT_SPONSOR"},
   {method:"GET",path:"/api/secrets/metadata",access:"BLOCKED_SECRET_ADMIN"},
   {method:"POST",path:"/api/secrets",access:"BLOCKED_SECRET_ADMIN"},
   {method:"DELETE",path:"/api/secrets/:key",access:"BLOCKED_SECRET_ADMIN"},
