@@ -1,4 +1,9 @@
 # docmonstakrakin Non-Functional Requirements
+
+## External-agent-first assurance extension — proposed, 2026-10-23
+
+The [successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) extends assurance to body-bound idempotency, stale-CAS denial, bounded outbox/reconnect/agent loops, source-by-source ACL intersection and discover-existence, skill receipt refresh/revocation, and exact-candidate evidence freshness. Simple/manual fallback remains usable without WebGL or a DMK model API key; optional2D shares the same events and 3D is DEFER. Presence expiry15minutes is a PROPOSAL; disconnect is not completion, claim release or verified remote termination. These are unqualified proposed targets; existing performance/privacy claims require their own exact-environment evidence. [Review status](../07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md).
+
 ## Performance, Reliability, Security & Usability Constraints
 
 **Document ID:** DOC-REQ-002  

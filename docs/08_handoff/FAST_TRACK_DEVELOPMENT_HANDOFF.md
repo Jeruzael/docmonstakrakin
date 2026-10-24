@@ -1,5 +1,12 @@
 # Subscription-independent development handoff
 
+## External-agent-first planning checkpoint — 2026-10-23
+
+The [successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md), [impact ledger](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md), [typed inventory](../06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml) and [documentation review](../07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md) are the review-only external-agent task set. Runtime baseline is merged master62d66779/PR81, recorded four-job CI39911133606; separate final signed evidence ade880043 remains preserved. PR82/2e8aff5 CI39928184006 later passed four jobs; prior f578091 CI39926700203 WS04 cause remains UNKNOWN. Fresh local SDK/native qualification and explicit consent/human acceptance remain BLOCKED/NOT_RUN. These gates do not prevent non-applying planning.
+
+Counts are34 external entries plus separate CAPACITY-FOLLOWUP-01/DMK-120=35 total review entries. Canonical registration/runtime board NOT_APPLIED; no current status, receipt, v0.3 manifest, PR34/52,14 route denials, disabled-agent state, SO/LA human quorum, Gate7 or release restriction changes. Proposed registration210→211→212→209 remains distinct from readiness after PR81 technical credit. Older checkpoint statements below remain historical.
+
+
 
 ## Continuation gate — 2026-10-23
 

@@ -1,4 +1,9 @@
 # docmonstakrakin Integration Architecture
+
+## Proposed external transports and ownership — 2026-10-23
+
+The [successor clarification](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) supplements provider inference with capability-tested external/direct/local/GitHub/manual workflows and one action contract. EXT-CAND-01 owns common envelopes/adapters, EXT-CAND-02 GitHub project-command outbox/ack, DMK-179 scoped Git operations and DMK-180 tracker projections. Shared token/body digest, CAS, current policy, bounded retry and uncertainty contracts prevent competing bridges. No client capability, GitHub human independence or once-only remote execution is presumed. [Planning application state](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md): NOT_APPLIED.
+
 ## AI Gateway, Provider Adapters & External Systems
 
 **Document ID:** DOC-ARC-004  
