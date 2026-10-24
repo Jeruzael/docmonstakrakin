@@ -3531,9 +3531,12 @@ await test('Scenario 44 (MONO-17): List floor advance disables canonical readine
     const { page } = harness;
     const topBarProjectBtn = page.getByRole('button', { name: 'Select project' });
 
+    const packageBtn = page.locator('#topbar-package-btn');
+    // List metadata/title can render before the complete snapshot is accepted.
+    // Await this scenario's prerequisite within the existing 8000 ms bound.
+    await packageBtn.waitFor({ state: 'visible' });
     // Initial state: mounted at v120, ready
     assert.match(await topBarProjectBtn.innerText(), /v120/);
-    const packageBtn = page.locator('#topbar-package-btn');
     assert.ok(await packageBtn.isVisible(), 'Export package button visible when projectReady is true');
 
     // List advances A to v121
