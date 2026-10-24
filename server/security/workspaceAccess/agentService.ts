@@ -38,7 +38,7 @@ export class WorkspaceAgentService {
       !result.replayed&&Object.entries(generated).some(([key,value])=>key.endsWith('Id')&&ack[key]!==value))throw Error('Unconfirmed authority response');
    return{available:true,accepted:true,result};
   }
-  catch(error){const code=(error as any)?.code;const denied=typeof code==='string'&&['WORKSPACE_INPUT_INVALID','WORKSPACE_ACCESS_DENIED','WORKSPACE_STALE_REVISION','WORKSPACE_CONFLICT','WORKSPACE_SESSION_REPLAY','WORKSPACE_CAPACITY_EXCEEDED'].includes(code);return{available:denied,accepted:false,code:denied?code:'AUTHORITY_UNAVAILABLE'};}
+  catch(error){const code=(error as any)?.code;const denied=typeof code==='string'&&['WORKSPACE_INPUT_INVALID','WORKSPACE_ACCESS_DENIED','WORKSPACE_STALE_REVISION','WORKSPACE_CONFLICT','WORKSPACE_SESSION_REPLAY','WORKSPACE_OPERATION_REPLAY','WORKSPACE_CAPACITY_EXCEEDED'].includes(code);return{available:denied,accepted:false,code:denied?code:'AUTHORITY_UNAVAILABLE'};}
  }
  enrollAgent(token:unknown,input:Revision&{projectId:string;name:string}){return this.management('enrollAgent',token,input,['projectId','name'],{agentId:randomUUID()});}
  registerAgentClient(token:unknown,input:Revision&{projectId:string;agentId:string;name:string}){return this.management('registerAgentClient',token,input,['projectId','agentId','name'],{clientId:randomUUID()});}

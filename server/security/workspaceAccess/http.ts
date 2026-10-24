@@ -6,7 +6,7 @@ import type {WorkspaceAction} from './contracts.ts';
 import {WorkspaceSessionService,workspaceTokenDigest} from './service.ts';
 import {workspaceReviewerIdentity} from './identity.ts';
 import {WorkspaceAdmission} from './admission.ts';
-type Route={kind:'PUBLIC'|'SESSION'|'LIST'|'PROJECT'|'VALIDATION'|'DENY';action?:WorkspaceAction;projectId?:string};
+type Route={kind:'PUBLIC'|'SESSION'|'LIST'|'PROJECT'|'VALIDATION'|'SPONSOR'|'DENY';action?:WorkspaceAction;projectId?:string};
 const routePattern=(p:string)=>new RegExp('^'+p.split('/').map(s=>s.startsWith(':')?'([^/]+)':s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('/')+'/?$','i');
 const routes=API_ROUTE_POLICIES.map(r=>({...r,pattern:routePattern(r.path)}));
 const isMutation=(method:string)=>!['GET','HEAD','OPTIONS'].includes(method);
@@ -19,6 +19,7 @@ export function resolveWorkspaceRoute(req:{method:string;path:string;body?:any})
  if(!route||route.access.startsWith('BLOCKED_'))return{kind:'DENY'};
  if(route.path==='/api/health')return{kind:'PUBLIC'};
  if(route.access==='REVIEWER_SESSION')return{kind:'SESSION'};
+ if(route.access==='HUMAN_AGENT_SPONSOR')return{kind:'SPONSOR'};
  if(route.path==='/api/projects'&&method==='GET')return{kind:'LIST'};
  if(route.path==='/api/projects'&&method==='POST')return{kind:'PROJECT',action:'project:create'};
  if(route.path==='/api/projects/package/verify')return{kind:'VALIDATION'};
@@ -99,8 +100,9 @@ export function installWorkspaceHttp(app:Express,service:WorkspaceSessionService
    if(decision.principal?.canCreateProjects===true||decision.projectIds.length>0)res.locals.workspaceDiscoveryRevision=decision.snapshotRevision;
    res.locals.workspaceProjects=new Set<string>(decision.projectIds);return next();
   }
-  if(route.kind==='VALIDATION'){
+  if(route.kind==='VALIDATION'||route.kind==='SPONSOR'){
    const observed=await service.sessionState(token);if(!observed.available)return void deny(res,503,'AUTHORITY_UNAVAILABLE');if(!observed.session)return void deny(res,401,'WORKSPACE_SIGN_IN_REQUIRED');
+   if(observed.session.principal.kind!=='HUMAN')return void deny(res,403,'WORKSPACE_HUMAN_REQUIRED');
    res.locals.workspaceSession=observed.session;res.locals.workspaceIdentity=workspaceReviewerIdentity(observed.session.principal);
    return next();
   }

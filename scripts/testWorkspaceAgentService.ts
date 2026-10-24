@@ -47,5 +47,10 @@ if(api){
   now=999;assert.equal((await service.sessionState(token)).available,false);assert.equal(calls.length,1);
   service.close();assert.equal((await service.readTask(token,{projectId:'P',taskId:'T'})).available,false);assert.equal(calls.length,1);
  });
+ await test('AS07 confirmed operation replay conflict remains a known rejection, not unknown outcome',async()=>{
+  const service=new api.WorkspaceAgentService({execute:async()=>{throw Object.assign(Error('WORKSPACE_OPERATION_REPLAY'),{code:'WORKSPACE_OPERATION_REPLAY'});}},()=>1000);
+  const result=await service.enrollAgent('a'.repeat(64),{projectId:'PRJ-A',name:'synthetic-agent',operationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',expectedPolicyRevision:1});
+  assert.equal(result.accepted,false);assert.equal(result.available,true);assert.equal(result.code,'WORKSPACE_OPERATION_REPLAY');
+ });
 }
 console.log(JSON.stringify({suite:'workspace-agent-service',passed,failed}));if(failed)process.exitCode=1;

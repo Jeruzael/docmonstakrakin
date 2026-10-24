@@ -23,6 +23,7 @@ export function createWorkspaceBodyAdmission(options: {receiveTimeoutMs?: number
   }
   return (req, res, next) => {
     if (!/^\/api(?:\/|$)/i.test(req.path)) {next(); return;}
+    const maxBytes=['AGENT_BOOTSTRAP','AGENT_READ','HUMAN_AGENT_SPONSOR'].includes(res.locals.securityRouteClass)?16*1024:MAX_BYTES;
     const length = req.headers['content-length'];
     const chunked = req.headers['transfer-encoding'] !== undefined;
     if (!chunked && (length === undefined || /^0+$/.test(length))) {next(); return;}
@@ -61,7 +62,7 @@ export function createWorkspaceBodyAdmission(options: {receiveTimeoutMs?: number
       }
     };
 
-    if (length !== undefined && (!/^\d+$/.test(length) || BigInt(length) > BigInt(MAX_BYTES))) {
+    if (length !== undefined && (!/^\d+$/.test(length) || BigInt(length) > BigInt(maxBytes))) {
       reject(413, 'REQUEST_BODY_TOO_LARGE'); return;
     }
     // The existing express.json default consumes application/json only. Do not
@@ -89,7 +90,7 @@ export function createWorkspaceBodyAdmission(options: {receiveTimeoutMs?: number
     };
     const onData = (chunk: Buffer | string) => {
       bytes += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
-      if (bytes > MAX_BYTES) reject(413, 'REQUEST_BODY_TOO_LARGE');
+      if (bytes > maxBytes) reject(413, 'REQUEST_BODY_TOO_LARGE');
     };
     const timer = setTimeout(() => reject(408, 'REQUEST_BODY_RECEIVE_TIMEOUT'), receiveTimeoutMs);
     timer.unref();

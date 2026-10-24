@@ -100,4 +100,10 @@ export async function installWorkspaceProjectPersistence(app:Express,store:Proje
    res.status(denied?403:conflict?409:503).json({error:denied?'WORKSPACE_ACCESS_DENIED':conflict?'WORKSPACE_OPERATION_CONFLICT':'WORKSPACE_RECOVERY_REQUIRED'});
   });
  });
+ return{runAuthorityOperation:async<T>(fn:()=>Promise<T>):Promise<T>=>{
+  if(requiresRecovery)throw Error('WORKSPACE_RECOVERY_REQUIRED');
+  if(inFlight)throw Error('WORKSPACE_TRANSACTION_IN_PROGRESS');
+  inFlight=true;
+  try{return await fn();}catch(error){requiresRecovery=true;throw error;}finally{inFlight=false;}
+ }};
 }
