@@ -1,4 +1,9 @@
 # docmonstakrakin Requirements Traceability Matrix (RTM)
+
+## Successor traceability candidate — 2026-10-23
+
+The [successor source/lead-owner table](../superpowers/specs/2026-10-23-external-agent-first-product-alignment.md#10-proposed-requirement-ownership-and-reuse) and [task coverage matrix](../06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md#successor-requirement-coverage) map18 PROPOSED EAF-REQ references and existing Agent Center IDs to34 residual owner entries,138 uniquely owned positive/negative criteria and future evidence methods. These are planned traces, not new TEST/EV success or expanded VERIFIED scopes. Existing ledger rows remain historical. Registration/runtime NOT_APPLIED; separate CAPACITY-FOLLOWUP-01/DMK-120 adds one coordinated review record outside the external inventory.
+
 ## End-to-End Governance & Verification Traceability Chain
 
 Current remediation addendum: DMK-187 through DMK-190 are technically verified; DMK-191 human retest is pending. Older entries below describe historical baseline evidence, not a new release approval.

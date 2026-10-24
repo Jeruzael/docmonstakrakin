@@ -1,4 +1,9 @@
 # docmonstakrakin Canonical Documentation Suite
+
+## External-agent-first successor planning — 2026-10-23
+
+Start with the [single successor clarification](superpowers/specs/2026-10-23-external-agent-first-product-alignment.md), [task impact ledger](06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md), [typed non-executable review inventory](06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml) and [documentation validation](07_verification/EXTERNAL_AGENT_FIRST_DOCUMENTATION_REVIEW_20261023.md). This proposal credits merged PR80/81 foundations and preserves original Agent Center v0.3. It applies no canonical registration/runtime changes or operator/release acceptance.
+
 ## Control Plane for the Agentic Secure Software Development Lifecycle (A-SSDLC)
 
 **Baseline:** v0.1 Local-First MVP  
