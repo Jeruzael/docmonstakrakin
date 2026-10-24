@@ -1,0 +1,11 @@
+# Receipt crash-fixture loader correction — ACCEL-20261024
+
+PR90 signed candidatefec902620145e1526861b20c2c2400d198a1779d, failed run40070188143. Complete Regression and Controlled Docs passed. Quality & Build failed its frozen Linux Bun receipt suite; Windows failed its fresh npm receipt suite. Both reported13/14 receipt cases, specifically AR10 missing the `COMMITTED` child marker. These are preserved failures, not retried qualification. Subsequent native/application steps were not qualified.
+
+AR10 inherited `process.execArgv` while changing the child CWD to a private synthetic fixture. Direct native qualification invokes the suite with relative `--import tsx`; that package cannot resolve from the child fixture. Complete regression uses an absolute loader URL, explaining its different result. The existing WS14 crash fixture already constructs its loader explicitly.
+
+A predetermined two-process experiment on portable Node22.23.4 used one new empty temporary directory and no native authority: relative `--import tsx` exited1, `ERR_MODULE_NOT_FOUND`, no `LOADER_READY`; explicit repository loader file URL exited0 and printed `LOADER_READY`. Both had the same executable, working directory and program. No request data, credential, permission or runtime behavior was involved. Fixture cleanup stayed inside the checked temporary parent.
+
+Test-only correction: construct the loader URL relative to the test module; pass only that loader, module mode and the crash program. Include existing captured stderr in the marker assertion so future failures identify the failed stage. Preserve the20-second fixture bound, actual SQL commit, abrupt SIGKILL, retained-lock check, explicit stopped-owner recovery, exact receipt/effect hash, replay/audit and restart assertions. No runtime, timeout, dependency, signature, schema or permission change. This is separate from prior unexplained native timeouts and historical WS04.
+
+The corrected AR10 must pass actual native and complete regression against the newly signed candidate; final qualification is PENDING at this record. Pure loader comparison is a diagnosis, not a substitute for that crash test. OPERATOR_DELEGATED_DECISION / HUMAN_REVIEW_WAIVED_BY_OPERATOR; human acceptance NOT_RUN.

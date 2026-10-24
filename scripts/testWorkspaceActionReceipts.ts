@@ -179,7 +179,8 @@ await test('AR10 abrupt committed child exit preserves the receipt with explicit
   const operationId = crypto.randomUUID(), requestHash = hash('crash request'), changed = state(); changed.state.projects[0].title = 'Committed before process exit';
   const storeUrl = new URL('../server/security/workspaceAccess/store.ts', import.meta.url).href;
   const source = `import fs from 'node:fs';import {WorkspaceStore} from ${JSON.stringify(storeUrl)};const s=await WorkspaceStore.open(${JSON.stringify(root)});const i=await s.execute({command:'info'});await s.execute({command:'issue',principalId:'synthetic-owner',expectedCredentialRevision:1,expectedGeneration:i.generation,digest:'${'c'.repeat(64)}',now:${at}});await s.execute({command:'commitReceipt',operationId:'${operationId}',digest:'${'c'.repeat(64)}',action:'project:write',projectId:'PRJ-A',requestedProjectId:'PRJ-A',requestHash:'${requestHash}',expectedRevision:i.snapshotRevision,expectedPolicyRevision:i.policyRevision,stateJson:${JSON.stringify(JSON.stringify(changed))},now:${at}});fs.writeSync(1,'COMMITTED\\n');process.kill(process.pid,'SIGKILL');`;
-  const child = spawn(process.execPath, [...process.execArgv, '--input-type=module', '-e', source], {cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
+  const loader = new URL('../node_modules/tsx/dist/loader.mjs', import.meta.url).href;
+  const child = spawn(process.execPath, ['--import', loader, '--input-type=module', '-e', source], {cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
   let output = '', errors = '';
   child.stdout.on('data', chunk => {output += chunk;}); child.stderr.on('data', chunk => {errors += chunk;});
   await new Promise<void>((resolve, reject) => {
@@ -188,7 +189,7 @@ await test('AR10 abrupt committed child exit preserves the receipt with explicit
     child.once('error', error => {clearTimeout(timer); reject(error);});
     child.once('close', () => {clearTimeout(timer); timedOut ? reject(Error('Receipt child exceeded its bounded qualification window')) : resolve();});
   });
-  assert.match(output, /COMMITTED/); assert.equal(errors, '');
+  assert.match(output, /COMMITTED/, errors); assert.equal(errors, '');
   await reject(WorkspaceStore.open(root), 'WORKSPACE_BUSY'); assert.equal(recoverWorkspaceLock(root), true);
   const reopened = await WorkspaceStore.open(root); setStore(reopened); const digest = await issue(reopened);
   const receipt = await reopened.execute({command: 'lookupReceipt', operationId, digest, action: 'project:write', projectId: 'PRJ-A', requestHash, now: at});
