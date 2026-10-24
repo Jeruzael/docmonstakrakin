@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import {INITIAL_AGENT_ROLES} from '../src/data/initialData.ts';
+let api:any,passed=0,failed=0;try{api=await import('../src/data/skillRegistry.ts');}catch{}
+function check(name:string,run:()=>void){try{run();passed++;console.log('PASS '+name);}catch(error){failed++;console.error('FAIL '+name+': '+String(error));}}
+check('trusted registry extends existing prompt assets',()=>assert.equal(typeof api?.publishedPromptSkills,'function'));
+if(api){
+ check('legacy role ordering remains stable for existing default selections',()=>assert.deepEqual(INITIAL_AGENT_ROLES.slice(0,5).map(r=>r.id),['AGT-SEC-01','AGT-REQ-02','AGT-ARC-03','AGT-TST-04','AGT-DET-05']));
+ check('every published instruction reuses an existing role asset with unique stable identity',()=>{const publication=api.publishedPromptSkills();assert.equal(publication.schema,'PROMPT_SKILL_PUBLICATION/1');assert.equal(publication.epoch,1);assert.equal(new Set(publication.assets.map((a:any)=>a.id)).size,publication.assets.length);for(const asset of publication.assets){const role=INITIAL_AGENT_ROLES.find(r=>r.id===asset.id);assert.ok(role);assert.equal(asset.description,role.description);assert.equal(asset.instructions,role.promptTemplate);assert.equal(asset.authority,'BUNDLED_SOURCE');}});
+ check('task-read instructions are provider independent and contain no synthetic activity claims',()=>{const a=api.publishedPromptSkills().assets.find((a:any)=>a.actions.includes('task:read'));assert.equal(a.id,'AGT-TASK-READ-01');assert.match(a.instructions,/current.*permission/i);assert.match(a.instructions,/untrusted/i);assert.match(a.instructions,/human/i);const role=INITIAL_AGENT_ROLES.find(r=>r.id===a.id)!;assert.equal(role.totalRuns,0);assert.equal(role.lastRunAt,undefined);assert.equal(role.modelTier,'DETERMINISTIC_RULES');});
+ check('returned catalog edits cannot alter later trusted publications',()=>{const p=api.publishedPromptSkills();p.assets[0].instructions='Injected';p.revokedIds.push('AGT-TASK-READ-01');const fresh=api.publishedPromptSkills();assert.notEqual(fresh.assets[0].instructions,'Injected');assert.deepEqual(fresh.revokedIds,[]);assert.ok(fresh.assets.some((a:any)=>a.id==='AGT-TASK-READ-01'));});
+}
+console.log(JSON.stringify({suite:'trusted-skill-registry',passed,failed}));if(failed)process.exitCode=1;
