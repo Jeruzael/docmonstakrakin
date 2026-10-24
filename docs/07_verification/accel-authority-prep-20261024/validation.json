@@ -1,0 +1,118 @@
+{
+  "recordType": "AGENT_EXECUTED_STRUCTURAL_REGISTRATION_PREVIEW",
+  "observedAt": "2026-10-24T05:44:59.107Z",
+  "runtimeBase": "556bed68191a6af27a8fc0aad95363b5a534cd48",
+  "planningSource": "58ac7c4ae82490fc61ae72ea43f0024379aadf46",
+  "node": "v22.21.1",
+  "platform": "win32",
+  "dependencySource": "Read-only existing installed yaml/tsx; no dependency installation or native qualification in this lane",
+  "passed": 14,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "Existing structural validator accepts exact six-item successor preview",
+      "result": "PASS"
+    },
+    {
+      "name": "Every original item and root field remains semantically unchanged",
+      "result": "PASS"
+    },
+    {
+      "name": "All candidate IDs and WBS paths are collision-free; statuses remain PROPOSED",
+      "result": "PASS"
+    },
+    {
+      "name": "Six additions retain the historical dependencies and criteria before EAF extensions",
+      "result": "PASS"
+    },
+    {
+      "name": "All 34 owners and 138 exact positive/negative criteria are retained once",
+      "result": "PASS"
+    },
+    {
+      "name": "Only the six unregistered owners contribute their 25 EAF criteria to successor",
+      "result": "PASS"
+    },
+    {
+      "name": "Original planning false flags and unapplied statuses are preserved",
+      "result": "PASS"
+    },
+    {
+      "name": "APPROVED without a trusted policy/signatures rejects",
+      "result": "PASS"
+    },
+    {
+      "name": "Existing-owner amendment rejects even with updated raw candidate digest",
+      "result": "PASS"
+    },
+    {
+      "name": "Duplicate candidate ID rejects",
+      "result": "PASS"
+    },
+    {
+      "name": "Removed negative criterion cannot match the exact manifest",
+      "result": "PASS"
+    },
+    {
+      "name": "Exact before/after digest mismatch rejects",
+      "result": "PASS"
+    },
+    {
+      "name": "V2 transaction preview rejects absent signed receipt, ledger and trusted context",
+      "result": "PASS"
+    },
+    {
+      "name": "Canonical WBS still equals baseline Git bytes and original planning source is unchanged",
+      "result": "PASS"
+    }
+  ],
+  "preview": {
+    "valid": true,
+    "decision": "PREVIEW",
+    "errors": [],
+    "addedIds": [
+      "DMK-210",
+      "DMK-211",
+      "DMK-212",
+      "DMK-209",
+      "DMK-213",
+      "DMK-214"
+    ],
+    "beforeCount": 69,
+    "afterCount": 75,
+    "beforeDigest": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "afterDigest": "565239f8fcacd7b60e652a71fda91803aa0333af545dd24778feb01037007a4f"
+  },
+  "missingAuthorityDenial": {
+    "valid": false,
+    "decision": "APPROVED",
+    "errors": [
+      "Trusted independent policy is missing or mismatched"
+    ],
+    "addedIds": [
+      "DMK-210",
+      "DMK-211",
+      "DMK-212",
+      "DMK-209",
+      "DMK-213",
+      "DMK-214"
+    ],
+    "beforeCount": 69,
+    "afterCount": 75,
+    "beforeDigest": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+    "afterDigest": "565239f8fcacd7b60e652a71fda91803aa0333af545dd24778feb01037007a4f"
+  },
+  "canonicalApply": false,
+  "runtimeApply": false,
+  "mayApply": false,
+  "application": "BLOCKED_AUTHORITY",
+  "humanAcceptance": "NOT_RUN",
+  "nativeQualification": "NOT_RUN",
+  "reproductionCommand": "node docs/07_verification/accel-authority-prep-20261024/validate.cjs <existing-node_modules>",
+  "retainedInitialAttempt": {
+    "command": "node docs/07_verification/accel-authority-prep-20261024/validate.cjs.txt <existing-node_modules>",
+    "exitCode": 1,
+    "error": "ERR_UNKNOWN_FILE_EXTENSION: .txt",
+    "resolution": "Renamed documentation reproducer to .cjs; validation logic unchanged. This was a runner invocation error, not a registration verdict."
+  }
+}
