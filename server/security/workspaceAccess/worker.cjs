@@ -19,7 +19,9 @@ const SCHEMA = {
   throttle: 'CREATE TABLE throttle(key TEXT PRIMARY KEY,windowStart INTEGER NOT NULL,attempts INTEGER NOT NULL)',
   audit: 'CREATE TABLE audit(sequence INTEGER PRIMARY KEY AUTOINCREMENT,raw TEXT NOT NULL,previousHash TEXT NOT NULL,hash TEXT UNIQUE NOT NULL)',
 };
-let db;
+const RECEIPT_SCHEMA = { ...SCHEMA, operations: 'CREATE TABLE operations(operationId TEXT PRIMARY KEY,snapshotRevision INTEGER NOT NULL,receiptJson TEXT CHECK(receiptJson IS NULL OR length(CAST(receiptJson AS BLOB))<=4096))' };
+const RECEIPT_ACTIONS = ['project:write', 'project:review', 'project:create', 'project:import', 'project:export'];
+let db, schemaVersion = 1;
 function fail(code) { const e = Error(code); e.code = code; throw e; }
 function exact(v, required, optional = []) {
   if (!v || Object.getPrototypeOf(v) !== Object.prototype || required.some(k => !Object.hasOwn(v, k)) || Object.keys(v).some(k => !required.includes(k) && !optional.includes(k))) fail('WORKSPACE_INPUT_INVALID');
@@ -121,6 +123,44 @@ function decision(tokenDigest, action, projectId, at) {
   if (policy.allowed) result.allowedActions = allowedProjectActions(s.principal, currentMembership, projectId);
   return result;
 }
+function receiptBytes(receipt) {
+  return JSON.stringify({ version: receipt.version, operationId: receipt.operationId, principalId: receipt.principalId, action: receipt.action,
+    requestedProjectId: receipt.requestedProjectId, projectId: receipt.projectId, requestHash: receipt.requestHash, effectHash: receipt.effectHash,
+    snapshotRevision: receipt.snapshotRevision, policyRevision: receipt.policyRevision });
+}
+function parseReceipt(raw, operation) {
+  try {
+    if (typeof raw !== 'string' || Buffer.byteLength(raw) > 4096) fail('WORKSPACE_CORRUPT');
+    const r = JSON.parse(raw);
+    exact(r, ['version', 'operationId', 'principalId', 'action', 'requestedProjectId', 'projectId', 'requestHash', 'effectHash', 'snapshotRevision', 'policyRevision']);
+    if (r.version !== 1 || !UUID.test(r.operationId) || r.operationId !== operation.operationId || !RECEIPT_ACTIONS.includes(r.action)) fail('WORKSPACE_CORRUPT');
+    id(r.principalId); id(r.projectId); if (r.requestedProjectId !== null) id(r.requestedProjectId);
+    digest(r.requestHash); digest(r.effectHash); integer(r.snapshotRevision, 1); integer(r.policyRevision, 1);
+    if (r.snapshotRevision !== operation.snapshotRevision || raw !== receiptBytes(r)) fail('WORKSPACE_CORRUPT');
+    const creation = r.action === 'project:create' || r.action === 'project:import' && r.requestedProjectId === null;
+    if (!creation && r.requestedProjectId !== r.projectId || creation && r.requestedProjectId !== null && r.requestedProjectId !== r.projectId) fail('WORKSPACE_CORRUPT');
+    return r;
+  } catch { fail('WORKSPACE_CORRUPT'); }
+}
+/** Reauthorization is current; the returned revisions remain historical. */
+function readReceipt(c, requestedProjectId, effectHash) {
+  const s = session(c.digest, c.now);
+  if (!s) fail('WORKSPACE_ACCESS_DENIED');
+  const operation = db.prepare('SELECT * FROM operations WHERE operationId=?').get(c.operationId);
+  if (!operation) {
+    if (!decision(c.digest, c.action, requestedProjectId ?? undefined, c.now).allowed) fail('WORKSPACE_ACCESS_DENIED');
+    return null;
+  }
+  if (operation.receiptJson === null) fail('WORKSPACE_OPERATION_REPLAY');
+  const receipt = parseReceipt(operation.receiptJson, operation);
+  if (receipt.principalId !== s.principal.id) fail('WORKSPACE_ACCESS_DENIED');
+  if (receipt.action !== c.action || receipt.requestedProjectId !== requestedProjectId || receipt.requestHash !== c.requestHash ||
+      effectHash !== undefined && (receipt.effectHash !== effectHash || c.projectId !== undefined && receipt.projectId !== c.projectId)) fail('WORKSPACE_OPERATION_REPLAY');
+  const creation = receipt.action === 'project:create' || receipt.action === 'project:import' && receipt.requestedProjectId === null;
+  if (!decision(c.digest, receipt.action, creation ? undefined : receipt.projectId, c.now).allowed ||
+      !decision(c.digest, 'project:read', receipt.projectId, c.now).allowed) fail('WORKSPACE_ACCESS_DENIED');
+  return receipt;
+}
 function validateScope(before, after, action, projectId) {
   if (!['project:write', 'project:review', 'project:create', 'project:import', 'project:export'].includes(action)) fail('WORKSPACE_SCOPE_INVALID');
   const old = new Map(before.state.projects.map(p => [p.id, p])), next = new Map(after.state.projects.map(p => [p.id, p]));
@@ -169,11 +209,11 @@ function command(c) {
   switch (c.command) {
     case 'info': {
       exact(c, ['command']); const m = meta();
-      return { initialized: !!m.initialized, schemaVersion: 1, generation: m.generation, policyRevision: m.policyRevision, snapshotRevision: m.snapshotRevision,
+      return { initialized: !!m.initialized, schemaVersion, generation: m.generation, policyRevision: m.policyRevision, snapshotRevision: m.snapshotRevision,
         provenance: JSON.parse(m.provenance), counts: { principals: count('principals'), memberships: count('memberships'), sessions: count('sessions'), audit: count('audit'), throttleKeys: count('throttle') },
         roleCoverage: Object.fromEntries(ROLES.map(role => [role, new Set(db.prepare('SELECT personId,roles FROM principals WHERE disabled=0').all().filter(p => JSON.parse(p.roles).includes(role)).map(p => p.personId)).size])) };
     }
-    case 'snapshot': { exact(c, ['command']); const m = meta(); return { stateJson: m.stateJson, snapshotRevision: m.snapshotRevision }; }
+    case 'snapshot': { exact(c, ['command']); const m = meta(); return { stateJson: m.stateJson, snapshotRevision: m.snapshotRevision, ...(schemaVersion === 2 ? { actionReceipts: true } : {}) }; }
     case 'audit': exact(c, ['command']); return db.prepare('SELECT sequence,raw,previousHash,hash FROM audit ORDER BY sequence').all().map(row => ({ sequence: row.sequence, ...JSON.parse(row.raw), previousHash: row.previousHash, hash: row.hash }));
     case 'bootstrap': case 'provision': {
       exact(c, ['command', 'principal', 'verifier'], c.command === 'bootstrap' ? ['stateJson'] : []); validatePrincipal(c.principal); verifier(c.verifier);
@@ -266,20 +306,47 @@ function command(c) {
         db.prepare('UPDATE sessions SET revoked=1 WHERE principalId=?').run(c.principalId); db.prepare('UPDATE metadata SET policyRevision=policyRevision+1 WHERE id=1').run(); event(c.command === 'disable' ? 'PRINCIPAL_DISABLED' : 'CREDENTIAL_RESET', c.principalId); return true;
       });
     }
-    case 'commit': {
-      exact(c, ['command', 'operationId', 'digest', 'action', 'expectedRevision', 'expectedPolicyRevision', 'stateJson', 'now'], ['projectId']); digest(c.digest); now(c.now); integer(c.expectedRevision); integer(c.expectedPolicyRevision); if (c.projectId !== undefined) id(c.projectId);
+    case 'lookupReceipt': {
+      if (schemaVersion !== 2) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+      exact(c, ['command', 'operationId', 'digest', 'action', 'requestHash', 'now'], ['projectId']);
+      digest(c.digest); digest(c.requestHash); now(c.now); if (c.projectId !== undefined) id(c.projectId);
+      if (typeof c.operationId !== 'string' || !UUID.test(c.operationId) || !RECEIPT_ACTIONS.includes(c.action)) fail('WORKSPACE_INPUT_INVALID');
+      return transaction(() => { initialized(); clock(c.now); return readReceipt(c, c.projectId ?? null); });
+    }
+    case 'commit': case 'commitReceipt': {
+      const withReceipt = c.command === 'commitReceipt';
+      if (withReceipt && schemaVersion !== 2) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+      exact(c, ['command', 'operationId', 'digest', 'action', 'expectedRevision', 'expectedPolicyRevision', 'stateJson', 'now', ...(withReceipt ? ['requestHash'] : [])], ['projectId', ...(withReceipt ? ['requestedProjectId'] : [])]); digest(c.digest); now(c.now); integer(c.expectedRevision); integer(c.expectedPolicyRevision); if (c.projectId !== undefined) id(c.projectId);
+      if (withReceipt) { digest(c.requestHash); if (c.requestedProjectId !== undefined) id(c.requestedProjectId); if (!RECEIPT_ACTIONS.includes(c.action)) fail('WORKSPACE_INPUT_INVALID'); }
       if (typeof c.operationId !== 'string' || !UUID.test(c.operationId)) fail('WORKSPACE_INPUT_INVALID');
       const after = parseSnapshot(c.stateJson);
       return transaction(() => {
-        if (db.prepare('SELECT 1 FROM operations WHERE operationId=?').get(c.operationId)) fail('WORKSPACE_OPERATION_REPLAY');
+        if (!withReceipt && db.prepare('SELECT 1 FROM operations WHERE operationId=?').get(c.operationId)) fail('WORKSPACE_OPERATION_REPLAY');
         capacity('audit', MAX.audit);
-        initialized(); clock(c.now); const m = meta(); if (c.expectedRevision !== m.snapshotRevision || c.expectedPolicyRevision !== m.policyRevision) fail('WORKSPACE_STALE_REVISION');
+        initialized(); clock(c.now);
+        if (withReceipt) {
+          const previous = readReceipt(c, c.requestedProjectId ?? null, hash(c.stateJson));
+          if (previous) return { snapshotRevision: previous.snapshotRevision, policyRevision: previous.policyRevision, receipt: previous };
+        }
+        const m = meta(); if (c.expectedRevision !== m.snapshotRevision || c.expectedPolicyRevision !== m.policyRevision) fail('WORKSPACE_STALE_REVISION');
         const authorization = decision(c.digest, c.action, c.projectId, c.now); if (!authorization.allowed) fail('WORKSPACE_ACCESS_DENIED');
         const createdId = validateScope(snapshotValue(), after, c.action, c.projectId);
+        const targetId = createdId || c.projectId;
+        if (withReceipt && (createdId ? c.requestedProjectId !== undefined && c.requestedProjectId !== targetId : c.requestedProjectId !== targetId)) fail('WORKSPACE_SCOPE_INVALID');
         if (createdId) { capacity('memberships', MAX.memberships); db.prepare('INSERT INTO memberships VALUES(?,?,?,?)').run(createdId, authorization.principal.id, 'OWNER', '[]'); db.prepare('UPDATE metadata SET policyRevision=policyRevision+1 WHERE id=1').run(); }
-        capacity('operations', MAX.audit); db.prepare('INSERT INTO operations VALUES(?,?)').run(c.operationId, m.snapshotRevision + 1);
+        capacity('operations', MAX.audit); db.prepare('INSERT INTO operations(operationId,snapshotRevision) VALUES(?,?)').run(c.operationId, m.snapshotRevision + 1);
         db.prepare('UPDATE metadata SET stateJson=?,snapshotRevision=snapshotRevision+1 WHERE id=1').run(c.stateJson); event('PROJECT_SNAPSHOT_COMMITTED', createdId || c.projectId, c.now);
-        const next = meta(); return { snapshotRevision: next.snapshotRevision, policyRevision: next.policyRevision };
+        const next = meta();
+        if (!withReceipt) return { snapshotRevision: next.snapshotRevision, policyRevision: next.policyRevision };
+        const receipt = { version: 1, operationId: c.operationId, principalId: authorization.principal.id, action: c.action,
+          requestedProjectId: c.requestedProjectId ?? null, projectId: targetId, requestHash: c.requestHash, effectHash: hash(c.stateJson),
+          snapshotRevision: next.snapshotRevision, policyRevision: next.policyRevision };
+        const raw = receiptBytes(receipt); parseReceipt(raw, { operationId: c.operationId, snapshotRevision: next.snapshotRevision });
+        db.prepare('UPDATE operations SET receiptJson=? WHERE operationId=?').run(raw, c.operationId);
+        // Keep the six-field audit format. This additional event commits the
+        // exact bounded receipt; insufficient headroom rolls back every write.
+        event('ACTION_RECEIPT_COMMITTED', raw, c.now);
+        return { snapshotRevision: next.snapshotRevision, policyRevision: next.policyRevision, receipt };
       }, false);
     }
     case 'close': exact(c, ['command']); db.close(); db = undefined; return true;
@@ -287,9 +354,11 @@ function command(c) {
   }
 }
 function validateStoredAuthority() {
-  if (db.pragma('user_version', { simple: true }) !== 1) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
-  for (const [table, sql] of Object.entries(SCHEMA)) if (db.prepare('SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=?').get(table)?.sql !== sql) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
-  if (db.prepare("SELECT name,type FROM sqlite_master WHERE sql IS NOT NULL").all().some(row => row.name !== 'sqlite_sequence' && (!Object.hasOwn(SCHEMA, row.name) || row.type !== 'table'))) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+  schemaVersion = db.pragma('user_version', { simple: true });
+  if (![1, 2].includes(schemaVersion)) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+  const schema = schemaVersion === 2 ? RECEIPT_SCHEMA : SCHEMA;
+  for (const [table, sql] of Object.entries(schema)) if (db.prepare('SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=?').get(table)?.sql !== sql) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
+  if (db.prepare("SELECT name,type FROM sqlite_master WHERE sql IS NOT NULL").all().some(row => row.name !== 'sqlite_sequence' && (!Object.hasOwn(schema, row.name) || row.type !== 'table'))) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
   if (db.pragma('quick_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) fail('WORKSPACE_CORRUPT');
   const m = meta(), provenance = JSON.parse(m.provenance);
   if (count('metadata') !== 1 || provenance.workspaceIdentity !== workerData.workspaceIdentity || provenance.privateIdentity !== workerData.rootIdentity) fail('WORKSPACE_PATH_INVALID');
@@ -312,22 +381,47 @@ function validateStoredAuthority() {
       ![0, 1].includes(row.revoked) || !db.prepare('SELECT 1 FROM used_digests WHERE digest=?').get(row.digest)) fail('WORKSPACE_CORRUPT');
   }
   for (const row of db.prepare('SELECT * FROM throttle').all()) { now(row.windowStart); integer(row.attempts); if (row.key !== 'global') digest(row.key); if (row.attempts > 31 || row.windowStart > m.clockHighWater) fail('WORKSPACE_CORRUPT'); }
-  for (const row of db.prepare('SELECT * FROM operations').all()) { integer(row.snapshotRevision, 1); if (!UUID.test(row.operationId) || row.snapshotRevision > m.snapshotRevision) fail('WORKSPACE_CORRUPT'); }
+  const receipts = [];
+  for (const row of db.prepare('SELECT * FROM operations').all()) {
+    integer(row.snapshotRevision, 1); if (!UUID.test(row.operationId) || row.snapshotRevision > m.snapshotRevision) fail('WORKSPACE_CORRUPT');
+    if (schemaVersion === 2 && row.receiptJson !== null) {
+      const receipt = parseReceipt(row.receiptJson, row);
+      if (!principal(receipt.principalId) || !projectIds.has(receipt.projectId) || receipt.policyRevision > m.policyRevision ||
+          receipt.snapshotRevision === m.snapshotRevision && receipt.effectHash !== hash(m.stateJson)) fail('WORKSPACE_CORRUPT');
+      receipts.push({ receipt, hash: hash(row.receiptJson) });
+    }
+  }
   let previous = '0'.repeat(64), sequence = 0;
+  const snapshotEvents = new Map(), receiptEvents = new Map();
   for (const row of db.prepare('SELECT * FROM audit ORDER BY sequence').all()) {
     if (row.sequence !== ++sequence || row.previousHash !== previous || row.hash !== hash(previous + '\n' + row.raw)) fail('WORKSPACE_AUDIT_INVALID');
     const data = JSON.parse(row.raw); exact(data, ['type', 'targetHash', 'at', 'generation', 'policyRevision', 'snapshotRevision']);
     if (typeof data.type !== 'string' || !/^[A-Z_]{1,64}$/.test(data.type)) fail('WORKSPACE_AUDIT_INVALID'); if (data.targetHash !== null) digest(data.targetHash);
     for (const key of ['at', 'generation', 'policyRevision', 'snapshotRevision']) integer(data[key]); previous = row.hash;
+    if (schemaVersion === 2 && ['PROJECT_SNAPSHOT_COMMITTED', 'ACTION_RECEIPT_COMMITTED'].includes(data.type)) {
+      const events = data.type === 'PROJECT_SNAPSHOT_COMMITTED' ? snapshotEvents : receiptEvents;
+      if (events.has(data.snapshotRevision)) fail('WORKSPACE_CORRUPT'); events.set(data.snapshotRevision, data);
+    }
+  }
+  if (schemaVersion === 2) {
+    if (provenance.schema !== 'WORKSPACE_AUTHORITY/2' || receipts.length !== receiptEvents.size) fail('WORKSPACE_CORRUPT');
+    for (const { receipt, hash: receiptHash } of receipts) {
+      const original = snapshotEvents.get(receipt.snapshotRevision), commitment = receiptEvents.get(receipt.snapshotRevision);
+      if (!original || !commitment || original.targetHash !== hash(receipt.projectId) || commitment.targetHash !== receiptHash ||
+          original.policyRevision !== receipt.policyRevision || commitment.policyRevision !== receipt.policyRevision ||
+          original.at !== commitment.at || original.generation !== commitment.generation) fail('WORKSPACE_CORRUPT');
+    }
   }
   capacity('audit', MAX.audit); // Startup must have room before any write admission.
 }
 function startup() {
+  if (workerData?.actionReceipts !== undefined && typeof workerData.actionReceipts !== 'boolean' || workerData?.actionReceipts === true && workerData.initialize !== true) fail('WORKSPACE_INPUT_INVALID');
   const version = process.versions.node.split('.').map(Number);
   if (!['win32', 'linux'].includes(process.platform) || process.arch !== 'x64' || version[0] !== 22 || version[1] < 23 || version[1] === 23 && version[2] < 3) fail('WORKSPACE_PLATFORM_UNSUPPORTED');
   boundary.assertFiles(workerData); boundary.assertLock(workerData);
   const file = path.join(workerData.root, 'authority.sqlite'), exists = fs.existsSync(file);
   if (!exists && !workerData.initialize) fail('WORKSPACE_NOT_INITIALIZED');
+  if (exists && workerData.actionReceipts === true) fail('WORKSPACE_SCHEMA_UNSUPPORTED');
   const Sqlite = require('better-sqlite3');
   const connect = readonly => {
     db = new Sqlite(file, { timeout: 100, fileMustExist: exists, readonly });
@@ -346,8 +440,9 @@ function startup() {
     connect(false);
   } else {
     connect(false); if (process.platform !== 'win32') fs.chmodSync(file, 0o600);
-    db.exec('BEGIN IMMEDIATE;' + Object.values(SCHEMA).join(';') + ';PRAGMA user_version=1;');
-    db.prepare('INSERT INTO metadata VALUES(1,0,0,0,0,0,NULL,?)').run(JSON.stringify({ schema: 'WORKSPACE_AUTHORITY/1', node: process.versions.node, platform: process.platform, arch: process.arch,
+    schemaVersion = workerData.actionReceipts === true ? 2 : 1;
+    db.exec('BEGIN IMMEDIATE;' + Object.values(schemaVersion === 2 ? RECEIPT_SCHEMA : SCHEMA).join(';') + ';PRAGMA user_version=' + schemaVersion + ';');
+    db.prepare('INSERT INTO metadata VALUES(1,0,0,0,0,0,NULL,?)').run(JSON.stringify({ schema: 'WORKSPACE_AUTHORITY/' + schemaVersion, node: process.versions.node, platform: process.platform, arch: process.arch,
       sqlite: '3.53.4', betterSqlite3: '13.0.3', workspaceIdentity: workerData.workspaceIdentity, privateIdentity: workerData.rootIdentity, initialStateSha256: null }));
     db.exec('COMMIT'); validateStoredAuthority();
   }
