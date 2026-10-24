@@ -49,7 +49,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'WS04_DIAGNOSTIC_FRESH_INSTALL_FAILED' }
           npm.cmd ls better-sqlite3 argon2 --all
           if ($LASTEXITCODE -ne 0) { throw 'WS04_DIAGNOSTIC_NATIVE_PROVENANCE_FAILED' }
-      - name: Two fixed synthetic attempts in the original distinct child profile
+      - name: Negative controls and two fixed attempts in the original distinct child profile
         run: ./scripts/diagnostics/runHostedWs04.ps1
       - name: Preserve only sanitized bounded evidence
         if: always()

@@ -10,11 +10,32 @@ try {
   $sid = $identity.User.Value
   if ($Child) {
     if ($identity.Owner.Value -ne $sid) { throw 'WS04_CHILD_OWNER_PROFILE_UNCONFIRMED' }
+    $outcomes = @()
+    $evidenceParent = [System.IO.Path]::GetFullPath($env:DMK_WS04_EVIDENCE_PARENT)
+    if (-not [System.IO.Directory]::Exists($evidenceParent) -or ((Get-Item -LiteralPath $evidenceParent).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) { throw 'WS04_CONTROL_EVIDENCE_PARENT_INVALID' }
+    $controlEvidence = Join-Path $evidenceParent ('dmk-ws04-evidence-controls-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $controlEvidence | Out-Null
+    $priorScope = $env:DMK_WS04_DIAGNOSTIC; $priorEvidence = $env:DMK_WS04_EVIDENCE
+    try {
+      $env:DMK_WS04_DIAGNOSTIC = 'synthetic-only'; $env:DMK_WS04_EVIDENCE = $controlEvidence
+      & node --require ./scripts/diagnostics/ws04Permissions.preload.cjs scripts/diagnostics/ws04ObserverControls.cjs
+      $controlStatus = $LASTEXITCODE
+      $sourceRevision = (git rev-parse HEAD).Trim(); $sourceTree = (git rev-parse 'HEAD^{tree}').Trim()
+      if ($LASTEXITCODE -ne 0 -or $sourceRevision -notmatch '^[a-f0-9]{40}$' -or $sourceTree -notmatch '^[a-f0-9]{40}$') { throw 'WS04_CONTROL_SOURCE_IDENTITY_UNAVAILABLE' }
+      [ordered]@{ diagnosticOnly = $true; experiment = 'genuine-negative-controls'; status = $controlStatus; sourceRevision = $sourceRevision; sourceTree = $sourceTree
+        observerSha256 = (Get-FileHash -LiteralPath './scripts/diagnostics/ws04Permissions.preload.cjs' -Algorithm SHA256).Hash.ToLowerInvariant()
+        controlsSha256 = (Get-FileHash -LiteralPath './scripts/diagnostics/ws04ObserverControls.cjs' -Algorithm SHA256).Hash.ToLowerInvariant()
+      } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $controlEvidence 'summary.json')
+      $outcomes += [pscustomobject]@{ experiment = 'genuine-negative-controls'; status = $controlStatus }
+    } finally { $env:DMK_WS04_DIAGNOSTIC = $priorScope; $env:DMK_WS04_EVIDENCE = $priorEvidence }
     foreach ($profile in @('inherited', 'sparse')) {
       # Preserve original WS01..WS04 order and warmup, stop before WS05.
       & node scripts/diagnostics/diagnoseWs04.mjs $profile prefix
-      if ($LASTEXITCODE -ne 0) { throw "WS04_DIAGNOSTIC_OBSERVED_FAILURE: $profile" }
+      $outcomes += [pscustomobject]@{ experiment = $profile; status = $LASTEXITCODE }
     }
+    # Both fixed profiles execute once, even when the first observes a failure.
+    $outcomes | ConvertTo-Json -Depth 4 | Write-Output
+    if (@($outcomes | Where-Object { $_.status -ne 0 }).Count) { throw 'WS04_DIAGNOSTIC_MATRIX_OBSERVED_FAILURE' }
     return
   }
   # Reuse exactly the reviewed CREATE_SUSPENDED / distinct-primary-token helper
