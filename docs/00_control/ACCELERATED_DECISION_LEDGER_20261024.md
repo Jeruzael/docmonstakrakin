@@ -1,5 +1,13 @@
 # Accelerated delegated decision ledger — 2026-10-24
 
+Additive metadata correction2026-10-24T08:03Z: operator timezone is Asia/Taipei, not the Asia/Manila label retained in the earlier capture. Both are UTC+8; recorded UTC timestamps are unchanged.
+
+| New decision / recorded UTC | Choice and evidence | Consequence / rollback |
+|---|---|---|
+| ACC-D13 /2026-10-24T08:03Z | Integrate unchanged signed PR90 only after4candidate jobs and actual9497 master jobs passed; protected merge58f3cabc | Actual postmaster40075543458 still required; preserve previous failures, no green-derived timeout diagnosis |
+| ACC-D14 /2026-10-24T08:03Z | PR95 explicitly new-onlyschema3, sponsored task:read, separate AGENT token domain and per-operation skills; no general action executor | Actual synthetic HTTPS9/9 and existing App14/14; all4main+new full Windows npm/Bun agent job required; no valuable-store migration or production authority. Withhold opt-in, preserve experimental data for forward repair |
+| ACC-D15 /2026-10-24T08:03Z | Keep read result `READ_OBSERVATION`/durable:false and bound compiler apply blocked pending current receipt-bound stage successor | Avoid claiming durable read replay or transferring stale proposal context into human apply. Packages12/14 remain incomplete; existing manual importer guards retained |
+
 Campaign ACCEL-20261024. Authority is the current operator message explicitly executing the complete mandate, SHA-256 `4516f768b1469dfaf3f0341135a552218dcac8eb758e1c140a5b4317dc692455`; message ID unavailable. Times below are UTC (operator target date Asia/Manila). Actor is the root coding agent unless named otherwise. These decisions are **OPERATOR_DELEGATED_DECISION**, not personally reviewed human choices. Routine review is **HUMAN_REVIEW_WAIVED_BY_OPERATOR** for this campaign only; historical independent human/quorum requirements remain intact.
 
 | ID/time | Scope / selected choice and alternatives | Evidence, consequence and rollback |
