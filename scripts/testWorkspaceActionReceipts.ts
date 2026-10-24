@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 import {spawn} from 'node:child_process';
 import {Worker} from 'node:worker_threads';
 import {WorkspaceStore} from '../server/security/workspaceAccess/store.ts';
@@ -11,7 +12,7 @@ import {recoverWorkspaceLock} from '../server/security/workspaceAccess/privateDi
 
 let passed = 0, failed = 0;
 const diagnostic = process.argv.find(value => value.startsWith('--diagnostic='))?.slice('--diagnostic='.length);
-if (diagnostic && !['restart', 'worker-options'].includes(diagnostic)) throw Error('Unknown receipt diagnostic selection');
+if (diagnostic && !['restart', 'worker-options', 'crash'].includes(diagnostic)) throw Error('Unknown receipt diagnostic selection');
 let currentTest = '';
 async function stage<T>(name: string, run: () => Promise<T>): Promise<T> {
   const start = performance.now();
@@ -19,7 +20,7 @@ async function stage<T>(name: string, run: () => Promise<T>): Promise<T> {
   catch (error) {if (diagnostic) console.log('DIAGNOSTIC ' + JSON.stringify({test: currentTest, stage: name, ms: Math.round(performance.now() - start), outcome: 'THREW', code: (error as any)?.code ?? String(error)})); throw error;}
 }
 async function test(name: string, run: () => Promise<void>) {
-  if (diagnostic === 'restart' && !/^AR0[46] /.test(name) || diagnostic === 'worker-options' && !/^AR11 /.test(name)) return;
+  if (diagnostic === 'restart' && !/^AR0[46] /.test(name) || diagnostic === 'worker-options' && !/^AR11 /.test(name) || diagnostic === 'crash' && !/^AR10 /.test(name)) return;
   currentTest = name;
   try { await run(); passed++; console.log('PASS ' + name); }
   catch (error) { failed++; console.error('FAIL ' + name + ': ' + String(error)); }
@@ -179,7 +180,7 @@ await test('AR10 abrupt committed child exit preserves the receipt with explicit
   const operationId = crypto.randomUUID(), requestHash = hash('crash request'), changed = state(); changed.state.projects[0].title = 'Committed before process exit';
   const storeUrl = new URL('../server/security/workspaceAccess/store.ts', import.meta.url).href;
   const source = `import fs from 'node:fs';import {WorkspaceStore} from ${JSON.stringify(storeUrl)};const s=await WorkspaceStore.open(${JSON.stringify(root)});const i=await s.execute({command:'info'});await s.execute({command:'issue',principalId:'synthetic-owner',expectedCredentialRevision:1,expectedGeneration:i.generation,digest:'${'c'.repeat(64)}',now:${at}});await s.execute({command:'commitReceipt',operationId:'${operationId}',digest:'${'c'.repeat(64)}',action:'project:write',projectId:'PRJ-A',requestedProjectId:'PRJ-A',requestHash:'${requestHash}',expectedRevision:i.snapshotRevision,expectedPolicyRevision:i.policyRevision,stateJson:${JSON.stringify(JSON.stringify(changed))},now:${at}});fs.writeSync(1,'COMMITTED\\n');process.kill(process.pid,'SIGKILL');`;
-  const loader = new URL('../node_modules/tsx/dist/loader.mjs', import.meta.url).href;
+  const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href;
   const child = spawn(process.execPath, ['--import', loader, '--input-type=module', '-e', source], {cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
   let output = '', errors = '';
   child.stdout.on('data', chunk => {output += chunk;}); child.stderr.on('data', chunk => {errors += chunk;});
