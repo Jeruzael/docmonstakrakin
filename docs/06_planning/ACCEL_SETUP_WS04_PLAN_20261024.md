@@ -1,0 +1,35 @@
+# ACCEL-20261024 packages 3/4 — file plan
+
+Recorded 2026-10-24 (Asia/Taipei), before changes or setup execution. Executor: Codex setup/WS04 delegated worker. Authority: operator's accelerated-completion mandate, `DOCMONSTAKRAKIN_Accelerated_Completion_Mandate_20261024.md`, and root's explicit isolated-lane assignment. `OPERATOR_DELEGATED_DECISION`; `HUMAN_REVIEW_WAIVED_BY_OPERATOR`; all acceptance here is `AGENT_EXECUTED_ACCEPTANCE`.
+
+Base: `556bed68191a6af27a8fc0aad95363b5a534cd48`. Branch: `codex/accel-setup-ws04-20261024`. Managed worktree: `C:/Users/HomePC/.codex/worktrees/accel-setup-ws04/docmonstakrakin-version-sync`. Root remains the sole integration owner.
+
+## Delivered behavior and remaining gaps
+
+PR83 `e026f5a` supplies SETUP-PLAN-01; its old execution prohibition is superseded for this campaign only. The existing `scripts/qualifyOperatorInstallation.ts` already verifies the pinned Microsoft installer/MSI/CAB chain and prepares task-owned SDK files. PR84 `9fb9448` supplies a bounded WS04 observer and a manual hosted capture proposal. Neither historical retained-package passes nor hosted CI qualify this fresh local installation. Historical WS04 failure `39926700203` remains UNKNOWN; prior local captures remain NOT_REPRODUCED.
+
+Package 3 exits require official signed/digested inputs, fresh regular dependencies with lifecycle scripts enabled, compiler and native loading/ownership checks, audit and build. Package 4 exits require bounded stage/operation observation, environment comparison and a proven fix only if a defect is reproduced. NOT_REPRODUCED/UNKNOWN are evidence dispositions, never FIXED. These extend setup/verification evidence associated with DMK-198/199/206 and the unregistered DMK-214 qualification proposal; they do not alter canonical criteria, ownership, registration or status.
+
+## File ownership and sequence
+
+1. This plan and `docs/07_verification/ACCEL_SETUP_WS04_EVIDENCE_20261024.md`: decisions, exact source/environment/results, residuals and reproducible next steps. A dedicated `accel-setup-ws04-20261024` evidence directory may hold reviewed secret-free summaries/archives.
+2. Task-private `.local/accel-20261024/`: SDK plan/extraction, compiler probes, process-only child environment, npm cache/header cache, logs and frozen Bun checkout. Preserve original layout/receipts and original operator checkout/junction/data. Budget: 8 GiB new disk use, 60 minutes initial execution; inspect bounded failures before further attempts. No global install, PATH/config/registry/security changes.
+3. Reuse unchanged SDK extraction helper. Check every newly extracted SDK record against the preserved historical receipt. Add a narrowly reusable `scripts/setup/*` helper only if execution exposes a concrete repeatability gap; no package or lockfile edits.
+4. Import only reviewed `scripts/diagnostics/diagnoseWs04.mjs`, `ws04Permissions.preload.cjs`, `ws04ObserverControls.cjs`, and `runHostedWs04.ps1` from exact PR84 source. Validate observer controls and run one fixed inherited prefix and one sparse profile on fresh dependencies. No security predicate, timeout, store or authority changes.
+5. If needed, add a separate `workflow_dispatch` WS04 workflow from the reviewed PR84 proposal. Coordinate publishing/dispatch with root; existing four required CI jobs are untouched. Do not merge from this lane.
+
+## Validation
+
+Record official primary-source URLs and independently refreshed Authenticode/digests. Run original Windows.h/CRT and MSBuild probes, fresh `npm ci --foreground-scripts`, npm audit and native/package provenance, native/path/store/application/TLS/backup suites, lint/WBS/build. Run pinned Bun 1.4.2 frozen install in a new checkout and fail-closed lifecycle inventory, audit, actual native and Windows admission suites. Preserve install/test failures; no ignored scripts, copied native bindings, weakened checks or retry-to-green. Additional full regression belongs to root's exact combined qualification unless a lane change requires it.
+
+Review: adversarial self-review of setup/observer/evidence, followed by root's independent agent review. Neither is human approval. Human-observed acceptance stays NOT_RUN; production release and protected registration are outside this lane.
+
+## Additive CI capacity investigation (2026-10-24T05:53Z)
+
+Root assigned this lane the separate `testSyntheticSessionCapacity.ts` failure in actual master run `40067046174`, Windows job `120792387120`: 17/18, `STORE_REQUEST_TIMEOUT`, case "one remaining audit slot and the full 4096-entry ceiling both roll back reclamation". Hosted Node is 22.23.4; this setup's pinned Node is 22.23.3. This is not evidence about WS04. Root preserves the original log, SHA-256 `4aa2fa11027575759d2f84d2f7aff330a10c4e7ab61a24613ac9cb5329307326`.
+
+After the existing Bun sequence, run one bounded capacity diagnostic against the fresh Bun checkout. Add only `scripts/diagnostics/diagnoseSyntheticCapacity.mjs`: copy the complete original test to a temporary adjacent file with a test-only request observer, retain test/timeout/assertion/data bytes and print bounded command/stage/count/timing metadata without request payloads or tokens. Capture exact Node/source/hashes and preserve any failure. A Node 22.23.4 comparison may use a separately verified official portable executable. No runtime correction is selected without reproducible evidence; any proposed `syntheticFoundations` change must be coordinated with root and kept in a separate commit. No retry-to-green or timeout increase.
+
+`OPERATOR_DELEGATED_DECISION` (2026-10-24T05:58Z): Microsoft's pinned SDK remains unchanged, but the [official Node 22.23.4 release](https://nodejs.org/en/blog/release/v22.23.4) is a security release. Preserve the 22.23.3 setup/diagnostic observations as historical compatibility evidence. Verify the official 22.23.4 binary against its release SHA-256 and OpenJS signature, then qualify fresh `current-npm-checkout` and `current-bun-checkout` under the same task root with a process-only successor profile. The successor uses separate caches/header files and retains old outputs. No package/lockfile/global runtime version changes. Current-runtime evidence must identify the new Node version; do not transfer old-runtime acceptance to it.
+
+`OPERATOR_DELEGATED_DECISION` (2026-10-24T06:29Z): all three predefined capacity comparisons returned NOT_REPRODUCED. Root assigned future-failure observation to a separate test-only candidate, now [draft PR91](https://github.com/Jeruzael/docmonstakrakin/pull/91), signed head `08cbad33af0cc3139247b04ceb1fa3b57d2c71ef`. Preserve the temporary manual observer as evidence in that PR and task-private storage; omit it from this branch's active diagnostic scripts because its fixed source transformation predates the new test instrumentation. No runtime performance correction is justified. Root retains sole integration ownership. The initial execution envelope was extended for the explicitly assigned current-runtime qualification and capacity diagnosis; the disk limit remains 8 GiB, with no unbounded repeat or global install.
