@@ -1,0 +1,2 @@
+PASS diagnostic success preserves value without logging payload
+PASS timeout observation retains error identity and excludes private content

@@ -12,17 +12,17 @@ Every listed owner's positive and negative criteria remain obligations, not impl
 |---|---|---|---|---|
 | 1 | PR87 closure | DMK-199 | — | QUALIFIED: actual master556bed6 CI40063320425, four jobs,140 suites/2774 checks; no implementation redo |
 | 2 | PR85 integration | DMK-199/205 | 1 | MERGED ef6b30bf; actual CI40067046174 three PASS/Windows FAIL; bounded capacity-test timeout diagnosis pending; 13 approved file blobs preserved |
-| 3 | Fresh setup | DMK-198/199/214 | 1 | IN_PROGRESS isolated official SDK/native qualification; original installation untouched |
-| 4 | WS04 diagnosis | DMK-199/214 | 3 | IN_PROGRESS bounded original-stage diagnostics; historical cause UNKNOWN |
+| 3 | Fresh setup | DMK-198/199/214 | 1 | Local task-owned22.23.4 npm/Bun each122 checks/audits/WBS/typecheck/build PASS; PR92 candidate/postmerge qualification pending; original installation untouched |
+| 4 | WS04 diagnosis | DMK-199/214 | 3 | Local and hosted40071426037 profiles NOT_REPRODUCED; controls/two4-case prefixes completed; historical operation/stage/cause UNKNOWN. No speculative runtime fix |
 | 5 | Non-mutating inspector | DMK-120 extension | 3 | IN_PROGRESS immutable-profile admission/image validation; ordinary writable sources must reject |
 | 6 | Audit continuity | DMK-120 extension,214 | 5 | QUEUED explicit lineage/custody/CAS design and crash/replay tests; real currentness authority remains a gate |
 | 7 | Agent-executed acceptance | DMK-198/199/214 | 3, relevant implemented flows | QUEUED actual synthetic application walkthrough; human observation NOT_RUN |
 | 8 | Governed registration | DMK-205,209–214 proposals | exact registration210→211→212→209 | IN_PROGRESS candidate preparation; actual signer/acquisition/apply authority must be proved |
 | 9 | Runtime tracking | DMK-205/201 | 8 or separate ordinary project | QUEUED; no manual canonical/live-board mutation |
-| 10 | Authority/access residuals | DMK-210/211/212/209 | 2 | Existing human sessions/policy credited; residual external delegation/disclosure contract remains |
-| 11 | Durable agents/delegation | DMK-167/169/213 | 10 | QUEUED; current production principal is HUMAN only; no agent role impersonation |
+| 10 | Authority/access residuals | DMK-210/211/212/209 | 2 | Existing human sessions/policy credited; first-create scope correction targeted6/6; external sponsor/disclosure candidate in progress |
+| 11 | Durable agents/delegation | DMK-167/169/213 | 10 | IN_PROGRESS separate new-onlyschema3 task-read core/management receipts; no agent identity or live grant activated in current master |
 | 12 | Common action/direct client | EXT-CAND-01 | 10,11 | IN_PROGRESS first durable acknowledgment boundary; legacy RPC replay semantics retained |
-| 13 | Skills/admission | EXT-CAND-03,DMK-171/209 | 12 safe bootstrap | QUEUED; registry, version receipts, revocation and per-read admission |
+| 13 | Skills/admission | EXT-CAND-03,DMK-171/209 | 12 safe bootstrap | IN_PROGRESS separate0f90912 prompt-registry/retrieval component15 focused checks PASS; HTTP/client integration and full qualification pending |
 | 14 | Compiler round trip | DMK-190 | 12,13 | Existing schema1.1/string-array importer credited; contextual skill/policy/revision extension pending |
 | 15 | Conversation onboarding | DMK-010/017 | 12–14 | QUEUED residual matching/provenance, no invented business facts |
 | 16 | Continuous questionnaire | DMK-020/027/033 | 12,15 | Existing typed renderers credited; lifecycle insertion/freshness/scoped notifications pending |
