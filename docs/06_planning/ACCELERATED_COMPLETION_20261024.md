@@ -1,0 +1,57 @@
+# Accelerated completion campaign — ACCEL-20261024
+
+Authority: the operator's 2026-10-24 conversation message explicitly executing `DOCMONSTAKRAKIN_Accelerated_Completion_Mandate_20261024.md`, SHA-256 `4516f768b1469dfaf3f0341135a552218dcac8eb758e1c140a5b4317dc692455`. No machine-readable message ID is available. Routine review metadata: **HUMAN_REVIEW_WAIVED_BY_OPERATOR**. This is not a canonical lifecycle status or independent approval.
+
+Goal: qualified local/self-hosted engineering release candidate. Production release and human-observed acceptance remain distinct. Architecture: extend the existing TypeScript application, private SQLite authority and policy/CAS services. Preserve the approved [34-owner inventory](EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml), all 138 criteria and separate CAPACITY-FOLLOWUP-01. The scheduling numbers below allocate no permanent DMK IDs. Original VERIFIED closures remain bounded to their original evidence.
+
+## Execution and acceptance map
+
+Every listed owner's positive and negative criteria remain obligations, not implicit passes. Cross-package support does not duplicate the lead owner. Exact criterion coverage is in the linked immutable inventory; the campaign coverage table below assigns each criterion to one scheduling package. A package's status separates engineering, integration, registration, human acceptance and release. IN_PROGRESS/QUEUED/BLOCKED are campaign metadata only.
+
+| # | Package | Existing lead/support owners | Dependencies | Current engineering state / remaining exit |
+|---|---|---|---|---|
+| 1 | PR87 closure | DMK-199 | — | QUALIFIED: actual master556bed6 CI40063320425, four jobs,140 suites/2774 checks; no implementation redo |
+| 2 | PR85 integration | DMK-199/205 | 1 | MERGED ef6b30bf; actual CI40067046174 pending; 13 approved file blobs preserved |
+| 3 | Fresh setup | DMK-198/199/214 | 1 | IN_PROGRESS isolated official SDK/native qualification; original installation untouched |
+| 4 | WS04 diagnosis | DMK-199/214 | 3 | IN_PROGRESS bounded original-stage diagnostics; historical cause UNKNOWN |
+| 5 | Non-mutating inspector | DMK-120 extension | 3 | IN_PROGRESS immutable-profile admission/image validation; ordinary writable sources must reject |
+| 6 | Audit continuity | DMK-120 extension,214 | 5 | QUEUED explicit lineage/custody/CAS design and crash/replay tests; real currentness authority remains a gate |
+| 7 | Agent-executed acceptance | DMK-198/199/214 | 3, relevant implemented flows | QUEUED actual synthetic application walkthrough; human observation NOT_RUN |
+| 8 | Governed registration | DMK-205,209–214 proposals | exact registration210→211→212→209 | IN_PROGRESS candidate preparation; actual signer/acquisition/apply authority must be proved |
+| 9 | Runtime tracking | DMK-205/201 | 8 or separate ordinary project | QUEUED; no manual canonical/live-board mutation |
+| 10 | Authority/access residuals | DMK-210/211/212/209 | 2 | Existing human sessions/policy credited; residual external delegation/disclosure contract remains |
+| 11 | Durable agents/delegation | DMK-167/169/213 | 10 | QUEUED; current production principal is HUMAN only; no agent role impersonation |
+| 12 | Common action/direct client | EXT-CAND-01 | 10,11 | IN_PROGRESS first durable acknowledgment boundary; legacy RPC replay semantics retained |
+| 13 | Skills/admission | EXT-CAND-03,DMK-171/209 | 12 safe bootstrap | QUEUED; registry, version receipts, revocation and per-read admission |
+| 14 | Compiler round trip | DMK-190 | 12,13 | Existing schema1.1/string-array importer credited; contextual skill/policy/revision extension pending |
+| 15 | Conversation onboarding | DMK-010/017 | 12–14 | QUEUED residual matching/provenance, no invented business facts |
+| 16 | Continuous questionnaire | DMK-020/027/033 | 12,15 | Existing typed renderers credited; lifecycle insertion/freshness/scoped notifications pending |
+| 17 | Agent task control | DMK-085 | 11,12 | QUEUED atomic claim/fence/handoff; presence never releases claims implicitly |
+| 18 | Evidence/review | DMK-081/170/206 | 12,17 | Existing human evidence sessions credited; external producer/currentness extension pending |
+| 19 | Knowledge/progress sync | DMK-201/207 | 12,15–18 | Existing CAS credited; durable result/outbox/conflict recovery pending |
+| 20 | GitHub/Git/tracker | EXT-CAND-02,DMK-179/180 | 12,19 | QUEUED scoped bridge; connector account does not establish independent human authority |
+| 21 | Presence/Simple/2D | EXT-CAND-07 | 11,12,17 | QUEUED event-driven projection; 15-minute delegated rest default, 3D excluded |
+| 22 | Chat/notifications | EXT-CAND-09 | 11,12,19 | QUEUED durable permission-filtered delivery, no false client wake-up |
+| 23 | Security/exceptions | DMK-038/041/171 | continuous | IN_PROGRESS preserve denials/audits/failures; cross-transport negative criteria remain |
+| 24 | Final qualification/RC | DMK-202/199/214 | all applicable | NOT_RUN; candidate configuration/checksums/recovery and release disposition pending |
+
+## Fixed worker contracts
+
+Integration owner: root agent only. `accel_setup_ws04` owns setup/diagnostic helpers and its package3/4 plan/evidence. `accel_capacity_inspector` owns new inspector/CLI/tests and its package5 plan/evidence; no core authority edits. `accel_authority_map` owns non-applying package8 candidate and source/criterion assessment. Root owns shared authority/schema/dependencies/migration and these four campaign records. Independent work continues during hosted CI; no dependent merge precedes four successful actual-master jobs. Worker commits are agent-authored, not human approvals.
+
+## First shared-contract slice: bounded durable action acknowledgment
+
+Approaches considered: (1) replace legacy commit behavior globally; rejected because historical callers require replay rejection. (2) add arbitrary fields to legacy audit events; rejected because old exact audit validators would then reject those stores on restart. (3) explicit versioned opt-in receipt schema/command with atomic recording and current authorization; selected for detailed design after source/compatibility review. No schema is changed by this plan. Migration must be explicit, reversible before activation, tested on new/disposable workspaces, and never automatically applied to valuable original state.
+
+Files to inspect/then change only after the concrete schema contract is recorded: `server/security/workspaceAccess/{contracts.ts,worker.cjs,store.ts,projectPersistence.ts}`, a focused receipt regression and existing store/persistence regressions. Consumes current session, policy revision, project action, operation UUID and exact body digest; produces bounded committed revision acknowledgment, never unauthenticated response content. Required negatives: changed body, actor/project/action mismatch, revoked grant/session, stale/unapplied intent, legacy tombstone without binding, corrupt receipt, uncertain commit and concurrent duplicate. Preserve ordinary/self-project policy,14 privileged denials, original timeouts and all existing legacy assertions.
+
+## Global constraints and review focus
+
+- No original operator checkout/data/junction mutation; no secret material in Git/evidence.
+- No unsigned or bypassed merges, skipped meaningful checks, raised audit thresholds, arbitrary readiness sleeps or retry-until-green.
+- No fabricated second human, cryptographic authority, review, client capability or human acceptance.
+- Full history, used-session/operation replay fences and source-specific ACLs survive any schema evolution.
+- Unavailable external custody/MFA/consent blocks that operation only; continue independent engineering.
+- Review lost-ack recovery without duplicate effects; revoked disclosure; source/metadata races; full capacity; cold startup and native ownership on both platforms.
+
+Plans are executed under the standing mandate without another routine planning gate. Every package records exact file scope before its own implementation. This map does not declare the remaining packages implemented.
