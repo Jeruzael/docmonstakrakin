@@ -1,4 +1,9 @@
 # docmonstakrakin
+
+## Successor product clarification — 2026-10-23, review only
+
+The proposed external-agent-first direction is specified once in the [successor clarification](superpowers/specs/2026-10-23-external-agent-first-product-alignment.md), with [34 owner-level planning entries](06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md). External/direct/local/GitHub/manual clients use one policy/action contract and actual client capabilities; external/manual use needs no DMK model API key. The older provider list describes the original integration direction, not a mandatory product dependency. Structured accepted DMK knowledge, Git source and CI observations have distinct authority; DMK-205 retains self-project WBS authority. This is a non-applying proposal, not delivered external support or a WBS/runtime update.
+
 ## A-SSDLC Development Control Plane
 ### Master Product, Architecture, Security, and Implementation Plan
 

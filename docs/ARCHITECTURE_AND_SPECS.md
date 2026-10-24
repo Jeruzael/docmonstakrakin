@@ -1,5 +1,10 @@
 # docmonstakrakin UI/UX Design System & Architectural Specification
 
+## External-agent workplace successor addendum — review only, 2026-10-23
+
+The [single successor clarification](superpowers/specs/2026-10-23-external-agent-first-product-alignment.md) governs proposed external-client capability/admission, durable identity/events/chat and required Simple/optional2D parity. It preserves this design baseline and the original Agent Center v0.3/manifest. Avatars cannot grant authority; reported, observed and verified events stay distinct; no fabricated thoughts/progress/token/cost metrics. 3D remains DEFER. [Exact residual ownership and slices](06_planning/EXTERNAL_AGENT_FIRST_TASK_IMPACT_20261023.md) are non-applying proposals.
+
+
 **Product:** docmonstakrakin  
 **Design Direction:** Minimalist Enterprise SaaS  
 **Primary Theme:** Calm Technical Light Theme  
