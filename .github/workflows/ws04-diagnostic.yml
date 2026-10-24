@@ -24,8 +24,6 @@ jobs:
       GIT_CONFIG_COUNT: '1'
       GIT_CONFIG_KEY_0: core.autocrlf
       GIT_CONFIG_VALUE_0: 'false'
-      # Evidence location only. Preserve the runner's actual default fixture TEMP.
-      DMK_WS04_EVIDENCE_PARENT: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,7 +48,10 @@ jobs:
           npm.cmd ls better-sqlite3 argon2 --all
           if ($LASTEXITCODE -ne 0) { throw 'WS04_DIAGNOSTIC_NATIVE_PROVENANCE_FAILED' }
       - name: Negative controls and two fixed attempts in the original distinct child profile
-        run: ./scripts/diagnostics/runHostedWs04.ps1
+        run: |
+          # Evidence location only. Preserve the runner's actual default fixture TEMP.
+          $env:DMK_WS04_EVIDENCE_PARENT = $env:RUNNER_TEMP
+          ./scripts/diagnostics/runHostedWs04.ps1
       - name: Preserve only sanitized bounded evidence
         if: always()
         uses: actions/upload-artifact@v4
