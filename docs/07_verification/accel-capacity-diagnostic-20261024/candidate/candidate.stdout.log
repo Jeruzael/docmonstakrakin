@@ -1,0 +1,19 @@
+PASS retained logout rows at 256-row capacity permit fresh issuance while preserving an active session and audit history
+PASS idle expiry reclaims at its inclusive boundary without touching a still-active row
+PASS absolute expiry remains fixed despite activity and reclaims only at the inclusive boundary
+PASS 256 usable sessions still deny issuance with every row and audit byte unchanged
+PASS reset reclaims unusable sessions while preserving another principal session bytes
+PASS disable reclaims unusable sessions while preserving another principal session bytes
+PASS older policy revisions are reclaimed without making their tokens current again
+PASS worker restart generation remains a replay fence after reclaiming all old rows
+PASS future-dated malformed and ahead-of-authority rows are retained instead of treated as garbage
+PASS invalid principal and stale issuance fences deny before any capacity cleanup can commit
+PASS faults before and after deletion insertion and each audit event roll back the whole issuance
+PASS failed reclamation cannot rewind observed expiry and restart still fences old tokens
+PASS rotate-first concurrent rotations and capacity reclamation preserve one rotation successor
+PASS issue-first concurrent rotations and capacity reclamation preserve one rotation successor
+PASS one remaining audit slot and the full 4096-entry ceiling both roll back reclamation
+PASS schema2 handoff fences the old owner and reclaims only obsolete generation rows with receipt history intact
+PASS schema2 reclamation failures roll back nested transactions and cannot rewind the observed clock
+PASS schema2 claim leaves a one-slot audit boundary where reclamation fails closed without altering custody
+{"suite":"synthetic-session-capacity","passed":18,"failed":0,"elapsedMs":73443,"profile":"owned SQLite fixtures; one KDF hash; bounded worker writes; no operational budget"}
