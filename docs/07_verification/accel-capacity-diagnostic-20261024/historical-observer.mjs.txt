@@ -1,0 +1,70 @@
+// One complete source-derived capacity attempt, on fresh disposable fixtures.
+// Test-only observation: no request payloads, authority changes, retries or timeout changes.
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
+
+const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const checkout = process.argv[2], parent = process.argv[3];
+if (process.argv.length !== 4 || process.platform !== 'win32' || process.arch !== 'x64' || !['22.23.3', '22.23.4'].includes(process.versions.node)) throw Error('CAPACITY_DIAGNOSTIC_PROFILE_UNSUPPORTED');
+for (const root of [checkout, parent, path.join(checkout, 'node_modules')]) {
+  if (!path.isAbsolute(root) || fs.realpathSync.native(root) !== root || !fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink()) throw Error('CAPACITY_DIAGNOSTIC_REGULAR_DIRECTORY_REQUIRED');
+}
+const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const inputs = ['scripts/testSyntheticSessionCapacity.ts', 'server/security/syntheticFoundations/privateStore.ts', 'server/security/syntheticFoundations/privateStoreWorker.mjs', 'server/security/syntheticFoundations/sessions.ts', 'server/security/syntheticFoundations/audit.mjs'];
+const sourceHashes = Object.fromEntries(inputs.map(file => {
+  const observed = sha256(fs.readFileSync(path.join(checkout, file)));
+  if (observed !== sha256(fs.readFileSync(path.join(repository, file)))) throw Error('CAPACITY_DIAGNOSTIC_SOURCE_MISMATCH');
+  return [file, observed];
+}));
+const identity = spawnSync('git', ['rev-parse', 'HEAD', 'HEAD^{tree}'], {cwd: checkout, encoding: 'utf8', windowsHide: true, timeout: 5000});
+const [sourceRevision, sourceTree] = (identity.stdout || '').trim().split(/\r?\n/);
+if (identity.status !== 0 || !/^[a-f0-9]{40}$/.test(sourceRevision || '') || !/^[a-f0-9]{40}$/.test(sourceTree || '')) throw Error('CAPACITY_DIAGNOSTIC_SOURCE_IDENTITY_UNAVAILABLE');
+let source = fs.readFileSync(path.join(checkout, inputs[0]), 'utf8');
+const observer = `
+let diagnosticCase = 'before-case', diagnosticStage = 'fixture', diagnosticSequence = 0;
+const diagnosticMetrics = new Map<string, {count:number,maxMs:number}>();
+const diagnosticExecute = PrivateSyntheticStore.prototype.execute;
+PrivateSyntheticStore.prototype.execute = async function(command: any) {
+  const ordinal = ++diagnosticSequence, began = performance.now();
+  const label = diagnosticCase + ' / ' + command.command;
+  try { return await diagnosticExecute.call(this, command); }
+  catch (error: any) {
+    if (['STORE_REQUEST_TIMEOUT','STORE_UNAVAILABLE'].includes(error?.code)) console.error(JSON.stringify({diagnostic:'capacity-request-failure',case:diagnosticCase,stage:diagnosticStage,ordinal,command:command.command,elapsedMs:performance.now()-began,code:error.code}));
+    throw error;
+  } finally {
+    const old = diagnosticMetrics.get(label) || {count:0,maxMs:0};
+    diagnosticMetrics.set(label, {count:old.count+1,maxMs:Math.max(old.maxMs,performance.now()-began)});
+  }
+};
+`;
+function replaceOnce(before, after) {
+  if (source.split(before).length !== 2) throw Error('CAPACITY_DIAGNOSTIC_SOURCE_ANCHOR_CHANGED');
+  source = source.replace(before, after);
+}
+replaceOnce('const started = performance.now();', 'const started = performance.now();\n' + observer);
+replaceOnce('try { await fixture(body, recovery); passed++;', "try { diagnosticCase=name; diagnosticStage='fixture'; diagnosticSequence=0; await fixture(body, recovery); passed++;");
+replaceOnce('while (count < 4095) {', "while (count < 4095) { diagnosticStage='audit-fill:'+count;");
+const boundaryLoop = 'for (const expectedAuditCount of [4095, 4096]) {';
+if (source.split(boundaryLoop).length !== 3) throw Error('CAPACITY_DIAGNOSTIC_SOURCE_ANCHOR_CHANGED');
+source = source.replaceAll(boundaryLoop, boundaryLoop + " diagnosticStage='audit-boundary:'+expectedAuditCount;");
+source += '\nconsole.log(JSON.stringify({diagnostic:"capacity-operation-summary",metrics:Object.fromEntries(diagnosticMetrics)}));\n';
+const evidence = fs.mkdtempSync(path.join(parent, 'dmk-capacity-evidence-'));
+const generated = path.join(checkout, 'scripts', '.capacity-diagnostic-' + crypto.randomUUID() + '.ts');
+const summary = {schema: 1, diagnosticOnly: true, attempts: 1, node: process.versions.node, nodeSha256: sha256(fs.readFileSync(process.execPath)), sourceRevision, sourceTree, sourceHashes, runnerSha256: sha256(fs.readFileSync(fileURLToPath(import.meta.url))), generatedSourceSha256: sha256(source), observer: 'parent request timing; source-selected stage labels; no worker instrumentation'};
+fs.writeFileSync(generated, source, {flag: 'wx'});
+try {
+  const env = {...process.env}; delete env.NODE_OPTIONS;
+  const result = spawnSync(process.execPath, ['--import', 'tsx', generated], {cwd: checkout, env, encoding: 'utf8', windowsHide: true, timeout: 720000, maxBuffer: 2 * 1024 * 1024});
+  fs.writeFileSync(path.join(evidence, 'fixture.stdout.log'), result.stdout || '');
+  fs.writeFileSync(path.join(evidence, 'fixture.stderr.log'), result.stderr || '');
+  Object.assign(summary, {status: result.status, signal: result.signal, launchErrorCode: result.error?.code, result: result.status === 0 ? 'NOT_REPRODUCED' : 'OBSERVED_FAILURE_REQUIRES_CLASSIFICATION'});
+  console.log(JSON.stringify({...summary, evidence}));
+  process.exitCode = result.status === 0 ? 0 : 1;
+} finally {
+  fs.writeFileSync(path.join(evidence, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
+  if (path.dirname(generated) !== path.join(checkout, 'scripts') || !/^\.capacity-diagnostic-[a-f0-9-]+\.ts$/.test(path.basename(generated)) || fs.lstatSync(generated).isSymbolicLink()) throw Error('CAPACITY_DIAGNOSTIC_CLEANUP_REJECTED');
+  fs.unlinkSync(generated);
+}
