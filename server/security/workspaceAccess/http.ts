@@ -94,6 +94,9 @@ export function installWorkspaceHttp(app:Express,service:WorkspaceSessionService
    if(decision.reason==='AUTHORITY_UNAVAILABLE')return void deny(res,503,'AUTHORITY_UNAVAILABLE');
    if(!decision.allowed)return void deny(res,401,'WORKSPACE_SIGN_IN_REQUIRED');
    res.locals.workspaceSession={principal:decision.principal};res.locals.workspaceIdentity=workspaceReviewerIdentity(decision.principal);
+   // Creation-capable or project-scoped users may discover the CAS revision;
+   // an unrelated signed-in identity receives no global revision disclosure.
+   if(decision.principal?.canCreateProjects===true||decision.projectIds.length>0)res.locals.workspaceDiscoveryRevision=decision.snapshotRevision;
    res.locals.workspaceProjects=new Set<string>(decision.projectIds);return next();
   }
   if(route.kind==='VALIDATION'){
