@@ -1,0 +1,3105 @@
+schema:
+  id: EAF-PLANNING-CANDIDATE-1
+  kind: NON_EXECUTABLE_DOCUMENT_SCHEMA
+  schema_version: "1.0"
+  description: Custom review-only YAML document, deliberately distinct from proposal schema1.1, WBS and
+    runtime/import payloads. No action/proposed_changes/import execution fields. Validation is documented in
+    the review record.
+  canonicalApply: false
+  runtimeApply: false
+  mayApply: false
+  field_contract:
+    root_required:
+      - schema
+      - kind
+      - scope_version
+      - baseline
+      - application
+      - counts
+      - registration_proposal_dependencies
+      - proposed_requirements
+      - absorbed_packages
+      - entries
+    entry_required:
+      - key
+      - kind
+      - item_type
+      - lead_owner
+      - title
+      - disposition
+      - current_status
+      - proposed_scope_status
+      - scope_version
+      - implementation_slices
+      - source_requirement_ids
+      - source_locations
+      - baseline_evidence
+      - delta
+      - readiness_dependencies
+      - existing_canonical_dependencies
+      - implementation_locations
+      - scope_exclusions
+      - acceptance_criteria
+      - negative_acceptance_criteria
+      - evidence_method
+      - risk
+      - authority
+      - migration_rollback
+      - release_scope
+      - application
+    string_array_fields:
+      - implementation_slices
+      - source_requirement_ids
+      - source_locations
+      - readiness_dependencies
+      - existing_canonical_dependencies
+      - implementation_locations
+      - scope_exclusions
+      - acceptance_criteria
+      - negative_acceptance_criteria
+      - migration_rollback
+    enums:
+      item_type:
+        - CANONICAL_OWNER_EXTENSION
+        - UNREGISTERED_PROPOSAL_AMENDMENT
+        - NEW_CANDIDATE
+      disposition:
+        - ADD_SUBTASK
+        - AMEND_SCOPE
+        - NEW_CANDIDATE
+      proposed_scope_status:
+        - REVIEW_ONLY
+      entry_kind:
+        - PLANNING_CANDIDATE
+    criteria: String arrays only. Every criterion begins stable unique ID and lead_owner matching entry; positive
+      and negative arrays each contain at least two criteria. No executable importer inference.
+    dependencies: readiness_dependencies are an acyclic internal future implementation review graph, never status
+      advancement; canonical and registration edges remain separate historical/proposed contracts.
+    objects: baseline_evidence, evidence_method, risk, authority and application are structured objects;
+      application false flags and NOT_APPLIED status are mandatory at root and entry.
+kind: PLANNING_CANDIDATE
+scope_version: EAF-20261023.1
+baseline:
+  runtime: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+  runtime_tree: 8f8f34429555173bb595c1f2fdbe48a3c1fa9a87
+  separate_evidence: ade88004341f59503a4ccad833d2aba9f6a76647
+  pr82_reference: 2e8aff5b448e5b65f10309801814ded7b0a1ac61
+  ws04_failure_root_cause: UNKNOWN
+  operator_acceptance: BLOCKED
+application:
+  canonical_registration: NOT_APPLIED
+  runtime_board: NOT_APPLIED
+  canonicalApply: false
+  runtimeApply: false
+  mayApply: false
+counts:
+  external_entries: 34
+  canonical_owners: 23
+  canonical_add_subtask: 16
+  canonical_amend_scope: 7
+  unregistered_proposal_amendments: 6
+  retained_new_candidates: 5
+  absorbed_packages_not_entries: 5
+  separate_capacity_entries: 1
+  coordinated_review_total: 35
+registration_proposal_dependencies:
+  status: UNREGISTERED_NOT_APPLIED
+  source: docs/06_planning/CAMPAIGN_WBS_SYNTHETIC_REGISTRATION_CONTRACT.md
+  order: DMK-210 -> DMK-211 -> DMK-212 -> DMK-209; DMK-213 after212, DMK-214 after209/211/212/213
+  dependencies:
+    DMK-210: []
+    DMK-211:
+      - DMK-210
+    DMK-212:
+      - DMK-210
+      - DMK-211
+    DMK-209:
+      - DMK-210
+      - DMK-211
+      - DMK-212
+    DMK-213:
+      - DMK-212
+    DMK-214:
+      - DMK-209
+      - DMK-211
+      - DMK-212
+      - DMK-213
+proposed_requirements:
+  - id: EAF-REQ-01
+    status: PROPOSED
+    lead_owner: EXT-CAND-01
+  - id: EAF-REQ-02
+    status: PROPOSED
+    lead_owner: DMK-210
+  - id: EAF-REQ-03
+    status: PROPOSED
+    lead_owner: DMK-010
+  - id: EAF-REQ-04
+    status: PROPOSED
+    lead_owner: EXT-CAND-03
+  - id: EAF-REQ-05
+    status: PROPOSED
+    lead_owner: DMK-209
+  - id: EAF-REQ-06
+    status: PROPOSED
+    lead_owner: DMK-190
+  - id: EAF-REQ-07
+    status: PROPOSED
+    lead_owner: DMK-020
+  - id: EAF-REQ-08
+    status: PROPOSED
+    lead_owner: DMK-085
+  - id: EAF-REQ-09
+    status: PROPOSED
+    lead_owner: DMK-206
+  - id: EAF-REQ-10
+    status: PROPOSED
+    lead_owner: DMK-201
+  - id: EAF-REQ-11
+    status: PROPOSED
+    lead_owner: DMK-205
+  - id: EAF-REQ-12
+    status: PROPOSED
+    lead_owner: DMK-213
+  - id: EAF-REQ-13
+    status: PROPOSED
+    lead_owner: EXT-CAND-07
+  - id: EAF-REQ-14
+    status: PROPOSED
+    lead_owner: EXT-CAND-09
+  - id: EAF-REQ-15
+    status: PROPOSED
+    lead_owner: DMK-038
+  - id: EAF-REQ-16
+    status: PROPOSED
+    lead_owner: DMK-202
+  - id: EAF-REQ-17
+    status: PROPOSED
+    lead_owner: DMK-198
+  - id: EAF-REQ-18
+    status: PROPOSED
+    lead_owner: DMK-212
+absorbed_packages:
+  - key: EXT-CAND-04
+    disposition: ABSORBED
+    acceptance_owners:
+      - DMK-209
+    support:
+      - DMK-210
+      - DMK-213
+      - EXT-CAND-03
+    preserved_scope: Single per-operation skill/action admission, bootstrap, current receipts and revocation; not
+      a second engine.
+  - key: EXT-CAND-05
+    disposition: ABSORBED
+    acceptance_owners:
+      - DMK-190
+    support: []
+    preserved_scope: Existing compiler/importer extension, revision/skill/policy/allowed-operation packages,
+      validated response and ack.
+  - key: EXT-CAND-06
+    disposition: ABSORBED
+    acceptance_owners:
+      - DMK-201
+      - DMK-205
+    support: []
+    preserved_scope: DMK-201 ordinary decision/document sync; DMK-205 separately protected self-project WBS
+      authority/migration.
+  - key: EXT-CAND-08
+    disposition: ABSORBED
+    acceptance_owners:
+      - EXT-CAND-07
+    support: []
+    preserved_scope: Required Simple and optional 2D event parity/accessibility; 3D DEFER.
+  - key: EXT-CAND-10
+    disposition: ABSORBED
+    acceptance_owners:
+      - DMK-038
+      - DMK-041
+      - DMK-199
+      - DMK-206
+    support: []
+    preserved_scope: 038 coverage/risk/pentest scope; 041 exceptions; 199 integrated test coverage; 206
+      provenance/freshness. Each criterion remains uniquely led.
+separate_followups:
+  - key: CAPACITY-FOLLOWUP-01
+    lead_owner: DMK-120
+    status: SEPARATE_REVIEW_ONLY_NOT_COUNTED_IN_ENTRIES
+    source: https://github.com/Jeruzael/docmonstakrakin/blob/2e8aff5b448e5b65f10309801814ded7b0a1ac61/docs/08_handoff/CURRENT_STATUS_RECONCILIATION_20261023.md
+    scope: Linked extension only; preserve DMK-120 original VERIFIED EV-159 scope. Read-only inspector and durable
+      continuity design are separately owned; no ceiling increase/history deletion/copied authority
+      activation.
+entries:
+  - key: EAF-DMK-010
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-010
+    title: Accepted conversation knowledge and external context references
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-03
+      - FR-PRJ-01
+      - AUD-01
+      - AUD-02
+      - DATA-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/types.ts
+      - server/projectStore.ts
+      - scripts/testWorkspaceProjectPersistence.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Project aggregate and PR80/81 scoped persisted snapshots exist; this does not authenticate
+        external conversation origins.
+      locations: &a1
+        - src/types.ts
+        - server/projectStore.ts
+        - scripts/testWorkspaceProjectPersistence.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add linked accepted knowledge, decision/source message references and external task/session/version
+      context to the existing aggregate.
+    readiness_dependencies:
+      - EAF-DMK-190
+      - EAF-DMK-212
+    existing_canonical_dependencies:
+      - DMK-004
+    implementation_locations: *a1
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D010-P1 | lead_owner=DMK-010 | Accept a scoped conversation-derived requirement/decision into an
+        existing project; reload preserves stable source links, author, purpose, accepted revision and
+        authorized disposition.
+      - D010-P2 | lead_owner=DMK-010 | Preserve a proposed record separately until an authorized human accepts
+        it; projections identify its exact accepted version.
+    negative_acceptance_criteria:
+      - D010-N1 | lead_owner=DMK-010 | Attempt to promote unaccepted conversation text or copy a private
+        scratchpad/hidden reasoning into shared knowledge; reject or retain private without shared projection.
+      - D010-N2 | lead_owner=DMK-010 | Attempt cross-project/source-denied knowledge attachment; reject
+        without disclosing source existence.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Extend aggregate/persistence fixtures with authorized accepted/proposed records, reload and denied
+          lineage cases.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Migrate additive linked records without rewriting accepted history; revert projection/schema
+        enablement while retaining provenance.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-017
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-017
+    title: Conversation project creation and existing-project reuse
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-03
+      - FR-PRJ-03
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/components/ProjectsView.tsx
+      - server.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Project creation, onboarding and switching already exist.
+      locations: &a2
+        - src/components/ProjectsView.tsx
+        - server.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add authorized conversation-to-project matching and explicit reuse/new-project decision.
+    readiness_dependencies:
+      - EAF-DMK-010
+    existing_canonical_dependencies:
+      - DMK-010
+    implementation_locations: *a2
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D017-P1 | lead_owner=DMK-017 | Select an authorized existing project from a conversation; continue
+        against its stable ID with zero duplicate projects.
+      - D017-P2 | lead_owner=DMK-017 | When no appropriate match exists, explicit authorized new-project
+        choice records source and project ID.
+    negative_acceptance_criteria:
+      - D017-N1 | lead_owner=DMK-017 | Ambiguous matching produces a scoped clarification and no silent merge
+        or duplicate.
+      - D017-N2 | lead_owner=DMK-017 | Search for a project whose existence is denied returns no title,
+        pointer or suggestion.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Exercise existing/new/ambiguous/denied project flows and count resulting aggregates.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Retain old wizard/manual entry; disable matching without deleting projects or source decisions.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-020
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-020
+    title: Continuous typed question model and answer history
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-07
+      - FR-REQ-01
+      - FR-REQ-02
+      - COM-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/types.ts
+      - src/data/discoveryCatalog.ts
+      - scripts/testDiscoveryRemediation.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Question/branch validation and existing discovery tests already exist.
+      locations: &a3
+        - src/types.ts
+        - src/data/discoveryCatalog.ts
+        - scripts/testDiscoveryRemediation.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend current question model with all typed inputs, provenance/purpose/constraints, recipients,
+      affected work, deduplication and reopen history.
+    readiness_dependencies:
+      - EAF-DMK-010
+    existing_canonical_dependencies:
+      - DMK-010
+    implementation_locations: *a3
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D020-P1 | lead_owner=DMK-020 | Validate short/long text, single/multiple selection, radio/dropdown,
+        yes/no/unknown, numeric/date/range, groups/table/evidence values against versioned constraints and
+        branch conditions.
+      - D020-P2 | lead_owner=DMK-020 | Reuse a still-valid accepted answer, deduplicate equivalent open
+        questions preserving sources, and reopen on changed assumptions while retaining prior
+        answer/disposition history.
+    negative_acceptance_criteria:
+      - D020-N1 | lead_owner=DMK-020 | Invalid type/range/required evidence or stale answer revision cannot
+        resolve a blocker.
+      - D020-N2 | lead_owner=DMK-020 | A human answer does not become a release approval, independent vote or
+        generalized grant.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Table-driven question-schema/branch/reuse/reopen tests including boundary values and late-phase
+          creation.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version question schema and preserve old answers through additive adapters; revert new controls
+        without erasing history.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-027
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-027
+    title: Accessible question controls and scoped notifications
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-07
+      - UX-03
+      - DATA-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/components/QuestionnaireView.tsx
+      - scripts/testDiscoveryQuestionnaireUi.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Questionnaire renderer, branch navigation and UI fixtures exist.
+      locations: &a4
+        - src/components/QuestionnaireView.tsx
+        - scripts/testDiscoveryQuestionnaireUi.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Render added typed controls, late questions and authorized affected-work notifications accessibly.
+    readiness_dependencies:
+      - EAF-DMK-020
+      - EAF-DMK-212
+    existing_canonical_dependencies:
+      - DMK-020
+    implementation_locations: *a4
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D027-P1 | lead_owner=DMK-027 | Keyboard/screen-reader walkthrough reaches every specified typed
+        control and correctly exposes validation/branch changes.
+      - D027-P2 | lead_owner=DMK-027 | A late blocking question appears on its affected task and intended
+        authorized recipient inbox with a source-safe link.
+    negative_acceptance_criteria:
+      - D027-N1 | lead_owner=DMK-027 | Unrelated work receives no blocking badge or false lifecycle stop.
+      - D027-N2 | lead_owner=DMK-027 | Discover-denied recipients receive no question title, count, badge or
+        notification before or after ACL revocation.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Targeted questionnaire/UI accessibility and recipient-policy scenarios on the future changed
+          components.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep existing question renderer fallback and stable question IDs; rollback view enablement without
+        deleting answers.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-033
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-033
+    title: Affected-work lifecycle blockers without enum drift
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-07
+      - FR-GOV-01
+      - FR-GOV-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/workTracking/canonicalLifecycle.ts
+      - src/data/discoveryGates.ts
+      - scripts/testCanonicalLifecycle.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical lifecycle/status semantics and deterministic gates exist.
+      locations: &a5
+        - server/workTracking/canonicalLifecycle.ts
+        - src/data/discoveryGates.ts
+        - scripts/testCanonicalLifecycle.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add late-question/dependency impact evaluation without incompatible lifecycle states.
+    readiness_dependencies:
+      - EAF-DMK-020
+    existing_canonical_dependencies:
+      - DMK-010
+    implementation_locations: *a5
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D033-P1 | lead_owner=DMK-033 | Open a scoped blocking question; exactly its affected task and
+        dependent gate paths block with reason/version links.
+      - D033-P2 | lead_owner=DMK-033 | Resolve the current question under policy; reevaluate the affected
+        gates while preserving canonical lifecycle enums.
+    negative_acceptance_criteria:
+      - D033-N1 | lead_owner=DMK-033 | An unresolved blocker outside a task dependency set does not block that
+        unrelated task.
+      - D033-N2 | lead_owner=DMK-033 | Presence labels, chat replies or agent progress cannot directly set
+        VERIFIED or satisfy human governance.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Lifecycle graph fixtures for scoped late blockers, resolution and independent governance dimensions.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Preserve enum contract and existing transition receipts; rollback only new impact rules under reviewed
+        policy.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-038
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-038
+    title: Continuous security coverage graph and scoped findings
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-15
+      - FR-GOV-03
+      - REQ-SEC-001
+      - SEC-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/data/discoveryGates.ts
+      - src/data/riskDisplayProjection.ts
+      - docs/04_security/RISK_REGISTER.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Risk-floor calculation and risk/discovery projections exist.
+      locations: &a6
+        - src/data/discoveryGates.ts
+        - src/data/riskDisplayProjection.ts
+        - docs/04_security/RISK_REGISTER.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Link threat/control/question/test/finding/remediation/evidence coverage and expose gaps/freshness;
+      absorb security candidate10 risk scope.
+    readiness_dependencies:
+      - EAF-DMK-020
+      - EAF-DMK-206
+    existing_canonical_dependencies:
+      - DMK-033
+    implementation_locations: *a6
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D038-P1 | lead_owner=DMK-038 | Trace a security requirement through threat, control, question, test,
+        finding, remediation and exact evidence; expose missing/stale links as gaps.
+      - D038-P2 | lead_owner=DMK-038 | Record an explicitly authorized penetration-test
+        target/technique/environment/time/data/stop scope before permitting that test workflow.
+    negative_acceptance_criteria:
+      - D038-N1 | lead_owner=DMK-038 | Missing coverage or no detected findings cannot claim all
+        vulnerabilities absent or security PASS.
+      - D038-N2 | lead_owner=DMK-038 | Repository read/write access alone cannot authorize penetration
+        testing, secret access or production activity.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Coverage graph and risk-floor fixtures with missing/changed links and explicit offensive-scope
+          denials.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Add versioned coverage links; preserve original risk records/floors and historical findings on
+        rollback.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-041
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-041
+    title: Attributed expiring security exceptions
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-15
+      - FR-GOV-04
+      - REQ-GOV-002
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/types.ts
+      - src/data/discoveryGates.ts
+      - docs/04_security/RISK_REGISTER.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Override/risk-acceptance model and deterministic gates exist.
+      locations: &a7
+        - src/types.ts
+        - src/data/discoveryGates.ts
+        - docs/04_security/RISK_REGISTER.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend scoped exceptions with accountable human, expiry, exact candidate/context and invalidation;
+      absorb candidate10 exception scope.
+    readiness_dependencies:
+      - EAF-DMK-038
+    existing_canonical_dependencies:
+      - DMK-033
+    implementation_locations: *a7
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D041-P1 | lead_owner=DMK-041 | An eligible human decision records exception scope, rationale,
+        accountable authority, expiry and exact affected candidate/configuration.
+      - D041-P2 | lead_owner=DMK-041 | Changing covered evidence/configuration or passing expiry invalidates
+        the exception and reopens the affected finding/gate.
+    negative_acceptance_criteria:
+      - D041-N1 | lead_owner=DMK-041 | Agent acknowledgment, anonymous actor or expired/other-candidate
+        exception cannot waive a protected gate.
+      - D041-N2 | lead_owner=DMK-041 | Accepted risk remains visible as an exception and cannot relabel failed
+        evidence PASS.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Time/candidate/policy-bound override fixtures and agent/expiry/stale-scope denial cases.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Retain original exception history; disable extension by expiring active exceptions rather than
+        deleting audit rows.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-081
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-081
+    title: External independent agent review within human boundaries
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-02
+      - REQ-AI-007
+      - AGT-04
+      - COM-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/components/AgentCenterView.tsx
+      - server.ts
+      - docs/03_architecture/AGENT_ARCHITECTURE.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Existing second-agent orchestration and Agent Center review controls exist; no external trust
+        qualification is inferred.
+      locations: &a8
+        - src/components/AgentCenterView.tsx
+        - server.ts
+        - docs/03_architecture/AGENT_ARCHITECTURE.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add provider-independent external review scheduling and producer/context separation.
+    readiness_dependencies:
+      - EAF-DMK-213
+    existing_canonical_dependencies:
+      - DMK-079
+    implementation_locations: *a8
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D081-P1 | lead_owner=DMK-081 | Route a candidate to an independently configured authorized external
+        verifier using allowed proposal context and no producer private scratchpad.
+      - D081-P2 | lead_owner=DMK-081 | Record verifier principal/client, exact reviewed revision, result and
+        uncertainty as agent review evidence.
+    negative_acceptance_criteria:
+      - D081-N1 | lead_owner=DMK-081 | A second agent or GitHub actor cannot fill independently required SO/LA
+        human seats.
+      - D081-N2 | lead_owner=DMK-081 | Same producer identity or stale reviewed candidate cannot be
+        represented as current independent review.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Review routing/provenance fixtures with same-actor, stale candidate and human-quorum negative cases.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Retain existing disabled/live gates and independent human rules; rollback external routing without
+        relabeling prior reviews.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-085
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-085
+    title: Atomic authorized task claims and handoff recovery
+    disposition: ADD_SUBTASK
+    current_status: IMPLEMENTED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-08
+      - FR-WRK-01
+      - AGT-03
+      - RUN-01
+      - RUN-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/types.ts
+      - src/components/WorkView.tsx
+      - scripts/testWorkItemUpdates.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Unified WorkItem and guarded mutation behavior exist.
+      locations: &a9
+        - src/types.ts
+        - src/components/WorkView.tsx
+        - scripts/testWorkItemUpdates.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add atomic claim/self-assignment, start/progress/clarify/handoff/review and fenced conflict recovery.
+    readiness_dependencies:
+      - EAF-DMK-010
+      - EXT-CAND-01
+    existing_canonical_dependencies:
+      - DMK-010
+    implementation_locations: *a9
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D085-P1 | lead_owner=DMK-085 | Race authorized claims on one task revision; exactly one commits with
+        principal/session/fence and audit while loser receives current conflict state.
+      - D085-P2 | lead_owner=DMK-085 | Authorized handoff/review/claim recovery preserves task history and
+        separately records activity, lifecycle and claim states.
+    negative_acceptance_criteria:
+      - D085-N1 | lead_owner=DMK-085 | Stale task revision, grant, session or fencing token causes no mutation.
+      - D085-N2 | lead_owner=DMK-085 | Disconnect/inactivity alone cannot mark work complete, release a claim
+        or grant another actor authority.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Deterministic two-claim races, stale fences, handoff and recovery failpoints using the existing
+          store boundary.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Add claim metadata with version/fencing; disable claims only via explicit recovery decisions,
+        preserving old WorkItems/enums.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-167
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-167
+    title: External sponsor and delegated capability scope
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-02
+      - AUTH-03
+      - AGT-04
+      - REQ-COLLAB-002
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical delegation design remains PROPOSED; no live grant credited.
+      locations: &a10
+        - docs/00_control/MASTER_WBS.yaml
+        - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Specify external client/sponsor, allowed operations, task/project scope, expiry/revocation and
+      independent authority boundaries.
+    readiness_dependencies:
+      - EAF-DMK-210
+      - EAF-DMK-212
+    existing_canonical_dependencies:
+      - DMK-166
+    implementation_locations: *a10
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D167-P1 | lead_owner=DMK-167 | An authorized sponsor proposes an explicit expiring
+        project/task/operation grant binding principal/client and policy revision.
+      - D167-P2 | lead_owner=DMK-167 | Revocation or sponsor retirement invalidates current and retried
+        operations across all transports.
+    negative_acceptance_criteria:
+      - D167-N1 | lead_owner=DMK-167 | A role/avatar/client declaration cannot self-grant delegation or human
+        authority.
+      - D167-N2 | lead_owner=DMK-167 | An external transport grant cannot add shell/secrets/deploy/release
+        rights beyond explicit scope.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Delegation policy matrix with expiry, sponsor retirement, cross-transport retry and privileged
+          operation denials.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version grant definitions and invalidate old scope on migration; never import approvals or reactivate
+        revoked grants.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-169
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-169
+    title: Capability-aware handshake and bounded reconnect
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-01
+      - AGT-02
+      - AGT-03
+      - RUN-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - docs/03_architecture/AGENT_ARCHITECTURE.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical handshake design remains PROPOSED.
+      locations: &a11
+        - docs/00_control/MASTER_WBS.yaml
+        - docs/03_architecture/AGENT_ARCHITECTURE.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Bind advertised/observed client capabilities, authenticated session and recovery acknowledgments to
+      common actions.
+    readiness_dependencies:
+      - EAF-DMK-209
+    existing_canonical_dependencies:
+      - DMK-167
+    implementation_locations: *a11
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D169-P1 | lead_owner=DMK-169 | Handshake records actual protocol/tool/ack/cancellation/event support
+        and unknown capabilities; unsupported operations show unavailable/manual fallback.
+      - D169-P2 | lead_owner=DMK-169 | Reconnect reuses the authorized identity and operation correlation,
+        refreshes current admission and reports bounded retry state.
+    negative_acceptance_criteria:
+      - D169-N1 | lead_owner=DMK-169 | Client brand, installed app or localhost address cannot prove tool
+        support, local confinement or authenticated session.
+      - D169-N2 | lead_owner=DMK-169 | Reconnect cannot revive revoked grants or unboundedly replay queued
+        operations.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Capability negotiation and disconnect/reconnect adapter doubles, unsupported cancellation and
+          bounded retry tests.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version capability/session records; rollback adapters to explicit unavailable/manual mode preserving
+        operation history.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-170
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-170
+    title: Current producer-bound asymmetric review evidence
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-09
+      - REQ-AI-007
+      - AUD-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - docs/03_architecture/AGENT_ARCHITECTURE.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical asymmetric review proposal exists; agent review remains distinct from human approval.
+      locations: &a12
+        - docs/00_control/MASTER_WBS.yaml
+        - docs/03_architecture/AGENT_ARCHITECTURE.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Bind review to producer identity, exact criteria/source/evidence revision and independently required
+      approver.
+    readiness_dependencies:
+      - EAF-DMK-081
+      - EAF-DMK-190
+    existing_canonical_dependencies:
+      - DMK-081
+      - DMK-169
+    implementation_locations: *a12
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D170-P1 | lead_owner=DMK-170 | A review records producer/verifier identity separation and exact
+        candidate/criteria/evidence/environment references.
+      - D170-P2 | lead_owner=DMK-170 | A changed producer result or criteria revision invalidates only
+        affected review coverage and requests current review.
+    negative_acceptance_criteria:
+      - D170-N1 | lead_owner=DMK-170 | A hash alone or unverified self-reported producer cannot establish
+        source provenance or independent review.
+      - D170-N2 | lead_owner=DMK-170 | Agent approval or GitHub account attribution cannot satisfy independent
+        human quorum.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Producer/verifier/candidate matrix with stale scope, same-actor and human-quorum denials.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Preserve historical review verdicts as scoped observations; rollback current-review projections
+        without rewriting evidence.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-171
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-171
+    title: Untrusted skill/message/repository input boundary
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-04
+      - EAF-REQ-05
+      - SEC-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - src/data/contextPackageCompiler.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Existing prompt-injection design and least-context compiler exist; no skill trust registry is claimed.
+      locations: &a13
+        - docs/00_control/MASTER_WBS.yaml
+        - src/data/contextPackageCompiler.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Apply trust policy to external messages, skill assets, repository context and returned proposals.
+    readiness_dependencies:
+      - EXT-CAND-01
+    existing_canonical_dependencies:
+      - DMK-166
+    implementation_locations: *a13
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D171-P1 | lead_owner=DMK-171 | Label untrusted content and complete source lineage through
+        compilation/response validation without promoting instructions to policy.
+      - D171-P2 | lead_owner=DMK-171 | Server denies instructions requesting grants, secret exposure or
+        protected transitions despite a trusted-looking skill/message wrapper.
+    negative_acceptance_criteria:
+      - D171-N1 | lead_owner=DMK-171 | Skill content claiming administrator/system authority cannot change
+        grants or admission rules.
+      - D171-N2 | lead_owner=DMK-171 | Paraphrase or missing citation cannot remove inherited source ACL or
+        trust constraints.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Adversarial skill/message/repository fixtures against compiler and independent server authorization
+          boundaries.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep trust labels/source manifests additive; quarantine unknown assets and retain original safe
+        compiler behavior on rollback.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-179
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-179
+    title: Scoped Git operations behind shared command policy
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-10
+      - REQ-INT-001
+      - AGT-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - docs/03_architecture/INTEGRATION_ARCHITECTURE.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical GitOps owner remains PROPOSED.
+      locations: &a14
+        - docs/00_control/MASTER_WBS.yaml
+        - docs/03_architecture/INTEGRATION_ARCHITECTURE.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Retain Git operation ownership; consume the common action/receipt contract without owning a second
+      project-command bridge.
+    readiness_dependencies:
+      - EAF-DMK-201
+    existing_canonical_dependencies:
+      - DMK-105
+    implementation_locations: *a14
+    scope_exclusions:
+      - EXT-CAND-02 owns project-command outbox/ack; DMK-179 does not duplicate it.
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D179-P1 | lead_owner=DMK-179 | An explicitly authorized Git operation binds repository/path/ref,
+        expected source revision, principal and current policy with exact resulting source reference.
+      - D179-P2 | lead_owner=DMK-179 | Surface divergent ref/source state as conflict and require authorized
+        reconciliation.
+    negative_acceptance_criteria:
+      - D179-N1 | lead_owner=DMK-179 | Project membership or GitHub command delivery alone cannot authorize
+        shell, credentials, merge or deployment.
+      - D179-N2 | lead_owner=DMK-179 | Stale source ref, replay or out-of-scope repository causes no Git
+        mutation.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Scoped Git adapter doubles and disposable-repository stale/ref/permission denial scenarios.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Preserve repository history; rollback adapter activation, use separately authorized source rollback
+        rather than destructive reset.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-180
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-180
+    title: Issue/tracker projection with shared conflict receipts
+    disposition: AMEND_SCOPE
+    current_status: PROPOSED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-10
+      - REQ-INT-001
+      - DUR-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - src/components/WorkView.tsx
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Canonical tracker-bridge owner remains PROPOSED.
+      locations: &a15
+        - docs/00_control/MASTER_WBS.yaml
+        - src/components/WorkView.tsx
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Retain issue/tracker projections with common idempotency/conflict/source acknowledgment boundaries.
+    readiness_dependencies:
+      - EAF-DMK-201
+    existing_canonical_dependencies:
+      - DMK-085
+    implementation_locations: *a15
+    scope_exclusions:
+      - EXT-CAND-02 owns project-command delivery; this owner remains tracker projection.
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D180-P1 | lead_owner=DMK-180 | Project an authorized task revision to an allowed tracker record with
+        stable source/target IDs, last ack and trace link.
+      - D180-P2 | lead_owner=DMK-180 | Receive a divergent tracker change as a proposed conflict, preserving
+        both versions until authorized disposition.
+    negative_acceptance_criteria:
+      - D180-N1 | lead_owner=DMK-180 | A tracker label/status edit cannot overwrite canonical self-project WBS
+        or imply a human release decision.
+      - D180-N2 | lead_owner=DMK-180 | Duplicate delivery or changed-body token cannot create a duplicate
+        task/projection.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Mock tracker partition/replay/conflict tests with canonical authority and source-recipient access
+          checks.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version projection mappings, retain remote/local history and stop synchronization before rolling back
+        mappings.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-198
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-198
+    title: Operator/client setup and no-key manual fallback
+    disposition: ADD_SUBTASK
+    current_status: IN_PROGRESS
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-17
+      - AGT-02
+      - AUTH-01
+      - AUTH-04
+      - FR-AI-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - scripts/workspaceSecurity.ts
+      - src/components/AgentCenterView.tsx
+      - docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: PR80/81 sessions, diagnostics and offline CLI exist; fresh local SDK/native qualification and
+        operator consent remain blocked.
+      locations: &a16
+        - scripts/workspaceSecurity.ts
+        - src/components/AgentCenterView.tsx
+        - docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Distinguish operator, authenticated human reviewer, delegated agent/client and manual/compiler setup
+      with explicit capability/consent status.
+    readiness_dependencies:
+      - EAF-DMK-209
+    existing_canonical_dependencies:
+      - DMK-197
+    implementation_locations: *a16
+    scope_exclusions:
+      - Does not own the complete identity system or fix the separate operator native environment.
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D198-P1 | lead_owner=DMK-198 | Manual compile/import and ordinary project management require no DMK
+        model API key; missing optional client capabilities remain clearly unavailable.
+      - D198-P2 | lead_owner=DMK-198 | Setup identifies human enrollment/client delegation/host-native
+        qualification/consent as distinct gates with the exact missing prerequisite.
+    negative_acceptance_criteria:
+      - D198-N1 | lead_owner=DMK-198 | Retained dependency success, previous CI or user import cannot claim
+        current clean installation or authenticated live-agent acceptance.
+      - D198-N2 | lead_owner=DMK-198 | No enrollment, authority initialization, original-data import or
+        privileged enablement occurs without separately explicit authorization.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Setup/fallback UI and CLI fixtures with missing SDK/client/key/consent; separate future qualified
+          clean operator walkthrough.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep existing manual path and original data untouched; rollback setup projections without
+        initializing/importing authority.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-199
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-199
+    title: External transport and security qualification coverage
+    disposition: ADD_SUBTASK
+    current_status: BACKLOG
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-15
+      - EAF-REQ-17
+      - AUTH-04
+      - PROV-03
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - scripts/runCompleteRegression.ts
+      - scripts/testWorkspaceStore.ts
+      - scripts/testWorkspaceApplication.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Credit exact-master four-job/139-suite CI even though canonical status is BACKLOG; WS04 unknown
+        failure and local SDK failure remain separate.
+      locations: &a17
+        - scripts/runCompleteRegression.ts
+        - scripts/testWorkspaceStore.ts
+        - scripts/testWorkspaceApplication.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add meaningful external/direct/GitHub/manual and human-acceptance scenarios; absorb candidate10
+      integrated test scope.
+    readiness_dependencies:
+      - EAF-DMK-214
+      - EXT-CAND-02
+      - EXT-CAND-07
+      - EXT-CAND-09
+    existing_canonical_dependencies:
+      - DMK-198
+    implementation_locations: *a17
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D199-P1 | lead_owner=DMK-199 | Coverage matrix exercises every supported transport,
+        revocation/reconnect, claim/conflict, source ACL, evidence freshness and authorized manual fallback on
+        an exact candidate.
+      - D199-P2 | lead_owner=DMK-199 | Retain actual failed/partial/NOT_RUN results alongside future successes
+        and distinguish synthetic/native/browser/operator acceptance evidence.
+    negative_acceptance_criteria:
+      - D199-N1 | lead_owner=DMK-199 | A later passing Windows run cannot erase the earlier WS04 failure or
+        assert its unknown root cause resolved.
+      - D199-N2 | lead_owner=DMK-199 | Missing SDK/native qualification, unavailable transport or absent
+        independent human acceptance cannot be recorded PASS.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Future exact-scope test matrix and supported-environment/operator qualification; this docs pass runs
+          none of those runtime tests.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep historical runs immutable; add scoped test coverage and revert only new harness behavior without
+        suppressing failures.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-201
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-201
+    title: Ordinary-project decision/document sync and CAS conflicts
+    disposition: ADD_SUBTASK
+    current_status: VERIFICATION_PENDING
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-10
+      - REQ-DATA-002
+      - DUR-01
+      - DUR-03
+      - AUD-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/projectPersistence.ts
+      - server/docs/controlledDocsTransaction.ts
+      - scripts/testWorkspaceProjectPersistence.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Atomic local scoped CAS and managed-document transactions already exist.
+      locations: &a18
+        - server/projectPersistence.ts
+        - server/docs/controlledDocsTransaction.ts
+        - scripts/testWorkspaceProjectPersistence.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add cross-system receipts/outbox/partial delivery and non-destructive decision/document conflict
+      handling; absorb candidate06 ordinary-project scope.
+    readiness_dependencies:
+      - EAF-DMK-206
+      - EAF-DMK-190
+      - EAF-DMK-205
+    existing_canonical_dependencies:
+      - DMK-192
+      - DMK-193
+    implementation_locations: *a18
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D201-P1 | lead_owner=DMK-201 | Synchronize accepted ordinary-project knowledge and document projection
+        using expected revisions, source links, audit/outbox and exact acknowledgment.
+      - D201-P2 | lead_owner=DMK-201 | A partition/restart after local commit reconstructs pending/uncertain
+        delivery and preserves both versions on divergent remote edits.
+    negative_acceptance_criteria:
+      - D201-N1 | lead_owner=DMK-201 | Stale CAS or missing acknowledgment cannot be treated as successful
+        overwrite/sync.
+      - D201-N2 | lead_owner=DMK-201 | Ordinary-project sync cannot reverse DMK-205 self-project WBS authority
+        or import external human approval.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Transaction/outbox failpoints before/after commit/send/ack and non-destructive cross-system conflict
+          fixtures.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Retain source/target versions, stop delivery before rollback, and use reviewed compensation instead of
+        deleting audit/history.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-202
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-202
+    title: Exact-candidate strict release assessment
+    disposition: ADD_SUBTASK
+    current_status: BACKLOG
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-16
+      - REQ-REL-001
+      - FR-GOV-02
+      - PROV-01
+      - PROV-02
+      - PROV-03
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/data/releaseReportProjection.ts
+      - docs/07_verification/RELEASE_GATES.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: PR80/81 scoped release evidence/CI observation and strict reporting exist; production
+        provenance/human release remain gated.
+      locations: &a19
+        - src/data/releaseReportProjection.ts
+        - docs/07_verification/RELEASE_GATES.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Qualify exact source/configuration, current blockers/findings/evidence/exceptions and rollback
+      readiness without widening technical status.
+    readiness_dependencies:
+      - EAF-DMK-199
+      - EAF-DMK-041
+      - EAF-DMK-207
+    existing_canonical_dependencies:
+      - DMK-195
+    implementation_locations: *a19
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D202-P1 | lead_owner=DMK-202 | Assess exact candidate/configuration against fresh scoped evidence,
+        open findings/blockers, expiring authorized exceptions and tested rollback references.
+      - D202-P2 | lead_owner=DMK-202 | Changed source/configuration/criteria invalidates affected release
+        assessment and explicitly requests human Gate 7 disposition.
+    negative_acceptance_criteria:
+      - D202-N1 | lead_owner=DMK-202 | FAIL, NOT_RUN, UNAVAILABLE, stale evidence or unsupported local-only
+        claims cannot become PASS.
+      - D202-N2 | lead_owner=DMK-202 | Agent verdict, CI success or GitHub actor cannot grant Gate 7 or
+        production release approval.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Release DTO/gate fixtures with exact candidate/config/freshness, missing scope, failures and
+          human-only authorization.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep release gate/report schema strict; rollback display/assessment extensions without promoting prior
+        candidates or removing blockers.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-205
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-205
+    title: Protected self-project WBS authority and migration boundary
+    disposition: AMEND_SCOPE
+    current_status: VERIFICATION_PENDING
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-11
+      - REQ-DATA-002
+      - AUD-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/MASTER_WBS.yaml
+      - server/workTracking/canonicalLifecycle.ts
+      - docs/06_planning/CAMPAIGN_WBS_SYNTHETIC_REGISTRATION_CONTRACT.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: MASTER_WBS.yaml remains self-project authority; current reconciliation is a projection and
+        canonical status remains VERIFICATION_PENDING.
+      locations: &a20
+        - docs/00_control/MASTER_WBS.yaml
+        - server/workTracking/canonicalLifecycle.ts
+        - docs/06_planning/CAMPAIGN_WBS_SYNTHETIC_REGISTRATION_CONTRACT.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Specify ordinary-project versus self-project authority and exact separately governed transition
+      requirements; absorb candidate06 self-project scope.
+    readiness_dependencies: []
+    existing_canonical_dependencies:
+      - DMK-203
+    implementation_locations: *a20
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D205-P1 | lead_owner=DMK-205 | Self-project previews read canonical WBS and identify runtime
+        WorkItems/documents as projections with exact source revision.
+      - D205-P2 | lead_owner=DMK-205 | Any authority reversal proposal includes custody, complete history,
+        exact pre/post bytes, governance approval, CAS cutover and tested rollback before eligibility.
+    negative_acceptance_criteria:
+      - D205-N1 | lead_owner=DMK-205 | Chat, GitHub command, runtime task edit or ordinary-project sync cannot
+        write back canonical WBS.
+      - D205-N2 | lead_owner=DMK-205 | Documentation merge cannot ratify a migration, loosen historical
+        verifier contracts or autoapply registration.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Read-only authority-direction/forward-contract analysis and future synthetic migration negative
+          tests under separate authorization.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - No authority migration now; future transition must preserve immutable receipts and prove
+        stop/recovery/rollback before cutover.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-206
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-206
+    title: Revision/environment/producer-bound evidence sessions
+    disposition: ADD_SUBTASK
+    current_status: BACKLOG
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-09
+      - AUD-01
+      - FR-WRK-02
+      - FR-WRK-03
+      - DUR-03
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/types.ts
+      - server.ts
+      - docs/07_verification/TEST_STRATEGY.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Local evidence sessions, artifact digests and human dispositions exist despite canonical BACKLOG.
+      locations: &a21
+        - src/types.ts
+        - server.ts
+        - docs/07_verification/TEST_STRATEGY.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend external producer provenance, criteria/source/config/environment revisions, failures and
+      freshness; absorb candidate10 evidence scope.
+    readiness_dependencies:
+      - EAF-DMK-085
+      - EAF-DMK-170
+    existing_canonical_dependencies:
+      - DMK-197
+      - DMK-198
+      - DMK-208
+    implementation_locations: *a21
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D206-P1 | lead_owner=DMK-206 | Record exact criteria/code/config/environment/tool/producer/source
+        lineage and positive/failed/partial results in a scoped evidence session.
+      - D206-P2 | lead_owner=DMK-206 | Changing a linked criterion/code/config marks affected evidence stale
+        while unrelated evidence retains its recorded scope and history.
+    negative_acceptance_criteria:
+      - D206-N1 | lead_owner=DMK-206 | A digest without authenticated producer/execution provenance cannot
+        establish verified origin or success.
+      - D206-N2 | lead_owner=DMK-206 | Agent report, imported approval or missing human decision cannot
+        satisfy independent human approval.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Evidence session/lineage/freshness fixtures, changed-revision tests and producer/approval spoofing
+          denials.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version evidence metadata additively; preserve original artifacts/results and adjudication when
+        reverting projections.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-207
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-207
+    title: Truthful cross-system health and sync projections
+    disposition: ADD_SUBTASK
+    current_status: BACKLOG
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - E
+    source_requirement_ids:
+      - EAF-REQ-09
+      - EAF-REQ-10
+      - EAF-REQ-13
+      - AUD-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/data/releaseReportProjection.ts
+      - src/data/riskDisplayProjection.ts
+      - docs/07_verification/RISK_DISPLAY_TRUTHFULNESS_20261021.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Scoped health/release/risk projections exist; cross-system claimed/observed/stale/sync states
+        remain extensions.
+      locations: &a22
+        - src/data/releaseReportProjection.ts
+        - src/data/riskDisplayProjection.ts
+        - docs/07_verification/RISK_DISPLAY_TRUTHFULNESS_20261021.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Project reported versus observed versus verified status, freshness and partial sync without fake
+      progress.
+    readiness_dependencies:
+      - EAF-DMK-201
+      - EXT-CAND-07
+    existing_canonical_dependencies:
+      - DMK-206
+      - DMK-208
+    implementation_locations: *a22
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D207-P1 | lead_owner=DMK-207 | Display per-source reported/observed/verified provenance and exact last
+        acknowledgment/freshness for a cross-system task/evidence update.
+      - D207-P2 | lead_owner=DMK-207 | Partition or changed criteria yields visible stale/uncertain/pending
+        sync state while historical observation stays available to authorized readers.
+    negative_acceptance_criteria:
+      - D207-N1 | lead_owner=DMK-207 | Silence, simulated data or local save cannot display verified remote
+        completion or delivery.
+      - D207-N2 | lead_owner=DMK-207 | Denied existence leaks no counts/badges/health row, even for an
+        otherwise public aggregate view.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Projection fixtures with conflicting source observations, stale evidence, source ACL revocation and
+          missing telemetry.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep projection schema versioned and non-authoritative; revert new rows without changing source
+        tasks/evidence.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required Simple/durable semantics; optional 2D gated separately; 3D DEFER. No production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-190
+    kind: PLANNING_CANDIDATE
+    item_type: CANONICAL_OWNER_EXTENSION
+    lead_owner: DMK-190
+    title: Linked compiler skill/policy/revision roundtrip extension
+    disposition: ADD_SUBTASK
+    current_status: VERIFIED
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-06
+      - FR-AI-01
+      - FR-AI-02
+      - FR-AI-04
+      - AUD-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/data/contextPackageCompiler.ts
+      - server/proposals/review.ts
+      - scripts/testProposalContract.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Original VERIFIED schema1.1/editable-target/importer/string-array criteria already exist and
+        remain closed to that original scope.
+      locations: &a23
+        - src/data/contextPackageCompiler.ts
+        - server/proposals/review.ts
+        - scripts/testProposalContract.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend current packages with task/criteria/state, skill/policy/allowed-operation revisions, validated
+      response and acknowledgment; absorb candidate05.
+    readiness_dependencies:
+      - EXT-CAND-01
+    existing_canonical_dependencies:
+      - DMK-188
+    implementation_locations: *a23
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D190-P1 | lead_owner=DMK-190 | Compile a package binding task/criteria/state revision, required skill
+        versions, policy, allowed operations, editable targets, response schema and required ack.
+      - D190-P2 | lead_owner=DMK-190 | Validate and record a current returned proposal/ack through the
+        existing importer, keeping acceptance criteria as actual string arrays and human disposition explicit.
+    negative_acceptance_criteria:
+      - D190-N1 | lead_owner=DMK-190 | Stale target/revision/policy or object-valued/malformed criteria are
+        rejected without canonical mutation.
+      - D190-N2 | lead_owner=DMK-190 | A user-pasted provider/model claim cannot become authenticated
+        live-agent identity or imported human approval.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Extend existing proposal/compiler tests with revision/skill/policy/ack roundtrip and
+          malformed/stale/manual provenance cases.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep schema1.1 compatibility and original VERIFIED evidence immutable; use versioned optional
+        extension and rollback to existing packages.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-209
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-209
+    title: Single per-operation action and skill admission perimeter
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-05
+      - AUTH-03
+      - SEC-01
+      - AGT-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/security/workspaceAccess/http.ts
+      - server/security/workspaceAccess/projectPolicy.cjs
+      - scripts/testWorkspaceRoutePolicy.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: PR81 central route/policy enforcement exists; proposed owner remains unregistered and privileged
+        activation is not credited.
+      locations: &a24
+        - server/security/workspaceAccess/http.ts
+        - server/security/workspaceAccess/projectPolicy.cjs
+        - scripts/testWorkspaceRoutePolicy.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Admit all external transports through one action policy and current per-operation skill
+      consultation/receipt; absorb candidate04.
+    readiness_dependencies:
+      - EAF-DMK-210
+      - EAF-DMK-211
+      - EAF-DMK-212
+      - EAF-DMK-213
+      - EXT-CAND-01
+      - EXT-CAND-03
+    existing_canonical_dependencies: []
+    implementation_locations: *a24
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D209-P1 | lead_owner=DMK-209 | Before every project operation, including scoped reads, consult current
+        applicable descriptions/required versions and issue a receipt bound to
+        actor/client/session/task/body/policy/skill revisions with expiry, except explicitly enumerated public
+        discovery/authenticated bootstrap reads.
+      - D209-P2 | lead_owner=DMK-209 | Explicit public discovery reveals only public availability/protocol
+        metadata; authenticated scoped bootstrap content reads use a fixed nonrecursive receipt exemption and
+        cannot mutate.
+    negative_acceptance_criteria:
+      - D209-N1 | lead_owner=DMK-209 | Changed content/task/policy/skill/grant or revocation invalidates
+        receipt and denies retry until refreshed.
+      - D209-N2 | lead_owner=DMK-209 | Bootstrap cannot read forbidden skill/private project metadata, enroll
+        authority, recursively demand itself or bypass privileged route denials.
+      - D209-N3 | lead_owner=DMK-209 | A scoped project read with missing/stale required consultation, context
+        or receipt fails before disclosure; read-only operation is not a blanket exemption.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Cross-transport action admission matrix with bootstrap, receipt refresh/revocation, stale body and
+          unauthorized alternate-path tests.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Keep current default-deny perimeter; stage new action catalog behind disabled gates and rollback by
+        disabling transports, preserving receipts.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-210
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-210
+    title: Unified external trust/policy authority architecture
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-02
+      - AUTH-01
+      - AUTH-02
+      - AUTH-03
+      - COM-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+      - server/security/workspaceAccess/projectPolicy.cjs
+      - docs/05_decisions/ADR/ADR-0007-wbs-trust-and-human-identity.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: PR81 default-deny identity/policy architecture is implemented; production/external trust and
+        protected self-project governance remain unratified.
+      locations: &a25
+        - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+        - server/security/workspaceAccess/projectPolicy.cjs
+        - docs/05_decisions/ADR/ADR-0007-wbs-trust-and-human-identity.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Ratify exact external transport action/identity/policy contracts, source authority, bootstrap,
+      nondelegable decisions and migration boundaries.
+    readiness_dependencies: []
+    existing_canonical_dependencies: []
+    implementation_locations: *a25
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D210-P1 | lead_owner=DMK-210 | Architecture names DMK/Git/CI/document authorities and one policy
+        evaluation path for direct/local/GitHub/manual actions.
+      - D210-P2 | lead_owner=DMK-210 | Document public minimal discovery, authenticated bootstrap, scoped
+        mutations and independent human authorization as separate admission classes.
+    negative_acceptance_criteria:
+      - D210-N1 | lead_owner=DMK-210 | Transport/vendor identity, prompt text or skill retrieval cannot create
+        a second policy engine or substitute human authority.
+      - D210-N2 | lead_owner=DMK-210 | No architecture/document merge declares proposed owners
+        registered/complete or weakens existing SO/LA quorum.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Architecture/authority threat review with explicit cross-transport trust and bootstrap dependency
+          audit before implementation.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Govern authority changes through exact reviewed ADR/migration; current enforcement and WBS direction
+        remain authoritative until then.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-211
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-211
+    title: Human session enrollment and external setup separation
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-02
+      - EAF-REQ-17
+      - AUTH-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/security/workspaceAccess/worker.cjs
+      - server/security/workspaceAccess/service.ts
+      - scripts/testWorkspaceLoginAdmission.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: SQLite/Argon2id/revocable human sessions/CSRF already exist; real consent/enrollment/operator
+        acceptance remain separate.
+      locations: &a26
+        - server/security/workspaceAccess/worker.cjs
+        - server/security/workspaceAccess/service.ts
+        - scripts/testWorkspaceLoginAdmission.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Specify accepted human provisioning/recovery and session authority needed by external workflows without
+      inferring native/operator qualification.
+    readiness_dependencies:
+      - EAF-DMK-210
+    existing_canonical_dependencies: []
+    implementation_locations: *a26
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D211-P1 | lead_owner=DMK-211 | Approved human enrollment records explicit consent and unique
+        principal/session under current credential/recovery policy without a model key.
+      - D211-P2 | lead_owner=DMK-211 | Session revocation/rotation/restart fencing invalidates external action
+        admission at next request and retry.
+    negative_acceptance_criteria:
+      - D211-N1 | lead_owner=DMK-211 | Agent, imported user identity, GitHub actor or header cannot
+        authenticate as an independent human.
+      - D211-N2 | lead_owner=DMK-211 | Missing clean native/environment qualification or enrollment consent
+        blocks operator acceptance without blocking non-applying planning.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Reuse session/replay/CSRF tests; future real operator enrollment/recovery acceptance only under
+          explicit consent and qualified environment.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Retain private authority, session digests and revocations; no copied authority activation or
+        unreviewed recovery grants.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-212
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-212
+    title: Source-specific action and notification authorization
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-18
+      - AUTH-02
+      - DATA-01
+      - DATA-02
+      - DATA-03
+      - DATA-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/security/workspaceAccess/projectPolicy.cjs
+      - scripts/testWorkspacePolicy.ts
+      - scripts/testWorkspaceProjectAccess.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: OWNER/EDITOR/READER/DENY project policy exists; source-specific derived content/delegated action
+        extensions remain.
+      locations: &a27
+        - server/security/workspaceAccess/projectPolicy.cjs
+        - scripts/testWorkspacePolicy.ts
+        - scripts/testWorkspaceProjectAccess.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend current policy with complete source ACL intersection, discover-existence, action scope and
+      revocation-aware delivery/projections.
+    readiness_dependencies:
+      - EAF-DMK-210
+      - EAF-DMK-211
+    existing_canonical_dependencies: []
+    implementation_locations: *a27
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D212-P1 | lead_owner=DMK-212 | Derived outputs from two same-class sources require current read
+        permission to every contributing source plus target policy with explicit denies.
+      - D212-P2 | lead_owner=DMK-212 | Recheck membership/source read and existence on
+        send/queue/deliver/read/search/export/render; revoke caches/queued notifications when one source
+        access changes.
+    negative_acceptance_criteria:
+      - D212-N1 | lead_owner=DMK-212 | Denied existence produces no pointer/title/count/unread
+        badge/notification/caption or attributable timing detail.
+      - D212-N2 | lead_owner=DMK-212 | Paraphrase, missing citation or sanitization cannot declassify; require
+        authorized human exact-source/output/audience decision.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Per-source ACL matrix including disjoint same-class audiences, uncited lineage, revocation and every
+          indirect UI/notification channel.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version source policies/manifests, quarantine unknown lineage and retain deny precedence; rollback
+        disables derived sharing rather than widens audience.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-213
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-213
+    title: Sponsored durable agent/client/session identity
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+    source_requirement_ids:
+      - EAF-REQ-12
+      - AGT-01
+      - AUTH-03
+      - AUTH-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+      - src/types.ts
+      - server/security/workspaceAccess/worker.cjs
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Disconnected synthetic identity foundations exist; no live external sponsored agent/client is enrolled.
+      locations: &a28
+        - docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md
+        - src/types.ts
+        - server/security/workspaceAccess/worker.cjs
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Bind durable agent principal to sponsor/delegation and separate client/session identity with revocation
+      and reconnect.
+    readiness_dependencies:
+      - EAF-DMK-212
+      - EAF-DMK-167
+    existing_canonical_dependencies: []
+    implementation_locations: *a28
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D213-P1 | lead_owner=DMK-213 | Authorized enrollment binds stable agent principal, sponsor/project
+        grant and separate client/session IDs; reconnect resolves the existing principal.
+      - D213-P2 | lead_owner=DMK-213 | Revoke one session independently and revoke sponsor/delegation across
+        all sessions with audit and current policy checks.
+    negative_acceptance_criteria:
+      - D213-N1 | lead_owner=DMK-213 | Role/avatar/provider label or user import cannot authenticate an agent
+        or fill a human approval seat.
+      - D213-N2 | lead_owner=DMK-213 | Duplicate reconnect, retired sponsor or revoked session cannot create
+        another active profile/grant or restore authority.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Synthetic enrollment/session/reconnect/revocation matrix before any separately approved live
+          enrollment.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Introduce principal/client/session identifiers additively; preserve sponsor/revocation history and
+        disable sessions on rollback.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EAF-DMK-214
+    kind: PLANNING_CANDIDATE
+    item_type: UNREGISTERED_PROPOSAL_AMENDMENT
+    lead_owner: DMK-214
+    title: All-transport migration and operational qualification
+    disposition: AMEND_SCOPE
+    current_status: UNREGISTERED_PROPOSAL
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - F
+    source_requirement_ids:
+      - EAF-REQ-02
+      - EAF-REQ-12
+      - EAF-REQ-17
+      - AUTH-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - scripts/testWorkspaceStore.ts
+      - scripts/testWorkspaceAuthorityIdentity.ts
+      - scripts/testWorkspaceBackup.ts
+      - docs/07_verification/WORKSPACE_BACKUP_RECOVERY_20261022.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Extensive synthetic crash/replay/native/perimeter evidence exists; real migration/all-transport
+        acceptance and WS04 root cause remain unqualified.
+      locations: &a29
+        - scripts/testWorkspaceStore.ts
+        - scripts/testWorkspaceAuthorityIdentity.ts
+        - scripts/testWorkspaceBackup.ts
+        - docs/07_verification/WORKSPACE_BACKUP_RECOVERY_20261022.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Qualify exact external identity/revocation/transport/migration/rollback scope with current
+      supported-environment evidence; coordinate separate capacity owner.
+    readiness_dependencies:
+      - EAF-DMK-209
+      - EAF-DMK-211
+      - EAF-DMK-212
+      - EAF-DMK-213
+      - EAF-DMK-169
+    existing_canonical_dependencies: []
+    implementation_locations: *a29
+    scope_exclusions:
+      - CAPACITY-FOLLOWUP-01 under DMK-120 is a separate 35th record, not this inventory entry.
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - D214-P1 | lead_owner=DMK-214 | Exercise old/new schema, migration interruption, revocation, replay,
+        cross-transport retries and rollback under exact candidate/environment with preserved history.
+      - D214-P2 | lead_owner=DMK-214 | Report native/owner/browser/operator and audit-capacity prerequisites
+        separately, carrying prior failures and uncertainty.
+    negative_acceptance_criteria:
+      - D214-N1 | lead_owner=DMK-214 | Retained binaries or historical CI cannot substitute a fresh qualified
+        supported installation.
+      - D214-N2 | lead_owner=DMK-214 | Copied backup, capacity exhaustion, stale custody or unknown migration
+        outcome cannot activate a new authority or record PASS.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Future separately approved disposable migrations/failpoints and exact supported clean qualification;
+          reference capacity follow-up without duplicating its owner.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Require reviewed custody/continuity/backup/cutover/rollback proof; no live migration or authority
+        activation in this plan.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EXT-CAND-01
+    kind: PLANNING_CANDIDATE
+    item_type: NEW_CANDIDATE
+    lead_owner: EXT-CAND-01
+    title: Common external action protocol and capability-tested adapters
+    disposition: NEW_CANDIDATE
+    current_status: UNREGISTERED_CANDIDATE
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - B
+      - C
+    source_requirement_ids:
+      - EAF-REQ-01
+      - AGT-02
+      - DUR-01
+      - DUR-02
+      - DUR-05
+      - RUN-02
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - server/security/workspaceAccess/worker.cjs
+      - src/data/contextPackageCompiler.ts
+      - docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Existing local CAS/replay/validation are reusable foundations; no common live external protocol
+        or adapter is claimed.
+      locations: &a30
+        - server/security/workspaceAccess/worker.cjs
+        - src/data/contextPackageCompiler.ts
+        - docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Define one versioned action/ack contract and direct/local/GitHub/manual transport capabilities,
+      idempotency, CAS, outbox/retry/reconnect and bounded loops.
+    readiness_dependencies:
+      - EAF-DMK-213
+      - EAF-DMK-212
+    existing_canonical_dependencies: []
+    implementation_locations: *a30
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - C01-P1 | lead_owner=EXT-CAND-01 | Every adapter uses the same actor/project/operation/token key plus
+        immutable body digest, revisions and ack correlation; same-token/same-body returns the prior local
+        effect.
+      - C01-P2 | lead_owner=EXT-CAND-01 | Crash/reconnect preserves durable pending/result/ack state with
+        current reauthorization and bounded retries; unsupported capability has explicit manual fallback with
+        no DMK model key.
+    negative_acceptance_criteria:
+      - C01-N1 | lead_owner=EXT-CAND-01 | Same token/changed body or stale CAS rejects without extra
+        effect/job/outbox/provider call.
+      - C01-N2 | lead_owner=EXT-CAND-01 | Client name/localhost/GitHub actor cannot imply supported
+        capability, authenticated principal, independent human, guaranteed remote execution or once-only
+        billing.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Versioned contract schema and adapter doubles with
+          race/replay/stale-CAS/crash/ack/uncertainty/fallback scenarios; discover actual clients before
+          claiming support.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version envelopes and capability descriptors; stage adapters disabled, retain operation/digest
+        tombstones and pending outbox on rollback.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EXT-CAND-02
+    kind: PLANNING_CANDIDATE
+    item_type: NEW_CANDIDATE
+    lead_owner: EXT-CAND-02
+    title: GitHub project-command bridge with durable outbox and ack
+    disposition: NEW_CANDIDATE
+    current_status: UNREGISTERED_CANDIDATE
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - D
+    source_requirement_ids:
+      - EAF-REQ-10
+      - REQ-INT-001
+      - DUR-01
+      - DUR-02
+      - DUR-03
+      - DUR-05
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/03_architecture/INTEGRATION_ARCHITECTURE.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: GitOps/tracker ownership and local durable/CAS foundations exist; no acknowledged project-command
+        transport is claimed.
+      locations: &a31
+        - docs/03_architecture/INTEGRATION_ARCHITECTURE.md
+        - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add capability-negotiated GitHub command inbox/outbox/ack delivery using common policy; preserve
+      DMK-179 Git and DMK-180 tracker scope.
+    readiness_dependencies:
+      - EAF-DMK-179
+      - EAF-DMK-180
+      - EAF-DMK-209
+    existing_canonical_dependencies: []
+    implementation_locations: *a31
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - C02-P1 | lead_owner=EXT-CAND-02 | Persist command correlation, source/target revision, body digest,
+        retry/ack history and authorized result; partition/restart resumes the same pending command.
+      - C02-P2 | lead_owner=EXT-CAND-02 | Authorize incoming/outgoing commands under current
+        principal/delegation/source policy and reconcile divergent authority non-destructively.
+    negative_acceptance_criteria:
+      - C02-N1 | lead_owner=EXT-CAND-02 | GitHub actor/commit/workflow attribution cannot serve as independent
+        human approval or expand Git/shell/deployment scope.
+      - C02-N2 | lead_owner=EXT-CAND-02 | Duplicate/changed-body/stale command or missing delivery
+        acknowledgment cannot create duplicate work or claim completion.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Mock GitHub delivery/partition/replay/ack doubles with scope/revocation/conflict and
+          actor-versus-human tests.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version bridge mappings and stop delivery before rollback; retain pending/uncertain commands and
+        audit, never delete to claim sync.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EXT-CAND-03
+    kind: PLANNING_CANDIDATE
+    item_type: NEW_CANDIDATE
+    lead_owner: EXT-CAND-03
+    title: Trusted versioned skill and reusable prompt registry
+    disposition: NEW_CANDIDATE
+    current_status: UNREGISTERED_CANDIDATE
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - C
+    source_requirement_ids:
+      - EAF-REQ-04
+      - AGT-04
+      - SEC-01
+      - FR-AI-01
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/data/contextPackageCompiler.ts
+      - src/data/initialData.ts
+      - src/components/PromptCompilerView.tsx
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Existing compiler/role prompt assets and library navigation are reuse points, not a trusted registry.
+      locations: &a32
+        - src/data/contextPackageCompiler.ts
+        - src/data/initialData.ts
+        - src/components/PromptCompilerView.tsx
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Extend existing assets with stable versions/descriptions/applicability/trust/dependencies/revocation;
+      supply current metadata/content to single DMK-209 admission.
+    readiness_dependencies:
+      - EAF-DMK-190
+      - EAF-DMK-171
+    existing_canonical_dependencies: []
+    implementation_locations: *a32
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - C03-P1 | lead_owner=EXT-CAND-03 | Retrieve authorized current applicable descriptions and pinned
+        content with stable asset/version/digest/trust/dependency/policy metadata.
+      - C03-P2 | lead_owner=EXT-CAND-03 | Revoke/replace a skill version; preserve history and invalidate
+        affected admission/compiled packages before another operation.
+    negative_acceptance_criteria:
+      - C03-N1 | lead_owner=EXT-CAND-03 | Retrieval/receipt or model claim cannot prove understanding, trusted
+        skill origin or action compliance.
+      - C03-N2 | lead_owner=EXT-CAND-03 | Untrusted content cannot register itself trusted, grant permissions,
+        read denied assets or create a parallel admission engine.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Registry/compiler asset fixtures for version dependency resolution, unauthorized discovery, trust
+          revocation and stale package invalidation.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Migrate existing prompt assets by stable mapping/version references; rollback to current compiler
+        library while quarantining untrusted assets.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required scoped foundation/extension before its dependent live capability; no production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EXT-CAND-07
+    kind: PLANNING_CANDIDATE
+    item_type: NEW_CANDIDATE
+    lead_owner: EXT-CAND-07
+    title: Durable workplace profile/session presence and Simple views
+    disposition: NEW_CANDIDATE
+    current_status: UNREGISTERED_CANDIDATE
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - E
+    source_requirement_ids:
+      - EAF-REQ-13
+      - AGT-01
+      - AGT-03
+      - AGT-05
+      - UX-01
+      - UX-02
+      - UX-03
+      - UX-04
+      - RUN-01
+      - RUN-03
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - src/components/AgentCenterView.tsx
+      - src/types.ts
+      - docs/01_product/agent-center-v0.3/02_INFORMATION_ARCHITECTURE_AND_UX_FLOWS.md
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: Agent Center role cards/demo and v0.3 event/view design exist; durable external workplace
+        presence is not claimed.
+      locations: &a33
+        - src/components/AgentCenterView.tsx
+        - src/types.ts
+        - docs/01_product/agent-center-v0.3/02_INFORMATION_ARCHITECTURE_AND_UX_FLOWS.md
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add durable profile/client/session/assignment/activity/result/event projections and truthful
+      entered/task/blocked/review/resting/inactive presence; absorb candidate08 views.
+    readiness_dependencies:
+      - EAF-DMK-213
+      - EAF-DMK-085
+      - EAF-DMK-209
+    existing_canonical_dependencies: []
+    implementation_locations: *a33
+    scope_exclusions:
+      - DMK-213 owns authenticated principal/sponsor/delegation; this entry owns durable workplace projection.
+      - 3D implementation is DEFER; optional 2D cannot delay usable Simple semantics.
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - C07-P1 | lead_owner=EXT-CAND-07 | Reconnect reuses stable profile with separate authorized
+        sessions/assignment/result history; actual events drive Simple and optional 2D with identical selected
+        task/thread/provenance.
+      - C07-P2 | lead_owner=EXT-CAND-07 | Show reported/observed/verified/unknown liveness and actual source
+        timestamps; retain accessible no-WebGL Simple fallback and distinguish the requested configurable
+        10–15 minute rest-exit range from the 15-minute default PROPOSAL.
+      - C07-P3 | lead_owner=EXT-CAND-07 | For a separately approved timeout within 10–15 minutes, server time
+        before expiry keeps a resting session resting; at expiry a durable event transitions it inactive and
+        projects avatar exit in both views, preserving history and task claim. Fifteen-minute default remains
+        unratified until that choice is approved.
+    negative_acceptance_criteria:
+      - C07-N1 | lead_owner=EXT-CAND-07 | Disconnect/rest expiry cannot mark complete, release a claim or
+        prove remote termination; manual liveness remains explicit unknown/last-updated.
+      - C07-N2 | lead_owner=EXT-CAND-07 | No fabricated progress/thoughts/tokens/cost; avatar/view selection
+        grants no permissions and source-denied events produce no badge/caption.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Event replay/reconnect/multisession/revocation/clock and Simple accessibility/view-parity fixtures;
+          validate proposed expiry with users before default adoption.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: HIGH
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Use versioned event projection and feature gates; preserve events/profile identity when disabling 2D;
+        3D stays deferred.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required Simple/durable semantics; optional 2D gated separately; 3D DEFER. No production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false
+  - key: EXT-CAND-09
+    kind: PLANNING_CANDIDATE
+    item_type: NEW_CANDIDATE
+    lead_owner: EXT-CAND-09
+    title: Durable project/task chat, mentions and delivery states
+    disposition: NEW_CANDIDATE
+    current_status: UNREGISTERED_CANDIDATE
+    proposed_scope_status: REVIEW_ONLY
+    scope_version: EAF-20261023.1
+    implementation_slices:
+      - E
+    source_requirement_ids:
+      - EAF-REQ-14
+      - COM-01
+      - COM-02
+      - COM-03
+      - COM-04
+      - DATA-01
+      - DATA-02
+      - DATA-03
+      - DATA-04
+    source_locations:
+      - docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md
+      - docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md
+      - docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md
+      - src/components/AgentCenterView.tsx
+      - src/types.ts
+    baseline_evidence:
+      status: HISTORICAL_CREDIT_ONLY
+      runtime_revision: 62d66779b9d7236e093eb2fd8e47355c8d42b798
+      description: v0.3 classified durable-channel/source-intersection/mention contracts exist as proposed design;
+        no live durable chat implementation is credited.
+      locations: &a34
+        - docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md
+        - src/components/AgentCenterView.tsx
+        - src/types.ts
+      shared_records:
+        - https://github.com/Jeruzael/docmonstakrakin/actions/runs/39911133606
+        - https://github.com/Jeruzael/docmonstakrakin/blob/ade88004341f59503a4ccad833d2aba9f6a76647/docs/07_verification/OPERATIONAL_SECURITY_COMPLETION_20261022.md
+    delta: Add durable project/task/artifact conversations, authorized mentions/blockers, per-recipient
+      queued/delivered/read/acted state and bounded wakeup/delegation.
+    readiness_dependencies:
+      - EAF-DMK-212
+      - EAF-DMK-209
+      - EAF-DMK-201
+    existing_canonical_dependencies: []
+    implementation_locations: *a34
+    scope_exclusions:
+      - No canonical lifecycle/status change, task registration, runtime apply or activation in this review.
+      - No human quorum substitution, secrets/shell/deploy/release authority from a repository or transport
+        grant.
+    acceptance_criteria:
+      - C09-P1 | lead_owner=EXT-CAND-09 | Persist authorized thread/message/source lineage and per-recipient
+        queued/delivered/read/acted events atomically with audit/outbox across restart.
+      - C09-P2 | lead_owner=EXT-CAND-09 | Mention/blocker workflow reauthorizes every source and recipient at
+        queue/delivery/read/render and enforces bounded hops/rate/time/budget with human escalation.
+    negative_acceptance_criteria:
+      - C09-N1 | lead_owner=EXT-CAND-09 | Wakeup or delivered/read receipt cannot imply agent execution, acted
+        outcome or release/human approval.
+      - C09-N2 | lead_owner=EXT-CAND-09 | Disjoint source ACLs, revocation, uncited paraphrase or denied
+        existence yield no leak via content/search/export/notification/unread badge/caption.
+    evidence_method:
+      status: PLANNED_NOT_RUN
+      procedures:
+        - Durability failpoints plus source ACL/mention fanout/revocation/accessibility fixtures and bounded
+          agent-loop tests.
+        - Capture exact candidate/configuration/criteria/environment/producer, positive and failed results,
+          source lineage and current reviewer disposition; stale affected evidence after change.
+    risk:
+      level: CRITICAL
+      review_required: true
+      unresolved: Future exact implementation, policy ratification, supported-environment acquisition and
+        independently authorized acceptance remain unqualified.
+    authority:
+      accountable_human: PENDING_APPOINTMENT
+      implementation_authorization: NOT_GRANTED_BY_THIS_DOCUMENT
+      required: Current authenticated project authority, applicable least-privilege delegation and nondelegable
+        independent human decisions; proposed ownership is not a live grant.
+    migration_rollback:
+      - Version thread/delivery schema and retain messages/acks/audit; disable new delivery on rollback
+        without publicizing unknown lineage.
+      - Use an exact reviewed additive migration/cutover and tested rollback; retain source
+        bytes/history/denials, stop on stale CAS or uncertain custody; do not activate a copied authority.
+    release_scope: Required Simple/durable semantics; optional 2D gated separately; 3D DEFER. No production release granted.
+    application:
+      canonical_registration: NOT_APPLIED
+      runtime_board: NOT_APPLIED
+      canonicalApply: false
+      runtimeApply: false
+      mayApply: false

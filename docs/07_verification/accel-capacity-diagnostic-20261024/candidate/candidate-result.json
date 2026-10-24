@@ -1,0 +1,9 @@
+{
+  "started": "2026-10-24T06:23:15.1042726Z",
+  "finished": "2026-10-24T06:24:29.1646881Z",
+  "status": 0,
+  "node": "v22.23.4",
+  "base": "ef6b30bf1392a9c9ead69a3a73f9655c7d18317d",
+  "testBlob": "9767429edbdecd7fa08c7f15a12199589e917141",
+  "testSha256": "a192545426d3b8e71f3ed9adcd69d2216f7b58c3b48d6c3437a52042530f778c"
+}
