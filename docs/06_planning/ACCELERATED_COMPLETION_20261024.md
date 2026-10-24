@@ -55,3 +55,5 @@ Files to inspect/then change only after the concrete schema contract is recorded
 - Review lost-ack recovery without duplicate effects; revoked disclosure; source/metadata races; full capacity; cold startup and native ownership on both platforms.
 
 Plans are executed under the standing mandate without another routine planning gate. Every package records exact file scope before its own implementation. This map does not declare the remaining packages implemented.
+
+Current reviewable slices: PR88 immutable Linux capacity inspector; PR89 criterion-preservation/non-applying registration subset; root receipt/first-create candidate (publication pending). The [receipt file plan](ACCEL_ACTION_RECEIPTS_20261024.md) and [first-create diagnosis](../07_verification/ACCEL_EMPTY_WORKSPACE_CREATION_20261024.md) define exact runtime/test changes. These slices do not mark their entire scheduling packages complete. Current prototype has no external live-agent client, no schema2 backup/inspector support and no valuable-state migration.

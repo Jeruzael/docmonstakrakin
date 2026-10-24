@@ -188,7 +188,10 @@ function validateScope(before, after, action, projectId) {
   for (const collection of COLLECTIONS) {
     const a = before.state[collection] || {}, b = after.state[collection] || {};
     for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) if (key !== target && !isDeepStrictEqual(a[key], b[key])) fail('WORKSPACE_SCOPE_INVALID');
-    if (Object.hasOwn(before.state, collection) !== Object.hasOwn(after.state, collection) && Object.keys(a).length === 0 && Object.keys(b).length === 0) fail('WORKSPACE_SCOPE_INVALID');
+    // A fresh null snapshot has only projects:[]. Its first real serializer
+    // output adds empty optional maps; with no existing project, those maps
+    // contain no foreign state. Preserve conservative presence checks later.
+    if (Object.hasOwn(before.state, collection) !== Object.hasOwn(after.state, collection) && Object.keys(a).length === 0 && Object.keys(b).length === 0 && !(creation && old.size === 0 && !Object.hasOwn(before.state, collection) && Object.hasOwn(after.state, collection))) fail('WORKSPACE_SCOPE_INVALID');
   }
   return creation ? target : null;
 }
