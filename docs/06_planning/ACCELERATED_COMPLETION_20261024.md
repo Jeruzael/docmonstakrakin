@@ -6,12 +6,12 @@ Goal: qualified local/self-hosted engineering release candidate. Production rele
 
 ## Execution and acceptance map
 
-Every listed owner's positive and negative criteria remain obligations, not implicit passes. Cross-package support does not duplicate the lead owner. Exact criterion coverage is in the linked immutable inventory; the campaign coverage table below assigns each criterion to one scheduling package. A package's status separates engineering, integration, registration, human acceptance and release. IN_PROGRESS/QUEUED/BLOCKED are campaign metadata only.
+Every listed owner's positive and negative criteria remain obligations, not implicit passes. Cross-package support does not duplicate the lead owner. Exact criteria remain in the linked immutable inventory; a verbatim criterion-to-package mapping has been prepared on the separate authority-preparation branch and awaits integration. A package's status separates engineering, integration, registration, human acceptance and release. IN_PROGRESS/QUEUED/BLOCKED are campaign metadata only.
 
 | # | Package | Existing lead/support owners | Dependencies | Current engineering state / remaining exit |
 |---|---|---|---|---|
 | 1 | PR87 closure | DMK-199 | — | QUALIFIED: actual master556bed6 CI40063320425, four jobs,140 suites/2774 checks; no implementation redo |
-| 2 | PR85 integration | DMK-199/205 | 1 | MERGED ef6b30bf; actual CI40067046174 pending; 13 approved file blobs preserved |
+| 2 | PR85 integration | DMK-199/205 | 1 | MERGED ef6b30bf; actual CI40067046174 three PASS/Windows FAIL; bounded capacity-test timeout diagnosis pending; 13 approved file blobs preserved |
 | 3 | Fresh setup | DMK-198/199/214 | 1 | IN_PROGRESS isolated official SDK/native qualification; original installation untouched |
 | 4 | WS04 diagnosis | DMK-199/214 | 3 | IN_PROGRESS bounded original-stage diagnostics; historical cause UNKNOWN |
 | 5 | Non-mutating inspector | DMK-120 extension | 3 | IN_PROGRESS immutable-profile admission/image validation; ordinary writable sources must reject |
@@ -37,7 +37,7 @@ Every listed owner's positive and negative criteria remain obligations, not impl
 
 ## Fixed worker contracts
 
-Integration owner: root agent only. `accel_setup_ws04` owns setup/diagnostic helpers and its package3/4 plan/evidence. `accel_capacity_inspector` owns new inspector/CLI/tests and its package5 plan/evidence; no core authority edits. `accel_authority_map` owns non-applying package8 candidate and source/criterion assessment. Root owns shared authority/schema/dependencies/migration and these four campaign records. Independent work continues during hosted CI; no dependent merge precedes four successful actual-master jobs. Worker commits are agent-authored, not human approvals.
+Integration owner: root agent only. `accel_setup_ws04` owns setup/diagnostic helpers and its package3/4 plan/evidence, plus separately recorded new synthetic-capacity timeout diagnosis. `accel_capacity_inspector` owns new inspector/CLI/tests and its package5 plan/evidence; no core authority edits. `accel_authority_map` preserved the non-applying package8 candidate/criterion assessment, then received exclusive delegation of the receipt `contracts.ts/store.ts/worker.cjs` and native test on a separate branch. Root owns HTTP/CLI/qualification integration and these four campaign records. Shared schema/authority edits remain serialized. Independent work continues during hosted CI; no dependent merge precedes four successful actual-master jobs. Worker commits are agent-authored, not human approvals.
 
 ## First shared-contract slice: bounded durable action acknowledgment
 

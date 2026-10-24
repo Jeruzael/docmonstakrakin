@@ -80,6 +80,9 @@ await check('unsupported protocol or legacy workspace rejects explicit opt-in wi
 await check('lookup denial or unavailable authority never falls through to a mutation',async()=>{
  for(const code of['WORKSPACE_ACCESS_DENIED','WORKSPACE_STORE_UNAVAILABLE']){const f=await fixture({lookupError:code});try{assert.ok([403,503].includes((await f.post('Denied')).status));assert.equal(f.stats.handlerCalls,0);assert.equal(f.stats.commitCalls,0);}finally{await f.close();}}
 });
+await check('dynamic create-or-import route rejects explicit protocol before any authority lookup',async()=>{
+ const f=await fixture();try{const r=await fetch(f.url.replace('/PRJ-A/test','/package/import'),{method:'POST',headers:{'Content-Type':'application/json','X-DMK-Request-ID':randomUUID(),'X-DMK-Expected-Revision':'0','X-DMK-Action-Protocol':'1'},body:JSON.stringify({package:{knowledge:{project:{id:'PRJ-NEW'}}}})});assert.equal(r.status,400);assert.equal((await r.json()).error,'WORKSPACE_ACTION_ROUTE_UNSUPPORTED');assert.equal(f.stats.lookupCalls,0);assert.equal(f.stats.commitCalls,0);}finally{await f.close();}
+});
 await check('concurrent requests cannot enter while authoritative lookup is pending',async()=>{
  const f=await fixture(),release=f.gateLookup();try{
   const request=f.post('First');

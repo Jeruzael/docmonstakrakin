@@ -22,10 +22,13 @@ export async function installWorkspaceProjectPersistence(app:Express,store:Proje
   const authorization=res.locals.workspaceAuthorization;
   // This middleware follows existing session, CSRF and route authorization.
   // Never disclose capability/revision to a caller lacking that admission.
-  if(authorization?.digest){res.setHeader('X-DMK-Workspace-Revision',String(revision));if(receiptCapable)res.setHeader('X-DMK-Action-Protocol','1');}
+  if(authorization?.digest||res.locals.workspaceDiscoveryRevision===revision){res.setHeader('X-DMK-Workspace-Revision',String(revision));if(receiptCapable)res.setHeader('X-DMK-Action-Protocol','1');}
   const protocol=req.headers['x-dmk-action-protocol'];
   if(protocol!==undefined&&protocol!=='1')return void res.status(400).json({error:'WORKSPACE_ACTION_PROTOCOL_INVALID'});
   if(protocol==='1'&&!receiptCapable)return void res.status(409).json({error:'WORKSPACE_ACTION_PROTOCOL_UNAVAILABLE'});
+  // Import's authorization changes from create to import after first success.
+  // Protocol1 must not reinterpret a stored action or silently fall back.
+  if(protocol==='1'&&req.method==='POST'&&/^\/package\/import\/?$/i.test(req.path))return void res.status(400).json({error:'WORKSPACE_ACTION_ROUTE_UNSUPPORTED'});
   const auditedExport=['GET','HEAD'].includes(req.method)&&/\/package\/export\/?$/i.test(req.path);
   const mutation=['POST','PATCH','PUT','DELETE'].includes(req.method)||auditedExport;
   if(!mutation)return next();
