@@ -8,6 +8,9 @@ import {installWorkspaceProjectPersistence} from './server/security/workspaceAcc
 import {workspaceVerificationPrincipal} from './server/security/workspaceAccess/identity.ts';
 import {resolveWorkspaceTls} from './server/security/workspaceAccess/tls.ts';
 import {createWorkspaceBodyAdmission} from './server/security/workspaceAccess/bodyAdmission.ts';
+import {parseAgentJson} from './server/security/workspaceAccess/agentJson.ts';
+import {WorkspaceAgentService} from './server/security/workspaceAccess/agentService.ts';
+import {installAgentReadHttp,installAgentSponsorHttp} from './server/security/workspaceAccess/agentHttp.ts';
 import {createServer as createHttpsServer} from 'node:https';
 import {registerGitHubCiRoutes} from './server/release/githubCiRoutes.ts';
 import express from 'express';
@@ -150,7 +153,7 @@ async function startServer() {
   app.use(localRequestBoundary);
   app.use(enforceApiRoutePolicy);
   if(workspaceMode==='ENFORCED')app.use(createWorkspaceBodyAdmission());
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '10mb',verify:(req,_res,bytes)=>{if(/^\/api\/external(?:\/|$)/i.test(req.url??''))parseAgentJson(bytes);} }));
 
   const recoveryReport = workspaceMode==='LOCAL_DEVELOPMENT'?recoverDocumentTransactions(process.cwd()):{locked:false,errors:[]};
   if (recoveryReport.locked) {
@@ -167,6 +170,8 @@ async function startServer() {
   }
   const authorityInfo=workspaceAuthority?await workspaceAuthority.execute({command:'info'}):null;
   const workspaceSession=workspaceAuthority&&authorityInfo?.initialized?await createWorkspaceSessionService(workspaceAuthority):null;
+  const workspaceAgent=workspaceMode==='ENFORCED'&&workspaceAuthority&&authorityInfo?.initialized&&authorityInfo?.agentDelegation===true?new WorkspaceAgentService(workspaceAuthority):null;
+  const agentReadHttp=installAgentReadHttp(app,workspaceAgent);
   if(workspaceMode==='LOCAL_DEVELOPMENT')app.use((req,res,next)=>{
     if(['GET','HEAD'].includes(req.method)&&/^\/api\/governance\/session\/?$/i.test(req.path)){
       const send=res.json.bind(res);res.json=body=>send({...body,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}});
@@ -180,9 +185,11 @@ async function startServer() {
     if((res.locals.securityRouteClass==='SPECIALIZED_REVIEWER'||reviewerTransition)&&!reviewerAuth.requireHuman(req,res))return;
     next();
   });
+  let authorityCoordinator:Awaited<ReturnType<typeof installWorkspaceProjectPersistence>>|null=null;
   if(workspaceMode==='ENFORCED'){
-    if(workspaceAuthority)await installWorkspaceProjectPersistence(app,store,workspaceAuthority);
+    if(workspaceAuthority)authorityCoordinator=await installWorkspaceProjectPersistence(app,store,workspaceAuthority);
   }else installProjectPersistence(app, store);
+  installAgentSponsorHttp(app,workspaceAgent,authorityCoordinator?.runAuthorityOperation??null);
   const releaseCi=registerGitHubCiRoutes(app,store,reviewerAuth.requireHuman);
   registerVerificationRoutes(app,store,reviewerAuth.requireHuman,workspaceMode==='ENFORCED'?workspaceVerificationPrincipal:undefined);
   registerProjectReadinessRoutes(app,store,reviewerAuth.requireHuman,(projectId,current)=>projectVerificationEvidence(store,projectId,current));
@@ -1793,7 +1800,7 @@ async function startServer() {
   listener.listen(network.port, network.host, () => {
     console.log(`docmonstakrakin Control Plane running at ${tls.enabled?'https':'http'}://${network.host}:${network.port}`);
   });
-  const close=()=>{workspaceSession?.close();listener.close(()=>{void workspaceAuthority?.close().finally(()=>process.exit(0));if(!workspaceAuthority)process.exit(0);});};
+  const close=()=>{workspaceSession?.close();workspaceAgent?.close();agentReadHttp.close();listener.close(()=>{void workspaceAuthority?.close().finally(()=>process.exit(0));if(!workspaceAuthority)process.exit(0);});};
   process.once('SIGINT',close);process.once('SIGTERM',close);
 }
 
