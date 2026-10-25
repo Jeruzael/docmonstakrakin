@@ -13,25 +13,25 @@ export function createWorkspaceAgentClient(options:Options){
  if(!options||Object.getPrototypeOf(options)!==Object.prototype||Object.keys(options).sort().join(',')!=='ca,origin,token'||typeof options.origin!=='string'||!/^https:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}\/?$/.test(options.origin)||!Buffer.isBuffer(options.ca)||!options.ca.length||options.ca.length>65536||typeof options.token!=='string'||!/^dmk_agent_v1_[a-f0-9]{64}$/.test(options.token))throw Error('AGENT_CLIENT_INPUT_INVALID');
  const origin=new URL(options.origin);if(Number(origin.port)>65535)throw Error('AGENT_CLIENT_INPUT_INVALID');
  const agent=new https.Agent({ca:Buffer.from(options.ca),rejectUnauthorized:true,minVersion:'TLSv1.3',maxSockets:1});let closed=false;let token=options.token;
- function request(path:string,body?:unknown):Promise<any>{
+ function request(path:string,body?:unknown,signal?:AbortSignal):Promise<any>{
   if(closed)throw Error('AGENT_CLIENT_CLOSED');
   const encoded=body===undefined?undefined:Buffer.from(JSON.stringify(body));if(encoded&&encoded.length>16384)throw Error('AGENT_CLIENT_BODY_TOO_LARGE');
   return new Promise((resolve,reject)=>{
-   const req=https.request(new URL(path,origin),{agent,method:encoded?'POST':'GET',headers:{Authorization:'Bearer '+token,...(encoded?{'Content-Type':'application/json','Content-Length':encoded.length}:{})}},res=>{
+   const req=https.request(new URL(path,origin),{agent,signal,method:encoded?'POST':'GET',headers:{Authorization:'Bearer '+token,...(encoded?{'Content-Type':'application/json','Content-Length':encoded.length}:{})}},res=>{
     let bytes=0;const chunks:Buffer[]=[];res.on('data',chunk=>{bytes+=chunk.length;if(bytes>1024*1024){req.destroy(Error('AGENT_CLIENT_RESPONSE_TOO_LARGE'));return;}chunks.push(Buffer.from(chunk));});res.once('error',()=>reject(Error('AGENT_CLIENT_RESPONSE_FAILED')));
     res.once('end',()=>{if(res.statusCode!==200){reject(Error('AGENT_CLIENT_REJECTED_'+res.statusCode));return;}try{const raw=Buffer.concat(chunks);if(!Buffer.from(raw.toString('utf8')).equals(raw))throw Error();resolve(JSON.parse(raw.toString('utf8')));}catch{reject(Error('AGENT_CLIENT_RESPONSE_INVALID'));}});
    });req.setTimeout(5000,()=>req.destroy(Error('AGENT_CLIENT_TIMEOUT')));req.once('error',()=>reject(Error('AGENT_CLIENT_REQUEST_FAILED')));req.end(encoded);
   });
  }
  return{
-  session:()=>request('/api/external/session'),
-  async readTask(projectId:string,taskId:string,consume:(stage:'DESCRIPTION'|'INSTRUCTIONS',material:any)=>Promise<void>,operationId=randomUUID()){
+  session:(signal?:AbortSignal)=>request('/api/external/session',undefined,signal),
+  async readTask(projectId:string,taskId:string,consume:(stage:'DESCRIPTION'|'INSTRUCTIONS',material:any)=>Promise<void>,operationId=randomUUID(),signal?:AbortSignal){
    if(typeof consume!=='function')throw Error('AGENT_CLIENT_SKILL_CONSUMER_REQUIRED');
-   const observed=await request('/api/external/session'),actor=observed?.actor;if(actor?.kind!=='AGENT'||actor.projectId!==projectId||!revision(actor.snapshotRevision)||!revision(actor.policyRevision))throw Error('AGENT_CLIENT_CONTEXT_INVALID');
+   const observed=await request('/api/external/session',undefined,signal),actor=observed?.actor;if(actor?.kind!=='AGENT'||actor.projectId!==projectId||!revision(actor.snapshotRevision)||!revision(actor.policyRevision))throw Error('AGENT_CLIENT_CONTEXT_INVALID');
    const input={version:1,operationId,action:'task:read',projectId,taskId,expectedRevision:actor.snapshotRevision};
-   const description=await request('/api/external/skills/description',{request:input});await consume('DESCRIPTION',description);
-   const instructions=await request('/api/external/skills/content',{request:input,consultationReceipt:description.consultationReceipt});await consume('INSTRUCTIONS',instructions);
-   const result=await request('/api/external/actions',{request:input,admissionReceipt:instructions.admissionReceipt});
+   const description=await request('/api/external/skills/description',{request:input},signal);await consume('DESCRIPTION',description);
+   const instructions=await request('/api/external/skills/content',{request:input,consultationReceipt:description.consultationReceipt},signal);await consume('INSTRUCTIONS',instructions);
+   const result=await request('/api/external/actions',{request:input,admissionReceipt:instructions.admissionReceipt},signal);
    const requestHash=createHash('sha256').update(JSON.stringify(['DMK_AGENT_READ/1',input])).digest('hex');
    if(!exact(result,['task','acknowledgment','provenance','humanApproval'])||!exact(result.acknowledgment,['kind','durable','operationId','requestHash','projectId','taskId','policyRevision','snapshotRevision'])||
       result.acknowledgment.kind!=='READ_OBSERVATION'||result.acknowledgment.durable!==false||result.acknowledgment.operationId!==operationId||result.acknowledgment.requestHash!==requestHash||
