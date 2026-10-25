@@ -42,7 +42,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {throw 'DIAGNOSTIC_CLONE_FAILED'}
           git -C $baseline checkout --detach 27fbec2a359071c7d2994dd49109145228ff016e
           if ($LASTEXITCODE -ne 0) {throw 'DIAGNOSTIC_BASELINE_FAILED'}
-          $observer = Join-Path $candidate 'scripts/diagnostics/workspaceAgcTiming.cjs'
+          $observer = (Join-Path $candidate 'scripts/diagnostics/workspaceAgcTiming.cjs').Replace('\','/')
           $results = @()
           foreach ($entry in @(@{name='baseline'; path=$baseline}, @{name='candidate'; path=$candidate})) {
             Push-Location $entry.path
