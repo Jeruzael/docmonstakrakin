@@ -1,0 +1,84 @@
+name: PR96 Bounded AGC Diagnostic
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/diagnostics/workspaceAgcTiming.cjs'
+      - '.github/workflows/pr96-agc-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  matched_windows:
+    name: Windows AGC matched baseline and candidate (diagnostic only)
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CI: 'true'
+      GEMINI_API_KEY: ''
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Matched clean baseline and candidate, one attempt each
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidate = Join-Path $env:GITHUB_WORKSPACE 'candidate'
+          $baseline = Join-Path $env:RUNNER_TEMP 'agc-baseline'
+          $evidence = Join-Path $env:GITHUB_WORKSPACE 'agc-evidence'
+          New-Item -ItemType Directory -Path $evidence | Out-Null
+          git clone --no-hardlinks --no-checkout $candidate $baseline
+          if ($LASTEXITCODE -ne 0) {throw 'DIAGNOSTIC_CLONE_FAILED'}
+          git -C $baseline checkout --detach 27fbec2a359071c7d2994dd49109145228ff016e
+          if ($LASTEXITCODE -ne 0) {throw 'DIAGNOSTIC_BASELINE_FAILED'}
+          $observer = (Join-Path $candidate 'scripts/diagnostics/workspaceAgcTiming.cjs').Replace('\','/')
+          $results = @()
+          foreach ($entry in @(@{name='baseline'; path=$baseline}, @{name='candidate'; path=$candidate})) {
+            Push-Location $entry.path
+            try {
+              $name = $entry.name
+              $launcher = Join-Path $entry.path 'scripts/runWindowsPrivateQualification.ps1'
+              $env:NPM_CONFIG_CACHE = Join-Path $env:RUNNER_TEMP "agc-$name-npm-cache"
+              $env:NPM_CONFIG_DEVDIR = Join-Path $env:RUNNER_TEMP "agc-$name-node-headers"
+              $env:NPM_CONFIG_USERCONFIG = Join-Path $env:RUNNER_TEMP "agc-$name-empty.npmrc"
+              Set-Content -LiteralPath $env:NPM_CONFIG_USERCONFIG -Value ''
+              $identity = @("ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion", (node --version), (npm.cmd --version), (git rev-parse HEAD), (git rev-parse 'HEAD^{tree}'))
+              $identity += Get-FileHash package-lock.json,bun.lock,scripts/testWorkspaceAgentDelegation.ts,server/security/workspaceAccess/store.ts,server/security/workspaceAccess/worker.cjs,server/security/workspaceAccess/privateBoundary.cjs | ForEach-Object {"$($_.Path) $($_.Hash)"}
+              $identity | Set-Content "$evidence/$name-identity.txt"
+              npm.cmd ci --foreground-scripts *> "$evidence/$name-install.log"
+              $install = $LASTEXITCODE
+              if ($install -ne 0) {$results += @{name=$name; install=$install; qualification='NOT_RUN'}; continue}
+              npm.cmd ls better-sqlite3 argon2 tsx --all *> "$evidence/$name-dependencies.log"
+              if ($LASTEXITCODE -ne 0) {throw 'DIAGNOSTIC_DEPENDENCY_PROVENANCE_FAILED'}
+              $env:DMK_AGC_DIAGNOSTIC = 'true'
+              $env:NODE_OPTIONS = '--require="' + $observer + '"'
+              # Preserve the genuine restricted child-token launcher and full suite.
+              & pwsh -NoProfile -NonInteractive -File $launcher -Phase Npm -Suite Agent *> "$evidence/$name-qualification.log"
+              $qualified = $LASTEXITCODE
+              Remove-Item Env:NODE_OPTIONS,Env:DMK_AGC_DIAGNOSTIC
+              git diff --exit-code *> "$evidence/$name-source-unchanged.log"
+              $unchanged = $LASTEXITCODE
+              $results += @{name=$name; install=$install; qualification=$qualified; sourceUnchanged=$unchanged}
+            } finally {Pop-Location}
+          }
+          $results | ConvertTo-Json -Depth 5 | Set-Content "$evidence/outcomes.json"
+          Get-Content "$evidence/outcomes.json"
+          if (@($results | Where-Object {$_.install -ne 0 -or $_.qualification -ne 0 -or $_.sourceUnchanged -ne 0}).Count) {throw 'BOUNDED_DIAGNOSTIC_HAS_FAILURES_PRESERVED_NO_RETRY'}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr96-matched-windows-agc-diagnostic
+          path: agc-evidence/
+          if-no-files-found: error
+          retention-days: 30
