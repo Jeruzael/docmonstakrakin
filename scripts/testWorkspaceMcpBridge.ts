@@ -549,6 +549,7 @@ if(api){
    const cfgPath=path.join(tmpDir,'mcp-config.json');
    fs.writeFileSync(cnfPath,'[req]\nprompt=no\ndistinguished_name=subject\n[subject]\nCN=Disposable MCP TLS fixture\n');
    execFileSync(openssl,['req','-new','-x509','-newkey','ec','-pkeyopt','ec_paramgen_curve:prime256v1','-nodes','-sha256','-days','2','-config',cnfPath,'-addext','subjectAltName=IP:127.0.0.1','-addext','basicConstraints=critical,CA:FALSE','-addext','extendedKeyUsage=serverAuth','-keyout',keyPath,'-out',crtPath],{stdio:'pipe',windowsHide:true,timeout:10000});
+   fs.chmodSync(crtPath, 0o600);
 
    const expectedDigest=agentTokenDigest(validToken)!;
    let revoked=false;
