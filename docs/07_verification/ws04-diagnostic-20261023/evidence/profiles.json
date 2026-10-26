@@ -1,0 +1,233 @@
+[
+  {
+    "profile": "inherited",
+    "status": 0,
+    "result": "NOT_REPRODUCED",
+    "parentObserved": true,
+    "workerObserved": true,
+    "subprocesses": 155,
+    "permissionFailures": 0,
+    "powershell": [
+      {
+        "thread": 0,
+        "operation": "create-private-directory-dacl",
+        "target": ".security",
+        "durationMs": 286.6233,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 291.5604,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 276.8056,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 237.4973,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 230.2534,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite",
+        "durationMs": 270.9131,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-shm",
+        "durationMs": 279.868,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-wal",
+        "durationMs": 280.4149,
+        "ok": true,
+        "status": 0
+      }
+    ],
+    "minPsMs": 230.2534,
+    "maxPsMs": 291.5604
+  },
+  {
+    "profile": "sparse-provisional",
+    "status": 0,
+    "result": "NOT_REPRODUCED",
+    "parentObserved": true,
+    "workerObserved": true,
+    "subprocesses": 155,
+    "permissionFailures": 0,
+    "powershell": [
+      {
+        "thread": 0,
+        "operation": "create-private-directory-dacl",
+        "target": ".security",
+        "durationMs": 247.9332,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 292.3578,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 255.7578,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 279.2755,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 244.9823,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite",
+        "durationMs": 251.5873,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-shm",
+        "durationMs": 246.0421,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-wal",
+        "durationMs": 242.7106,
+        "ok": true,
+        "status": 0
+      }
+    ],
+    "minPsMs": 242.7106,
+    "maxPsMs": 292.3578
+  },
+  {
+    "profile": "sparse-pd06",
+    "status": 0,
+    "result": "NOT_REPRODUCED",
+    "parentObserved": true,
+    "workerObserved": true,
+    "subprocesses": 155,
+    "permissionFailures": 0,
+    "powershell": [
+      {
+        "thread": 0,
+        "operation": "create-private-directory-dacl",
+        "target": ".security",
+        "durationMs": 274.6678,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 258.3347,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 0,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 252.0931,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-directory-descriptor-admission",
+        "target": ".security",
+        "durationMs": 220.0809,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "owner.lock",
+        "durationMs": 240.1781,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite",
+        "durationMs": 242.5779,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-shm",
+        "durationMs": 252.8472,
+        "ok": true,
+        "status": 0
+      },
+      {
+        "thread": 2,
+        "operation": "initial-file-descriptor-admission",
+        "target": "authority.sqlite-wal",
+        "durationMs": 228.2707,
+        "ok": true,
+        "status": 0
+      }
+    ],
+    "minPsMs": 220.0809,
+    "maxPsMs": 274.6678
+  }
+]

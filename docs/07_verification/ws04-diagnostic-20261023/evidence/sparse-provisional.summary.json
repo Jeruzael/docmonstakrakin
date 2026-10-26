@@ -1,0 +1,1569 @@
+{
+  "schema": 1,
+  "diagnosticOnly": true,
+  "profile": "sparse",
+  "fixture": "source-extracted-WS04",
+  "sourceSha256": "d5e6a7db8d0e0585c54b885cf7414ec347d19f5356fa85951b2b3684e8f687f8",
+  "exactWs04BlockSha256": "84b9ff2c8121a5f63576547202098705f8ade5dcd085ba933af655c9b3d12d5c",
+  "generatedSourceSha256": "cb9c71e885adfe01e3337ef55e3dc1c6dc56bd4862b44f67713b0f65dc0c5d33",
+  "originalWorkerExecArgv": [],
+  "diagnosticWorkerAddsRequire": true,
+  "installPerformed": false,
+  "attempts": 1,
+  "status": 0,
+  "signal": null,
+  "parentObserved": true,
+  "workerObserved": true,
+  "subprocesses": [
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "resolve-current-user-sid",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 38.1656
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "create-private-directory-dacl",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 247.9332
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 30.8343
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "initial-directory-descriptor-admission",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 292.3578
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3427
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3254
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1461
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 32.6604
+    },
+    {
+      "thread": 0,
+      "context": "store-open",
+      "operation": "initial-file-descriptor-admission",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 255.7578
+    },
+    {
+      "thread": 0,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 29.298
+    },
+    {
+      "thread": 0,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6553
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "resolve-current-user-sid",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 31.5933
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.4792
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "initial-directory-descriptor-admission",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 279.2755
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 41.4639
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "initial-file-descriptor-admission",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 244.9823
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.2542
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.709
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.5244
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "initial-file-descriptor-admission",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 251.5873
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 29.072
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "initial-file-descriptor-admission",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 246.0421
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 31.6731
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "initial-file-descriptor-admission",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 4000,
+      "durationMs": 242.7106
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7593
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5262
+    },
+    {
+      "thread": 2,
+      "context": "worker-startup",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7407
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1336
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2579
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2407
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2843
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.9901
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.034
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.8092
+    },
+    {
+      "thread": 2,
+      "context": "bootstrap:1",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.3986
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.3351
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.4985
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6327
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.9715
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.4353
+    },
+    {
+      "thread": 2,
+      "context": "info:2",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6599
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3677
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.8176
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1065
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6107
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.628
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.5966
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.685
+    },
+    {
+      "thread": 2,
+      "context": "issue:3",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.0403
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.5774
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3122
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.8506
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.4965
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7807
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3991
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.7709
+    },
+    {
+      "thread": 2,
+      "context": "membership:4",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.6027
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.5171
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.3335
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.1506
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1324
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6236
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4433
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 24.9445
+    },
+    {
+      "thread": 2,
+      "context": "authorize:5",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.5938
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.5875
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1058
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3927
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.5742
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4989
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.0877
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5236
+    },
+    {
+      "thread": 2,
+      "context": "authorize:6",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.5146
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 33.1746
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.0535
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6633
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2283
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7727
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.8161
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6889
+    },
+    {
+      "thread": 2,
+      "context": "authorize:7",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.7654
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.0832
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.8309
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4436
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.9982
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1684
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6621
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.743
+    },
+    {
+      "thread": 2,
+      "context": "authorize:8",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4423
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5976
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 30.1628
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6614
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3405
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3609
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4371
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5914
+    },
+    {
+      "thread": 2,
+      "context": "membership:9",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1667
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.7529
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1341
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4543
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.8685
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.4502
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.8695
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2002
+    },
+    {
+      "thread": 2,
+      "context": "authorize:10",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.0919
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.3023
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.8982
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 29.0625
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.9048
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.4031
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.8282
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6846
+    },
+    {
+      "thread": 2,
+      "context": "provision:11",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7726
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3793
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6405
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.9071
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.6901
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.9722
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 32.1632
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3956
+    },
+    {
+      "thread": 2,
+      "context": "membership:12",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2177
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.629
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.4297
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.6639
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.519
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2468
+    },
+    {
+      "thread": 2,
+      "context": "info:13",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7415
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.4858
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.7404
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.0811
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2909
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.0129
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.847
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.506
+    },
+    {
+      "thread": 2,
+      "context": "issue:14",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.3184
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.6806
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 27.6452
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.2249
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5056
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.5345
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.1485
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.2862
+    },
+    {
+      "thread": 2,
+      "context": "authorize:15",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6281
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.4558
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.9569
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.6979
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.8383
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 28.7861
+    },
+    {
+      "thread": 2,
+      "context": "membership:16",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 26.939
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7472
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.9352
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-shm",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.3555
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": "authority.sqlite-wal",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.7028
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": "owner.lock",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.576
+    },
+    {
+      "thread": 2,
+      "context": "close:17",
+      "operation": "read-acl-listing-and-pin",
+      "target": ".security",
+      "ok": true,
+      "status": 0,
+      "timeoutMs": 2000,
+      "durationMs": 25.5403
+    }
+  ],
+  "permissionFailures": [],
+  "result": "NOT_REPRODUCED"
+}
