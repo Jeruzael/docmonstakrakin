@@ -29,7 +29,12 @@ await check('OAuth resource candidate supports discovery before acquiring any DM
 });
 
 if(api){
+ await check('OAuth linking and canonical tunnel identity preserve fail-closed admission',async()=>{
+  const {runOAuthLinkingContract}=await import('./workspaceMcpOAuthLinkingContract.ts');
+  const result=await runOAuthLinkingContract(api);assert.equal(result.failed,0,JSON.stringify(result.results.filter(r=>!r.pass)));
+ });
  const resource='https://dmk.example.invalid/mcp';
+ const resourceMetadataUrl='https://dmk.example.invalid/.well-known/oauth-protected-resource/mcp';
  const directory=fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()),'dmk-oauth-candidate-'));
  const privateRoot=path.join(directory,'private');createPrivateDirectory(privateRoot);
  const keyPath=path.join(privateRoot,'tls.key'),crtPath=path.join(privateRoot,'tls.crt'),conf=path.join(privateRoot,'openssl.cnf');
@@ -73,7 +78,7 @@ if(api){
  issuer=`https://127.0.0.1:${(idp.address() as import('node:net').AddressInfo).port}`;
  const verifierOptions={issuer,resource,introspectionEndpoint:issuer+'/introspect',clientId:'synthetic-resource',clientSecret:idpSecret,ca:tls.cert};
  const introspector=api.createMcpOAuthIntrospector(verifierOptions);
- const serverOptions={enabled:true,issuer,resource,tls,introspector,resolveBinding:async(identity:any,signal:AbortSignal)=>{
+ const serverOptions={enabled:true,issuer,resource,resourceMetadataUrl,tls,introspector,resolveBinding:async(identity:any,signal:AbortSignal)=>{
   lookups++;if(holdBindings)return new Promise<null>(resolve=>{pendingBindings.push({resolve,signal});if(pendingBindings.length===2)bindingReady();});
   if(lookups===waitForShortExpiryAtLookup)await new Promise<void>(resolve=>setTimeout(resolve,Math.max(1,shortExpiry-Date.now()+1)));
   return identity.subject==='synthetic-user'?binding:null;
@@ -91,6 +96,12 @@ if(api){
   });
  }
  const auth=()=>({Authorization:'Bearer '+accessToken});
+ function assertAuthenticationError(result:any){
+  assert.equal(result.status,200);assert.equal(result.body.jsonrpc,'2.0');assert.equal(result.body.id,2);assert.equal(result.body.result.isError,true);
+  const challenge=result.body.result._meta?.['mcp/www_authenticate'];assert.ok(Array.isArray(challenge)&&challenge.length===1);
+  assert.match(challenge[0],/error="invalid_token"/);assert.match(challenge[0],/error_description="[^"\r\n]+"/);assert.ok(challenge[0].includes(resourceMetadataUrl));
+  assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);
+ }
  try{
   await check('resource listener is disabled by default and cannot bind a non-loopback host',async()=>{
    await assert.rejects(api.createWorkspaceMcpOAuthServer({...serverOptions,enabled:undefined}));
@@ -138,8 +149,8 @@ if(api){
    assert.equal(idpRequests,before);assert.equal(lookups,lookupBefore);
   });
   await check('missing/invalid OAuth receives a metadata challenge and no private acquisition',async()=>{
-   const before=lookups;const missing=await request(callMessage());assert.equal(missing.status,401);assert.match(String(missing.headers['www-authenticate']),/oauth-protected-resource\/mcp/);
-   const invalid=await request(callMessage(),{headers:{Authorization:'Bearer never-issued'}});assert.equal(invalid.status,401);assert.equal(lookups,before);
+   const before=lookups;const missing=await request(callMessage());assertAuthenticationError(missing);assert.match(String(missing.headers['www-authenticate']),/oauth-protected-resource\/mcp/);
+   const invalid=await request(callMessage(),{headers:{Authorization:'Bearer never-issued'}});assertAuthenticationError(invalid);assert.equal(lookups,before);
   });
   await check('a valid OAuth identity alone grants no DMK task access',async()=>{
    const result=await request(callMessage(),{headers:auth()});assert.equal(result.status,403);assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);
@@ -187,11 +198,11 @@ if(api){
    }
   });
   await check('revocation of the previously working user token is observed on the next call',async()=>{
-   const before=lookups;overrides={active:false};const denied=await request(callMessage(),{headers:auth()});assert.equal(denied.status,401);assert.equal(lookups,before);overrides={};
+   const before=lookups;overrides={active:false};const denied=await request(callMessage(),{headers:auth()});assertAuthenticationError(denied);assert.equal(lookups,before);overrides={};
   });
   await check('a different user returned by the final introspection cannot receive the first user task',async()=>{
    flipSubjectAt=idpRequests+2;
-   try{const result=await request(callMessage(),{headers:auth()});assert.equal(result.status,401);assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);}
+   try{const result=await request(callMessage(),{headers:auth()});assertAuthenticationError(result);assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);}
    finally{flipSubjectAt=0;}
   });
   await check('broader, longer, changed and non-TASKS upstream grants are denied before skill or action reads',async()=>{
@@ -215,7 +226,7 @@ if(api){
    shortExpiryAt=idpRequests+2;waitForShortExpiryAtLookup=lookups+2;
    // Wait for the exact authenticated token expiry, not an arbitrary startup
    // sleep. DMK remains valid; only the final OAuth lifetime is exhausted.
-   try{const result=await request(callMessage(),{headers:auth()});assert.equal(idpRequests,shortExpiryAt);assert.ok(shortExpiry>0&&Date.now()>=shortExpiry);assert.equal(result.status,403);assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);}
+   try{const result=await request(callMessage(),{headers:auth()});assert.equal(idpRequests,shortExpiryAt);assert.ok(shortExpiry>0&&Date.now()>=shortExpiry);assertAuthenticationError(result);assert.equal(JSON.stringify(result.body).includes('Synthetic task'),false);}
    finally{shortExpiryAt=0;shortExpiry=0;waitForShortExpiryAtLookup=0;}
   });
   await check('genuine DMK revocation during final IdP acquisition denies the pending read and same credential afterward',async()=>{

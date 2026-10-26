@@ -10,7 +10,7 @@ import {localRequestBoundary} from '../localPerimeter.ts';
 export {createMcpOAuthIntrospector} from './mcpOAuthIntrospection.ts';
 
 export type McpOAuthTaskBinding={configPath:string;projectId:string;taskId:string;principalId:string;clientId:string;sessionId:string;sponsorPrincipalId:string;grantId:string;grantRevision:number};
-type Options={enabled?:boolean;host?:string;port?:number;issuer:string;resource:string;tls:{key:Buffer;cert:Buffer};introspector:ReturnType<typeof createMcpOAuthIntrospector>;resolveBinding:(identity:McpOAuthIdentity,signal:AbortSignal)=>Promise<McpOAuthTaskBinding|null>};
+type Options={enabled?:boolean;host?:string;port?:number;issuer:string;resource:string;resourceMetadataUrl:string;tls:{key:Buffer;cert:Buffer};introspector:ReturnType<typeof createMcpOAuthIntrospector>;resolveBinding:(identity:McpOAuthIdentity,signal:AbortSignal)=>Promise<McpOAuthTaskBinding|null>};
 const pins=['projectId','principalId','clientId','sessionId','sponsorPrincipalId','grantId','grantRevision'] as const;
 const bindingKeys=['configPath','taskId',...pins];
 const identifier=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/.test(v);
@@ -28,27 +28,39 @@ function currentBoundSession(session:any,binding:McpOAuthTaskBinding){
  return session?.authority==='EXPERIMENTAL_LOCAL_ONLY'&&session?.humanQuorum===false&&actor?.kind==='AGENT'&&pins.every(k=>actor[k]===binding[k])&&actor.scope?.kind==='TASKS'&&Array.isArray(actor.scope.taskIds)&&actor.scope.taskIds.length===1&&actor.scope.taskIds[0]===binding.taskId&&Array.isArray(actor.actions)&&actor.actions.length===1&&actor.actions[0]==='task:read'&&Number.isSafeInteger(actor.expiresAt)&&actor.expiresAt>Date.now()&&actor.expiresAt-Date.now()<=180000;
 }
 
+function canonicalHttps(value:string):URL{
+ const url=new URL(value);
+ if(url.protocol!=='https:'||url.username||url.password||value.includes('?')||value.includes('#')||url.href!==value)throw Error('MCP_CANONICAL_IDENTITY_INVALID');
+ return url;
+}
+
 /** Unwired development resource server. No enrollment, token issue or OAuth AS. */
 export async function createWorkspaceMcpOAuthServer(options:Options){
- let resource:URL;
+ let resource:URL,metadata:URL;
  try{
   if(options?.enabled!==true||options.host!==undefined&&options.host!=='127.0.0.1'||options.port!==undefined&&(!Number.isSafeInteger(options.port)||options.port<0||options.port>65535)||!isMcpOAuthIntrospector(options.introspector)||typeof options.resolveBinding!=='function')throw Error();
-  resource=new URL(options.resource);
-  if(resource.protocol!=='https:'||resource.username||resource.password||resource.hash||resource.search||resource.pathname!=='/mcp'||options.introspector.resource!==options.resource||options.introspector.issuer!==options.issuer||!Buffer.isBuffer(options.tls?.key)||!options.tls.key.length||!Buffer.isBuffer(options.tls?.cert)||!options.tls.cert.length)throw Error();
+  resource=canonicalHttps(options.resource);metadata=canonicalHttps(options.resourceMetadataUrl);
+  if(metadata.origin!==resource.origin||metadata.pathname!=='/.well-known/oauth-protected-resource'+resource.pathname||options.introspector.resource!==options.resource||options.introspector.issuer!==options.issuer||!Buffer.isBuffer(options.tls?.key)||!options.tls.key.length||!Buffer.isBuffer(options.tls?.cert)||!options.tls.cert.length)throw Error();
  }catch{throw Error('MCP_OAUTH_RESOURCE_DISABLED_OR_INVALID');}
- const metadataPath='/.well-known/oauth-protected-resource/mcp',metadataUrl=new URL(metadataPath,resource).href;
+ const metadataPath='/.well-known/oauth-protected-resource/mcp',metadataUrl=metadata.href;
  const introspector=options.introspector,resolveBinding=options.resolveBinding,issuer=options.issuer,resourceIdentifier=options.resource;
  const controllers=new Set<AbortController>(),sockets=new Set<import('node:net').Socket>();let occupied=0,closing=false;
- const challenge=`Bearer resource_metadata="${metadataUrl}", scope="task:read"`;
- function reply(res:ServerResponse,status:number,value?:unknown){
+ const challenge=`Bearer resource_metadata="${metadataUrl}", scope="task:read", error="invalid_token", error_description="Authenticate to request a scoped task read."`;
+ function reply(res:ServerResponse,status:number,value?:unknown,authenticate?:string){
   if(res.destroyed||res.writableEnded)return;
   let encoded=value===undefined?'':JSON.stringify(value);
   if(Buffer.byteLength(encoded)>MCP_LIMITS.outputBytes){status=503;encoded=JSON.stringify({error:'MCP_RESOURCE_LIMIT'});}
   const writeTimer=setTimeout(()=>res.destroy(),MCP_LIMITS.writeMs);
   const written=()=>clearTimeout(writeTimer);res.once('finish',written);res.once('close',written);
-  res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','Connection':'close',...(status===401?{'WWW-Authenticate':challenge}:{})});res.end(encoded);
+  res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','Connection':'close',...(authenticate?{'WWW-Authenticate':authenticate}:{})});res.end(encoded);
  }
- function denied(res:ServerResponse,status=403){reply(res,status,{error:status===401?'MCP_OAUTH_REQUIRED':'MCP_TASK_READ_DENIED'});}
+ function denied(res:ServerResponse,id:unknown=null){reply(res,403,{jsonrpc:'2.0',id,error:{code:-32003,message:'MCP_TASK_READ_DENIED'}});}
+ function authenticationRequired(req:IncomingMessage,res:ServerResponse,id:unknown){
+  // The loopback HTTP pointer is for local tunnel-client discovery. Nested
+  // MCP metadata is not rewritten and must already name the canonical URL.
+  const localChallenge=`Bearer resource_metadata="https://127.0.0.1:${req.socket.localPort}${metadataPath}", scope="task:read"`;
+  reply(res,200,{jsonrpc:'2.0',id,result:{isError:true,content:[{type:'text',text:'Authentication is required for this tool.'}],_meta:{'mcp/www_authenticate':[challenge]}}},localChallenge);
+ }
  const server=https.createServer({key:Buffer.from(options.tls.key),cert:Buffer.from(options.tls.cert),minVersion:'TLSv1.3',maxHeaderSize:8192,headersTimeout:5000,requestTimeout:10000,keepAliveTimeout:1000},(req:IncomingMessage,res:ServerResponse)=>{
   const count=(key:string)=>req.rawHeaders.filter((_,i)=>i%2===0&&req.rawHeaders[i].toLowerCase()===key).length;
   if(req.headers.host!==`127.0.0.1:${req.socket.localPort}`||count('authorization')>1||req.headers.cookie!==undefined){reply(res,403,{error:'MCP_TRANSPORT_REJECTED'});req.resume();return;}
@@ -70,40 +82,41 @@ export async function createWorkspaceMcpOAuthServer(options:Options){
     if(released)return;clearTimeout(bodyTimer);working=true;
     deadline=setTimeout(()=>{controller.abort();reply(res,504,{error:'MCP_OPERATION_DEADLINE'});},MCP_LIMITS.operationMs);
     void(async()=>{
+     let message:Record<string,any>|undefined;
      try{
-      let message:Record<string,any>;
       try{message=parseAgentJson(Buffer.concat(chunks));chunks=[];}catch{reply(res,400,{error:'MCP_MESSAGE_REJECTED'});return;}
       if(message.jsonrpc!=='2.0'||typeof message.method!=='string'||message.id!==undefined&&message.id!==null&&typeof message.id!=='string'&&typeof message.id!=='number'){reply(res,400,{error:'MCP_MESSAGE_REJECTED'});return;}
       const discovery=createMcpDiscoveryResponse(message);
       if(discovery!==undefined){if(discovery?.result?.tools)discovery.result.tools[0].securitySchemes=[{type:'oauth2',scopes:['task:read']}];reply(res,discovery===null?202:200,discovery??undefined);return;}
       if(message.method!=='tools/call'||message.params?.name!=='read_task'){reply(res,400,{error:'MCP_METHOD_UNSUPPORTED'});return;}
       const auth=typeof req.headers.authorization==='string'?/^Bearer ([-A-Za-z0-9._~+/]+=*)$/i.exec(req.headers.authorization):null;
-      if(!auth){denied(res,401);return;}
+      if(!auth){authenticationRequired(req,res,message.id);return;}
       let identity:McpOAuthIdentity;
-      try{identity=await introspector.verify(auth[1],controller.signal);}catch{denied(res,401);return;}
+      try{identity=await introspector.verify(auth[1],controller.signal);}catch{authenticationRequired(req,res,message.id);return;}
       const args=message.params?.arguments;
       const binding=snapshotBinding(await resolveBinding(identity,controller.signal));
-      if(controller.signal.aborted||!binding||!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).sort().join(',')!=='projectId,taskId'||args.projectId!==binding.projectId||args.taskId!==binding.taskId){denied(res);return;}
+      if(controller.signal.aborted||!binding||!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).sort().join(',')!=='projectId,taskId'||args.projectId!==binding.projectId||args.taskId!==binding.taskId){denied(res,message?.id??null);return;}
       // The existing loader is unchanged: acquire every current file, ACL and
       // link identity only AFTER user authorization and exact trusted mapping.
       const config=loadPrivateMcpConfig(binding.configPath);
       const client=createWorkspaceAgentClient({origin:config.origin,ca:config.ca,token:config.token});
       const bridge=createWorkspaceMcpBridge({origin:config.origin,ca:config.ca,token:config.token});
       try{
-       if(!currentBoundSession(await client.session(controller.signal),binding)){denied(res);return;}
+       if(!currentBoundSession(await client.session(controller.signal),binding)){denied(res,message?.id??null);return;}
        const outcome=await bridge.handleMessage(message,controller.signal) as any;
-       if(outcome?.result?.isError!==false){denied(res);return;}
+       if(outcome?.result?.isError!==false){denied(res,message?.id??null);return;}
        const envelope=JSON.parse(outcome.result.content[0].text);
        let finalIdentity:McpOAuthIdentity;
-       try{finalIdentity=await introspector.verify(auth[1],controller.signal);if(finalIdentity.subject!==identity.subject||finalIdentity.issuer!==identity.issuer||finalIdentity.resource!==identity.resource)throw Error();}catch{denied(res,401);return;}
+       try{finalIdentity=await introspector.verify(auth[1],controller.signal);if(finalIdentity.subject!==identity.subject||finalIdentity.issuer!==identity.issuer||finalIdentity.resource!==identity.resource)throw Error();}catch{authenticationRequired(req,res,message.id);return;}
        const finalBinding=snapshotBinding(await resolveBinding(identity,controller.signal)),after=await client.session(controller.signal);
-       if(!currentBoundSession(after,binding)||after.actor.policyRevision!==envelope.acknowledgment.policyRevision||after.actor.snapshotRevision!==envelope.acknowledgment.snapshotRevision||!sameBinding(binding,finalBinding)){denied(res);return;}
+       if(!currentBoundSession(after,binding)||after.actor.policyRevision!==envelope.acknowledgment.policyRevision||after.actor.snapshotRevision!==envelope.acknowledgment.snapshotRevision||!sameBinding(binding,finalBinding)){denied(res,message?.id??null);return;}
        // No awaited IdP or mapping work follows the final DMK observation.
        // These independent systems are not an atomic distributed transaction.
-       if(controller.signal.aborted||Math.min(identity.expiresAt,finalIdentity.expiresAt)<=Date.now()||after.actor.expiresAt<=Date.now()){denied(res);return;}
+       if(controller.signal.aborted||after.actor.expiresAt<=Date.now()){denied(res,message.id);return;}
+       if(Math.min(identity.expiresAt,finalIdentity.expiresAt)<=Date.now()){authenticationRequired(req,res,message.id);return;}
        reply(res,200,outcome);
       }finally{bridge.close();client.close();}
-     }catch{denied(res);}
+     }catch{denied(res,message?.id??null);}
      finally{working=false;if(res.destroyed||res.writableFinished)release();else res.once('finish',release);}
     })();
    });
