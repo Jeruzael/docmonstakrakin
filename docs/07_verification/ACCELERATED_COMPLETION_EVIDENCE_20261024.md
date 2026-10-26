@@ -1,5 +1,13 @@
 # Accelerated completion evidence — ACCEL-20261024
 
+## Additive integration checkpoint — 2026-10-24T08:03Z
+
+PR91 actual master40071538933 subsequently passed all4 jobs on9497fd4:140suites/2774reportedchecks,controlled11/336, npm/Bun capacity18/18 each. Original40067046174 remains failed and unexplained. PR90 exact4ba8940 candidate40072551391 all4PASS:145suites/2816checks,controlled336, fresh npm/Bun receipt14/14,actualapplication8/8,empty-create6/6,audits0. Linux synthetic checkout5c4081201167eff35a8693e8566fa107114641c4; Windows exact4ba. Protected expected-HEAD merge produced58f3cabcbe141828f7dad57551655bf36444acfb, valid signature, parents9497fd4 and4ba8940, identical tree60a690319c2f9bb6b5fc754a06618989b2696735. [Accurate agent-posted integration record](https://github.com/Jeruzael/docmonstakrakin/pull/90#issuecomment-6381636951). Actual40075543458 is3PASS/WindowsRUNNING at capture, not qualification.
+
+Decoded candidate job-log SHA256: Controlled120808983780 f2256afb6ea152c141b3a001be4bf13d74f6bc5f7ee1cdea974a0e3685390bbf; Complete120808983884 10bb014f234cec507d6fa9fcbe875ed45f2c4daa199141c3d8bc673086100e84; Quality120808983963 d83098036dddbd5896e48d13341da6d6eead9b4fbc380db72bcb16268acbc332; Windows120808984020 e43a9ce7c043611fda94dd321d5578cfb5ecc52a3c60de8a24bcef4324d50908. GitHub run/job logs plus retained supplemental copies preserve original bytes; no credentials published.
+
+PR95 signed9f54b62 is separately reviewable, main40076566373/agent40076566408 pending. Local current Node22.23.4 actual HTTPS/native9/9, existing actual source/builtApp/CJS/TLS14/14 and security52/52 pass. Its dedicated evidence preserves initial fixture3/1 and known-replay service6/7 failure/corrections; final code/service7/7, pure transport/resource checks pass. These are synthetic/retained-dependency tests, not fresh install or human acceptance. Current package-specific candidates and unpublished components remain distinct from integrated master.
+
 This is an additive execution record. Campaign metadata does not change canonical statuses. Original failures and immutable receipts remain in place.
 
 ## Baseline and package1 credit

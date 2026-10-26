@@ -1,0 +1,22 @@
+{
+  "recordType": "AGENT_EXECUTED_PURE_VALIDATOR_REGRESSION",
+  "observedAt": "2026-10-24T05:45:00.040Z",
+  "node": "v22.21.1",
+  "dependencySource": "Read-only preinstalled tsx/yaml; no fresh install or native qualification",
+  "results": [
+    {
+      "suite": "scripts/testWbsRegistration.ts",
+      "exitCode": 0,
+      "stdout": "PASS PREVIEW exact additive candidate passes without claiming human authorization\nPASS APPROVED without independently supplied human policy fails closed\nPASS APPROVED without signatures fails closed\nPASS APPROVED with valid independent signatures passes\nPASS One human cannot sign both roles\nPASS Altered signature or candidate fails closed\nPASS Revoked authorized signer fails closed\nPASS Existing WBS modification fails closed\nPASS Unexpected additional item fails closed\nPASS Existing item removal and duplicate WBS paths fail closed\nPASS Modified registration authority policy version fails closed\nTOTAL: 11 / 11 checks passed\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "suite": "scripts/testTrustedWbsRegistrationV2.ts",
+      "exitCode": 0,
+      "stdout": "PASS A valid synthetic receipt verifies EVIDENCE only and never grants mutation\nPASS Omitted independent policy anchor fails closed\nPASS Attacker-substituted policy keys and signatures fail anchored policy digest\nPASS Weakened roles under unchanged policy name/version fail\nPASS Shared key in two enrollment identities fails even if policy is re-anchored\nPASS Duplicated principal across required roles fails\nPASS Signed Git tree/PR target differs from trusted Git context\nPASS Consumed receipt ID rejects reuse\nPASS Expired or future-dated approvals rejected\nPASS Revoked signer rejects signed approval\nPASS Invalid or missing signature rejects\nPASS WBS extra unreviewed bytes rejected\nPASS An attacker cannot supply an updated policy digest by changing only the signed intent\nPASS Identical changed policy content under same id/version rejected\nPASS Invalid policy key validity rejected\nPASS Null record in human-keys roster rejected without exception\nPASS Malformed non-object record type in human-keys roster rejected\nPASS Incomplete object record type in human-keys roster rejected\nPASS Mixed valid and invalid roster rejects even if required signatures match valid keys\nPASS Mixed valid and malformed object roster rejects\nPASS Malformed signature claims with null entry rejected\nPASS Malformed intent with empty approvedItems rejected\nTOTAL: 22/22 checks passed\n",
+      "stderr": "",
+      "error": null
+    }
+  ]
+}

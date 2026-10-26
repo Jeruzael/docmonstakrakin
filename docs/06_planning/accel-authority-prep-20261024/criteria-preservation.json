@@ -1,0 +1,1531 @@
+{
+  "recordType": "ACCEL_NON_APPLYING_CRITERIA_PRESERVATION",
+  "sourceCommit": "58ac7c4ae82490fc61ae72ea43f0024379aadf46",
+  "sourcePath": "docs/06_planning/EXTERNAL_AGENT_FIRST_TASK_CANDIDATES_20261023.yaml",
+  "sourceSha256": "ae7b329cab98e63c71074e93ad435703b7beb14e578d38120d3dced2f3bb4f00",
+  "runtimeBase": "556bed68191a6af27a8fc0aad95363b5a534cd48",
+  "sourceScopeVersion": "EAF-20261023.1",
+  "canonicalApply": false,
+  "runtimeApply": false,
+  "mayApply": false,
+  "ownerCount": 34,
+  "criterionCount": 138,
+  "packages": {
+    "10": [
+      "DMK-210",
+      "DMK-211",
+      "DMK-212",
+      "DMK-205",
+      "DMK-198"
+    ],
+    "11": [
+      "DMK-167",
+      "DMK-213"
+    ],
+    "12": [
+      "EXT-CAND-01",
+      "DMK-169"
+    ],
+    "13": [
+      "EXT-CAND-03",
+      "DMK-209",
+      "DMK-171"
+    ],
+    "14": [
+      "DMK-190"
+    ],
+    "15": [
+      "DMK-010",
+      "DMK-017"
+    ],
+    "16": [
+      "DMK-020",
+      "DMK-027",
+      "DMK-033"
+    ],
+    "17": [
+      "DMK-085"
+    ],
+    "18": [
+      "DMK-081",
+      "DMK-170",
+      "DMK-206"
+    ],
+    "19": [
+      "DMK-201",
+      "DMK-205",
+      "DMK-207"
+    ],
+    "20": [
+      "EXT-CAND-02",
+      "DMK-179",
+      "DMK-180"
+    ],
+    "21": [
+      "EXT-CAND-07"
+    ],
+    "22": [
+      "EXT-CAND-09",
+      "DMK-212"
+    ],
+    "23": [
+      "DMK-038",
+      "DMK-041",
+      "DMK-171"
+    ],
+    "24": [
+      "DMK-199",
+      "DMK-202",
+      "DMK-214",
+      "DMK-198"
+    ]
+  },
+  "entries": [
+    {
+      "key": "EAF-DMK-010",
+      "lead_owner": "DMK-010",
+      "campaign_packages": [
+        15
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/types.ts",
+        "server/projectStore.ts",
+        "scripts/testWorkspaceProjectPersistence.ts"
+      ],
+      "implementation_locations": [
+        "src/types.ts",
+        "server/projectStore.ts",
+        "scripts/testWorkspaceProjectPersistence.ts"
+      ],
+      "historical_credit": "Project aggregate and PR80/81 scoped persisted snapshots exist; this does not authenticate external conversation origins.",
+      "residual_scope": "Add linked accepted knowledge, decision/source message references and external task/session/version context to the existing aggregate.",
+      "acceptance_criteria": [
+        "D010-P1 | lead_owner=DMK-010 | Accept a scoped conversation-derived requirement/decision into an existing project; reload preserves stable source links, author, purpose, accepted revision and authorized disposition.",
+        "D010-P2 | lead_owner=DMK-010 | Preserve a proposed record separately until an authorized human accepts it; projections identify its exact accepted version."
+      ],
+      "negative_acceptance_criteria": [
+        "D010-N1 | lead_owner=DMK-010 | Attempt to promote unaccepted conversation text or copy a private scratchpad/hidden reasoning into shared knowledge; reject or retain private without shared projection.",
+        "D010-N2 | lead_owner=DMK-010 | Attempt cross-project/source-denied knowledge attachment; reject without disclosing source existence."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-190",
+        "EAF-DMK-212"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Extend aggregate/persistence fixtures with authorized accepted/proposed records, reload and denied lineage cases.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-017",
+      "lead_owner": "DMK-017",
+      "campaign_packages": [
+        15
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/components/ProjectsView.tsx",
+        "server.ts"
+      ],
+      "implementation_locations": [
+        "src/components/ProjectsView.tsx",
+        "server.ts"
+      ],
+      "historical_credit": "Project creation, onboarding and switching already exist.",
+      "residual_scope": "Add authorized conversation-to-project matching and explicit reuse/new-project decision.",
+      "acceptance_criteria": [
+        "D017-P1 | lead_owner=DMK-017 | Select an authorized existing project from a conversation; continue against its stable ID with zero duplicate projects.",
+        "D017-P2 | lead_owner=DMK-017 | When no appropriate match exists, explicit authorized new-project choice records source and project ID."
+      ],
+      "negative_acceptance_criteria": [
+        "D017-N1 | lead_owner=DMK-017 | Ambiguous matching produces a scoped clarification and no silent merge or duplicate.",
+        "D017-N2 | lead_owner=DMK-017 | Search for a project whose existence is denied returns no title, pointer or suggestion."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-010"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Exercise existing/new/ambiguous/denied project flows and count resulting aggregates.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-020",
+      "lead_owner": "DMK-020",
+      "campaign_packages": [
+        16
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/types.ts",
+        "src/data/discoveryCatalog.ts",
+        "scripts/testDiscoveryRemediation.ts"
+      ],
+      "implementation_locations": [
+        "src/types.ts",
+        "src/data/discoveryCatalog.ts",
+        "scripts/testDiscoveryRemediation.ts"
+      ],
+      "historical_credit": "Question/branch validation and existing discovery tests already exist.",
+      "residual_scope": "Extend current question model with all typed inputs, provenance/purpose/constraints, recipients, affected work, deduplication and reopen history.",
+      "acceptance_criteria": [
+        "D020-P1 | lead_owner=DMK-020 | Validate short/long text, single/multiple selection, radio/dropdown, yes/no/unknown, numeric/date/range, groups/table/evidence values against versioned constraints and branch conditions.",
+        "D020-P2 | lead_owner=DMK-020 | Reuse a still-valid accepted answer, deduplicate equivalent open questions preserving sources, and reopen on changed assumptions while retaining prior answer/disposition history."
+      ],
+      "negative_acceptance_criteria": [
+        "D020-N1 | lead_owner=DMK-020 | Invalid type/range/required evidence or stale answer revision cannot resolve a blocker.",
+        "D020-N2 | lead_owner=DMK-020 | A human answer does not become a release approval, independent vote or generalized grant."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-010"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Table-driven question-schema/branch/reuse/reopen tests including boundary values and late-phase creation.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-027",
+      "lead_owner": "DMK-027",
+      "campaign_packages": [
+        16
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/components/QuestionnaireView.tsx",
+        "scripts/testDiscoveryQuestionnaireUi.ts"
+      ],
+      "implementation_locations": [
+        "src/components/QuestionnaireView.tsx",
+        "scripts/testDiscoveryQuestionnaireUi.ts"
+      ],
+      "historical_credit": "Questionnaire renderer, branch navigation and UI fixtures exist.",
+      "residual_scope": "Render added typed controls, late questions and authorized affected-work notifications accessibly.",
+      "acceptance_criteria": [
+        "D027-P1 | lead_owner=DMK-027 | Keyboard/screen-reader walkthrough reaches every specified typed control and correctly exposes validation/branch changes.",
+        "D027-P2 | lead_owner=DMK-027 | A late blocking question appears on its affected task and intended authorized recipient inbox with a source-safe link."
+      ],
+      "negative_acceptance_criteria": [
+        "D027-N1 | lead_owner=DMK-027 | Unrelated work receives no blocking badge or false lifecycle stop.",
+        "D027-N2 | lead_owner=DMK-027 | Discover-denied recipients receive no question title, count, badge or notification before or after ACL revocation."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-020",
+        "EAF-DMK-212"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Targeted questionnaire/UI accessibility and recipient-policy scenarios on the future changed components.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-033",
+      "lead_owner": "DMK-033",
+      "campaign_packages": [
+        16
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/workTracking/canonicalLifecycle.ts",
+        "src/data/discoveryGates.ts",
+        "scripts/testCanonicalLifecycle.ts"
+      ],
+      "implementation_locations": [
+        "server/workTracking/canonicalLifecycle.ts",
+        "src/data/discoveryGates.ts",
+        "scripts/testCanonicalLifecycle.ts"
+      ],
+      "historical_credit": "Canonical lifecycle/status semantics and deterministic gates exist.",
+      "residual_scope": "Add late-question/dependency impact evaluation without incompatible lifecycle states.",
+      "acceptance_criteria": [
+        "D033-P1 | lead_owner=DMK-033 | Open a scoped blocking question; exactly its affected task and dependent gate paths block with reason/version links.",
+        "D033-P2 | lead_owner=DMK-033 | Resolve the current question under policy; reevaluate the affected gates while preserving canonical lifecycle enums."
+      ],
+      "negative_acceptance_criteria": [
+        "D033-N1 | lead_owner=DMK-033 | An unresolved blocker outside a task dependency set does not block that unrelated task.",
+        "D033-N2 | lead_owner=DMK-033 | Presence labels, chat replies or agent progress cannot directly set VERIFIED or satisfy human governance."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-020"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Lifecycle graph fixtures for scoped late blockers, resolution and independent governance dimensions.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-038",
+      "lead_owner": "DMK-038",
+      "campaign_packages": [
+        23
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/data/discoveryGates.ts",
+        "src/data/riskDisplayProjection.ts",
+        "docs/04_security/RISK_REGISTER.md"
+      ],
+      "implementation_locations": [
+        "src/data/discoveryGates.ts",
+        "src/data/riskDisplayProjection.ts",
+        "docs/04_security/RISK_REGISTER.md"
+      ],
+      "historical_credit": "Risk-floor calculation and risk/discovery projections exist.",
+      "residual_scope": "Link threat/control/question/test/finding/remediation/evidence coverage and expose gaps/freshness; absorb security candidate10 risk scope.",
+      "acceptance_criteria": [
+        "D038-P1 | lead_owner=DMK-038 | Trace a security requirement through threat, control, question, test, finding, remediation and exact evidence; expose missing/stale links as gaps.",
+        "D038-P2 | lead_owner=DMK-038 | Record an explicitly authorized penetration-test target/technique/environment/time/data/stop scope before permitting that test workflow."
+      ],
+      "negative_acceptance_criteria": [
+        "D038-N1 | lead_owner=DMK-038 | Missing coverage or no detected findings cannot claim all vulnerabilities absent or security PASS.",
+        "D038-N2 | lead_owner=DMK-038 | Repository read/write access alone cannot authorize penetration testing, secret access or production activity."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-020",
+        "EAF-DMK-206"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Coverage graph and risk-floor fixtures with missing/changed links and explicit offensive-scope denials.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-041",
+      "lead_owner": "DMK-041",
+      "campaign_packages": [
+        23
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/types.ts",
+        "src/data/discoveryGates.ts",
+        "docs/04_security/RISK_REGISTER.md"
+      ],
+      "implementation_locations": [
+        "src/types.ts",
+        "src/data/discoveryGates.ts",
+        "docs/04_security/RISK_REGISTER.md"
+      ],
+      "historical_credit": "Override/risk-acceptance model and deterministic gates exist.",
+      "residual_scope": "Extend scoped exceptions with accountable human, expiry, exact candidate/context and invalidation; absorb candidate10 exception scope.",
+      "acceptance_criteria": [
+        "D041-P1 | lead_owner=DMK-041 | An eligible human decision records exception scope, rationale, accountable authority, expiry and exact affected candidate/configuration.",
+        "D041-P2 | lead_owner=DMK-041 | Changing covered evidence/configuration or passing expiry invalidates the exception and reopens the affected finding/gate."
+      ],
+      "negative_acceptance_criteria": [
+        "D041-N1 | lead_owner=DMK-041 | Agent acknowledgment, anonymous actor or expired/other-candidate exception cannot waive a protected gate.",
+        "D041-N2 | lead_owner=DMK-041 | Accepted risk remains visible as an exception and cannot relabel failed evidence PASS."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-038"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Time/candidate/policy-bound override fixtures and agent/expiry/stale-scope denial cases.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-081",
+      "lead_owner": "DMK-081",
+      "campaign_packages": [
+        18
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/components/AgentCenterView.tsx",
+        "server.ts",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "implementation_locations": [
+        "src/components/AgentCenterView.tsx",
+        "server.ts",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "historical_credit": "Existing second-agent orchestration and Agent Center review controls exist; no external trust qualification is inferred.",
+      "residual_scope": "Add provider-independent external review scheduling and producer/context separation.",
+      "acceptance_criteria": [
+        "D081-P1 | lead_owner=DMK-081 | Route a candidate to an independently configured authorized external verifier using allowed proposal context and no producer private scratchpad.",
+        "D081-P2 | lead_owner=DMK-081 | Record verifier principal/client, exact reviewed revision, result and uncertainty as agent review evidence."
+      ],
+      "negative_acceptance_criteria": [
+        "D081-N1 | lead_owner=DMK-081 | A second agent or GitHub actor cannot fill independently required SO/LA human seats.",
+        "D081-N2 | lead_owner=DMK-081 | Same producer identity or stale reviewed candidate cannot be represented as current independent review."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-213"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Review routing/provenance fixtures with same-actor, stale candidate and human-quorum negative cases.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-085",
+      "lead_owner": "DMK-085",
+      "campaign_packages": [
+        17
+      ],
+      "current_canonical_or_candidate_status": "IMPLEMENTED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/types.ts",
+        "src/components/WorkView.tsx",
+        "scripts/testWorkItemUpdates.ts"
+      ],
+      "implementation_locations": [
+        "src/types.ts",
+        "src/components/WorkView.tsx",
+        "scripts/testWorkItemUpdates.ts"
+      ],
+      "historical_credit": "Unified WorkItem and guarded mutation behavior exist.",
+      "residual_scope": "Add atomic claim/self-assignment, start/progress/clarify/handoff/review and fenced conflict recovery.",
+      "acceptance_criteria": [
+        "D085-P1 | lead_owner=DMK-085 | Race authorized claims on one task revision; exactly one commits with principal/session/fence and audit while loser receives current conflict state.",
+        "D085-P2 | lead_owner=DMK-085 | Authorized handoff/review/claim recovery preserves task history and separately records activity, lifecycle and claim states."
+      ],
+      "negative_acceptance_criteria": [
+        "D085-N1 | lead_owner=DMK-085 | Stale task revision, grant, session or fencing token causes no mutation.",
+        "D085-N2 | lead_owner=DMK-085 | Disconnect/inactivity alone cannot mark work complete, release a claim or grant another actor authority."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-010",
+        "EXT-CAND-01"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Deterministic two-claim races, stale fences, handoff and recovery failpoints using the existing store boundary.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-167",
+      "lead_owner": "DMK-167",
+      "campaign_packages": [
+        11
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md"
+      ],
+      "historical_credit": "Canonical delegation design remains PROPOSED; no live grant credited.",
+      "residual_scope": "Specify external client/sponsor, allowed operations, task/project scope, expiry/revocation and independent authority boundaries.",
+      "acceptance_criteria": [
+        "D167-P1 | lead_owner=DMK-167 | An authorized sponsor proposes an explicit expiring project/task/operation grant binding principal/client and policy revision.",
+        "D167-P2 | lead_owner=DMK-167 | Revocation or sponsor retirement invalidates current and retried operations across all transports."
+      ],
+      "negative_acceptance_criteria": [
+        "D167-N1 | lead_owner=DMK-167 | A role/avatar/client declaration cannot self-grant delegation or human authority.",
+        "D167-N2 | lead_owner=DMK-167 | An external transport grant cannot add shell/secrets/deploy/release rights beyond explicit scope."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-210",
+        "EAF-DMK-212"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Delegation policy matrix with expiry, sponsor retirement, cross-transport retry and privileged operation denials.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-169",
+      "lead_owner": "DMK-169",
+      "campaign_packages": [
+        12
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "historical_credit": "Canonical handshake design remains PROPOSED.",
+      "residual_scope": "Bind advertised/observed client capabilities, authenticated session and recovery acknowledgments to common actions.",
+      "acceptance_criteria": [
+        "D169-P1 | lead_owner=DMK-169 | Handshake records actual protocol/tool/ack/cancellation/event support and unknown capabilities; unsupported operations show unavailable/manual fallback.",
+        "D169-P2 | lead_owner=DMK-169 | Reconnect reuses the authorized identity and operation correlation, refreshes current admission and reports bounded retry state."
+      ],
+      "negative_acceptance_criteria": [
+        "D169-N1 | lead_owner=DMK-169 | Client brand, installed app or localhost address cannot prove tool support, local confinement or authenticated session.",
+        "D169-N2 | lead_owner=DMK-169 | Reconnect cannot revive revoked grants or unboundedly replay queued operations."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-209"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Capability negotiation and disconnect/reconnect adapter doubles, unsupported cancellation and bounded retry tests.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-170",
+      "lead_owner": "DMK-170",
+      "campaign_packages": [
+        18
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/AGENT_ARCHITECTURE.md"
+      ],
+      "historical_credit": "Canonical asymmetric review proposal exists; agent review remains distinct from human approval.",
+      "residual_scope": "Bind review to producer identity, exact criteria/source/evidence revision and independently required approver.",
+      "acceptance_criteria": [
+        "D170-P1 | lead_owner=DMK-170 | A review records producer/verifier identity separation and exact candidate/criteria/evidence/environment references.",
+        "D170-P2 | lead_owner=DMK-170 | A changed producer result or criteria revision invalidates only affected review coverage and requests current review."
+      ],
+      "negative_acceptance_criteria": [
+        "D170-N1 | lead_owner=DMK-170 | A hash alone or unverified self-reported producer cannot establish source provenance or independent review.",
+        "D170-N2 | lead_owner=DMK-170 | Agent approval or GitHub account attribution cannot satisfy independent human quorum."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-081",
+        "EAF-DMK-190"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Producer/verifier/candidate matrix with stale scope, same-actor and human-quorum denials.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-171",
+      "lead_owner": "DMK-171",
+      "campaign_packages": [
+        13,
+        23
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "src/data/contextPackageCompiler.ts"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "src/data/contextPackageCompiler.ts"
+      ],
+      "historical_credit": "Existing prompt-injection design and least-context compiler exist; no skill trust registry is claimed.",
+      "residual_scope": "Apply trust policy to external messages, skill assets, repository context and returned proposals.",
+      "acceptance_criteria": [
+        "D171-P1 | lead_owner=DMK-171 | Label untrusted content and complete source lineage through compilation/response validation without promoting instructions to policy.",
+        "D171-P2 | lead_owner=DMK-171 | Server denies instructions requesting grants, secret exposure or protected transitions despite a trusted-looking skill/message wrapper."
+      ],
+      "negative_acceptance_criteria": [
+        "D171-N1 | lead_owner=DMK-171 | Skill content claiming administrator/system authority cannot change grants or admission rules.",
+        "D171-N2 | lead_owner=DMK-171 | Paraphrase or missing citation cannot remove inherited source ACL or trust constraints."
+      ],
+      "readiness_dependencies": [
+        "EXT-CAND-01"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Adversarial skill/message/repository fixtures against compiler and independent server authorization boundaries.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-179",
+      "lead_owner": "DMK-179",
+      "campaign_packages": [
+        20
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/INTEGRATION_ARCHITECTURE.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "docs/03_architecture/INTEGRATION_ARCHITECTURE.md"
+      ],
+      "historical_credit": "Canonical GitOps owner remains PROPOSED.",
+      "residual_scope": "Retain Git operation ownership; consume the common action/receipt contract without owning a second project-command bridge.",
+      "acceptance_criteria": [
+        "D179-P1 | lead_owner=DMK-179 | An explicitly authorized Git operation binds repository/path/ref, expected source revision, principal and current policy with exact resulting source reference.",
+        "D179-P2 | lead_owner=DMK-179 | Surface divergent ref/source state as conflict and require authorized reconciliation."
+      ],
+      "negative_acceptance_criteria": [
+        "D179-N1 | lead_owner=DMK-179 | Project membership or GitHub command delivery alone cannot authorize shell, credentials, merge or deployment.",
+        "D179-N2 | lead_owner=DMK-179 | Stale source ref, replay or out-of-scope repository causes no Git mutation."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-201"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Scoped Git adapter doubles and disposable-repository stale/ref/permission denial scenarios.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-180",
+      "lead_owner": "DMK-180",
+      "campaign_packages": [
+        20
+      ],
+      "current_canonical_or_candidate_status": "PROPOSED",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "src/components/WorkView.tsx"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "src/components/WorkView.tsx"
+      ],
+      "historical_credit": "Canonical tracker-bridge owner remains PROPOSED.",
+      "residual_scope": "Retain issue/tracker projections with common idempotency/conflict/source acknowledgment boundaries.",
+      "acceptance_criteria": [
+        "D180-P1 | lead_owner=DMK-180 | Project an authorized task revision to an allowed tracker record with stable source/target IDs, last ack and trace link.",
+        "D180-P2 | lead_owner=DMK-180 | Receive a divergent tracker change as a proposed conflict, preserving both versions until authorized disposition."
+      ],
+      "negative_acceptance_criteria": [
+        "D180-N1 | lead_owner=DMK-180 | A tracker label/status edit cannot overwrite canonical self-project WBS or imply a human release decision.",
+        "D180-N2 | lead_owner=DMK-180 | Duplicate delivery or changed-body token cannot create a duplicate task/projection."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-201"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Mock tracker partition/replay/conflict tests with canonical authority and source-recipient access checks.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-198",
+      "lead_owner": "DMK-198",
+      "campaign_packages": [
+        10,
+        24
+      ],
+      "current_canonical_or_candidate_status": "IN_PROGRESS",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "scripts/workspaceSecurity.ts",
+        "src/components/AgentCenterView.tsx",
+        "docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md"
+      ],
+      "implementation_locations": [
+        "scripts/workspaceSecurity.ts",
+        "src/components/AgentCenterView.tsx",
+        "docs/08_handoff/OPERATIONAL_WORKSPACE_GUIDE_20261022.md"
+      ],
+      "historical_credit": "PR80/81 sessions, diagnostics and offline CLI exist; fresh local SDK/native qualification and operator consent remain blocked.",
+      "residual_scope": "Distinguish operator, authenticated human reviewer, delegated agent/client and manual/compiler setup with explicit capability/consent status.",
+      "acceptance_criteria": [
+        "D198-P1 | lead_owner=DMK-198 | Manual compile/import and ordinary project management require no DMK model API key; missing optional client capabilities remain clearly unavailable.",
+        "D198-P2 | lead_owner=DMK-198 | Setup identifies human enrollment/client delegation/host-native qualification/consent as distinct gates with the exact missing prerequisite."
+      ],
+      "negative_acceptance_criteria": [
+        "D198-N1 | lead_owner=DMK-198 | Retained dependency success, previous CI or user import cannot claim current clean installation or authenticated live-agent acceptance.",
+        "D198-N2 | lead_owner=DMK-198 | No enrollment, authority initialization, original-data import or privileged enablement occurs without separately explicit authorization."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-209"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Setup/fallback UI and CLI fixtures with missing SDK/client/key/consent; separate future qualified clean operator walkthrough.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-199",
+      "lead_owner": "DMK-199",
+      "campaign_packages": [
+        24
+      ],
+      "current_canonical_or_candidate_status": "BACKLOG",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "scripts/runCompleteRegression.ts",
+        "scripts/testWorkspaceStore.ts",
+        "scripts/testWorkspaceApplication.ts"
+      ],
+      "implementation_locations": [
+        "scripts/runCompleteRegression.ts",
+        "scripts/testWorkspaceStore.ts",
+        "scripts/testWorkspaceApplication.ts"
+      ],
+      "historical_credit": "Credit exact-master four-job/139-suite CI even though canonical status is BACKLOG; WS04 unknown failure and local SDK failure remain separate.",
+      "residual_scope": "Add meaningful external/direct/GitHub/manual and human-acceptance scenarios; absorb candidate10 integrated test scope.",
+      "acceptance_criteria": [
+        "D199-P1 | lead_owner=DMK-199 | Coverage matrix exercises every supported transport, revocation/reconnect, claim/conflict, source ACL, evidence freshness and authorized manual fallback on an exact candidate.",
+        "D199-P2 | lead_owner=DMK-199 | Retain actual failed/partial/NOT_RUN results alongside future successes and distinguish synthetic/native/browser/operator acceptance evidence."
+      ],
+      "negative_acceptance_criteria": [
+        "D199-N1 | lead_owner=DMK-199 | A later passing Windows run cannot erase the earlier WS04 failure or assert its unknown root cause resolved.",
+        "D199-N2 | lead_owner=DMK-199 | Missing SDK/native qualification, unavailable transport or absent independent human acceptance cannot be recorded PASS."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-214",
+        "EXT-CAND-02",
+        "EXT-CAND-07",
+        "EXT-CAND-09"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Future exact-scope test matrix and supported-environment/operator qualification; this docs pass runs none of those runtime tests.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-201",
+      "lead_owner": "DMK-201",
+      "campaign_packages": [
+        19
+      ],
+      "current_canonical_or_candidate_status": "VERIFICATION_PENDING",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/projectPersistence.ts",
+        "server/docs/controlledDocsTransaction.ts",
+        "scripts/testWorkspaceProjectPersistence.ts"
+      ],
+      "implementation_locations": [
+        "server/projectPersistence.ts",
+        "server/docs/controlledDocsTransaction.ts",
+        "scripts/testWorkspaceProjectPersistence.ts"
+      ],
+      "historical_credit": "Atomic local scoped CAS and managed-document transactions already exist.",
+      "residual_scope": "Add cross-system receipts/outbox/partial delivery and non-destructive decision/document conflict handling; absorb candidate06 ordinary-project scope.",
+      "acceptance_criteria": [
+        "D201-P1 | lead_owner=DMK-201 | Synchronize accepted ordinary-project knowledge and document projection using expected revisions, source links, audit/outbox and exact acknowledgment.",
+        "D201-P2 | lead_owner=DMK-201 | A partition/restart after local commit reconstructs pending/uncertain delivery and preserves both versions on divergent remote edits."
+      ],
+      "negative_acceptance_criteria": [
+        "D201-N1 | lead_owner=DMK-201 | Stale CAS or missing acknowledgment cannot be treated as successful overwrite/sync.",
+        "D201-N2 | lead_owner=DMK-201 | Ordinary-project sync cannot reverse DMK-205 self-project WBS authority or import external human approval."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-206",
+        "EAF-DMK-190",
+        "EAF-DMK-205"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Transaction/outbox failpoints before/after commit/send/ack and non-destructive cross-system conflict fixtures.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-202",
+      "lead_owner": "DMK-202",
+      "campaign_packages": [
+        24
+      ],
+      "current_canonical_or_candidate_status": "BACKLOG",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/data/releaseReportProjection.ts",
+        "docs/07_verification/RELEASE_GATES.md"
+      ],
+      "implementation_locations": [
+        "src/data/releaseReportProjection.ts",
+        "docs/07_verification/RELEASE_GATES.md"
+      ],
+      "historical_credit": "PR80/81 scoped release evidence/CI observation and strict reporting exist; production provenance/human release remain gated.",
+      "residual_scope": "Qualify exact source/configuration, current blockers/findings/evidence/exceptions and rollback readiness without widening technical status.",
+      "acceptance_criteria": [
+        "D202-P1 | lead_owner=DMK-202 | Assess exact candidate/configuration against fresh scoped evidence, open findings/blockers, expiring authorized exceptions and tested rollback references.",
+        "D202-P2 | lead_owner=DMK-202 | Changed source/configuration/criteria invalidates affected release assessment and explicitly requests human Gate 7 disposition."
+      ],
+      "negative_acceptance_criteria": [
+        "D202-N1 | lead_owner=DMK-202 | FAIL, NOT_RUN, UNAVAILABLE, stale evidence or unsupported local-only claims cannot become PASS.",
+        "D202-N2 | lead_owner=DMK-202 | Agent verdict, CI success or GitHub actor cannot grant Gate 7 or production release approval."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-199",
+        "EAF-DMK-041",
+        "EAF-DMK-207"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Release DTO/gate fixtures with exact candidate/config/freshness, missing scope, failures and human-only authorization.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-205",
+      "lead_owner": "DMK-205",
+      "campaign_packages": [
+        10,
+        19
+      ],
+      "current_canonical_or_candidate_status": "VERIFICATION_PENDING",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/MASTER_WBS.yaml",
+        "server/workTracking/canonicalLifecycle.ts",
+        "docs/06_planning/CAMPAIGN_WBS_SYNTHETIC_REGISTRATION_CONTRACT.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/MASTER_WBS.yaml",
+        "server/workTracking/canonicalLifecycle.ts",
+        "docs/06_planning/CAMPAIGN_WBS_SYNTHETIC_REGISTRATION_CONTRACT.md"
+      ],
+      "historical_credit": "MASTER_WBS.yaml remains self-project authority; current reconciliation is a projection and canonical status remains VERIFICATION_PENDING.",
+      "residual_scope": "Specify ordinary-project versus self-project authority and exact separately governed transition requirements; absorb candidate06 self-project scope.",
+      "acceptance_criteria": [
+        "D205-P1 | lead_owner=DMK-205 | Self-project previews read canonical WBS and identify runtime WorkItems/documents as projections with exact source revision.",
+        "D205-P2 | lead_owner=DMK-205 | Any authority reversal proposal includes custody, complete history, exact pre/post bytes, governance approval, CAS cutover and tested rollback before eligibility."
+      ],
+      "negative_acceptance_criteria": [
+        "D205-N1 | lead_owner=DMK-205 | Chat, GitHub command, runtime task edit or ordinary-project sync cannot write back canonical WBS.",
+        "D205-N2 | lead_owner=DMK-205 | Documentation merge cannot ratify a migration, loosen historical verifier contracts or autoapply registration."
+      ],
+      "readiness_dependencies": [],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Read-only authority-direction/forward-contract analysis and future synthetic migration negative tests under separate authorization.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-206",
+      "lead_owner": "DMK-206",
+      "campaign_packages": [
+        18
+      ],
+      "current_canonical_or_candidate_status": "BACKLOG",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/types.ts",
+        "server.ts",
+        "docs/07_verification/TEST_STRATEGY.md"
+      ],
+      "implementation_locations": [
+        "src/types.ts",
+        "server.ts",
+        "docs/07_verification/TEST_STRATEGY.md"
+      ],
+      "historical_credit": "Local evidence sessions, artifact digests and human dispositions exist despite canonical BACKLOG.",
+      "residual_scope": "Extend external producer provenance, criteria/source/config/environment revisions, failures and freshness; absorb candidate10 evidence scope.",
+      "acceptance_criteria": [
+        "D206-P1 | lead_owner=DMK-206 | Record exact criteria/code/config/environment/tool/producer/source lineage and positive/failed/partial results in a scoped evidence session.",
+        "D206-P2 | lead_owner=DMK-206 | Changing a linked criterion/code/config marks affected evidence stale while unrelated evidence retains its recorded scope and history."
+      ],
+      "negative_acceptance_criteria": [
+        "D206-N1 | lead_owner=DMK-206 | A digest without authenticated producer/execution provenance cannot establish verified origin or success.",
+        "D206-N2 | lead_owner=DMK-206 | Agent report, imported approval or missing human decision cannot satisfy independent human approval."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-085",
+        "EAF-DMK-170"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Evidence session/lineage/freshness fixtures, changed-revision tests and producer/approval spoofing denials.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-207",
+      "lead_owner": "DMK-207",
+      "campaign_packages": [
+        19
+      ],
+      "current_canonical_or_candidate_status": "BACKLOG",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/data/releaseReportProjection.ts",
+        "src/data/riskDisplayProjection.ts",
+        "docs/07_verification/RISK_DISPLAY_TRUTHFULNESS_20261021.md"
+      ],
+      "implementation_locations": [
+        "src/data/releaseReportProjection.ts",
+        "src/data/riskDisplayProjection.ts",
+        "docs/07_verification/RISK_DISPLAY_TRUTHFULNESS_20261021.md"
+      ],
+      "historical_credit": "Scoped health/release/risk projections exist; cross-system claimed/observed/stale/sync states remain extensions.",
+      "residual_scope": "Project reported versus observed versus verified status, freshness and partial sync without fake progress.",
+      "acceptance_criteria": [
+        "D207-P1 | lead_owner=DMK-207 | Display per-source reported/observed/verified provenance and exact last acknowledgment/freshness for a cross-system task/evidence update.",
+        "D207-P2 | lead_owner=DMK-207 | Partition or changed criteria yields visible stale/uncertain/pending sync state while historical observation stays available to authorized readers."
+      ],
+      "negative_acceptance_criteria": [
+        "D207-N1 | lead_owner=DMK-207 | Silence, simulated data or local save cannot display verified remote completion or delivery.",
+        "D207-N2 | lead_owner=DMK-207 | Denied existence leaks no counts/badges/health row, even for an otherwise public aggregate view."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-201",
+        "EXT-CAND-07"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Projection fixtures with conflicting source observations, stale evidence, source ACL revocation and missing telemetry.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-190",
+      "lead_owner": "DMK-190",
+      "campaign_packages": [
+        14
+      ],
+      "current_canonical_or_candidate_status": "VERIFIED",
+      "disposition": "ADD_SUBTASK",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/data/contextPackageCompiler.ts",
+        "server/proposals/review.ts",
+        "scripts/testProposalContract.ts"
+      ],
+      "implementation_locations": [
+        "src/data/contextPackageCompiler.ts",
+        "server/proposals/review.ts",
+        "scripts/testProposalContract.ts"
+      ],
+      "historical_credit": "Original VERIFIED schema1.1/editable-target/importer/string-array criteria already exist and remain closed to that original scope.",
+      "residual_scope": "Extend current packages with task/criteria/state, skill/policy/allowed-operation revisions, validated response and acknowledgment; absorb candidate05.",
+      "acceptance_criteria": [
+        "D190-P1 | lead_owner=DMK-190 | Compile a package binding task/criteria/state revision, required skill versions, policy, allowed operations, editable targets, response schema and required ack.",
+        "D190-P2 | lead_owner=DMK-190 | Validate and record a current returned proposal/ack through the existing importer, keeping acceptance criteria as actual string arrays and human disposition explicit."
+      ],
+      "negative_acceptance_criteria": [
+        "D190-N1 | lead_owner=DMK-190 | Stale target/revision/policy or object-valued/malformed criteria are rejected without canonical mutation.",
+        "D190-N2 | lead_owner=DMK-190 | A user-pasted provider/model claim cannot become authenticated live-agent identity or imported human approval."
+      ],
+      "readiness_dependencies": [
+        "EXT-CAND-01"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Extend existing proposal/compiler tests with revision/skill/policy/ack roundtrip and malformed/stale/manual provenance cases.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-209",
+      "lead_owner": "DMK-209",
+      "campaign_packages": [
+        13
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/security/workspaceAccess/http.ts",
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "scripts/testWorkspaceRoutePolicy.ts"
+      ],
+      "implementation_locations": [
+        "server/security/workspaceAccess/http.ts",
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "scripts/testWorkspaceRoutePolicy.ts"
+      ],
+      "historical_credit": "PR81 central route/policy enforcement exists; proposed owner remains unregistered and privileged activation is not credited.",
+      "residual_scope": "Admit all external transports through one action policy and current per-operation skill consultation/receipt; absorb candidate04.",
+      "acceptance_criteria": [
+        "D209-P1 | lead_owner=DMK-209 | Before every project operation, including scoped reads, consult current applicable descriptions/required versions and issue a receipt bound to actor/client/session/task/body/policy/skill revisions with expiry, except explicitly enumerated public discovery/authenticated bootstrap reads.",
+        "D209-P2 | lead_owner=DMK-209 | Explicit public discovery reveals only public availability/protocol metadata; authenticated scoped bootstrap content reads use a fixed nonrecursive receipt exemption and cannot mutate."
+      ],
+      "negative_acceptance_criteria": [
+        "D209-N1 | lead_owner=DMK-209 | Changed content/task/policy/skill/grant or revocation invalidates receipt and denies retry until refreshed.",
+        "D209-N2 | lead_owner=DMK-209 | Bootstrap cannot read forbidden skill/private project metadata, enroll authority, recursively demand itself or bypass privileged route denials.",
+        "D209-N3 | lead_owner=DMK-209 | A scoped project read with missing/stale required consultation, context or receipt fails before disclosure; read-only operation is not a blanket exemption."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-210",
+        "EAF-DMK-211",
+        "EAF-DMK-212",
+        "EAF-DMK-213",
+        "EXT-CAND-01",
+        "EXT-CAND-03"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Cross-transport action admission matrix with bootstrap, receipt refresh/revocation, stale body and unauthorized alternate-path tests.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-210",
+      "lead_owner": "DMK-210",
+      "campaign_packages": [
+        10
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md",
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "docs/05_decisions/ADR/ADR-0007-wbs-trust-and-human-identity.md"
+      ],
+      "implementation_locations": [
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md",
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "docs/05_decisions/ADR/ADR-0007-wbs-trust-and-human-identity.md"
+      ],
+      "historical_credit": "PR81 default-deny identity/policy architecture is implemented; production/external trust and protected self-project governance remain unratified.",
+      "residual_scope": "Ratify exact external transport action/identity/policy contracts, source authority, bootstrap, nondelegable decisions and migration boundaries.",
+      "acceptance_criteria": [
+        "D210-P1 | lead_owner=DMK-210 | Architecture names DMK/Git/CI/document authorities and one policy evaluation path for direct/local/GitHub/manual actions.",
+        "D210-P2 | lead_owner=DMK-210 | Document public minimal discovery, authenticated bootstrap, scoped mutations and independent human authorization as separate admission classes."
+      ],
+      "negative_acceptance_criteria": [
+        "D210-N1 | lead_owner=DMK-210 | Transport/vendor identity, prompt text or skill retrieval cannot create a second policy engine or substitute human authority.",
+        "D210-N2 | lead_owner=DMK-210 | No architecture/document merge declares proposed owners registered/complete or weakens existing SO/LA quorum."
+      ],
+      "readiness_dependencies": [],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Architecture/authority threat review with explicit cross-transport trust and bootstrap dependency audit before implementation.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-211",
+      "lead_owner": "DMK-211",
+      "campaign_packages": [
+        10
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/security/workspaceAccess/worker.cjs",
+        "server/security/workspaceAccess/service.ts",
+        "scripts/testWorkspaceLoginAdmission.ts"
+      ],
+      "implementation_locations": [
+        "server/security/workspaceAccess/worker.cjs",
+        "server/security/workspaceAccess/service.ts",
+        "scripts/testWorkspaceLoginAdmission.ts"
+      ],
+      "historical_credit": "SQLite/Argon2id/revocable human sessions/CSRF already exist; real consent/enrollment/operator acceptance remain separate.",
+      "residual_scope": "Specify accepted human provisioning/recovery and session authority needed by external workflows without inferring native/operator qualification.",
+      "acceptance_criteria": [
+        "D211-P1 | lead_owner=DMK-211 | Approved human enrollment records explicit consent and unique principal/session under current credential/recovery policy without a model key.",
+        "D211-P2 | lead_owner=DMK-211 | Session revocation/rotation/restart fencing invalidates external action admission at next request and retry."
+      ],
+      "negative_acceptance_criteria": [
+        "D211-N1 | lead_owner=DMK-211 | Agent, imported user identity, GitHub actor or header cannot authenticate as an independent human.",
+        "D211-N2 | lead_owner=DMK-211 | Missing clean native/environment qualification or enrollment consent blocks operator acceptance without blocking non-applying planning."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-210"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Reuse session/replay/CSRF tests; future real operator enrollment/recovery acceptance only under explicit consent and qualified environment.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-212",
+      "lead_owner": "DMK-212",
+      "campaign_packages": [
+        10,
+        22
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "scripts/testWorkspacePolicy.ts",
+        "scripts/testWorkspaceProjectAccess.ts"
+      ],
+      "implementation_locations": [
+        "server/security/workspaceAccess/projectPolicy.cjs",
+        "scripts/testWorkspacePolicy.ts",
+        "scripts/testWorkspaceProjectAccess.ts"
+      ],
+      "historical_credit": "OWNER/EDITOR/READER/DENY project policy exists; source-specific derived content/delegated action extensions remain.",
+      "residual_scope": "Extend current policy with complete source ACL intersection, discover-existence, action scope and revocation-aware delivery/projections.",
+      "acceptance_criteria": [
+        "D212-P1 | lead_owner=DMK-212 | Derived outputs from two same-class sources require current read permission to every contributing source plus target policy with explicit denies.",
+        "D212-P2 | lead_owner=DMK-212 | Recheck membership/source read and existence on send/queue/deliver/read/search/export/render; revoke caches/queued notifications when one source access changes."
+      ],
+      "negative_acceptance_criteria": [
+        "D212-N1 | lead_owner=DMK-212 | Denied existence produces no pointer/title/count/unread badge/notification/caption or attributable timing detail.",
+        "D212-N2 | lead_owner=DMK-212 | Paraphrase, missing citation or sanitization cannot declassify; require authorized human exact-source/output/audience decision."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-210",
+        "EAF-DMK-211"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Per-source ACL matrix including disjoint same-class audiences, uncited lineage, revocation and every indirect UI/notification channel.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-213",
+      "lead_owner": "DMK-213",
+      "campaign_packages": [
+        11
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md",
+        "src/types.ts",
+        "server/security/workspaceAccess/worker.cjs"
+      ],
+      "implementation_locations": [
+        "docs/00_control/LOCAL_AUTH_WBS_OWNERSHIP_CANDIDATE.md",
+        "src/types.ts",
+        "server/security/workspaceAccess/worker.cjs"
+      ],
+      "historical_credit": "Disconnected synthetic identity foundations exist; no live external sponsored agent/client is enrolled.",
+      "residual_scope": "Bind durable agent principal to sponsor/delegation and separate client/session identity with revocation and reconnect.",
+      "acceptance_criteria": [
+        "D213-P1 | lead_owner=DMK-213 | Authorized enrollment binds stable agent principal, sponsor/project grant and separate client/session IDs; reconnect resolves the existing principal.",
+        "D213-P2 | lead_owner=DMK-213 | Revoke one session independently and revoke sponsor/delegation across all sessions with audit and current policy checks."
+      ],
+      "negative_acceptance_criteria": [
+        "D213-N1 | lead_owner=DMK-213 | Role/avatar/provider label or user import cannot authenticate an agent or fill a human approval seat.",
+        "D213-N2 | lead_owner=DMK-213 | Duplicate reconnect, retired sponsor or revoked session cannot create another active profile/grant or restore authority."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-212",
+        "EAF-DMK-167"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Synthetic enrollment/session/reconnect/revocation matrix before any separately approved live enrollment.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EAF-DMK-214",
+      "lead_owner": "DMK-214",
+      "campaign_packages": [
+        24
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_PROPOSAL",
+      "disposition": "AMEND_SCOPE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "scripts/testWorkspaceStore.ts",
+        "scripts/testWorkspaceAuthorityIdentity.ts",
+        "scripts/testWorkspaceBackup.ts",
+        "docs/07_verification/WORKSPACE_BACKUP_RECOVERY_20261022.md"
+      ],
+      "implementation_locations": [
+        "scripts/testWorkspaceStore.ts",
+        "scripts/testWorkspaceAuthorityIdentity.ts",
+        "scripts/testWorkspaceBackup.ts",
+        "docs/07_verification/WORKSPACE_BACKUP_RECOVERY_20261022.md"
+      ],
+      "historical_credit": "Extensive synthetic crash/replay/native/perimeter evidence exists; real migration/all-transport acceptance and WS04 root cause remain unqualified.",
+      "residual_scope": "Qualify exact external identity/revocation/transport/migration/rollback scope with current supported-environment evidence; coordinate separate capacity owner.",
+      "acceptance_criteria": [
+        "D214-P1 | lead_owner=DMK-214 | Exercise old/new schema, migration interruption, revocation, replay, cross-transport retries and rollback under exact candidate/environment with preserved history.",
+        "D214-P2 | lead_owner=DMK-214 | Report native/owner/browser/operator and audit-capacity prerequisites separately, carrying prior failures and uncertainty."
+      ],
+      "negative_acceptance_criteria": [
+        "D214-N1 | lead_owner=DMK-214 | Retained binaries or historical CI cannot substitute a fresh qualified supported installation.",
+        "D214-N2 | lead_owner=DMK-214 | Copied backup, capacity exhaustion, stale custody or unknown migration outcome cannot activate a new authority or record PASS."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-209",
+        "EAF-DMK-211",
+        "EAF-DMK-212",
+        "EAF-DMK-213",
+        "EAF-DMK-169"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Future separately approved disposable migrations/failpoints and exact supported clean qualification; reference capacity follow-up without duplicating its owner.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EXT-CAND-01",
+      "lead_owner": "EXT-CAND-01",
+      "campaign_packages": [
+        12
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_CANDIDATE",
+      "disposition": "NEW_CANDIDATE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "server/security/workspaceAccess/worker.cjs",
+        "src/data/contextPackageCompiler.ts",
+        "docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md"
+      ],
+      "implementation_locations": [
+        "server/security/workspaceAccess/worker.cjs",
+        "src/data/contextPackageCompiler.ts",
+        "docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md"
+      ],
+      "historical_credit": "Existing local CAS/replay/validation are reusable foundations; no common live external protocol or adapter is claimed.",
+      "residual_scope": "Define one versioned action/ack contract and direct/local/GitHub/manual transport capabilities, idempotency, CAS, outbox/retry/reconnect and bounded loops.",
+      "acceptance_criteria": [
+        "C01-P1 | lead_owner=EXT-CAND-01 | Every adapter uses the same actor/project/operation/token key plus immutable body digest, revisions and ack correlation; same-token/same-body returns the prior local effect.",
+        "C01-P2 | lead_owner=EXT-CAND-01 | Crash/reconnect preserves durable pending/result/ack state with current reauthorization and bounded retries; unsupported capability has explicit manual fallback with no DMK model key."
+      ],
+      "negative_acceptance_criteria": [
+        "C01-N1 | lead_owner=EXT-CAND-01 | Same token/changed body or stale CAS rejects without extra effect/job/outbox/provider call.",
+        "C01-N2 | lead_owner=EXT-CAND-01 | Client name/localhost/GitHub actor cannot imply supported capability, authenticated principal, independent human, guaranteed remote execution or once-only billing."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-213",
+        "EAF-DMK-212"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Versioned contract schema and adapter doubles with race/replay/stale-CAS/crash/ack/uncertainty/fallback scenarios; discover actual clients before claiming support.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EXT-CAND-02",
+      "lead_owner": "EXT-CAND-02",
+      "campaign_packages": [
+        20
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_CANDIDATE",
+      "disposition": "NEW_CANDIDATE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/03_architecture/INTEGRATION_ARCHITECTURE.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "implementation_locations": [
+        "docs/03_architecture/INTEGRATION_ARCHITECTURE.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "historical_credit": "GitOps/tracker ownership and local durable/CAS foundations exist; no acknowledged project-command transport is claimed.",
+      "residual_scope": "Add capability-negotiated GitHub command inbox/outbox/ack delivery using common policy; preserve DMK-179 Git and DMK-180 tracker scope.",
+      "acceptance_criteria": [
+        "C02-P1 | lead_owner=EXT-CAND-02 | Persist command correlation, source/target revision, body digest, retry/ack history and authorized result; partition/restart resumes the same pending command.",
+        "C02-P2 | lead_owner=EXT-CAND-02 | Authorize incoming/outgoing commands under current principal/delegation/source policy and reconcile divergent authority non-destructively."
+      ],
+      "negative_acceptance_criteria": [
+        "C02-N1 | lead_owner=EXT-CAND-02 | GitHub actor/commit/workflow attribution cannot serve as independent human approval or expand Git/shell/deployment scope.",
+        "C02-N2 | lead_owner=EXT-CAND-02 | Duplicate/changed-body/stale command or missing delivery acknowledgment cannot create duplicate work or claim completion."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-179",
+        "EAF-DMK-180",
+        "EAF-DMK-209"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Mock GitHub delivery/partition/replay/ack doubles with scope/revocation/conflict and actor-versus-human tests.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EXT-CAND-03",
+      "lead_owner": "EXT-CAND-03",
+      "campaign_packages": [
+        13
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_CANDIDATE",
+      "disposition": "NEW_CANDIDATE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/data/contextPackageCompiler.ts",
+        "src/data/initialData.ts",
+        "src/components/PromptCompilerView.tsx"
+      ],
+      "implementation_locations": [
+        "src/data/contextPackageCompiler.ts",
+        "src/data/initialData.ts",
+        "src/components/PromptCompilerView.tsx"
+      ],
+      "historical_credit": "Existing compiler/role prompt assets and library navigation are reuse points, not a trusted registry.",
+      "residual_scope": "Extend existing assets with stable versions/descriptions/applicability/trust/dependencies/revocation; supply current metadata/content to single DMK-209 admission.",
+      "acceptance_criteria": [
+        "C03-P1 | lead_owner=EXT-CAND-03 | Retrieve authorized current applicable descriptions and pinned content with stable asset/version/digest/trust/dependency/policy metadata.",
+        "C03-P2 | lead_owner=EXT-CAND-03 | Revoke/replace a skill version; preserve history and invalidate affected admission/compiled packages before another operation."
+      ],
+      "negative_acceptance_criteria": [
+        "C03-N1 | lead_owner=EXT-CAND-03 | Retrieval/receipt or model claim cannot prove understanding, trusted skill origin or action compliance.",
+        "C03-N2 | lead_owner=EXT-CAND-03 | Untrusted content cannot register itself trusted, grant permissions, read denied assets or create a parallel admission engine."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-190",
+        "EAF-DMK-171"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Registry/compiler asset fixtures for version dependency resolution, unauthorized discovery, trust revocation and stale package invalidation.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EXT-CAND-07",
+      "lead_owner": "EXT-CAND-07",
+      "campaign_packages": [
+        21
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_CANDIDATE",
+      "disposition": "NEW_CANDIDATE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "src/components/AgentCenterView.tsx",
+        "src/types.ts",
+        "docs/01_product/agent-center-v0.3/02_INFORMATION_ARCHITECTURE_AND_UX_FLOWS.md"
+      ],
+      "implementation_locations": [
+        "src/components/AgentCenterView.tsx",
+        "src/types.ts",
+        "docs/01_product/agent-center-v0.3/02_INFORMATION_ARCHITECTURE_AND_UX_FLOWS.md"
+      ],
+      "historical_credit": "Agent Center role cards/demo and v0.3 event/view design exist; durable external workplace presence is not claimed.",
+      "residual_scope": "Add durable profile/client/session/assignment/activity/result/event projections and truthful entered/task/blocked/review/resting/inactive presence; absorb candidate08 views.",
+      "acceptance_criteria": [
+        "C07-P1 | lead_owner=EXT-CAND-07 | Reconnect reuses stable profile with separate authorized sessions/assignment/result history; actual events drive Simple and optional 2D with identical selected task/thread/provenance.",
+        "C07-P2 | lead_owner=EXT-CAND-07 | Show reported/observed/verified/unknown liveness and actual source timestamps; retain accessible no-WebGL Simple fallback and distinguish the requested configurable 10–15 minute rest-exit range from the 15-minute default PROPOSAL.",
+        "C07-P3 | lead_owner=EXT-CAND-07 | For a separately approved timeout within 10–15 minutes, server time before expiry keeps a resting session resting; at expiry a durable event transitions it inactive and projects avatar exit in both views, preserving history and task claim. Fifteen-minute default remains unratified until that choice is approved."
+      ],
+      "negative_acceptance_criteria": [
+        "C07-N1 | lead_owner=EXT-CAND-07 | Disconnect/rest expiry cannot mark complete, release a claim or prove remote termination; manual liveness remains explicit unknown/last-updated.",
+        "C07-N2 | lead_owner=EXT-CAND-07 | No fabricated progress/thoughts/tokens/cost; avatar/view selection grants no permissions and source-denied events produce no badge/caption."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-213",
+        "EAF-DMK-085",
+        "EAF-DMK-209"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Event replay/reconnect/multisession/revocation/clock and Simple accessibility/view-parity fixtures; validate proposed expiry with users before default adoption.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    },
+    {
+      "key": "EXT-CAND-09",
+      "lead_owner": "EXT-CAND-09",
+      "campaign_packages": [
+        22
+      ],
+      "current_canonical_or_candidate_status": "UNREGISTERED_CANDIDATE",
+      "disposition": "NEW_CANDIDATE",
+      "source_locations": [
+        "docs/superpowers/specs/2026-10-23-external-agent-first-product-alignment.md",
+        "docs/01_product/agent-center-v0.3/03_PRODUCT_REQUIREMENTS_DOCUMENT.md",
+        "docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md",
+        "src/components/AgentCenterView.tsx",
+        "src/types.ts"
+      ],
+      "implementation_locations": [
+        "docs/01_product/agent-center-v0.3/01_PRODUCT_AND_ARCHITECTURE_SPEC.md",
+        "src/components/AgentCenterView.tsx",
+        "src/types.ts"
+      ],
+      "historical_credit": "v0.3 classified durable-channel/source-intersection/mention contracts exist as proposed design; no live durable chat implementation is credited.",
+      "residual_scope": "Add durable project/task/artifact conversations, authorized mentions/blockers, per-recipient queued/delivered/read/acted state and bounded wakeup/delegation.",
+      "acceptance_criteria": [
+        "C09-P1 | lead_owner=EXT-CAND-09 | Persist authorized thread/message/source lineage and per-recipient queued/delivered/read/acted events atomically with audit/outbox across restart.",
+        "C09-P2 | lead_owner=EXT-CAND-09 | Mention/blocker workflow reauthorizes every source and recipient at queue/delivery/read/render and enforces bounded hops/rate/time/budget with human escalation."
+      ],
+      "negative_acceptance_criteria": [
+        "C09-N1 | lead_owner=EXT-CAND-09 | Wakeup or delivered/read receipt cannot imply agent execution, acted outcome or release/human approval.",
+        "C09-N2 | lead_owner=EXT-CAND-09 | Disjoint source ACLs, revocation, uncited paraphrase or denied existence yield no leak via content/search/export/notification/unread badge/caption."
+      ],
+      "readiness_dependencies": [
+        "EAF-DMK-212",
+        "EAF-DMK-209",
+        "EAF-DMK-201"
+      ],
+      "evidence_method": {
+        "status": "PLANNED_NOT_RUN",
+        "procedures": [
+          "Durability failpoints plus source ACL/mention fanout/revocation/accessibility fixtures and bounded agent-loop tests.",
+          "Capture exact candidate/configuration/criteria/environment/producer, positive and failed results, source lineage and current reviewer disposition; stale affected evidence after change."
+        ]
+      },
+      "criterion_status": "NOT_QUALIFIED_BY_THIS_RECONNAISSANCE"
+    }
+  ]
+}

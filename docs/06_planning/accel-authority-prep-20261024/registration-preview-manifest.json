@@ -1,0 +1,277 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "PRJ-DOCMONSTAKRAKIN",
+  "operation": "ADD_WBS_ITEMS",
+  "preWbsSha256": "53050b92be8de04eb0bc9a38c44a401e5d13d88465550b4ff32355c7ea9a0a3d",
+  "postWbsSha256": "565239f8fcacd7b60e652a71fda91803aa0333af545dd24778feb01037007a4f",
+  "approvedItems": [
+    {
+      "id": "DMK-210",
+      "wbs_path": "13.06.23",
+      "parent_id": "EPIC-13",
+      "title": "Local Identity, Authorization and Governance Policy Architecture",
+      "description": "Formalize local-first identity, authorization, human governance separation, threat boundaries and approval policy contracts without silently ratifying preliminary quorum rules. ACCEL-20261024 residual extension: Ratify exact external transport action/identity/policy contracts, source authority, bootstrap, nondelegable decisions and migration boundaries.",
+      "type": "GOVERNANCE",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [],
+      "requirements": [
+        "REQ-GOV-001",
+        "REQ-GOV-002"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Specify a unified local-first identity/authorization design with distinct human and AI agent principal types.",
+        "Keep technically VERIFIED separate from independent human governance approval; protected operations require required authorized human approvals.",
+        "Document local bootstrap/recovery, role configuration, approval receipts, threat model and explicit unresolved policy decisions.",
+        "D210-P1 | lead_owner=DMK-210 | Architecture names DMK/Git/CI/document authorities and one policy evaluation path for direct/local/GitHub/manual actions.",
+        "D210-P2 | lead_owner=DMK-210 | Document public minimal discovery, authenticated bootstrap, scoped mutations and independent human authorization as separate admission classes.",
+        "D210-N1 | lead_owner=DMK-210 | Transport/vendor identity, prompt text or skill retrieval cannot create a second policy engine or substitute human authority.",
+        "D210-N2 | lead_owner=DMK-210 | No architecture/document merge declares proposed owners registered/complete or weakens existing SO/LA quorum."
+      ],
+      "verification_method": "Human architecture review, threat-model tests, decision/requirement traceability and controlled-doc verification",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    },
+    {
+      "id": "DMK-211",
+      "wbs_path": "13.06.24",
+      "parent_id": "EPIC-13",
+      "title": "Persistent Local Human Authentication and Session Security",
+      "description": "Create persistent local accounts and revocable authenticated sessions with safe credential storage and controlled migration from the current reviewer roster. ACCEL-20261024 residual extension: Specify accepted human provisioning/recovery and session authority needed by external workflows without inferring native/operator qualification.",
+      "type": "INFRASTRUCTURE",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210"
+      ],
+      "requirements": [
+        "REQ-SEC-014",
+        "REQ-SEC-019"
+      ],
+      "architecture_links": [
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-017",
+        "SEC-CTRL-019"
+      ],
+      "acceptance_criteria": [
+        "Persist distinct human principal IDs with hardened password verifiers; never store raw credentials or sessions in repository files.",
+        "Enforce secure session expiry, rotation, revocation, CSRF defenses, and reauthentication for sensitive operations.",
+        "Provide a recoverable bootstrap and reviewer migration with fail-closed malformed configuration and negative authentication tests.",
+        "D211-P1 | lead_owner=DMK-211 | Approved human enrollment records explicit consent and unique principal/session under current credential/recovery policy without a model key.",
+        "D211-P2 | lead_owner=DMK-211 | Session revocation/rotation/restart fencing invalidates external action admission at next request and retry.",
+        "D211-N1 | lead_owner=DMK-211 | Agent, imported user identity, GitHub actor or header cannot authenticate as an independent human.",
+        "D211-N2 | lead_owner=DMK-211 | Missing clean native/environment qualification or enrollment consent blocks operator acceptance without blocking non-applying planning."
+      ],
+      "verification_method": "Credential lifecycle, session revocation/restart, authentication boundary and migration security regression",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    },
+    {
+      "id": "DMK-212",
+      "wbs_path": "13.06.25",
+      "parent_id": "EPIC-13",
+      "title": "Configurable Project-Scoped RBAC and Custom Role Restrictions",
+      "description": "Provide built-in and custom roles with server-registered capabilities, configurable explicit restrictions, scoped grants and non-bypassable governance invariants. ACCEL-20261024 residual extension: Extend current policy with complete source ACL intersection, discover-existence, action scope and revocation-aware delivery/projections.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210",
+        "DMK-211"
+      ],
+      "requirements": [
+        "REQ-GOV-REVIEWER-001",
+        "REQ-GOV-QUORUM-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Allow authorized administrators to configure custom role metadata, capabilities, restrictions, principal type, resource scopes and revision/audit history.",
+        "Enforce deny-by-default and explicit-deny precedence with server-side authorization on every protected operation.",
+        "Reject self-escalation, unauthorized role delegation, agent human-signoff, bypassed separation of duties and cross-project authorization.",
+        "D212-P1 | lead_owner=DMK-212 | Derived outputs from two same-class sources require current read permission to every contributing source plus target policy with explicit denies.",
+        "D212-P2 | lead_owner=DMK-212 | Recheck membership/source read and existence on send/queue/deliver/read/search/export/render; revoke caches/queued notifications when one source access changes.",
+        "D212-N1 | lead_owner=DMK-212 | Denied existence produces no pointer/title/count/unread badge/notification/caption or attributable timing detail.",
+        "D212-N2 | lead_owner=DMK-212 | Paraphrase, missing citation or sanitization cannot declassify; require authorized human exact-source/output/audience decision."
+      ],
+      "verification_method": "Custom-role contract, privilege escalation and project isolation tests; independent security review",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    },
+    {
+      "id": "DMK-209",
+      "wbs_path": "13.06.22",
+      "parent_id": "EPIC-13",
+      "title": "Local API Security Perimeter and Route Authorization",
+      "description": "Classify all API routes and protect privileged endpoints; default local service to loopback unless secure network mode is explicitly configured. ACCEL-20261024 residual extension: Admit all external transports through one action policy and current per-operation skill consultation/receipt; absorb candidate04.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P0",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-210",
+        "DMK-211",
+        "DMK-212"
+      ],
+      "requirements": [
+        "REQ-OPS-001",
+        "REQ-SEC-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02"
+      ],
+      "security_controls": [
+        "SEC-CTRL-011",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Bind the local server to 127.0.0.1 by default; wider network exposure requires an explicit secure deployment configuration.",
+        "Deny unauthenticated and unauthorized access to privileged secrets, Git operations, exports, administration, and project mutations.",
+        "Inventory every registered API route with action/resource policy and pass negative authorization regression tests.",
+        "D209-P1 | lead_owner=DMK-209 | Before every project operation, including scoped reads, consult current applicable descriptions/required versions and issue a receipt bound to actor/client/session/task/body/policy/skill revisions with expiry, except explicitly enumerated public discovery/authenticated bootstrap reads.",
+        "D209-P2 | lead_owner=DMK-209 | Explicit public discovery reveals only public availability/protocol metadata; authenticated scoped bootstrap content reads use a fixed nonrecursive receipt exemption and cannot mutate.",
+        "D209-N1 | lead_owner=DMK-209 | Changed content/task/policy/skill/grant or revocation invalidates receipt and denies retry until refreshed.",
+        "D209-N2 | lead_owner=DMK-209 | Bootstrap cannot read forbidden skill/private project metadata, enroll authority, recursively demand itself or bypass privileged route denials.",
+        "D209-N3 | lead_owner=DMK-209 | A scoped project read with missing/stale required consultation, context or receipt fails before disclosure; read-only operation is not a blanket exemption."
+      ],
+      "verification_method": "API route policy inventory, network binding tests, privilege-escalation tests, Quality & Build, Controlled Docs and Complete Regression",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    },
+    {
+      "id": "DMK-213",
+      "wbs_path": "13.06.26",
+      "parent_id": "EPIC-13",
+      "title": "Distinct AI Agent Identity and Scoped Delegation",
+      "description": "Bind agents to non-human identities, bounded permissions, expiring delegated authority and tamper-evident audit, with human governance actions nondelegable. ACCEL-20261024 residual extension: Bind durable agent principal to sponsor/delegation and separate client/session identity with revocation and reconnect.",
+      "type": "SECURITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "CRITICAL",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-212"
+      ],
+      "requirements": [
+        "REQ-COLLAB-002"
+      ],
+      "architecture_links": [
+        "CMP-03",
+        "CMP-04",
+        "CMP-07"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Agent authority must be independently scoped and cannot exceed the delegator's authorized permissions.",
+        "Delegations must support expiration, revocation, explicit project/resource scopes and attributable audit events.",
+        "Reject agent impersonation, forged human sign-off, stale delegations and cross-project execution; defer peer federation to a separate ratified decision.",
+        "D213-P1 | lead_owner=DMK-213 | Authorized enrollment binds stable agent principal, sponsor/project grant and separate client/session IDs; reconnect resolves the existing principal.",
+        "D213-P2 | lead_owner=DMK-213 | Revoke one session independently and revoke sponsor/delegation across all sessions with audit and current policy checks.",
+        "D213-N1 | lead_owner=DMK-213 | Role/avatar/provider label or user import cannot authenticate an agent or fill a human approval seat.",
+        "D213-N2 | lead_owner=DMK-213 | Duplicate reconnect, retired sponsor or revoked session cannot create another active profile/grant or restore authority."
+      ],
+      "verification_method": "Agent-delegation adversarial tests, scope/expiry/revocation integration tests and security review",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    },
+    {
+      "id": "DMK-214",
+      "wbs_path": "13.06.27",
+      "parent_id": "EPIC-13",
+      "title": "Authentication Migration and Cross-Workstream Security Verification",
+      "description": "Perform read-only review and governed integration verification of authentication, custom roles, delegation, migration and historical verifier continuity. ACCEL-20261024 residual extension: Qualify exact external identity/revocation/transport/migration/rollback scope with current supported-environment evidence; coordinate separate capacity owner.",
+      "type": "QUALITY",
+      "phase": "PHASE-12",
+      "epic": "EPIC-13",
+      "priority": "P1",
+      "risk": "HIGH",
+      "status": "PROPOSED",
+      "dependencies": [
+        "DMK-209",
+        "DMK-211",
+        "DMK-212",
+        "DMK-213"
+      ],
+      "requirements": [
+        "REQ-REL-001",
+        "REQ-OPS-001"
+      ],
+      "architecture_links": [
+        "CMP-01",
+        "CMP-02",
+        "CMP-04"
+      ],
+      "security_controls": [
+        "SEC-CTRL-013",
+        "SEC-CTRL-020"
+      ],
+      "acceptance_criteria": [
+        "Verify migration and recovery without exposing secrets or weakening existing reviewer, approval, or historical evidence controls.",
+        "Prove that unauthorized actions, forged receipts, stale permissions and agent self-approval fail closed across all integrated workflows.",
+        "Pass Quality & Build, Controlled Docs, Complete Regression and independent human security/architecture review before release authorization.",
+        "D214-P1 | lead_owner=DMK-214 | Exercise old/new schema, migration interruption, revocation, replay, cross-transport retries and rollback under exact candidate/environment with preserved history.",
+        "D214-P2 | lead_owner=DMK-214 | Report native/owner/browser/operator and audit-capacity prerequisites separately, carrying prior failures and uncertainty.",
+        "D214-N1 | lead_owner=DMK-214 | Retained binaries or historical CI cannot substitute a fresh qualified supported installation.",
+        "D214-N2 | lead_owner=DMK-214 | Copied backup, capacity exhaustion, stale custody or unknown migration outcome cannot activate a new authority or record PASS."
+      ],
+      "verification_method": "Full security/regression suites, controlled-document verification, reproducible evidence and independent human review",
+      "evidence": [],
+      "notes": [
+        "ACCEL-20261024 successor candidate; scope EAF-20261023.1. Original criteria retained; added positive/negative criteria retain exact lead owner.",
+        "UNAPPLIED / BLOCKED_AUTHORITY. PROPOSED is retained; no technical completion or independent human approval is asserted."
+      ]
+    }
+  ],
+  "policyId": "ACCEL-20261024-PREVIEW-NOT-RATIFIED",
+  "policyVersion": "UNRATIFIED"
+}
