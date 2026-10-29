@@ -146,6 +146,16 @@ does not imply human review, operational authorization or GitHub-hosted
 signature verification. The exact commit/tree and verification result are
 recorded in the local `candidate-checkpoint.json` after signing.
 
+Signed source checkpoint: `3afb671d5fe857b991399da8845e95cf09b95800`;
+tree `6dea7e803b3cf63d33bf702fd6fae4454a3545a8`; parent is verified master.
+Local verification returned `G` / exit 0 against the existing configured
+public key. The default verifier first failed because no allowed-signers
+file was configured; that result is retained. Verification then used a
+temporary per-command allowed-signers file pinned to that same public
+key, with namespace `git`. No global Git policy, operational trust root,
+signer enrollment or HUMAN approval was created. This documentation
+follow-up does not change the tested implementation.
+
 Earlier local regression failures, Windows AGC1 and the merged PR #97
 chronology remain intact. These focused results neither diagnose nor
 close those historical failures.
