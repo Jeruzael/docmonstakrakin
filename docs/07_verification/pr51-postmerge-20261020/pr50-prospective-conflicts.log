@@ -1,0 +1,12 @@
+ae427cdec1570551918f77811131ca5fc86962b6
+100644 07b78661d14ad823c42cf7d30242e8174da0c1e3 1	docs/00_control/LAST_HANDOFF.md
+100644 fc3a7c26a9cc918131db8e0dfc668bd406d4b7f8 2	docs/00_control/LAST_HANDOFF.md
+100644 e33b2bd3bea8ff9392e56f35443614e59a72140a 3	docs/00_control/LAST_HANDOFF.md
+100644 a168601c99ed6989e22b1ba8ecc7aa48da7b2285 1	docs/00_control/PROJECT_STATE.md
+100644 71ab6766f3afbb202236b2957843d3be355d0ad5 2	docs/00_control/PROJECT_STATE.md
+100644 ecf5d87bafd5fc7e760234010dd7344aab79fde1 3	docs/00_control/PROJECT_STATE.md
+
+Auto-merging docs/00_control/LAST_HANDOFF.md
+CONFLICT (content): Merge conflict in docs/00_control/LAST_HANDOFF.md
+Auto-merging docs/00_control/PROJECT_STATE.md
+CONFLICT (content): Merge conflict in docs/00_control/PROJECT_STATE.md
