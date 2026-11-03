@@ -66,7 +66,7 @@ export function loadPrivateMcpConfig(configPath:string):{origin:string;ca:Buffer
    const value=bytes.toString('utf8');if(!Buffer.from(value).equals(bytes))fail();return value.trim();
   };
   const token=text(parsed.token,parsed.tokenPath);
-  if(!/^dmk_agent_v1_[a-f0-9]{64}$/.test(token))fail();
+  if(!/^dmk_(?:agent|tla)_v1_[a-f0-9]{64}$/.test(token))fail();
   let connectorToken:string|undefined;
   if(parsed.connectorToken!==undefined||parsed.connectorTokenPath!==undefined){connectorToken=text(parsed.connectorToken,parsed.connectorTokenPath);if(!/^mcp_conn_v1_[a-f0-9]{64}$/.test(connectorToken))fail();}
   const httpPort=parsed.httpPort;

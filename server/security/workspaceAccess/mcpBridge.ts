@@ -1,12 +1,15 @@
+import https from 'node:https';
 import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {createWorkspaceAgentClient} from '../../../scripts/workspaceAgentClient.ts';
 import {createMcpDiscoveryResponse} from './mcpDiscovery.ts';
+import {TRUSTED_LOCAL_AGENT_TOOLS, TRUSTED_LOCAL_AGENT_TOKEN_REGEX} from './trustedLocalAgent.ts';
 
 export type WorkspaceMcpBridgeOptions={origin:string;ca:Buffer;token:string};
 const IDENTIFIER=/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/;
 const AGENT_TOKEN=/^dmk_agent_v1_[a-f0-9]{64}$/;
-const CONNECTOR_TOKEN=/^mcp_conn_v1_[a-f0-9]{64}$/;
+const ORIGIN_PATTERN=/^https:\/\/127\.0\.0\.1:([1-9][0-9]{0,4})$/;
 const TASK_KEYS=['description','id','priority','status','title','updatedAt'];
 
 function exactPlainObject(value:unknown,keys:string[]):value is Record<string,any>{
@@ -33,7 +36,7 @@ const UNSUPPORTED_TOOL_TEXT=JSON.stringify({
 export function validateMcpCliArgs(args:readonly string[]):{configPath?:string}{
  if(!Array.isArray(args)||args.length>2)throw Error('MCP_CLI_ARGS_INVALID');
  for(const arg of args){
-  if(typeof arg!=='string'||arg.includes('dmk_agent_v1_')||arg.includes('dmk_workspace_session')||arg.includes('mcp_conn_v1_')||/^--?(token|secret|password|key|bearer)\b/i.test(arg)){
+  if(typeof arg!=='string'||arg.includes('dmk_agent_v1_')||arg.includes('dmk_tla_v1_')||arg.includes('dmk_workspace_session')||arg.includes('mcp_conn_v1_')||/^--?(token|secret|password|key|bearer)\b/i.test(arg)){
    throw Error('MCP_CLI_SECRET_FORBIDDEN');
   }
  }
@@ -47,7 +50,17 @@ export function validateMcpCliArgs(args:readonly string[]):{configPath?:string}{
 export {loadPrivateMcpConfig} from './mcpPrivateConfig.ts';
 export {attachMcpStdioTransport,createMcpHttpBridgeServer,MCP_LIMITS} from './mcpTransport.ts';
 
-export function buildClientMcpConfigs(options:{repoRoot:string;privateConfigPath:string;nodeExecutable?:string}){
+export function buildClientMcpConfigs(options:{
+ repoRoot:string;
+ privateConfigPath:string;
+ nodeExecutable?:string;
+ mode?:'READ_ONLY'|'TRUSTED_LOCAL_AGENT';
+}):{
+ claudeDesktop:{mcpServers:{'dmk-agent-bridge':{command:string;args:string[]}}};
+ geminiCli:{mcpServers:{'dmk-agent-bridge':{command:string;args:string[];cwd:string;timeout:number;trust:boolean;includeTools:string[]}}};
+ claudeCode?:{mcpServers:{'dmk-agent-bridge':{type:'stdio';command:string;args:string[];cwd:string}}};
+ codexCli?:{mcpServers:{'dmk-agent-bridge':{command:string;args:string[];cwd:string}}};
+}{
  if(!options||typeof options.repoRoot!=='string'||!options.repoRoot.trim()||typeof options.privateConfigPath!=='string'||!options.privateConfigPath.trim()){
   throw Error('MCP_CLIENT_CONFIG_INVALID');
  }
@@ -57,7 +70,8 @@ export function buildClientMcpConfigs(options:{repoRoot:string;privateConfigPath
  const bridgeScript=path.resolve(options.repoRoot,'scripts/workspaceMcpBridge.ts');
  const resolvedConfig=path.resolve(options.privateConfigPath);
  const args=['--import',tsxLoader,bridgeScript,'--config',resolvedConfig];
- return{
+ const includeTools=options.mode==='TRUSTED_LOCAL_AGENT'?[...TRUSTED_LOCAL_AGENT_TOOLS]:['read_task'];
+ const base={
   claudeDesktop:{
    mcpServers:{
     'dmk-agent-bridge':{
@@ -74,23 +88,114 @@ export function buildClientMcpConfigs(options:{repoRoot:string;privateConfigPath
      cwd:path.resolve(options.repoRoot),
      timeout:15000,
      trust:false,
-     includeTools:['read_task']
+     includeTools
     }
    }
   }
  };
+ if(options.mode==='TRUSTED_LOCAL_AGENT'){
+  return{
+   ...base,
+   claudeCode:{
+    mcpServers:{
+     'dmk-agent-bridge':{
+      type:'stdio' as const,
+      command,
+      args,
+      cwd:path.resolve(options.repoRoot)
+     }
+    }
+   },
+   codexCli:{
+    mcpServers:{
+     'dmk-agent-bridge':{
+      command,
+      args,
+      cwd:path.resolve(options.repoRoot)
+     }
+    }
+   }
+  };
+ }
+ return base;
+}
+
+function callTrustedLocalUpstream(
+ options:WorkspaceMcpBridgeOptions,
+ operation:string,
+ input:Record<string,unknown>,
+ signal:AbortSignal
+):Promise<{status:number;body:any}>{
+ const target=new URL('/api/external/actions',options.origin);
+ const payload=Buffer.from(JSON.stringify({
+  version:1,
+  operationId:randomUUID(),
+  operation,
+  input
+ }),'utf8');
+ return new Promise((resolve,reject)=>{
+  const req=https.request(target,{
+   method:'POST',
+   ca:options.ca,
+   minVersion:'TLSv1.3',
+   maxVersion:'TLSv1.3',
+   agent:false,
+   headers:{
+    Origin:options.origin,
+    Authorization:'Bearer '+options.token,
+    Accept:'application/json',
+    'Content-Type':'application/json; charset=utf-8',
+    'Content-Length':String(payload.length),
+    Connection:'close'
+   }
+  },res=>{
+   const chunks:Buffer[]=[];
+   let size=0;
+   res.on('data',chunk=>{
+    const b=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);
+    size+=b.length;
+    if(size>256*1024){req.destroy(new Error('MCP_UPSTREAM_OVERSIZE'));return;}
+    chunks.push(b);
+   });
+   res.on('end',()=>{
+    try{
+     const parsed=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+     resolve({status:res.statusCode??500,body:parsed});
+    }catch{
+     reject(new Error('MCP_UPSTREAM_INVALID_JSON'));
+    }
+   });
+   res.on('error',reject);
+  });
+  const onAbort=()=>req.destroy(new Error('MCP_ABORTED'));
+  signal.addEventListener('abort',onAbort,{once:true});
+  req.setTimeout(10000,()=>req.destroy(new Error('MCP_UPSTREAM_TIMEOUT')));
+  req.on('error',err=>{
+   signal.removeEventListener('abort',onAbort);
+   reject(err);
+  });
+  req.on('close',()=>signal.removeEventListener('abort',onAbort));
+  req.end(payload);
+ });
 }
 
 export function createWorkspaceMcpBridge(options:WorkspaceMcpBridgeOptions){
- if(!exactPlainObject(options,['ca','origin','token'])||typeof options.token!=='string'||!AGENT_TOKEN.test(options.token)){
+ if(!exactPlainObject(options,['ca','origin','token'])||typeof options.token!=='string'||(!AGENT_TOKEN.test(options.token)&&!TRUSTED_LOCAL_AGENT_TOKEN_REGEX.test(options.token))){
   throw Error('MCP_BRIDGE_CONFIG_INVALID');
  }
- const client=createWorkspaceAgentClient(options);
+ const isTrustedLocal=TRUSTED_LOCAL_AGENT_TOKEN_REGEX.test(options.token);
+ if(isTrustedLocal){
+  const m=typeof options.origin==='string'?ORIGIN_PATTERN.exec(options.origin):null;
+  if(!m||Number(m[1])>65535||!Buffer.isBuffer(options.ca)||!options.ca.length){
+   throw Error('MCP_BRIDGE_CONFIG_INVALID');
+  }
+ }
+ const client=isTrustedLocal?null:createWorkspaceAgentClient(options);
  let closed=false,active=0;
  const operations=new Map<string|number|null,AbortController>();
 
  async function callReadTask(args:unknown,signal:AbortSignal){
-  if(closed)return{isError:true,content:[{type:'text',text:UNIFORM_DENIED_TEXT}]};
+  if(closed||!client)return{isError:true,content:[{type:'text',text:UNIFORM_DENIED_TEXT}]};
   if(!exactPlainObject(args,['projectId','taskId']))return{isError:true,content:[{type:'text',text:INVALID_INPUT_TEXT}]};
   const {projectId,taskId}=args;
   if(typeof projectId!=='string'||typeof taskId!=='string'||!IDENTIFIER.test(projectId)||!IDENTIFIER.test(taskId)||projectId==='PRJ-DOCMONSTAKRAKIN'){
@@ -164,6 +269,30 @@ export function createWorkspaceMcpBridge(options:WorkspaceMcpBridgeOptions){
   }
  }
 
+ async function callTrustedLocalTool(name:string,args:unknown,signal:AbortSignal){
+  if(closed)return{isError:true,content:[{type:'text',text:JSON.stringify({error:'MCP_BRIDGE_CLOSED'})}]};
+  if(!(TRUSTED_LOCAL_AGENT_TOOLS as readonly string[]).includes(name)){
+   return{isError:true,content:[{type:'text',text:UNSUPPORTED_TOOL_TEXT}]};
+  }
+  const input=(args&&typeof args==='object'&&Object.getPrototypeOf(args)===Object.prototype)?(args as Record<string,unknown>):null;
+  if(!input){
+   return{isError:true,content:[{type:'text',text:INVALID_INPUT_TEXT}]};
+  }
+  try{
+   const upstream=await callTrustedLocalUpstream(options,name,input,signal);
+   const isError=upstream.status<200||upstream.status>=300;
+   return{
+    isError,
+    content:[{type:'text',text:JSON.stringify(upstream.body)}]
+   };
+  }catch{
+   return{
+    isError:true,
+    content:[{type:'text',text:JSON.stringify({error:'MCP_TRUSTED_LOCAL_AGENT_FAILED'})}]
+   };
+  }
+ }
+
  return{
   async handleMessage(message:unknown,signal?:AbortSignal):Promise<Record<string,unknown>|null>{
    const incoming=message as any;
@@ -189,10 +318,17 @@ export function createWorkspaceMcpBridge(options:WorkspaceMcpBridgeOptions){
    if(typeof id!=='string'&&typeof id!=='number'&&id!==null){
     return{jsonrpc:'2.0',id:null,error:{code:-32600,message:'Invalid Request'}};
    }
-   const discovery=createMcpDiscoveryResponse(msg);
+   const discovery=createMcpDiscoveryResponse(msg,isTrustedLocal?'TRUSTED_LOCAL_AGENT':'READ_ONLY');
    if(discovery!==undefined)return discovery;
    if(msg.method==='tools/call'){
     const name=msg.params?.name;
+    if(isTrustedLocal){
+     if(typeof name!=='string'||!(TRUSTED_LOCAL_AGENT_TOOLS as readonly string[]).includes(name)){
+      return{jsonrpc:'2.0',id,result:{isError:true,content:[{type:'text',text:UNSUPPORTED_TOOL_TEXT}]}};
+     }
+     const callOutcome=await callTrustedLocalTool(name,msg.params?.arguments??{},controller.signal);
+     return{jsonrpc:'2.0',id,result:callOutcome};
+    }
     if(name!=='read_task'){
      return{jsonrpc:'2.0',id,result:{isError:true,content:[{type:'text',text:UNSUPPORTED_TOOL_TEXT}]}};
     }
@@ -203,7 +339,7 @@ export function createWorkspaceMcpBridge(options:WorkspaceMcpBridgeOptions){
    }finally{active--;operations.delete(operationId);clearTimeout(timer);signal?.removeEventListener('abort',abort);}
   },
   async verifyShortScopedGrant(signal?:AbortSignal):Promise<boolean>{
-   if(closed)return false;
+   if(closed||!client)return false;
    try{
     const session=await client.session(signal);
     const actor=session?.actor;
@@ -219,7 +355,7 @@ export function createWorkspaceMcpBridge(options:WorkspaceMcpBridgeOptions){
   close(){
    closed=true;
    for(const operation of operations.values())operation.abort();
-   client.close();
+   client?.close();
   }
  };
 }

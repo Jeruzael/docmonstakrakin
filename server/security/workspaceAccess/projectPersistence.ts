@@ -105,5 +105,5 @@ export async function installWorkspaceProjectPersistence(app:Express,store:Proje
   if(inFlight)throw Error('WORKSPACE_TRANSACTION_IN_PROGRESS');
   inFlight=true;
   try{return await fn();}catch(error){requiresRecovery=true;throw error;}finally{inFlight=false;}
- }};
+ },syncSnapshotRevision:(nextRevision:number)=>{if(Number.isSafeInteger(nextRevision)&&nextRevision>=revision)revision=nextRevision;}};
 }
