@@ -454,6 +454,10 @@ await test('TLA05 MCP bridge exposes full TRUSTED_LOCAL_AGENT tool suite over TL
       ],
       {stdio: 'pipe', windowsHide: true, timeout: 10000}
     );
+    if (process.platform !== 'win32') {
+      fs.chmodSync(keyPath, 0o600);
+      fs.chmodSync(crtPath, 0o600);
+    }
 
     const app = express();
     app.use(express.json({limit: '16kb'}));

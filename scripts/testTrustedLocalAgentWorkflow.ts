@@ -287,6 +287,10 @@ try {
       ],
       {stdio: 'pipe', windowsHide: true, timeout: 10000}
     );
+    if (process.platform !== 'win32') {
+      fs.chmodSync(path.join(tls, 'loopback.key'), 0o600);
+      fs.chmodSync(path.join(tls, 'loopback.crt'), 0o600);
+    }
     ca = fs.readFileSync(path.join(tls, 'loopback.crt'));
     fs.mkdirSync(path.join(directory, 'dist'));
     fs.writeFileSync(path.join(directory, 'dist/index.html'), '<html>Disposable TLA E2E</html>');
