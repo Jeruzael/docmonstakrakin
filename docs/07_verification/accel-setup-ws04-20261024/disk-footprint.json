@@ -1,0 +1,7 @@
+{
+  "observed": "2026-10-24T06:40:47.5935955Z",
+  "setupLogicalBytes": 2592887237.0,
+  "capacityDependencyLogicalBytes": 223220653.0,
+  "budgetBytes": 8589934592,
+  "method": "Logical file-size sum; hardlink duplicate bytes count conservatively; no original operator junction traversal"
+}
