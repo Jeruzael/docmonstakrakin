@@ -246,7 +246,7 @@ const parent=fs.realpathSync.native(os.tmpdir()),root=fs.mkdtempSync(path.join(p
       if ($LASTEXITCODE -ne 0) {throw 'NODE_DESCENDANT_OWNER_PROFILE_FAILED'}
       Remove-Item Env:DMK_OWNER_PROBE
       $scripts = if ($Suite -eq 'Agent') {
-        @('scripts/testWorkspaceAgentService.ts', 'scripts/testWorkspaceAgentDelegation.ts', 'scripts/testWorkspaceAgentApplication.ts', 'scripts/testWorkspaceMcpBridge.ts', 'scripts/testWorkspaceMcpSecurity.ts', 'scripts/testWorkspaceMcpAuthority.ts', 'scripts/testWorkspaceMcpOAuth.ts')
+        @('scripts/testWorkspaceAgentService.ts', 'scripts/testWorkspaceAgentDelegation.ts', 'scripts/testWorkspaceAgentApplication.ts', 'scripts/testWorkspaceMcpBridge.ts', 'scripts/testWorkspaceMcpSecurity.ts', 'scripts/testWorkspaceMcpAuthority.ts', 'scripts/testWorkspaceMcpOAuth.ts', 'scripts/testWorkspaceMcpOAuthLauncher.ts')
       } else {
         @('scripts/testWorkspacePrivateDirectory.ts', 'scripts/testWorkspaceStore.ts', 'scripts/testWorkspaceEmptyCreation.ts', 'scripts/testWorkspaceActionReceipts.ts', 'scripts/testWorkspaceActionApplication.ts', 'scripts/testWorkspaceApplication.ts', 'scripts/testWorkspaceTls.ts', 'scripts/testWorkspaceBackup.ts')
       }
