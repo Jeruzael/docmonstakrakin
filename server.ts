@@ -10,6 +10,7 @@ import {resolveWorkspaceTls} from './server/security/workspaceAccess/tls.ts';
 import {createWorkspaceBodyAdmission} from './server/security/workspaceAccess/bodyAdmission.ts';
 import {parseAgentJson} from './server/security/workspaceAccess/agentJson.ts';
 import {WorkspaceAgentService} from './server/security/workspaceAccess/agentService.ts';
+import {TrustedLocalAgentService,resolveTrustedLocalAgentEnabled} from './server/security/workspaceAccess/trustedLocalAgent.ts';
 import {installAgentReadHttp,installAgentSponsorHttp} from './server/security/workspaceAccess/agentHttp.ts';
 import {createServer as createHttpsServer} from 'node:https';
 import {registerGitHubCiRoutes} from './server/release/githubCiRoutes.ts';
@@ -171,7 +172,9 @@ async function startServer() {
   const authorityInfo=workspaceAuthority?await workspaceAuthority.execute({command:'info'}):null;
   const workspaceSession=workspaceAuthority&&authorityInfo?.initialized?await createWorkspaceSessionService(workspaceAuthority):null;
   const workspaceAgent=workspaceMode==='ENFORCED'&&workspaceAuthority&&authorityInfo?.initialized&&authorityInfo?.agentDelegation===true?new WorkspaceAgentService(workspaceAuthority):null;
-  const agentReadHttp=installAgentReadHttp(app,workspaceAgent);
+  let authorityCoordinator:Awaited<ReturnType<typeof installWorkspaceProjectPersistence>>|null=null;
+  const trustedLocalAgent=workspaceMode==='ENFORCED'&&workspaceAuthority&&authorityInfo?.initialized&&resolveTrustedLocalAgentEnabled()?new TrustedLocalAgentService({workspaceRoot:process.cwd(),authority:workspaceAuthority,store,runAuthorityOperation:fn=>authorityCoordinator?authorityCoordinator.runAuthorityOperation(fn):fn(),syncSnapshotRevision:rev=>authorityCoordinator?.syncSnapshotRevision(rev),enabled:true}):null;
+  const agentReadHttp=installAgentReadHttp(app,workspaceAgent,trustedLocalAgent);
   if(workspaceMode==='LOCAL_DEVELOPMENT')app.use((req,res,next)=>{
     if(['GET','HEAD'].includes(req.method)&&/^\/api\/governance\/session\/?$/i.test(req.path)){
       const send=res.json.bind(res);res.json=body=>send({...body,access:{mode:'LOCAL_DEVELOPMENT',setupRequired:false,productionDeploymentAccepted:false}});
@@ -185,11 +188,10 @@ async function startServer() {
     if((res.locals.securityRouteClass==='SPECIALIZED_REVIEWER'||reviewerTransition)&&!reviewerAuth.requireHuman(req,res))return;
     next();
   });
-  let authorityCoordinator:Awaited<ReturnType<typeof installWorkspaceProjectPersistence>>|null=null;
   if(workspaceMode==='ENFORCED'){
     if(workspaceAuthority)authorityCoordinator=await installWorkspaceProjectPersistence(app,store,workspaceAuthority);
   }else installProjectPersistence(app, store);
-  installAgentSponsorHttp(app,workspaceAgent,authorityCoordinator?.runAuthorityOperation??null);
+  installAgentSponsorHttp(app,workspaceAgent,authorityCoordinator?.runAuthorityOperation??null,trustedLocalAgent);
   const releaseCi=registerGitHubCiRoutes(app,store,reviewerAuth.requireHuman);
   registerVerificationRoutes(app,store,reviewerAuth.requireHuman,workspaceMode==='ENFORCED'?workspaceVerificationPrincipal:undefined);
   registerProjectReadinessRoutes(app,store,reviewerAuth.requireHuman,(projectId,current)=>projectVerificationEvidence(store,projectId,current));

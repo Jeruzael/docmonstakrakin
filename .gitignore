@@ -5,6 +5,7 @@ coverage/
 .local/
 .security/
 .security-backups/
+.security-agents/
 .secrets/
 runtime/
 .DS_Store
